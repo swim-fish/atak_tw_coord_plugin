@@ -10,8 +10,8 @@ public final class Twd67Tm2 {
   }
 
   public Twd67Tm2(double eastingMetres, double northingMetres, int zone) {
-    if (zone != 121) {
-      throw new IllegalArgumentException("v1 supports TWD67 zone 121 only; got: " + zone);
+    if (zone != 119 && zone != 121) {
+      throw new IllegalArgumentException("unsupported TWD67 zone: " + zone);
     }
     this.eastingMetres = eastingMetres;
     this.northingMetres = northingMetres;

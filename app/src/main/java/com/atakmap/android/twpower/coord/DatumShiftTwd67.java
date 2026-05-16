@@ -19,7 +19,7 @@ public final class DatumShiftTwd67 {
     double y = t97.northingMetres();
     double e = x - DELTA_X - A * x - B * y;
     double n = y + DELTA_Y - A * y - B * x;
-    return new Twd67Tm2(e, n);
+    return new Twd67Tm2(e, n, t97.zone());
   }
 
   public static Twd97Tm2 twd67ToTwd97(Twd67Tm2 t67) {
@@ -27,6 +27,6 @@ public final class DatumShiftTwd67 {
     double y = t67.northingMetres();
     double e = x + DELTA_X + A * x + B * y;
     double n = y - DELTA_Y + A * y + B * x;
-    return new Twd97Tm2(e, n, 121);
+    return new Twd97Tm2(e, n, t67.zone());
   }
 }

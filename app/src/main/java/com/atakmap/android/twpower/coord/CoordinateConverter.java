@@ -8,10 +8,11 @@ import java.util.Objects;
  */
 public final class CoordinateConverter {
 
-  // Conservative TM2 z121 box around Taiwan's main island (FR-009, contracts §Behaviour matrix).
+  // Taiwan box covering both the main island (TM2 z121) and Penghu (TM2 z119). Penghu sits
+  // around 23.5°N 119.5°E; we relax LON_MIN to 119.0 so it falls inside.
   private static final double LAT_MIN = 21.5;
   private static final double LAT_MAX = 25.5;
-  private static final double LON_MIN = 120.0;
+  private static final double LON_MIN = 119.0;
   private static final double LON_MAX = 122.5;
 
   public ConversionResult convert(Wgs84 fix, CoordinateUnit unit) {
@@ -29,6 +30,12 @@ public final class CoordinateConverter {
       case TWD67:
         return ConversionResult.ok(DatumShiftTwd67.twd97ToTwd67(t97), unit);
       case TAIPOWER:
+        // Taipower grid is main-island only (ADR-0001). Reject anything not in TM2 zone 121
+        // before attempting the grid lookup — otherwise Penghu (zone 119) easting/northing
+        // happen to land in a valid main-island cell purely by numerical coincidence.
+        if (t97.zone() != 121) {
+          return ConversionResult.outOfRange(fix, unit);
+        }
         try {
           Twd67Tm2 t67 = DatumShiftTwd67.twd97ToTwd67(t97);
           TaipowerCode code = TaipowerGrid.fromTwd67(t67, TaipowerGrid.Precision.NINE_CHAR);

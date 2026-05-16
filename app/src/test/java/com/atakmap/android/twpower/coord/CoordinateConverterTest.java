@@ -57,15 +57,37 @@ public class CoordinateConverterTest {
   }
 
   /**
-   * Penghu (lon 119.6) is outside TM2-z121 bounds in v1; it would also belong to TWD97 zone 119
-   * which we have not enabled yet. All three units MUST report out-of-range here.
+   * Penghu (lon 119.6) is supported via TM2 zone 119 for TWD97 / TWD67. Taipower grid still rejects
+   * (Y/Z letters not implemented; main-island grid only — ADR-0001).
    */
   @Test
-  public void penghu_returns_out_of_range_for_all_units() {
-    Wgs84 fix = new Wgs84(23.5, 119.6, 1L, Wgs84.Source.MAP_CENTRE);
-    for (CoordinateUnit u : CoordinateUnit.values()) {
-      assertThat(conv.convert(fix, u).isOutOfRange()).as("unit=%s", u).isTrue();
-    }
+  public void penghu_returns_ok_for_twd97_zone_119() {
+    Wgs84 fix = new Wgs84(23.566, 119.566, 1L, Wgs84.Source.MAP_CENTRE); // Magong / 馬公
+    ConversionResult r = conv.convert(fix, CoordinateUnit.TWD97);
+    assertThat(r.isOk()).as("TWD97 in Penghu").isTrue();
+    @SuppressWarnings("unchecked")
+    Twd97Tm2 v = ((ConversionResult.Ok<Twd97Tm2>) r).value();
+    assertThat(v.zone()).isEqualTo(119);
+    // Sanity: TWD97 z119 false-easting is 250 000 m; Magong (~119.57°E) is close to centre.
+    assertThat(v.eastingMetres()).isBetween(290_000d, 360_000d);
+    assertThat(v.northingMetres()).isBetween(2_600_000d, 2_650_000d);
+  }
+
+  @Test
+  public void penghu_returns_ok_for_twd67() {
+    Wgs84 fix = new Wgs84(23.566, 119.566, 1L, Wgs84.Source.MAP_CENTRE);
+    ConversionResult r = conv.convert(fix, CoordinateUnit.TWD67);
+    assertThat(r.isOk()).as("TWD67 in Penghu").isTrue();
+    @SuppressWarnings("unchecked")
+    Twd67Tm2 v = ((ConversionResult.Ok<Twd67Tm2>) r).value();
+    assertThat(v.zone()).isEqualTo(119);
+  }
+
+  /** Taipower grid remains main-island-only — ADR-0001 caveat. */
+  @Test
+  public void penghu_returns_out_of_range_for_taipower() {
+    Wgs84 fix = new Wgs84(23.566, 119.566, 1L, Wgs84.Source.MAP_CENTRE);
+    assertThat(conv.convert(fix, CoordinateUnit.TAIPOWER).isOutOfRange()).isTrue();
   }
 
   @Test
