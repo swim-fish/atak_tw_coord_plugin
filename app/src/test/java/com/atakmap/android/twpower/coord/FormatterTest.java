@@ -38,7 +38,7 @@ public class FormatterTest {
   }
 
   @Test
-  public void ok_taipower_9char_matches_golden() {
+  public void ok_taipower_11char_matches_golden() {
     Wgs84 fix =
         new Wgs84(
             GoldenVectors.TAIPEI_101.latDeg,
@@ -50,7 +50,11 @@ public class FormatterTest {
 
     assertThat(line.state()).isEqualTo(DisplayLine.State.OK);
     assertThat(line.unitTag()).isEqualTo("台電");
-    assertThat(line.value()).isEqualTo("B7039 BD32");
+    // 11-char default. The 9-char prefix "B7039 BD32" must match the golden vector; the
+    // trailing two digits are the 1 m sub-cell which pwa_map does not pin in test-vectors.json
+    // (it only pins 11-char for Hualien). Be lenient on the last two digits.
+    assertThat(line.value()).startsWith("B7039 BD32");
+    assertThat(line.value()).hasSize(12); // "B7039 BD32XY"
   }
 
   @Test

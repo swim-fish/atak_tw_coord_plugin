@@ -137,11 +137,28 @@ public final class Formatter {
   }
 
   private String formatTwd97(Twd97Tm2 v) {
-    return intMetres(v.eastingMetres()) + "m " + intMetres(v.northingMetres()) + "m";
+    return intMetres(v.eastingMetres())
+        + "m "
+        + intMetres(v.northingMetres())
+        + "m"
+        + zoneSuffix(v.zone());
   }
 
   private String formatTwd67(Twd67Tm2 v) {
-    return intMetres(v.eastingMetres()) + "m " + intMetres(v.northingMetres()) + "m";
+    return intMetres(v.eastingMetres())
+        + "m "
+        + intMetres(v.northingMetres())
+        + "m"
+        + zoneSuffix(v.zone());
+  }
+
+  /**
+   * Zone 121 (Taiwan main island) is the implicit default and adds no suffix; zone 119 (Penghu /
+   * 澎湖) appends " z119" so it is unmistakeable that the easting/northing belong to a different TM2
+   * grid than the main island.
+   */
+  private static String zoneSuffix(int zone) {
+    return zone == 121 ? "" : " z" + zone;
   }
 
   private String formatTaipower(TaipowerCode c) {

@@ -38,7 +38,9 @@ public final class CoordinateConverter {
         }
         try {
           Twd67Tm2 t67 = DatumShiftTwd67.twd97ToTwd67(t97);
-          TaipowerCode code = TaipowerGrid.fromTwd67(t67, TaipowerGrid.Precision.NINE_CHAR);
+          // 11-char gives 1 m precision; the trailing two digits are speculative beyond typical
+          // GPS accuracy but match Taipower field-survey conventions. See FR-011.
+          TaipowerCode code = TaipowerGrid.fromTwd67(t67, TaipowerGrid.Precision.ELEVEN_CHAR);
           return ConversionResult.ok(code, unit);
         } catch (TaipowerGrid.OutOfCoverageException e) {
           return ConversionResult.outOfRange(fix, unit);

@@ -38,6 +38,8 @@ public class CoordinateConverterTest {
     @SuppressWarnings("unchecked")
     TaipowerCode v = ((ConversionResult.Ok<TaipowerCode>) r).value();
     assertThat(v.region()).isEqualTo('G');
+    // 11-char precision is now the default; confirm the 1 m digits are populated.
+    assertThat(v.hasOneMetrePrecision()).isTrue();
   }
 
   @Test
