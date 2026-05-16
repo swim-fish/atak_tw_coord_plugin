@@ -25,4 +25,15 @@
         android:entryValues="@array/ui_language_values"
         android:defaultValue="SYSTEM"/>
 
+    <PreferenceCategory
+        android:layout="@layout/pref_category"
+        android:title="@string/pref_accuracy_header"/>
+
+    <Preference
+        android:layout="@layout/pref_warning_item"
+        android:key="pref_accuracy_notice"
+        android:title="@string/pref_accuracy_title"
+        android:summary="@string/pref_accuracy_summary"
+        android:selectable="false"/>
+
 </PreferenceScreen>

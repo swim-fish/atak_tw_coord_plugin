@@ -28,9 +28,13 @@
     <string name="opt_unit_twd97">TWD97 / TM2 z121</string>
     <string name="opt_unit_twd67">TWD67 / TM2 z121</string>
 
-    <string name="opt_lang_system">跟隨系統設定</string>
+    <string name="opt_lang_system">依系統設定</string>
     <string name="opt_lang_en">English</string>
     <string name="opt_lang_zh_tw">中文（正體）</string>
     <string name="opt_lang_ja">日本語</string>
+
+    <string name="pref_accuracy_header">座標精度說明</string>
+    <string name="pref_accuracy_title">Datum 位移精度</string>
+    <string name="pref_accuracy_summary">TWD97 全境次米級精度。\n\nTWD67 採用 ADR-0001 (pwa_map) 的 4 參數位移。典型誤差:\n• 本島:±3-5 公尺\n• 外島（澎湖 / 金門 / 馬祖）:±10-20 公尺，因 4 參數常數係針對本島校正，與內政部官方 7 參數 Bursa-Wolf 位移在外島差異較大。\n\n台電座標僅本島支援；外島讀數會顯示「超出範圍」並附 WGS84 fallback line。</string>
 
 </resources>
