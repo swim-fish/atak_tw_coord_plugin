@@ -11,7 +11,8 @@ public class TaipowerGridTest {
   public void taipower_code_from_twd67_matches_golden_9char_codes() {
     for (GoldenVectors.Point p : GoldenVectors.ALL) {
       TaipowerCode code =
-          TaipowerGrid.fromTwd67(new Twd67Tm2(p.twd67E, p.twd67N), TaipowerGrid.Precision.NINE_CHAR);
+          TaipowerGrid.fromTwd67(
+              new Twd67Tm2(p.twd67E, p.twd67N), TaipowerGrid.Precision.NINE_CHAR);
       String formatted = formatNineChar(code);
       assertThat(formatted).as("Taipower 9-char for %s", p.name).isEqualTo(p.taipower9Char);
     }
@@ -36,7 +37,8 @@ public class TaipowerGridTest {
   public void letter_table_excludes_y_z_for_v1() {
     for (GoldenVectors.Point p : GoldenVectors.ALL) {
       TaipowerCode code =
-          TaipowerGrid.fromTwd67(new Twd67Tm2(p.twd67E, p.twd67N), TaipowerGrid.Precision.NINE_CHAR);
+          TaipowerGrid.fromTwd67(
+              new Twd67Tm2(p.twd67E, p.twd67N), TaipowerGrid.Precision.NINE_CHAR);
       char r = code.region();
       assertThat(r).isNotIn('Y', 'Z');
       assertThat(r).isBetween('A', 'X');

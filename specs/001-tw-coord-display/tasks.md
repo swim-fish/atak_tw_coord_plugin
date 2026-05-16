@@ -312,3 +312,19 @@ After `/speckit-analyze` remediation (2026-05-16):
 |---|---|---|
 | 2026-05-16 | Initial 60-task generation | `/speckit-tasks` |
 | 2026-05-16 | T053 → T036a (docs/ui readout-widget into US1); T054 → T048a (docs/ui settings-fragment into US3); T055-T057 closed (ADRs authored as files); T050 augmented with SC-003 next-frame assertion; T059 augmented with SC-001 stopwatch sub-step; T060 reworded to explicit verification; added T061 (fps impact bench for SC-007) | `/speckit-analyze` findings F1-F6 remediation |
+| 2026-05-16 | First `/speckit-implement` pass — MVP completed: Phase 1 (T001-T008), Phase 2 (T009-T022), and Phase 3 US1 minus T032 (T023-T036a). All 22 JVM unit tests GREEN, APK assembles successfully (ATAK-Plugin-atak_tw_power_plugin-1.0.0-b9cfd2bb-5.7.0.3-civ-debug.apk). T032 JMH bench deferred per analyze finding F9 (JMH source-set placement is an implementation concern). T037-T061 are NOT yet started — they belong to the next `/speckit-implement` continuation. See ADR-0005 for the implement-cycle record. | `/speckit-implement` |
+
+## Implementation status (2026-05-16, first `/speckit-implement` pass)
+
+| Phase | Task range | Status |
+|---|---|---|
+| Phase 1 Setup | T001-T008 | ✅ all complete (T007 closed during analyze remediation) |
+| Phase 2 Foundational | T009-T022 | ✅ all complete |
+| Phase 3 US1 | T023-T036a | ✅ all complete EXCEPT T032 (JMH bench deferred per F9) |
+| Phase 4 US2 | T037-T040 | ⏸ not started |
+| Phase 5 US3 | T041-T048a | ⏸ not started |
+| Phase 6 Polish | T049-T061 | ⏸ not started (T053-T057 closed during analyze remediation) |
+
+**Build status**: `./gradlew :app:testCivDebugUnitTest :app:assembleCivDebug` → BUILD SUCCESSFUL (22/22 tests green, signed civ-debug APK produced).
+
+**Next entry-point**: `/speckit-implement` (continuation) should pick up at T037 (US2 — SelfMarkerSubscriber + own-position wiring), or pause here for on-device verification of the MVP per `quickstart.md` §7 acceptance scenarios 1-3 of US1.

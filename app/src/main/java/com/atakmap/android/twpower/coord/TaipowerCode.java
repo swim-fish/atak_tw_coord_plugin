@@ -1,8 +1,8 @@
 package com.atakmap.android.twpower.coord;
 
 /**
- * Taipower grid code over TWD67 TM2 zone 121. v1 ships 9-character precision (10 m) by default;
- * the optional 11-character (1 m) precision carries the trailing oneMeterE/N digits.
+ * Taipower grid code over TWD67 TM2 zone 121. v1 ships 9-character precision (10 m) by default; the
+ * optional 11-character (1 m) precision carries the trailing oneMeterE/N digits.
  */
 public final class TaipowerCode {
 

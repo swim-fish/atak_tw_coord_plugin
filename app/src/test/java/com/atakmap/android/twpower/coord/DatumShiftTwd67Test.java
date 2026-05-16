@@ -41,7 +41,8 @@ public class DatumShiftTwd67Test {
 
   @Test
   public void forward_then_inverse_is_identity_within_centimetre() {
-    Twd97Tm2 t97 = new Twd97Tm2(GoldenVectors.TAIPEI_101.twd97E, GoldenVectors.TAIPEI_101.twd97N, 121);
+    Twd97Tm2 t97 =
+        new Twd97Tm2(GoldenVectors.TAIPEI_101.twd97E, GoldenVectors.TAIPEI_101.twd97N, 121);
     Twd67Tm2 t67 = DatumShiftTwd67.twd97ToTwd67(t97);
     Twd97Tm2 back = DatumShiftTwd67.twd67ToTwd97(t67);
     assertThat(back.eastingMetres()).isCloseTo(t97.eastingMetres(), Offset.offset(0.05));

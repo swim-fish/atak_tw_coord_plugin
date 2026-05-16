@@ -4,9 +4,9 @@ package com.atakmap.android.twpower.coord;
  * Taipower grid arithmetic over TWD67 TM2 zone 121. Anchors and step sizes copied verbatim from
  * pwa_map src/coord/taipower.ts:82-150 — see ADR-0001 for provenance.
  *
- * <p>Coverage in v1: the 8 (north→south) × 3 (west→east) main-island letter grid, A..X. Letters
- * Y and Z (outer islands, Penghu / Lanyu) are NOT supported in v1 and trigger
- * {@link OutOfCoverageException}.
+ * <p>Coverage in v1: the 8 (north→south) × 3 (west→east) main-island letter grid, A..X. Letters Y
+ * and Z (outer islands, Penghu / Lanyu) are NOT supported in v1 and trigger {@link
+ * OutOfCoverageException}.
  */
 public final class TaipowerGrid {
 
@@ -31,9 +31,8 @@ public final class TaipowerGrid {
   private static final double SUB_STEP_N = 500;
 
   /**
-   * Letter table: rowIdx 0 = northernmost row, rowIdx 7 = southernmost.
-   * Order verified against the four golden vectors (Taipei 101 → B, Kaohsiung 85 → P,
-   * Taichung CH → G, Hualien Stn → H).
+   * Letter table: rowIdx 0 = northernmost row, rowIdx 7 = southernmost. Order verified against the
+   * four golden vectors (Taipei 101 → B, Kaohsiung 85 → P, Taichung CH → G, Hualien Stn → H).
    */
   private static final char[][] REGION_LETTERS = {
     {'A', 'B', 'C'},
