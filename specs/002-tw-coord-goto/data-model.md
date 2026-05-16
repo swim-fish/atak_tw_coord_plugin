@@ -4,7 +4,7 @@
 
 This document describes the runtime + persisted entities for the
 input-page feature. All runtime entities live under
-`app/src/main/java/com/atakmap/android/twcoord/goto/` and follow the
+`app/src/main/java/com/atakmap/android/twcoord/gotopage/` and follow the
 existing convention: immutable Java records / final classes, pure JVM,
 zero ATAK dependencies in the converter / store layer (the
 `DropDownReceiver` is the only class that touches the SDK directly).

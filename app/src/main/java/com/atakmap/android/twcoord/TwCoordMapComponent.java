@@ -22,6 +22,8 @@ import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.coord.DisplayLine;
 import com.atakmap.android.twcoord.coord.Formatter;
 import com.atakmap.android.twcoord.coord.Wgs84;
+import com.atakmap.android.twcoord.gotopage.TwCoordGotoIntents;
+import com.atakmap.android.twcoord.gotopage.TwCoordGotoReceiver;
 import com.atakmap.android.twcoord.i18n.LocaleOverride;
 import com.atakmap.android.twcoord.plugin.R;
 import com.atakmap.android.twcoord.prefs.PreferenceStore;
@@ -52,6 +54,7 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private TwCoordPreferenceFragment prefFragment;
   private SelfMarkerSubscriber selfSub;
   private Handler ui;
+  private TwCoordGotoReceiver gotoReceiver;
 
   private final CoordinateConverter converter = new CoordinateConverter();
   private final Formatter formatter = new Formatter();
@@ -279,6 +282,14 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     toggleFilter.addAction(ACTION_SHOW_PLUGIN);
     AtakBroadcast.getInstance().registerReceiver(toggleReceiver, toggleFilter);
 
+    // Feature 002 — the GoTo input page is a DropDownReceiver. It registers its own broadcast
+    // (SHOW_GOTO) so the second Tools-menu icon (TwCoordGotoTool) and the settings-page button
+    // both open the same page.
+    gotoReceiver = new TwCoordGotoReceiver(view, pluginContext, prefs);
+    AtakBroadcast.DocumentedIntentFilter gotoFilter = new AtakBroadcast.DocumentedIntentFilter();
+    gotoFilter.addAction(TwCoordGotoIntents.ACTION_SHOW_GOTO);
+    AtakBroadcast.getInstance().registerReceiver(gotoReceiver, gotoFilter);
+
     // Initial paint so the widget is not blank.
     renderMapCentre();
     // Seed the me-row from the current self-marker position so the user sees something even
@@ -303,6 +314,19 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       AtakBroadcast.getInstance().unregisterReceiver(toggleReceiver);
     } catch (IllegalArgumentException ignored) {
       // Receiver was never registered (onCreate aborted) — nothing to do.
+    }
+    if (gotoReceiver != null) {
+      try {
+        AtakBroadcast.getInstance().unregisterReceiver(gotoReceiver);
+      } catch (IllegalArgumentException ignored) {
+        // ditto
+      }
+      try {
+        gotoReceiver.dispose();
+      } catch (Exception ignored) {
+        // DropDownReceiver.dispose() is final and idempotent, but swallow defensively.
+      }
+      gotoReceiver = null;
     }
     ToolsPreferenceFragment.unregister(PREF_KEY);
     if (ui != null) ui.removeCallbacks(selfTick);

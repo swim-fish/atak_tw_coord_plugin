@@ -1,6 +1,6 @@
 # Contract — `CoordinateParser` (inverse-converter facade)
 
-**Feature**: 002-tw-coord-goto | **Java package**: `com.atakmap.android.twcoord.goto`
+**Feature**: 002-tw-coord-goto | **Java package**: `com.atakmap.android.twcoord.gotopage`
 
 `CoordinateParser` is the single entry point that converts a
 user-typed coordinate input into a `Wgs84`. It is the *inverse* of
@@ -8,7 +8,7 @@ feature 001's `CoordinateConverter` and runs entirely off-device
 (pure JVM, no Android, no ATAK).
 
 This contract is the source of truth for the JVM unit tests under
-`app/src/test/java/com/atakmap/android/twcoord/goto/`. The
+`app/src/test/java/com/atakmap/android/twcoord/gotopage/`. The
 implementation lands after the tests, per Constitution Principle II.
 
 ---

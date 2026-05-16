@@ -39,4 +39,53 @@
     <string name="pref_accuracy_title">Datum 変換精度</string>
     <string name="pref_accuracy_summary">TWD97: 全域で誤差 &lt; 1 m。\n\nTWD67 代表的な誤差:\n• 本島:±3〜±5 m\n• 離島(澎湖 / 金門 / 馬祖):±10〜±20 m\n\n台電グリッドは本島のみ対応。離島座標は「範囲外」表示と WGS84 フォールバック行を返します。</string>
 
+    <!-- ============================================================
+         Feature 002 — 台湾座標入力ページ
+         ============================================================ -->
+
+    <string name="app_name_goto">座標入力</string>
+    <string name="app_desc_goto">台電 / TWD97 / TWD67 座標を入力すると ATAK が地図を移動しマーカーを配置します。</string>
+
+    <string name="goto_title">座標入力</string>
+
+    <string name="goto_tab_taipower">台電グリッド</string>
+    <string name="goto_tab_twd97">TWD97</string>
+    <string name="goto_tab_twd67">TWD67</string>
+
+    <string name="goto_hint_taipower">例: H7509 DB4016</string>
+    <string name="goto_hint_easting">東距 (m)</string>
+    <string name="goto_hint_northing">北距 (m)</string>
+
+    <string name="goto_zone_label">ゾーン</string>
+    <string name="goto_zone_121">121 (本島)</string>
+    <string name="goto_zone_119">119 (離島)</string>
+
+    <string name="goto_btn_submit">送信</string>
+    <string name="goto_btn_autofill">自動入力</string>
+    <string name="goto_btn_paste">貼り付け</string>
+
+    <string name="goto_err_empty">座標を入力してください。</string>
+    <string name="goto_err_bad_length">長さが不正です。</string>
+    <string name="goto_err_bad_letter">無効な文字です。A–X / A–J のみ使用できます。</string>
+    <string name="goto_err_reserved_letter_yz">Y と Z は予約済みです。A–X を使用してください。</string>
+    <string name="goto_err_bad_zone">ゾーンは 121 または 119 のみ有効です。</string>
+    <string name="goto_err_non_digit">数字のみ入力できます。</string>
+    <string name="goto_err_out_of_range">台湾の範囲外です。</string>
+    <string name="goto_err_taipower_outer_island">台電グリッドは離島に対応していません。</string>
+
+    <string name="goto_outer_island_advisory">離島精度:公式 7 パラメータ変換に対して ±10〜20 m の差があります。</string>
+
+    <string name="goto_confirmation_toast">%1$s → %2$.6f°N %3$.6f°E</string>
+    <string name="goto_zone_suffix">ゾーン %1$d</string>
+
+    <string name="goto_autofill_hint_outside_taiwan">台湾の範囲外です。</string>
+    <string name="goto_autofill_hint_taipower_outer_island">台電グリッドは離島に対応していません。</string>
+
+    <string name="goto_recent_header">最近の入力</string>
+    <string name="goto_recent_empty">最近の入力はまだありません。</string>
+    <string name="goto_recent_delete">削除</string>
+
+    <string name="pref_open_goto_title">座標入力を開く</string>
+    <string name="pref_open_goto_summary">台電 / TWD97 / TWD67 座標を入力し地図をその場所へ移動します。</string>
+
 </resources>

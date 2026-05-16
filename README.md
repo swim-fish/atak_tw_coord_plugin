@@ -1,8 +1,16 @@
-# Taiwan Coordinate Display Plugin for ATAK (`atak_tw_coord_plugin`)
+# Taiwan Coordinate Display + Input Plugin for ATAK (`atak_tw_coord_plugin`)
 
-An [ATAK-CIV](https://tak.gov/products/atak-civ) plugin that shows the
-map-centre, the device's own position, and any tapped CoT target's
-coordinate in one of three Taiwan coordinate systems:
+An [ATAK-CIV](https://tak.gov/products/atak-civ) plugin that does two
+things in Taiwan-flavoured coordinate units:
+
+1. **Display** — shows the map-centre, the device's own position, and
+   any tapped CoT target's coordinate as an on-map readout.
+2. **Input ("GoTo")** — lets the operator type a Taiwan coordinate
+   (Taipower / TWD97 / TWD67) and pans the ATAK map there. The page
+   also has Auto Fill (read current map centre → fill the field) and
+   a Recent list (up to 10 prior submissions).
+
+Both features support the same three Taiwan coordinate systems:
 
 - **Taipower grid** (台電座標) — 11-character codes over TWD67 TM2
 - **TWD97 / TM2** — central meridian 121° (main island) or 119° (outer islands)
@@ -39,6 +47,10 @@ captured under `docs/ui/` (`readout-widget.md`, `settings-fragment.md`).
 | Outer-island support | Penghu / Kinmen / Matsu (TM2 zone 119, EPSG:3825) — auto-selected by longitude. `z119` suffix appears on the readout when zone is non-default |
 | Offline, no telemetry | Zero outbound network. Manifest deliberately omits `INTERNET` permission. No analytics or crash-reporting SDKs |
 | Settings advisory | Built-in accuracy notice explaining TWD67 main-island ±3-5 m vs outer-island ±10-20 m |
+| **Coordinate input page** ("GoTo") | Second Tools-menu icon opens a DropDown with three tabs (Taipower / TWD97 / TWD67), submit pans the camera to the resolved location (X/Y only — operator's zoom is preserved) |
+| **Auto Fill** | One-tap fill of the active tab from the current map centre, with zone toggle (TWD97/TWD67) auto-set from longitude; disabled in real time when the centre is unrepresentable in the active tab |
+| **Recent list** | Up to 10 prior successful submissions, deduped on (unit, value), persisted across ATAK restarts; tap any row to re-fill, per-row delete |
+| **No auto-marker** | Submit pans only; marker placement (waypoint / Mission Point / SPI / etc.) uses ATAK's standard long-press → radial menu — zero new UX to learn |
 
 ## Coverage and accuracy
 

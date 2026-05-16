@@ -1,6 +1,6 @@
 # Contract — `TwCoordGotoReceiver` (DropDown lifecycle + Intent surface)
 
-**Feature**: 002-tw-coord-goto | **Java package**: `com.atakmap.android.twcoord.goto`
+**Feature**: 002-tw-coord-goto | **Java package**: `com.atakmap.android.twcoord.gotopage`
 
 `TwCoordGotoReceiver` is the ATAK glue that opens / closes the input
 page, owns the page's view tree, and serves as the
@@ -25,11 +25,16 @@ This contract spans three concerns:
 | `com.atakmap.android.twcoord.SHOW_GOTO` extras: `unit` (string, optional) | inbound | `"TAIPOWER" \| "TWD97" \| "TWD67"` | Forces the page to open with that tab active. Absent → use `InputPageState.activeTab` or `PreferenceStore.getGotoLastUnit()`. |
 | `com.atakmap.android.twcoord.GOTO_NAV_COMPLETED` | outbound | extras `lat`, `lon`, `unit`, `rawValue` | Fired by `TwCoordGotoView.onSubmit` after the marker is placed. Allows downstream observers (none in v1, but reserved for future). |
 
-The Tools-menu icon registration in `plugin.xml` adds a second
-`<extension type="tool">` (alongside the existing one) whose `action`
-attribute is `com.atakmap.android.twcoord.SHOW_GOTO`. The receiver
-itself is registered in `TwCoordMapComponent.onCreate` via
-`AtakBroadcast.getInstance().registerReceiver(...)`.
+The Tools-menu icon is registered programmatically as a sibling of the
+existing `TwCoordTool`: a new `TwCoordGotoTool` subclass of
+`com.atak.plugins.impl.AbstractPluginTool` is instantiated and passed
+into `TwCoordLifecycle`'s `AbstractPlugin(IServiceController,
+IToolbarItem[], MapComponent)` constructor (so both tools appear on
+the Tools menu). The receiver itself is registered in
+`TwCoordMapComponent.onCreate` via
+`AtakBroadcast.getInstance().registerReceiver(...)`. `plugin.xml`
+keeps its single `IPlugin` extension and gains nothing in this
+feature.
 
 The intent surface **does not** chain to ATAK's native
 `com.atakmap.android.routes.GOTO_NAV_BEGIN`. Although that action

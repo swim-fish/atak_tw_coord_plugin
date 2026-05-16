@@ -1,6 +1,6 @@
 # Contract — `RecentEntryStore` (persistence schema)
 
-**Feature**: 002-tw-coord-goto | **Java package**: `com.atakmap.android.twcoord.goto`
+**Feature**: 002-tw-coord-goto | **Java package**: `com.atakmap.android.twcoord.gotopage`
 
 `RecentEntryStore` is a small repository that persists up to 10
 successful coordinate submissions in

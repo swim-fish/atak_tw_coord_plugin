@@ -44,11 +44,11 @@ placeholders. The existing app/ module is already configured for
 Java 17, Spotless, proj4j, AndroidX, ATAK SDK. Nothing in this phase
 should require changing build files.
 
-- [ ] T001 Create new Java package directory `app/src/main/java/com/atakmap/android/twcoord/goto/` (and the matching test mirrors under `app/src/test/java/com/atakmap/android/twcoord/goto/` + `app/src/androidTest/java/com/atakmap/android/twcoord/goto/`)
-- [ ] T002 [P] Create drawable placeholder `app/src/main/res/drawable/ic_tw_coord_goto.xml` (pin / target glyph; final art may follow in Polish)
-- [ ] T003 [P] Add empty string-key skeleton (keys defined, values empty placeholders) to `app/src/main/res/values/strings.xml`, `app/src/main/res/values-zh-rTW/strings.xml`, `app/src/main/res/values-ja/strings.xml` for the ~30 GoTo-page keys (tab labels, field hints, submit / cancel, Auto Fill, error reasons, accuracy advisory, Recent header, empty state)
-- [ ] T004 [P] Create layout skeleton `app/src/main/res/layout/tw_coord_goto.xml` (root container + placeholder TabHost or TabLayout; tabs / fields / buttons added in user-story phases)
-- [ ] T005 Verify `./gradlew spotlessApply assembleCivDebug` is green with the new empty resources and package directory (Constitution Principle I — formatter is enforced)
+- [X] T001 Create new Java package directory `app/src/main/java/com/atakmap/android/twcoord/gotopage/` (and the matching test mirrors under `app/src/test/java/com/atakmap/android/twcoord/gotopage/` + `app/src/androidTest/java/com/atakmap/android/twcoord/gotopage/`)
+- [X] T002 [P] Create drawable placeholder `app/src/main/res/drawable/ic_tw_coord_goto.xml` (pin / target glyph; final art may follow in Polish)
+- [X] T003 [P] Add string-key skeleton (filled with final values, NOT empty placeholders — saves the T027/T041/T065/T079 fill-in passes) to `app/src/main/res/values/strings.xml`, `app/src/main/res/values-zh-rTW/strings.xml`, `app/src/main/res/values-ja/strings.xml` for the ~30 GoTo-page keys
+- [X] T004 [P] Create layout skeleton `app/src/main/res/layout/tw_coord_goto.xml` (root container + RadioGroup tab bar + per-pane LinearLayouts + shared Submit button + Recent section placeholder)
+- [ ] T005 Verify `./gradlew spotlessApply assembleCivDebug` is green with the new empty resources and package directory (Constitution Principle I — formatter is enforced) — DEFERRED to MVP checkpoint to amortise gradle cost
 
 ---
 
@@ -61,15 +61,16 @@ keys.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T006 [P] Create `ParseResult` sealed-style class in `app/src/main/java/com/atakmap/android/twcoord/goto/ParseResult.java` (Ok / Invalid / OutOfRange variants per data-model.md §2, with `Invalid.Reason` enum: `BAD_LENGTH`, `BAD_LETTER`, `RESERVED_LETTER_YZ`, `BAD_ZONE`, `EMPTY`, `NON_DIGIT`)
-- [ ] T007 [P] Create `CoordinateInput` sealed-style hierarchy in `app/src/main/java/com/atakmap/android/twcoord/goto/CoordinateInput.java` (Taipower / Twd97 / Twd67 records per data-model.md §1; includes `displayString()` factory)
-- [ ] T008 Create `CoordinateParser` facade in `app/src/main/java/com/atakmap/android/twcoord/goto/CoordinateParser.java` with stub bodies for `parseTaipower(String)`, `parseTwd97(int,int,int)`, `parseTwd67(int,int,int)`, `parse(CoordinateInput)` (all return `Invalid(EMPTY)` until US1/US2 lands; reuses `Projections` / `DatumShiftTwd67` / `TaipowerGrid` from feature 001)
-- [ ] T009 [P] Extend `app/src/main/java/com/atakmap/android/twcoord/prefs/PreferenceStore.java` with all `pref_goto_*` keys (per plan.md Storage section): `pref_goto_last_unit`, `pref_goto_last_taipower`, `pref_goto_last_twd97_e/n/zone`, `pref_goto_last_twd67_e/n/zone`, `pref_goto_recent_json`; default values per data-model.md §8
-- [ ] T010 [P] Add the constant `Intent` action string `com.atakmap.android.twcoord.SHOW_GOTO` and outbound `GOTO_NAV_COMPLETED` to `app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordTool.java` (sibling of the existing `SHOW_PLUGIN` constant)
-- [ ] T011 Register the second Tools-menu entry in `app/src/main/assets/plugin.xml` (add a second `<extension type="tool">` block with `action="com.atakmap.android.twcoord.SHOW_GOTO"` and `icon="@drawable/ic_tw_coord_goto"`)
-- [ ] T012 Create `TwCoordGotoReceiver` shell in `app/src/main/java/com/atakmap/android/twcoord/goto/TwCoordGotoReceiver.java` extending `com.atakmap.android.dropdown.DropDownReceiver`: implement `onReceive` open/close skeleton, idempotent re-open guard, `inflateLayout(R.layout.tw_coord_goto)`, back-press handling (per contracts/goto-receiver.md §2). Submit / Auto Fill wiring stays stubbed.
-- [ ] T013 Wire `TwCoordGotoReceiver` registration into `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java` `onCreate` (`AtakBroadcast.getInstance().registerReceiver(receiver, new DocumentedIntentFilter("com.atakmap.android.twcoord.SHOW_GOTO"))`) and unregister cleanly in `onDestroyImpl`
-- [ ] T014 Add the "Open Coordinate Input" preference entry in `app/src/main/res/xml/preferences.xml` and bind it in `app/src/main/java/com/atakmap/android/twcoord/TwCoordPreferenceFragment.java` to send the `SHOW_GOTO` broadcast (FR-016 — second entry point)
+- [X] T006 [P] Create `ParseResult` sealed-style class in `app/src/main/java/com/atakmap/android/twcoord/gotopage/ParseResult.java` (Ok / Invalid / OutOfRange variants per data-model.md §2, with `Invalid.Reason` enum: `BAD_LENGTH`, `BAD_LETTER`, `RESERVED_LETTER_YZ`, `BAD_ZONE`, `EMPTY`, `NON_DIGIT`)
+- [X] T007 [P] Create `CoordinateInput` sealed-style hierarchy in `app/src/main/java/com/atakmap/android/twcoord/gotopage/CoordinateInput.java` (Taipower / Twd97 / Twd67 records per data-model.md §1; includes `displayString()` factory)
+- [X] T008 Create `CoordinateParser` facade in `app/src/main/java/com/atakmap/android/twcoord/gotopage/CoordinateParser.java` with stub bodies for `parseTaipower(String)`, `parseTwd97(int,int,int)`, `parseTwd67(int,int,int)`, `parse(CoordinateInput)` (all return `Invalid(EMPTY)` until US1/US2 lands; reuses `Projections` / `DatumShiftTwd67` / `TaipowerGrid` from feature 001)
+- [X] T009 [P] Extend `app/src/main/java/com/atakmap/android/twcoord/prefs/PreferenceStore.java` with all `pref_goto_*` keys (per plan.md Storage section): `pref_goto_last_unit`, `pref_goto_last_taipower`, `pref_goto_last_twd97_e/n/zone`, `pref_goto_last_twd67_e/n/zone`, `pref_goto_recent_json`; default values per data-model.md §8
+- [X] T010 [P] Add the constant `Intent` action string `com.atakmap.android.twcoord.SHOW_GOTO` and outbound `GOTO_NAV_COMPLETED` to `app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordTool.java` (sibling of the existing `SHOW_PLUGIN` constant)
+- [X] T011 Create `TwCoordGotoTool` in `app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordGotoTool.java` as a sibling of the existing `TwCoordTool`. Subclass `com.atak.plugins.impl.AbstractPluginTool` with `app_name_goto` / `app_desc_goto` strings, `R.drawable.ic_tw_coord_goto`, and the action constant `com.atakmap.android.twcoord.SHOW_GOTO`. Implement `Disposable.dispose()` as a no-op (mirror `TwCoordTool` line-for-line). **Tools icons in this codebase are registered programmatically via AbstractPluginTool subclasses, not via plugin.xml — see `TwCoordTool.java` and `AbstractPlugin(IServiceController, IToolbarItem[], MapComponent)` ctor.**
+- [X] T012 Create `TwCoordGotoReceiver` shell in `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoReceiver.java` extending `com.atakmap.android.dropdown.DropDownReceiver`: implement `onReceive` open/close skeleton, idempotent re-open guard, `inflateLayout(R.layout.tw_coord_goto)`, back-press handling (per contracts/goto-receiver.md §2). Submit / Auto Fill wiring stays stubbed.
+- [X] T013 Wire two things into the plugin's lifecycle: (a) `TwCoordGotoReceiver` registration into `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java` `onCreate` (`AtakBroadcast.getInstance().registerReceiver(receiver, new DocumentedIntentFilter("com.atakmap.android.twcoord.SHOW_GOTO"))`) and unregister cleanly in `onDestroyImpl`; (b) switch `app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordLifecycle.java` to the `AbstractPlugin(IServiceController, IToolbarItem[], MapComponent)` ctor and pass both `TwCoordTool` and `TwCoordGotoTool` so the second Tools-menu icon actually appears.
+- [X] T014 Add the "Open Coordinate Input" preference entry in `app/src/main/res/xml/preferences.xml` and bind it in `app/src/main/java/com/atakmap/android/twcoord/TwCoordPreferenceFragment.java` to send the `SHOW_GOTO` broadcast (FR-016 — second entry point)
+- [X] T015 Add `Projections.twd97ToWgs84(Twd97Tm2)` to `app/src/main/java/com/atakmap/android/twcoord/coord/Projections.java` (inverse direction of the existing forward `wgs84ToTwd97`; reuses the same proj4j `CoordinateTransform` instances for zones 121 / 119). **Both US1 Taipower path AND US2 TWD97/TWD67 paths call this** — must precede US1 to satisfy the independent-shippability invariant. (Moved here from US2 during /speckit-analyze remediation.)
 
 **Checkpoint**: At this point, tapping the Tools icon OR the Settings entry MUST open an empty DropDown shell. No tabs, no inputs, no submit — that comes in US1.
 
@@ -82,32 +83,32 @@ tab, taps Submit, ATAK pans and drops a single marker at the resolved
 WGS84 point.
 
 **Independent Test**: Per spec US1 — enter `H7509 DB4016` on the Taipower
-tab, marker MUST appear within 5 m of Taipei 101 (golden vector from
+tab, marker MUST appear within 5 m of Hualien Station (golden vector from
 `taiwan_cities_coords.csv`); long-press removes the marker.
 
 ### Tests for User Story 1 (TDD, write FIRST, ensure they FAIL)
 
-- [ ] T015 [P] [US1] Write `TaipowerParserTest` in `app/src/test/java/com/atakmap/android/twcoord/goto/TaipowerParserTest.java` covering the negative-path cases from contracts/coordinate-parser.md (BAD_LENGTH, BAD_LETTER, RESERVED_LETTER_YZ, NON_DIGIT, normalisation: lowercase / missing space / double space / surrounding parens)
-- [ ] T016 [P] [US1] Write the Taipower section of `CoordinateParserRoundTripTest` in `app/src/test/java/com/atakmap/android/twcoord/goto/CoordinateParserRoundTripTest.java` (22-city round trip; tolerance: 5 m main island, 20 m outer; outer-island entries assert `OutOfRange` for Taipower)
-- [ ] T017 [P] [US1] Write `DestinationMarkerStoreTest` in `app/src/test/java/com/atakmap/android/twcoord/goto/DestinationMarkerStoreTest.java` (invariant: `moveOrCreate` keeps the same UID across submissions; `removeIfPresent` clears the delegate; mocked `MapView` via Mockito)
-- [ ] T018 [P] [US1] Write the Espresso test `TwCoordGotoReceiverOpenLifecycleTest.receiver_opensDropDown_onShowGotoIntent` and `receiver_isIdempotent_onSecondShowGotoIntent` and `receiver_closesCleanly_onBackPress` in `app/src/androidTest/java/com/atakmap/android/twcoord/goto/TwCoordGotoReceiverTest.java`
-- [ ] T019 [P] [US1] Write the Espresso test `submit_pansAndDropsMarker_thenClosesDropDown` in the same `TwCoordGotoReceiverTest.java` (uses Taipei 101 Taipower code; asserts marker on map + DropDown closed)
+- [X] T016 [P] [US1] Write `TaipowerParserTest` in `app/src/test/java/com/atakmap/android/twcoord/gotopage/TaipowerParserTest.java` covering the negative-path cases from contracts/coordinate-parser.md (BAD_LENGTH, BAD_LETTER, RESERVED_LETTER_YZ, NON_DIGIT, normalisation: lowercase / missing space / double space / surrounding parens)
+- [X] T017 [P] [US1] Write the Taipower section of `CoordinateParserRoundTripTest` in `app/src/test/java/com/atakmap/android/twcoord/gotopage/CoordinateParserRoundTripTest.java` (22-city round trip; tolerance: 5 m main island, 20 m outer; outer-island entries assert `OutOfRange` for Taipower)
+- [~] T018 [P] [US1] Write `DestinationMarkerStoreTest` in `app/src/test/java/com/atakmap/android/twcoord/gotopage/DestinationMarkerStoreTest.java` (invariant: `moveOrCreate` keeps the same UID across submissions; `removeIfPresent` clears the delegate; mocked `MapView` via Mockito)
+- [~] T019 [P] [US1] Write the Espresso test `TwCoordGotoReceiverOpenLifecycleTest.receiver_opensDropDown_onShowGotoIntent` and `receiver_isIdempotent_onSecondShowGotoIntent` and `receiver_closesCleanly_onBackPress` in `app/src/androidTest/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoReceiverTest.java`
+- [~] T020 [P] [US1] Write the Espresso test `submit_pansAndDropsMarker_thenClosesDropDown` AND `submit_emitsLocalisedConfirmationToast` in the same `TwCoordGotoReceiverTest.java` (uses Hualien Station Taipower code; asserts marker on map + DropDown closed + toast string contains the unit name and `25.034°N 121.565°E`-style WGS84 to 6 decimals per FR-010)
 
 ### Implementation for User Story 1
 
-- [ ] T020 [US1] Implement `TaipowerParser` (package-private) in `app/src/main/java/com/atakmap/android/twcoord/goto/TaipowerParser.java`: normalisation, 9 / 11-char length check, Y/Z rejection, A–X / A–J letter validation, `NON_DIGIT` rejection. Reuses `TaipowerGrid.fromCode(...)` from feature 001 once it exists or — if absent — adds the inverse helper to `TaipowerGrid.java` (the existing class only has `fromTwd67`; add a `fromCode(String) → Twd67Tm2` method behind the same package boundary)
-- [ ] T021 [US1] Wire `CoordinateParser.parseTaipower(String)` in `CoordinateParser.java` to `TaipowerParser`, then through `DatumShiftTwd67.twd67ToTwd97` → `Projections.twd97ToWgs84` → Taiwan-box check (Lat 21.5–26.5, Lon 118.0–122.5; out-of-range returns `OutOfRange(unit, attemptedWgs84)`)
-- [ ] T022 [US1] Implement `DestinationMarkerStore` in `app/src/main/java/com/atakmap/android/twcoord/goto/DestinationMarkerStore.java`: process-scoped singleton; `moveOrCreate(Wgs84, CoordinateInput)`; UID allocated once via `UUID.randomUUID()`; marker type `b-m-p-w-GOTO`; icon `R.drawable.ic_tw_coord_goto`; `setRemovable(true)`; meta strings per contracts/goto-receiver.md §3b
-- [ ] T023 [US1] Implement the Taipower tab section of `TwCoordGotoView` in `app/src/main/java/com/atakmap/android/twcoord/goto/TwCoordGotoView.java` (single `EditText` + Submit button; debounced validation via a `HandlerThread`-bound validator that posts results back to the UI thread; disables Submit while `ParseResult` ≠ `Ok`; renders inline error text from `ParseResult.Invalid.reason`)
-- [ ] T024 [US1] Implement the Taipower tab layout in `app/src/main/res/layout/tw_coord_goto.xml` (TabLayout + ViewPager2 OR TabHost; one tab pane with the EditText / Submit / inline-error TextView; reuses the existing dark theme colours per ADR-0007)
-- [ ] T025 [US1] Wire `TwCoordGotoView.onSubmit` for the Taipower path: parser → if `Ok` then `DestinationMarkerStore.moveOrCreate` → `mapView.getRenderer3().lookAt(geoPoint, /*resolution*/ townScaleMetresPerPixel, 0.0, 0.0, /*animate*/ false)` → `PreferenceStore.setGotoLastUnit(TAIPOWER)` + `setGotoLastTaipower(rawValue)` → close DropDown → fire outbound `GOTO_NAV_COMPLETED` intent
-- [ ] T026 [US1] Add localised string values for the Taipower tab (tab label "Taipower" / "台電座標" / "台電グリッド", hint, error reasons) in `values/strings.xml`, `values-zh-rTW/strings.xml`, `values-ja/strings.xml`
-- [ ] T027 [US1] Run `mcp__zhtw-mcp__zhtw` over the new `values-zh-rTW/strings.xml` entries; 0 errors / 0 warnings required (matches ADR-0008 D5 discipline)
-- [ ] T028 [US1] Run `./gradlew :app:testCivDebugUnitTest --tests "com.atakmap.android.twcoord.goto.TaipowerParserTest" --tests "com.atakmap.android.twcoord.goto.CoordinateParserRoundTripTest" --tests "com.atakmap.android.twcoord.goto.DestinationMarkerStoreTest"` — all green
-- [ ] T029 [US1] Run `./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.goto.TwCoordGotoReceiverTest"` on Galaxy Tab S10+ — all green
-- [ ] T030 [US1] Manual on-device smoke-test per `quickstart.md` §"Smoke-test the three units" — Taipower row only; record screenshot for `docs/ui/`
+- [X] T021 [US1] Implement `TaipowerParser` (package-private) in `app/src/main/java/com/atakmap/android/twcoord/gotopage/TaipowerParser.java`: normalisation, 9 / 11-char length check, Y/Z rejection, A–X / A–J letter validation, `NON_DIGIT` rejection. Reuses `TaipowerGrid.fromCode(...)` from feature 001 once it exists or — if absent — adds the inverse helper to `TaipowerGrid.java` (the existing class only has `fromTwd67`; add a `fromCode(String) → Twd67Tm2` method behind the same package boundary)
+- [X] T022 [US1] Wire `CoordinateParser.parseTaipower(String)` in `CoordinateParser.java` to `TaipowerParser`, then through `DatumShiftTwd67.twd67ToTwd97` → `Projections.twd97ToWgs84` (now in Phase 2 via T015) → Taiwan-box check (Lat 21.5–26.5, Lon 118.0–122.5; out-of-range returns `OutOfRange(unit, attemptedWgs84)`)
+- [X] T023 [US1] Implement `DestinationMarkerStore` in `app/src/main/java/com/atakmap/android/twcoord/gotopage/DestinationMarkerStore.java`: process-scoped singleton; `moveOrCreate(Wgs84, CoordinateInput)`; UID allocated once via `UUID.randomUUID()`; marker type `b-m-p-w-GOTO`; icon `R.drawable.ic_tw_coord_goto`; `setRemovable(true)`; meta strings per contracts/goto-receiver.md §3b
+- [X] T024 [US1] Implement the Taipower tab section of `TwCoordGotoView` in `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoView.java` (single `EditText` + Submit button; debounced validation via a `HandlerThread`-bound validator that posts results back to the UI thread; disables Submit while `ParseResult` ≠ `Ok`; renders inline error text from `ParseResult.Invalid.reason`)
+- [X] T025 [US1] Implement the Taipower tab layout in `app/src/main/res/layout/tw_coord_goto.xml` (TabLayout + ViewPager2; one tab pane with the EditText / Submit / inline-error TextView; reuses the existing dark theme colours per ADR-0007)
+- [X] T026 [US1] Wire `TwCoordGotoView.onSubmit` for the Taipower path: parser → if `Ok` then `DestinationMarkerStore.moveOrCreate` → `mapView.getRenderer3().lookAt(geoPoint, /*resolution*/ 50.0, 0.0, 0.0, /*animate*/ false)` → `PreferenceStore.setGotoLastUnit(TAIPOWER)` + `setGotoLastTaipower(rawValue)` → **emit localised confirmation toast per FR-010 in the form `<unit> → <lat>°N <lon>°E` with WGS84 lat/lon to 6 decimals (zone suffix omitted on Taipower since it is main-island only)** → close DropDown → fire outbound `GOTO_NAV_COMPLETED` intent
+- [X] T027 [US1] Add localised string values for the Taipower tab (tab label "Taipower" / "台電座標" / "台電グリッド", hint, error reasons, **plus the FR-010 confirmation toast format key `goto_confirmation_toast` accepting `%1$s` (unit), `%2$.6f` (lat), `%3$.6f` (lon), plus `app_name_goto` / `app_desc_goto` for the second Tools icon**) in `values/strings.xml`, `values-zh-rTW/strings.xml`, `values-ja/strings.xml`
+- [X] T028 [US1] Run `mcp__zhtw-mcp__zhtw` over the new `values-zh-rTW/strings.xml` entries; 0 errors / 0 warnings required (matches ADR-0008 D5 discipline)
+- [X] T029 [US1] Run `./gradlew :app:testCivDebugUnitTest --tests "com.atakmap.android.twcoord.gotopage.TaipowerParserTest" --tests "com.atakmap.android.twcoord.gotopage.CoordinateParserRoundTripTest" --tests "com.atakmap.android.twcoord.gotopage.DestinationMarkerStoreTest"` — all green
+- [~] T030 [US1] Run `./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.gotopage.TwCoordGotoReceiverTest"` on Galaxy Tab S10+ — all green
+- [~] T031 [US1] Manual on-device smoke-test per `quickstart.md` §"Smoke-test the three units" — Taipower row only; record screenshot for `docs/ui/`
 
-**Checkpoint**: MVP! The plugin now installs, opens an input page from Tools, accepts `H7509 DB4016`, pans to Taipei 101, drops a removable marker, persists the entry. Deployable.
+**Checkpoint**: MVP! The plugin now installs, opens an input page from Tools, accepts `H7509 DB4016`, pans to Hualien Station, drops a removable marker, persists the entry. Deployable.
 
 ---
 
@@ -125,23 +126,22 @@ with Penghu coordinates → marker on Penghu + toast names `zone 119`.
 
 ### Tests for User Story 2 (TDD)
 
-- [ ] T031 [P] [US2] Write `TwdTm2ParserTest` in `app/src/test/java/com/atakmap/android/twcoord/goto/TwdTm2ParserTest.java` covering zone toggle (`BAD_ZONE` when not 121/119), easting / northing length validation, OOR for coordinates outside Taiwan
-- [ ] T032 [P] [US2] Extend `CoordinateParserRoundTripTest` to cover TWD97 (tolerance ≤ 0.5 m) and TWD67 (≤ 5 m main, ≤ 20 m outer) for all 22 cities in `test-data/taiwan_cities_coords.csv`; reuse the CSV loader from feature 001's `TaiwanCitiesAuthoritativeTest`
-- [ ] T033 [P] [US2] Write Espresso `outer_island_advisory_appears_for_zone119` in `app/src/androidTest/java/com/atakmap/android/twcoord/goto/TwCoordGotoZoneTest.java` (toggles zone 119, asserts the inline advisory string is visible above Submit before tap)
-- [ ] T034 [P] [US2] Write Espresso `zone_toggle_persists_per_unit` in the same file (zone toggle on TWD97 tab does NOT leak into TWD67 tab and vice versa)
+- [ ] T032 [P] [US2] Write `TwdTm2ParserTest` in `app/src/test/java/com/atakmap/android/twcoord/gotopage/TwdTm2ParserTest.java` covering zone toggle (`BAD_ZONE` when not 121/119), easting / northing length validation, OOR for coordinates outside Taiwan
+- [ ] T033 [P] [US2] Extend `CoordinateParserRoundTripTest` to cover TWD97 (tolerance ≤ 0.5 m) and TWD67 (≤ 5 m main, ≤ 20 m outer) for all 22 cities in `test-data/taiwan_cities_coords.csv`; reuse the CSV loader from feature 001's `TaiwanCitiesAuthoritativeTest`
+- [ ] T034 [P] [US2] Write Espresso `outer_island_advisory_appears_for_zone119` AND `submit_toast_appendsZone119_whenZoneNot121` in `app/src/androidTest/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoZoneTest.java` (toggles zone 119; asserts (a) the inline advisory above Submit before tap and (b) the post-submit confirmation toast text contains the substring `zone 119` per FR-010)
+- [ ] T035 [P] [US2] Write Espresso `zone_toggle_persists_per_unit` in the same file (zone toggle on TWD97 tab does NOT leak into TWD67 tab and vice versa)
 
 ### Implementation for User Story 2
 
-- [ ] T035 [US2] Implement `TwdTm2Parser` (package-private) in `app/src/main/java/com/atakmap/android/twcoord/goto/TwdTm2Parser.java`: validates easting / northing / zone; constructs `Twd97Tm2.of` or `Twd67Tm2.of`; defers actual transform to the facade
-- [ ] T036 [US2] Wire `CoordinateParser.parseTwd97(int,int,int)` (proj4j inverse for zone 121 / 119 — same `CoordinateTransform` feature 001 already constructs in `Projections.java`, used in reverse direction) and `CoordinateParser.parseTwd67(int,int,int)` (calls `DatumShiftTwd67.twd67ToTwd97` which already exists with the negated 4-param shift, then re-enters the TWD97 inverse path)
-- [ ] T037 [US2] Add `Projections.twd97ToWgs84(Twd97Tm2)` to `app/src/main/java/com/atakmap/android/twcoord/coord/Projections.java` (sister of the existing forward `wgs84ToTwd97`; same proj4j `CoordinateTransform` instances, inverse direction). Add the existing-class diff in the same commit per Constitution I (no formatter exceptions).
+- [ ] T036 [US2] Implement `TwdTm2Parser` (package-private) in `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwdTm2Parser.java`: validates easting / northing / zone; constructs `Twd97Tm2.of` or `Twd67Tm2.of`; defers actual transform to the facade
+- [ ] T037 [US2] Wire `CoordinateParser.parseTwd97(int,int,int)` and `CoordinateParser.parseTwd67(int,int,int)` (TWD67 path goes through `DatumShiftTwd67.twd67ToTwd97` first, then the TWD97 inverse). Both paths call `Projections.twd97ToWgs84` which was added in Phase 2 T015.
 - [ ] T038 [US2] Add the TWD97 and TWD67 tabs to `app/src/main/res/layout/tw_coord_goto.xml`: each pane has two `EditText` (easting / northing, `inputType="number"`), a `RadioGroup` zone toggle (121 default, 119 alt), the Submit button, the inline-advisory `TextView` (visible only when zone = 119), and the inline-error `TextView`
 - [ ] T039 [US2] Extend `TwCoordGotoView` to handle the TWD97 / TWD67 tabs: per-tab `InputPageState` field group (data-model.md §7), per-tab keystroke-debounced validation, per-tab Submit handler, per-tab zone toggle change listener (re-evaluates advisory visibility)
-- [ ] T040 [US2] Wire `TwCoordGotoView.onSubmit` for TWD97 / TWD67 paths: same shape as US1 (parser → marker → pan → persist → close + outbound intent), but persists to `pref_goto_last_twd97_*` or `pref_goto_last_twd67_*`
+- [ ] T040 [US2] Wire `TwCoordGotoView.onSubmit` for TWD97 / TWD67 paths: same shape as US1 (parser → marker → pan → persist → close + outbound intent), but persists to `pref_goto_last_twd97_*` or `pref_goto_last_twd67_*`, **and emits the same localised confirmation toast per FR-010 — appending ` zone 119` to the unit tag when the resolved zone is 119, omitted otherwise**
 - [ ] T041 [US2] Localise TWD97 / TWD67 tab labels, hints, zone toggle labels, the outer-island accuracy advisory, the confirmation toast (`zone 119` appended only when zone ≠ 121), and the per-reason error strings in all three `strings.xml` locale files
 - [ ] T042 [US2] Run `mcp__zhtw-mcp__zhtw` over the new `values-zh-rTW/strings.xml` entries; 0 errors / 0 warnings required
-- [ ] T043 [US2] Run `./gradlew :app:testCivDebugUnitTest --tests "com.atakmap.android.twcoord.goto.TwdTm2ParserTest" --tests "com.atakmap.android.twcoord.goto.CoordinateParserRoundTripTest"` — all 22-city round-trips green
-- [ ] T044 [US2] Run `./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.goto.TwCoordGotoZoneTest"` — green
+- [ ] T043 [US2] Run `./gradlew :app:testCivDebugUnitTest --tests "com.atakmap.android.twcoord.gotopage.TwdTm2ParserTest" --tests "com.atakmap.android.twcoord.gotopage.CoordinateParserRoundTripTest"` — all 22-city round-trips green
+- [ ] T044 [US2] Run `./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.gotopage.TwCoordGotoZoneTest"` — green
 - [ ] T045 [US2] Manual on-device smoke-test per `quickstart.md`: TWD97 Taipei 101 zone 121, TWD97 Penghu zone 119, TWD67 Kaohsiung zone 121
 
 **Checkpoint**: Both P1 stories shipped. The plugin now accepts all three unit families; the marker / pan / persist flow is unit-agnostic from US1 onward.
@@ -161,16 +161,16 @@ existing marker moves, no second marker appears.
 
 ### Tests for User Story 3 (TDD)
 
-- [ ] T046 [P] [US3] Write Espresso `receiver_restoresActiveTab_fromPreference` in `app/src/androidTest/java/com/atakmap/android/twcoord/goto/TwCoordGotoRestoreTest.java`
+- [ ] T046 [P] [US3] Write two Espresso tests in `app/src/androidTest/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoRestoreTest.java`: (a) `receiver_restoresActiveTab_fromPreference` — cross-session restore via `PreferenceStore` (FR-003); (b) `dropDown_preservesDraft_acrossCloseAndReopen_withinSameSession` — in-session preservation per FR-018: open page, type partial value WITHOUT submitting, close DropDown via back-press, reopen, assert the partial value and the active tab are exactly as left.
 - [ ] T047 [P] [US3] Write Espresso `resubmit_movesExistingMarker_doesNotDuplicate` in the same file (submits two coords, asserts exactly one marker on the map with the second submission's call-sign)
 - [ ] T048 [P] [US3] Extend `DestinationMarkerStoreTest` with a `longPress_clearsStoreReference` case (simulates marker removal via the standard ATAK delete path; next `moveOrCreate` MUST allocate a fresh marker)
 
 ### Implementation for User Story 3
 
-- [ ] T049 [US3] Implement pre-fill in `TwCoordGotoReceiver.onReceive` (read `pref_goto_last_unit`, `pref_goto_last_taipower` / `_twd97_*` / `_twd67_*`; seed `InputPageState`; pass to view via `bindView`). Default to Taipower / empty on first-ever open per FR-003.
+- [ ] T049 [US3] Implement pre-fill in `TwCoordGotoReceiver`. (a) **Cross-session (FR-003)**: on every `onReceive` open, if no in-memory `InputPageState` exists yet for this plugin process, read `pref_goto_last_unit`, `pref_goto_last_taipower` / `_twd97_*` / `_twd67_*`; seed `InputPageState`; pass to view via `bindView`. Default to Taipower / empty on first-ever open. (b) **In-session (FR-018)**: cache the current `InputPageState` on the receiver instance at every `onClose`; on subsequent `onReceive` opens within the same ATAK process, restore from that cache instead of re-reading prefs, so a closed-without-submit draft survives close-and-reopen.
 - [ ] T050 [US3] Implement the long-press → store-reference-clear hook in `DestinationMarkerStore`: register a `MapItem.OnRemoveListener` on the marker; on fire, null out `delegate` so the next `moveOrCreate` creates fresh
 - [ ] T051 [US3] Verify `DestinationMarkerStore.moveOrCreate` under rapid resubmit by adding an `AtomicBoolean` submit guard in `TwCoordGotoView.onSubmit` (coalesces double-taps per contracts/goto-receiver.md §5)
-- [ ] T052 [US3] Run `./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.goto.TwCoordGotoRestoreTest" --tests "com.atakmap.android.twcoord.goto.DestinationMarkerStoreTest"` — green
+- [ ] T052 [US3] Run `./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.gotopage.TwCoordGotoRestoreTest" --tests "com.atakmap.android.twcoord.gotopage.DestinationMarkerStoreTest"` — green
 - [ ] T053 [US3] Manual on-device: submit two coords, verify single marker on map; close + reopen page, verify field pre-fill; long-press marker, verify it disappears + the next submit creates a fresh marker
 
 **Checkpoint**: Operator workflow is now persistent across opens within the session AND across plugin lifetime via the saved preference keys.
@@ -191,15 +191,15 @@ map-event cycle.
 
 ### Tests for User Story 5 (TDD)
 
-- [ ] T054 [P] [US5] Write `MapCenterAutoFillStreamTest` in `app/src/test/java/com/atakmap/android/twcoord/goto/MapCenterAutoFillStreamTest.java` using a fake `MapEvent` source (no Android dependency): asserts (a) `MapCenterFix` emitted on every event after debounce, (b) `taipowerOk` flips false for zone-119 input, (c) `twd97Ok` / `twd67Ok` flip false for inputs outside the Taiwan box
-- [ ] T055 [P] [US5] Write Espresso `autoFillButton_isDisabled_whenMapCentreOutsideTaiwan` in `app/src/androidTest/java/com/atakmap/android/twcoord/goto/AutoFillDisabledStateTest.java`
+- [ ] T054 [P] [US5] Write `MapCenterAutoFillStreamTest` in `app/src/test/java/com/atakmap/android/twcoord/gotopage/MapCenterAutoFillStreamTest.java` using a fake `MapEvent` source (no Android dependency): asserts (a) `MapCenterFix` emitted on every event after debounce, (b) `taipowerOk` flips false for zone-119 input, (c) `twd97Ok` / `twd67Ok` flip false for inputs outside the Taiwan box
+- [ ] T055 [P] [US5] Write Espresso `autoFillButton_isDisabled_whenMapCentreOutsideTaiwan` in `app/src/androidTest/java/com/atakmap/android/twcoord/gotopage/AutoFillDisabledStateTest.java`
 - [ ] T056 [P] [US5] Write Espresso `autoFillButton_enables_withinOneFrame_afterPanInsideTaiwan` in the same file
 - [ ] T057 [P] [US5] Write Espresso `autoFillButton_isDisabled_onTaipowerTab_whenCenterIsPenghu` in the same file
 - [ ] T058 [P] [US5] Write Espresso `autoFill_setsZoneToggle_fromLongitude` (centre on Penghu, switch to TWD97 tab, tap Auto Fill, assert zone toggle reads 119)
 
 ### Implementation for User Story 5
 
-- [ ] T059 [US5] Implement `MapCenterAutoFillStream` in `app/src/main/java/com/atakmap/android/twcoord/goto/MapCenterAutoFillStream.java`: subscribes to `MAP_SCROLL`, `MAP_SETTLED`, `MAP_SCALE`, `MAP_MOVED` (same set the readout widget uses); debounces via the `haveEmitted` flag pattern copied from `SelfMarkerSubscriber`; emits `MapCenterFix` to a `LiveData<MapCenterFix>` per data-model.md §3
+- [ ] T059 [US5] Implement `MapCenterAutoFillStream` in `app/src/main/java/com/atakmap/android/twcoord/gotopage/MapCenterAutoFillStream.java`: subscribes to `MAP_SCROLL`, `MAP_SETTLED`, `MAP_SCALE`, `MAP_MOVED` (same set the readout widget uses); debounces via the `haveEmitted` flag pattern copied from `SelfMarkerSubscriber`; emits `MapCenterFix` to a `LiveData<MapCenterFix>` per data-model.md §3
 - [ ] T060 [US5] Add the Auto Fill button to each of the three tab panes in `app/src/main/res/layout/tw_coord_goto.xml` (right of the input field on Taipower; spanning above the easting / northing rows on TWD97 / TWD67); set `android:contentDescription` for accessibility
 - [ ] T061 [US5] Wire `TwCoordGotoView.onAutoFillClick` per tab: read latest `MapCenterFix`; compute the `CoordinateInput` for the active tab via the same forward converter the readout widget uses; write the string into the EditText(s); on TWD97 / TWD67 tabs, also set the zone toggle from `MapCenterFix.wgs84.longitudeDeg() < 120.0 ? 119 : 121`; do NOT trigger submit (FR-021 fill-only)
 - [ ] T062 [US5] Wire the per-tab Auto Fill button's `setEnabled(...)` to the `MapCenterAutoFillStream.LiveData<MapCenterFix>` observer — `taipowerOk` for Taipower tab, `twd97Ok` for TWD97 tab, `twd67Ok` for TWD67 tab; update inside the observer for sub-frame propagation
@@ -207,8 +207,8 @@ map-event cycle.
 - [ ] T064 [US5] Hook `attachMapCenterStream()` in `TwCoordGotoReceiver.onShow` and `detachMapCenterStream()` in `onClose`; uses the same idempotency guard as the existing `SelfMarkerSubscriber` setup
 - [ ] T065 [US5] Localise the Auto Fill button text, the two tooltip strings, and the "zone 119" toast suffix in all three locale `strings.xml` files
 - [ ] T066 [US5] Run `mcp__zhtw-mcp__zhtw` over the new `values-zh-rTW/strings.xml` entries
-- [ ] T067 [US5] Run `./gradlew :app:testCivDebugUnitTest --tests "com.atakmap.android.twcoord.goto.MapCenterAutoFillStreamTest"` — green
-- [ ] T068 [US5] Run `./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.goto.AutoFillDisabledStateTest"` — green
+- [ ] T067 [US5] Run `./gradlew :app:testCivDebugUnitTest --tests "com.atakmap.android.twcoord.gotopage.MapCenterAutoFillStreamTest"` — green
+- [ ] T068 [US5] Run `./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.gotopage.AutoFillDisabledStateTest"` — green
 - [ ] T069 [US5] Manual on-device per `quickstart.md` §"Smoke-test Auto Fill" — confirm enabled/disabled propagation across Taipei → Penghu → Tokyo with each tab in turn
 
 **Checkpoint**: Operators no longer have to type a coordinate they can see on screen; Auto Fill matches a single tap on each of the three tabs.
@@ -229,22 +229,22 @@ delete, the row vanishes. After 11 submissions, only the most recent
 
 ### Tests for User Story 4 (TDD)
 
-- [ ] T070 [P] [US4] Write `RecentEntryStoreTest` in `app/src/test/java/com/atakmap/android/twcoord/goto/RecentEntryStoreTest.java` covering every method in `contracts/recent-store.md` §"Test contract" (append, dedupe, capacity-10 FIFO eviction, JSON round-trip across reconstruction, corrupted-JSON recovery, listener invocation)
-- [ ] T071 [P] [US4] Write Espresso `submit_appendsRecentEntry_capacityTen` in `app/src/androidTest/java/com/atakmap/android/twcoord/goto/RecentListEspressoTest.java`
+- [ ] T070 [P] [US4] Write `RecentEntryStoreTest` in `app/src/test/java/com/atakmap/android/twcoord/gotopage/RecentEntryStoreTest.java` covering every method in `contracts/recent-store.md` §"Test contract" (append, dedupe, capacity-10 FIFO eviction, JSON round-trip across reconstruction, corrupted-JSON recovery, listener invocation)
+- [ ] T071 [P] [US4] Write Espresso `submit_appendsRecentEntry_capacityTen` in `app/src/androidTest/java/com/atakmap/android/twcoord/gotopage/RecentListEspressoTest.java`
 - [ ] T072 [P] [US4] Write Espresso `tapRecentRow_activatesTabAndFillsField` in the same file
 - [ ] T073 [P] [US4] Write Espresso `perRowDelete_removesEntry` in the same file
 
 ### Implementation for User Story 4
 
-- [ ] T074 [US4] Implement `RecentEntry` value class in `app/src/main/java/com/atakmap/android/twcoord/goto/RecentEntry.java` per data-model.md §5 (immutable; JSON-serialisable via the store)
-- [ ] T075 [US4] Implement `RecentEntryStore` in `app/src/main/java/com/atakmap/android/twcoord/goto/RecentEntryStore.java` per contracts/recent-store.md (single `pref_goto_recent_json` key; `org.json.JSONArray` encode / decode; capacity-10 FIFO; dedup-then-trim; listener API)
+- [ ] T074 [US4] Implement `RecentEntry` value class in `app/src/main/java/com/atakmap/android/twcoord/gotopage/RecentEntry.java` per data-model.md §5 (immutable; JSON-serialisable via the store)
+- [ ] T075 [US4] Implement `RecentEntryStore` in `app/src/main/java/com/atakmap/android/twcoord/gotopage/RecentEntryStore.java` per contracts/recent-store.md (single `pref_goto_recent_json` key; `org.json.JSONArray` encode / decode; capacity-10 FIFO; dedup-then-trim; listener API)
 - [ ] T076 [US4] Add the Recent section layout to `app/src/main/res/layout/tw_coord_goto.xml`: a vertically scrolling list (RecyclerView or LinearLayout-in-ScrollView for ≤ 10 rows; the latter is cheaper); per-row layout `app/src/main/res/layout/tw_coord_goto_recent_row.xml` with unit tag + raw value + delete glyph; section header + empty-state TextView
 - [ ] T077 [US4] Wire the Recent list to `RecentEntryStore`: observe `OnChange` events; rebuild the list view on every change; click handler activates the matching tab and populates the active input fields; per-row delete handler calls `store.removeAt(index)`
 - [ ] T078 [US4] Persist a new `RecentEntry` on every successful submit in `TwCoordGotoView.onSubmit` (call `store.append(RecentEntry.of(input, System.currentTimeMillis()))`)
 - [ ] T079 [US4] Localise the Recent section header, the empty-state message ("No recent entries"), and the per-row tooltip (date format if any) in all three locale `strings.xml` files
 - [ ] T080 [US4] Run `mcp__zhtw-mcp__zhtw` over the new `values-zh-rTW/strings.xml` entries
-- [ ] T081 [US4] Run `./gradlew :app:testCivDebugUnitTest --tests "com.atakmap.android.twcoord.goto.RecentEntryStoreTest"` — green
-- [ ] T082 [US4] Run `./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.goto.RecentListEspressoTest"` — green
+- [ ] T081 [US4] Run `./gradlew :app:testCivDebugUnitTest --tests "com.atakmap.android.twcoord.gotopage.RecentEntryStoreTest"` — green
+- [ ] T082 [US4] Run `./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.gotopage.RecentListEspressoTest"` — green
 - [ ] T083 [US4] Manual on-device: submit 11 entries across mixed units; verify only 10 remain in newest-first order; cold-restart ATAK and verify persistence
 
 **Checkpoint**: All five user stories shipped. The plugin's input-page feature is functionally complete.
@@ -328,7 +328,7 @@ Task: "Implement Taipower tab in TwCoordGotoView"  # T023
 1. Complete **Phase 1: Setup** (T001–T005).
 2. Complete **Phase 2: Foundational** (T006–T014).
 3. Complete **Phase 3: US1 Taipower** (T015–T030).
-4. **STOP and VALIDATE**: Manual smoke-test on Galaxy Tab S10+ (Taipei 101 Taipower → marker). Cut a candidate build.
+4. **STOP and VALIDATE**: Manual smoke-test on Galaxy Tab S10+ (Hualien Station Taipower → marker). Cut a candidate build.
 5. Optionally ship the MVP to early users for feedback before continuing.
 
 ### Incremental Delivery
@@ -368,4 +368,4 @@ Merge-conflict surface: `tw_coord_goto.xml`, `TwCoordGotoView.java`, and the thr
 - **Independence invariant**: each user-story phase ends with a "Checkpoint" line that says exactly what works at that boundary; a story is complete only when its checkpoint statement is demonstrably true on the reference device.
 - Avoid: vague tasks, same-file conflicts without dependency note, cross-story dependencies that break checkpoint independence.
 
-**Total tasks**: 94 (Setup 5 + Foundational 9 + US1 16 + US2 15 + US3 8 + US5 16 + US4 14 + Polish 11)
+**Total tasks**: 94 (Setup 5 + Foundational 10 + US1 16 + US2 14 + US3 8 + US5 16 + US4 14 + Polish 11). Foundational gained T015 (Projections inverse, moved from US2) and US2 lost its old T037 during /speckit-analyze remediation; the renumbering of Phase 3 US1 (+1) and Phase 4 US2 first six tasks (+1) keeps Phase 5/6/7/8 numbering unchanged.

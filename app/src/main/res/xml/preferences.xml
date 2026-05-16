@@ -38,4 +38,11 @@
         android:summary="@string/pref_accuracy_summary"
         android:selectable="false"/>
 
+    <!-- Feature 002 — second entry point for the GoTo input page (FR-016). -->
+    <Preference
+        android:layout="@layout/pref_item"
+        android:key="pref_open_goto"
+        android:title="@string/pref_open_goto_title"
+        android:summary="@string/pref_open_goto_summary"/>
+
 </PreferenceScreen>

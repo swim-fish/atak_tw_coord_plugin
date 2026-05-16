@@ -25,6 +25,19 @@ public final class PreferenceStore {
   public static final String KEY_UI_LANGUAGE = "pref_ui_language";
   public static final String KEY_STALE_THRESHOLD = "pref_stale_fix_threshold_ms";
 
+  // Feature 002 (input-page GoTo) — last-submitted (unit, value) tuple plus the recent-entries
+  // JSON. None of these fire `fireAll()` because the on-map readout widget does not depend on
+  // them. The input page reads them directly via the getters below at open time.
+  public static final String KEY_GOTO_LAST_UNIT = "pref_goto_last_unit";
+  public static final String KEY_GOTO_LAST_TAIPOWER = "pref_goto_last_taipower";
+  public static final String KEY_GOTO_LAST_TWD97_E = "pref_goto_last_twd97_e";
+  public static final String KEY_GOTO_LAST_TWD97_N = "pref_goto_last_twd97_n";
+  public static final String KEY_GOTO_LAST_TWD97_ZONE = "pref_goto_last_twd97_zone";
+  public static final String KEY_GOTO_LAST_TWD67_E = "pref_goto_last_twd67_e";
+  public static final String KEY_GOTO_LAST_TWD67_N = "pref_goto_last_twd67_n";
+  public static final String KEY_GOTO_LAST_TWD67_ZONE = "pref_goto_last_twd67_zone";
+  public static final String KEY_GOTO_RECENT_JSON = "pref_goto_recent_json";
+
   private static final String TAG = "TwCoordPrefs";
 
   private final SharedPreferences sp;
@@ -112,5 +125,92 @@ public final class PreferenceStore {
   private long readStale() {
     long ms = sp.getLong(KEY_STALE_THRESHOLD, 10_000L);
     return ms > 0 ? ms : 10_000L;
+  }
+
+  // ============================================================
+  // Feature 002 (input-page GoTo) typed accessors.
+  //
+  // These do NOT fire fireAll() — the readout widget is unaffected by GoTo persistence. The
+  // input page reads via these getters at DropDown open time and writes via the setters on
+  // successful submit (FR-014).
+  // ============================================================
+
+  public CoordinateUnit getGotoLastUnit() {
+    String s = sp.getString(KEY_GOTO_LAST_UNIT, CoordinateUnit.TAIPOWER.name());
+    try {
+      return CoordinateUnit.valueOf(s);
+    } catch (IllegalArgumentException e) {
+      Log.w(TAG, "Unknown goto-last-unit pref value '" + s + "', falling back to TAIPOWER");
+      return CoordinateUnit.TAIPOWER;
+    }
+  }
+
+  public void setGotoLastUnit(CoordinateUnit unit) {
+    Objects.requireNonNull(unit, "unit");
+    sp.edit().putString(KEY_GOTO_LAST_UNIT, unit.name()).apply();
+  }
+
+  public String getGotoLastTaipower() {
+    return sp.getString(KEY_GOTO_LAST_TAIPOWER, "");
+  }
+
+  public void setGotoLastTaipower(String rawValue) {
+    sp.edit().putString(KEY_GOTO_LAST_TAIPOWER, rawValue == null ? "" : rawValue).apply();
+  }
+
+  public int getGotoLastTwd97Easting() {
+    return sp.getInt(KEY_GOTO_LAST_TWD97_E, 0);
+  }
+
+  public int getGotoLastTwd97Northing() {
+    return sp.getInt(KEY_GOTO_LAST_TWD97_N, 0);
+  }
+
+  public int getGotoLastTwd97Zone() {
+    int z = sp.getInt(KEY_GOTO_LAST_TWD97_ZONE, 121);
+    return (z == 121 || z == 119) ? z : 121;
+  }
+
+  public void setGotoLastTwd97(int easting, int northing, int zone) {
+    if (zone != 121 && zone != 119) {
+      throw new IllegalArgumentException("zone must be 121 or 119: " + zone);
+    }
+    sp.edit()
+        .putInt(KEY_GOTO_LAST_TWD97_E, easting)
+        .putInt(KEY_GOTO_LAST_TWD97_N, northing)
+        .putInt(KEY_GOTO_LAST_TWD97_ZONE, zone)
+        .apply();
+  }
+
+  public int getGotoLastTwd67Easting() {
+    return sp.getInt(KEY_GOTO_LAST_TWD67_E, 0);
+  }
+
+  public int getGotoLastTwd67Northing() {
+    return sp.getInt(KEY_GOTO_LAST_TWD67_N, 0);
+  }
+
+  public int getGotoLastTwd67Zone() {
+    int z = sp.getInt(KEY_GOTO_LAST_TWD67_ZONE, 121);
+    return (z == 121 || z == 119) ? z : 121;
+  }
+
+  public void setGotoLastTwd67(int easting, int northing, int zone) {
+    if (zone != 121 && zone != 119) {
+      throw new IllegalArgumentException("zone must be 121 or 119: " + zone);
+    }
+    sp.edit()
+        .putInt(KEY_GOTO_LAST_TWD67_E, easting)
+        .putInt(KEY_GOTO_LAST_TWD67_N, northing)
+        .putInt(KEY_GOTO_LAST_TWD67_ZONE, zone)
+        .apply();
+  }
+
+  public String getGotoRecentJson() {
+    return sp.getString(KEY_GOTO_RECENT_JSON, "[]");
+  }
+
+  public void setGotoRecentJson(String json) {
+    sp.edit().putString(KEY_GOTO_RECENT_JSON, json == null ? "[]" : json).apply();
   }
 }

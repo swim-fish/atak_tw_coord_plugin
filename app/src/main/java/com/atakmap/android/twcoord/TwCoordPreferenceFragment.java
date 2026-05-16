@@ -2,9 +2,12 @@ package com.atakmap.android.twcoord;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.ListPreference;
+import android.preference.Preference;
+import com.atakmap.android.ipc.AtakBroadcast;
 import com.atakmap.android.preference.PluginPreferenceFragment;
 import com.atakmap.android.twcoord.coord.ConversionResult;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
@@ -12,6 +15,7 @@ import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.coord.DisplayLine;
 import com.atakmap.android.twcoord.coord.Formatter;
 import com.atakmap.android.twcoord.coord.Wgs84;
+import com.atakmap.android.twcoord.gotopage.TwCoordGotoIntents;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
 import com.atakmap.android.twcoord.i18n.LocaleOverride;
 import com.atakmap.android.twcoord.plugin.R;
@@ -56,6 +60,19 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
     SharedPreferences sp = getPreferenceManager().getSharedPreferences();
     if (sp != null) sp.registerOnSharedPreferenceChangeListener(this);
     refreshAllSummaries();
+
+    // FR-016 — settings-page button opens the GoTo input page (second entry point alongside
+    // the Tools-menu icon). Bind here rather than in onCreate so the click handler is reattached
+    // every time the user navigates back to this screen.
+    Preference openGoto = findPreference("pref_open_goto");
+    if (openGoto != null) {
+      openGoto.setOnPreferenceClickListener(
+          p -> {
+            Intent i = new Intent(TwCoordGotoIntents.ACTION_SHOW_GOTO);
+            AtakBroadcast.getInstance().sendBroadcast(i);
+            return true;
+          });
+    }
   }
 
   @Override

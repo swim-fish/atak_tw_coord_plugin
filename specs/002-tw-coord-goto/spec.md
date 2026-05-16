@@ -89,9 +89,7 @@ already replaces the external-converter workaround for the majority of
 field handoffs.
 
 **Independent Test**: With the plugin installed, open the Tools menu →
-"TW Coord GoTo". Select the Taipower tab, enter `H7509 DB4016`
-(Taipei 101). Submit. Map MUST pan to within 5 m of Taipei 101 (the
-golden coordinate used in the plugin's existing tests), and a marker
+"TW Coord GoTo". Select the Taipower tab, enter `H7509 DB4016` (花蓮車站 / Hualien Station). Submit. Map MUST pan to within 5 m of Hualien Station (the golden coordinate used in the plugin's existing tests), and a marker
 MUST appear at that location. Removing the marker MUST be a single
 long-press action.
 
@@ -142,12 +140,12 @@ within 20 m on outer islands.
    enters a valid 6/7-digit easting and a 7-digit northing, **Then** the
    map pans to the converted location, drops a marker, and the page
    closes.
-2. **Given** the input page is on the TWD97 or TWD67 tab and the entered
-   easting indicates an outer-island longitude (e.g. easting prefixed
-   with `z119:` or below the main-island easting band), **When** the
-   user submits, **Then** the system MUST interpret the input against
-   TM2 zone 119 and surface the resolved zone in a confirmation toast
-   (`zone 119`) so the user can detect zone misuse.
+2. **Given** the input page is on the TWD97 or TWD67 tab and the
+   operator has set the zone toggle to **119** (Penghu / outer-island
+   mode), **When** the user submits a valid easting/northing, **Then**
+   the system MUST interpret the input against TM2 zone 119 and
+   surface the resolved zone in a confirmation toast (`zone 119`) so
+   the user can detect zone misuse.
 3. **Given** the input page is on the TWD67 tab, **When** the user
    submits an outer-island coordinate, **Then** the same accuracy
    advisory string shown in the existing settings page (±10–20 m on
@@ -342,14 +340,20 @@ matching the per-unit tolerance bands (TWD97 ≤ 0.5 m, TWD67 main ≤
   submit affordance: while the input is invalid the submit MUST be
   disabled and an inline localised error MUST describe the specific
   problem (length, illegal character, out-of-domain, etc.).
-- **FR-008**: On valid submit the system MUST (a) pan and zoom the
-  ATAK map so the resolved point is centred and visible at a zoom
-  level appropriate for a town-scale view, (b) drop a single marker
-  at the resolved point, and (c) close the input page.
-- **FR-009**: Submitting again while an earlier marker from this page
-  still exists MUST **move** the existing marker rather than spawn a
-  new one. The user MUST be able to remove the marker via ATAK's
-  standard long-press affordance.
+- **FR-008** (revised 2026-05-16 post-on-device — see ADR-0009): On
+  valid submit the system MUST (a) pan the ATAK map's X/Y so the
+  resolved point is centred, **preserving the operator's current zoom
+  level (Z) and other camera attributes**, and (b) close the input
+  page. The system MUST NOT auto-create any marker at the
+  destination; marker placement is the operator's responsibility via
+  ATAK's standard long-press → radial menu (zero new UI). The system
+  MUST NOT delegate the submit path to
+  `com.atakmap.android.routes.GoToMapTool` because that path bails
+  with a "self_marker_required" toast when no GPS fix is available.
+- **FR-009** (revised — superseded by FR-008): The plugin does not
+  own any persistent marker, so "move-not-create" no longer applies.
+  Operators who drop markers via long-press use ATAK's normal marker
+  lifecycle (long-press the marker → Delete in the radial menu).
 - **FR-010**: A successful submit MUST emit a localised toast naming
   the resolved unit, the resolved zone (only when zone ≠ 121), and the
   underlying WGS84 lat/lon to 6 decimals (e.g. `Taipower → 25.034°N
@@ -388,10 +392,10 @@ matching the per-unit tolerance bands (TWD97 ≤ 0.5 m, TWD67 main ≤
 - **FR-018**: The page MUST keep the in-progress input string intact
   if the user navigates away and back within the same ATAK session
   (e.g. tabbed out to consult radio notes, then returned).
-- **FR-019**: The destination marker MUST use a visually distinct icon
-  and call-sign so the operator can distinguish it from CoT markers
-  received over the network. The call-sign MUST include the unit and
-  the original input string (e.g. `Taipower H7509 DB4016`).
+- **FR-019** (revised — superseded by FR-008): The plugin no longer
+  owns a destination marker. Operators who place markers do so via
+  ATAK's standard radial menu with whatever icon / call-sign / type
+  ATAK provides (waypoint, Mission Point, SPI, etc.).
 - **FR-020**: All visible numeric strings (easting/northing display,
   WGS84 confirmation) MUST follow the locale's numeric formatting
   conventions (e.g. decimal separator) but the *underlying* input MUST
@@ -478,9 +482,9 @@ matching the per-unit tolerance bands (TWD97 ≤ 0.5 m, TWD67 main ≤
 - **SC-007**: The page MUST function with zero network connectivity;
   verified by enabling airplane mode and completing the full submit
   flow at least once for each of the three input modes.
-- **SC-008**: Across 10 consecutive submissions of mixed units, no
-  duplicate destination markers MUST remain on the map (FR-009
-  invariant — verified by visual count on the reference device).
+- **SC-008** (revised — obsolete): superseded by FR-008's pan-only
+  policy; the plugin no longer drops markers, so duplicate-marker
+  prevention is no longer a measurable success criterion.
 - **SC-009**: Tapping Auto Fill MUST update the input field within
   **100 ms** of the tap on the reference device (Galaxy Tab S10+),
   and the Auto Fill disabled-state indicator MUST track the map

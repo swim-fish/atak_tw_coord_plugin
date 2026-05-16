@@ -39,4 +39,53 @@
     <string name="pref_accuracy_title">Datum 位移精度</string>
     <string name="pref_accuracy_summary">TWD97 全境誤差 &lt; 1 公尺。\n\nTWD67 典型誤差:\n• 本島:±3 至 ±5 公尺\n• 外島（澎湖 / 金門 / 馬祖）:±10 至 ±20 公尺\n\n台電座標僅本島支援；外島讀數會顯示「超出範圍」並附 WGS84 fallback line。</string>
 
+    <!-- ============================================================
+         Feature 002 — 台灣座標輸入頁
+         ============================================================ -->
+
+    <string name="app_name_goto">座標輸入</string>
+    <string name="app_desc_goto">輸入台電 / TWD97 / TWD67 座標，ATAK 自動平移地圖並落下標記。</string>
+
+    <string name="goto_title">座標輸入</string>
+
+    <string name="goto_tab_taipower">台電座標</string>
+    <string name="goto_tab_twd97">TWD97</string>
+    <string name="goto_tab_twd67">TWD67</string>
+
+    <string name="goto_hint_taipower">例:H7509 DB4016</string>
+    <string name="goto_hint_easting">東距（公尺）</string>
+    <string name="goto_hint_northing">北距（公尺）</string>
+
+    <string name="goto_zone_label">投影帶</string>
+    <string name="goto_zone_121">121（本島）</string>
+    <string name="goto_zone_119">119（外島）</string>
+
+    <string name="goto_btn_submit">送出</string>
+    <string name="goto_btn_autofill">自動填入</string>
+    <string name="goto_btn_paste">貼上</string>
+
+    <string name="goto_err_empty">請輸入座標。</string>
+    <string name="goto_err_bad_length">長度錯誤。</string>
+    <string name="goto_err_bad_letter">字母不合規，僅允許 A–X / A–J。</string>
+    <string name="goto_err_reserved_letter_yz">Y、Z 為保留字母，請使用 A–X。</string>
+    <string name="goto_err_bad_zone">投影帶必須為 121 或 119。</string>
+    <string name="goto_err_non_digit">僅能輸入數字。</string>
+    <string name="goto_err_out_of_range">超出台灣涵蓋範圍。</string>
+    <string name="goto_err_taipower_outer_island">台電座標不支援外島。</string>
+
+    <string name="goto_outer_island_advisory">外島精度:相對於官方 7 參數位移約 ±10–20 公尺。</string>
+
+    <string name="goto_confirmation_toast">%1$s → %2$.6f°N %3$.6f°E</string>
+    <string name="goto_zone_suffix">投影帶 %1$d</string>
+
+    <string name="goto_autofill_hint_outside_taiwan">超出台灣涵蓋範圍。</string>
+    <string name="goto_autofill_hint_taipower_outer_island">台電座標不支援外島。</string>
+
+    <string name="goto_recent_header">最近輸入</string>
+    <string name="goto_recent_empty">尚無最近輸入紀錄。</string>
+    <string name="goto_recent_delete">移除</string>
+
+    <string name="pref_open_goto_title">開啟座標輸入頁</string>
+    <string name="pref_open_goto_summary">輸入台電 / TWD97 / TWD67 座標並讓地圖平移過去。</string>
+
 </resources>

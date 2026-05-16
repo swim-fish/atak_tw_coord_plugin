@@ -77,8 +77,8 @@ each case.
 
 | Tab | Field input | Expected map result |
 |---|---|---|
-| Taipower | `H7509 DB4016` | Marker at Taipei 101 within 5 m |
-| TWD97 | E `302912`, N `2770905`, zone `121` | Marker within 0.5 m |
+| Taipower | `H7509 DB4016` | Marker at Hualien Station within 5 m |
+| TWD97 | E `302912`, N `2770905`, zone `121` | Marker within 0.5 m of Taipei 101 |
 | TWD67 | E `302130`, N `2771143`, zone `121` | Marker within 5 m |
 
 Outer-island check (US2 acceptance 2):
@@ -150,11 +150,11 @@ After 3+ successful submits across mixed units:
 ## Running the JVM test suite
 
 The contract tests in
-`app/src/test/java/com/atakmap/android/twcoord/goto/` are pure-JVM and
+`app/src/test/java/com/atakmap/android/twcoord/gotopage/` are pure-JVM and
 run without a device:
 
 ```powershell
-./gradlew :app:testCivDebugUnitTest --tests "com.atakmap.android.twcoord.goto.*"
+./gradlew :app:testCivDebugUnitTest --tests "com.atakmap.android.twcoord.gotopage.*"
 ```
 
 Targets:
@@ -178,7 +178,7 @@ DropDown / receiver lifecycle and Auto Fill propagation can only be
 verified on a device:
 
 ```powershell
-./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.goto.*"
+./gradlew :app:connectedCivDebugAndroidTest --tests "com.atakmap.android.twcoord.gotopage.*"
 ```
 
 The instrumented suite asserts the spec acceptance scenarios for

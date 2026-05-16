@@ -96,7 +96,7 @@ This feature extends the existing module — no new Gradle subproject.
 
 **Scale/Scope**:
 - One new `DropDownReceiver` + one new Tools-menu icon registration.
-- One new package (`com.atakmap.android.twcoord.goto`) containing
+- One new package (`com.atakmap.android.twcoord.gotopage`) containing
   ~6 new classes: `CoordinateParser` (+3 unit-specific sub-parsers),
   `TwCoordGotoReceiver`, `TwCoordGotoView`, `MapCenterAutoFillStream`,
   `RecentEntryStore`.
@@ -154,7 +154,7 @@ new sub-package and one new test sub-package; existing files in
 `com.atakmap.android.twcoord.coord.*` and
 `com.atakmap.android.twcoord.prefs.*` are reused unmodified for the
 forward direction, and gain a sibling
-`com.atakmap.android.twcoord.goto.*` package for the inverse +
+`com.atakmap.android.twcoord.gotopage.*` package for the inverse +
 input-page surface.
 
 ```text
@@ -210,14 +210,14 @@ app/src/main/res/
 app/src/main/assets/
 └── plugin.xml                         # existing — declares TwCoordLifecycle
 
-app/src/test/java/com/atakmap/android/twcoord/goto/
+app/src/test/java/com/atakmap/android/twcoord/gotopage/
 ├── TaipowerParserTest.java            # NEW
 ├── TwdTm2ParserTest.java              # NEW
 ├── CoordinateParserRoundTripTest.java # NEW — 22-city authoritative round trip
 ├── MapCenterAutoFillStreamTest.java   # NEW — fake event source
 └── RecentEntryStoreTest.java          # NEW — JSON round-trip + capacity
 
-app/src/androidTest/java/com/atakmap/android/twcoord/goto/
+app/src/androidTest/java/com/atakmap/android/twcoord/gotopage/
 ├── TwCoordGotoReceiverTest.java       # NEW — DropDown open/close lifecycle
 └── AutoFillDisabledStateTest.java     # NEW — pan → button state propagation
 

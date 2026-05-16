@@ -1,43 +1,42 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: (uninitialised template) → 1.0.0
-Rationale: Initial ratification of the project constitution. All placeholder
-tokens replaced with concrete principles, sections, and governance rules.
-Bump type: MAJOR (initial baseline; semantic versioning starts at 1.0.0 once
-the document carries enforceable rules).
+Version change: 1.0.0 → 1.1.0
+Rationale: Add Principle VI "Host-Process Isolation (NON-NEGOTIABLE)" in
+response to a real on-device incident: a Resources.NotFoundException raised
+by a plugin view-rendering path propagated out of the plugin's broadcast
+receiver callback and killed the entire ATAK-CIV process. This amendment
+codifies the rule that no plugin code path may ever take down the host
+application. Bump type: MINOR (new principle added; no removals or
+incompatible redefinitions).
 
 Modified principles:
-- [PRINCIPLE_1_NAME] → I. Code Quality & Formatting Discipline (NON-NEGOTIABLE)
-- [PRINCIPLE_2_NAME] → II. Test-First Development (TDD) (NON-NEGOTIABLE)
-- [PRINCIPLE_3_NAME] → III. User Experience Consistency
-- [PRINCIPLE_4_NAME] → IV. Performance Requirements
-- [PRINCIPLE_5_NAME] → V. Documentation & Knowledge Preservation
+- (no renames)
 
 Added sections:
-- Development Workflow & Quality Gates (covers Subagent delegation,
-  formatter execution, ADR updates after /speckit-analyze and
-  /speckit-implement, docs/ui updates on UI change).
-- Governance (amendment procedure, versioning policy, compliance review).
+- VI. Host-Process Isolation (NON-NEGOTIABLE)
+- Development Workflow & Quality Gates — new "Crash isolation" bullet
+  surfacing the defensive-wrapping rule in the day-to-day discipline list.
 
-Removed sections: none (template placeholders replaced in-place).
+Removed sections: none.
 
 Templates requiring updates:
-- ✅ .specify/templates/plan-template.md — Constitution Check section will be
-  populated against principles I–V on the next /speckit-plan invocation; no
-  structural change required now.
-- ✅ .specify/templates/spec-template.md — aligns with the principles
-  (Success Criteria already requires measurable outcomes that map to
-  Performance and UX consistency).
-- ✅ .specify/templates/tasks-template.md — already permits TDD ordering
-  (tests before implementation) and includes Polish/Docs phase compatible
-  with ADR and docs/ui updates.
-- ⚠ docs/adr/ — directory does not yet exist; will be created on first
-  /speckit-analyze or /speckit-implement run that triggers an ADR entry.
-- ⚠ docs/ui/ — directory does not yet exist; will be created on the first
-  UI-affecting change.
+- ✅ .specify/templates/plan-template.md — Constitution Check sections in
+  future /speckit-plan runs MUST include a row evaluating Principle VI
+  (host-process isolation); no structural change required to the template
+  itself, but the per-feature plan.md instances should add the row when
+  next regenerated.
+- ✅ .specify/templates/spec-template.md — no schema change; specs MAY
+  reference Principle VI when a feature surfaces new plugin-to-host
+  boundaries (e.g. a new broadcast receiver, MapEvent listener, view tree).
+- ✅ .specify/templates/tasks-template.md — the Polish phase MAY include
+  an explicit "crash-isolation audit" task for features that introduce new
+  callbacks; not strictly required because Principle VI also gates the
+  per-task Definition of Done.
+- ⚠ Existing plan.md instances (specs/001-*/plan.md, specs/002-*/plan.md)
+  do NOT need retroactive amendment; the principle applies going forward.
 
-Follow-up TODOs: none. Ratification date set to today.
+Follow-up TODOs: none.
 -->
 
 # atak_tw_power_plugin Constitution
@@ -151,6 +150,76 @@ current:
 to the spec-kit workflow give future contributors (and future you) a
 traceable narrative of *why* the system looks the way it does.
 
+### VI. Host-Process Isolation (NON-NEGOTIABLE)
+
+The plugin runs hosted inside ATAK-CIV's process. Any uncaught exception
+that escapes a plugin entry point crashes the entire ATAK application —
+not just the plugin. Every plugin code path MUST be designed so a fault
+within the plugin can NEVER take down the host.
+
+Mandatory rules:
+
+- **Wrap every plugin entry point.** Every callback the host calls into
+  the plugin — `BroadcastReceiver.onReceive`, `MapEventDispatcher.MapEventDispatchListener.onMapEvent`,
+  `OnClickListener.onClick`, `OnPointChangedListener.onPointChanged`,
+  preference change listeners, `AbstractMapComponent.onCreate` /
+  `onDestroyImpl`, `DropDownReceiver.onReceive` / `onDropDownClose` /
+  `onDropDownSizeChanged` and every other host→plugin boundary — MUST
+  catch `Throwable` (or at minimum `Exception`) at the entry-point
+  body's outer scope, log the exception via `com.atakmap.coremap.log.Log.w`,
+  and return without re-throwing. Native crashes are out of scope for this
+  rule but everything reachable from a JVM stack frame is in.
+- **Listener bodies short-circuit on listener-side faults.** When the
+  plugin fans an event out to its own listeners (e.g. `RecentEntryStore`
+  → `RecentEntry.Listener`), each listener invocation MUST be in its own
+  `try`/`catch` so a single buggy listener cannot abort the dispatch loop
+  or propagate up to the host. This rule is the reason
+  `RecentEntryStore.persist` already wraps each listener call;
+  *every* listener fan-out the plugin owns MUST do the same.
+- **View rendering paths degrade gracefully.** Code that constructs or
+  binds Android `View` instances MUST tolerate `Resources.NotFoundException`,
+  `NullPointerException` from `findViewById`, and inflate failures by
+  falling back to a "minimum viable" rendering (empty list, hidden
+  section, plain TextView) rather than letting the exception bubble.
+- **No attribute-id vs resource-id confusion.** APIs that consume a
+  drawable resource ID (`setBackgroundResource`, `setImageResource`,
+  `getDrawable`, etc.) MUST NOT be called with an `android.R.attr.*`
+  attribute id directly; attribute ids MUST be resolved via
+  `Context.getTheme().resolveAttribute(...)` first, OR the call site
+  MUST avoid the attribute altogether and use a concrete drawable.
+- **Resource lookups are nullable.** `findViewById`, `getDrawable`,
+  `getString` and friends MAY return null in deferred-inflation or
+  themed-context corner cases; code MUST null-check before dereferencing
+  rather than assume presence.
+- **External SDK calls are best-effort.** Calls into ATAK SDK classes
+  (`mapView.getRenderer3()`, `CameraController.panTo`, `Marker.setPoint`,
+  `AtakBroadcast.sendBroadcast`, etc.) MUST be in a `try`/`catch` because
+  the SDK is a moving target and version-skew faults must not propagate.
+- **Defensive validation at boundaries.** Inputs that originate from
+  outside the plugin (Intent extras, persisted preferences, JSON
+  payloads, file contents) MUST be validated before use. Corrupt input
+  MUST recover to a safe default (e.g. empty list, default unit)
+  rather than throw.
+- **`AtomicBoolean` guards for re-entrant click handlers.** Submit /
+  Auto Fill / Recent-row tap handlers MUST be guarded against rapid
+  double-tap re-entry (compare-and-set pattern) so a click in flight
+  cannot fire a second copy of the same code path.
+
+**Rationale**: A plugin that crashes ATAK destroys operator trust faster
+than any feature gain restores it. This principle was added in response
+to a real 2026-05-16 incident where a single
+`Resources.NotFoundException` from a misused `android.R.attr.*` in a
+view-rendering path killed ATAK-CIV on a Galaxy Tab S10+ — caught only
+because the user was running with logcat open. The cost of a `try`/`catch`
+around every entry point is one line per callback; the cost of an ATAK
+crash in the field is a mission failure. Always wrap.
+
+**Definition of Done extension**: a task is incomplete if it adds a new
+plugin entry point (BroadcastReceiver action, listener, MapEvent
+subscriber, view binding, etc.) without the corresponding outer `Throwable`
+guard. Code review and `/speckit-analyze` MUST flag any unguarded entry
+point as a CRITICAL finding.
+
 ## Development Workflow & Quality Gates
 
 The following workflow rules apply to every contributor (human or agent)
@@ -165,6 +234,9 @@ working in this repository:
   formatter) MUST be run after every code modification, before staging.
   Pre-commit hooks or CI MUST enforce this; manual reliance is not
   sufficient.
+- **Crash isolation (Principle VI)**: every code change that adds or
+  modifies a plugin entry point MUST include the outer `Throwable` guard.
+  Code review MUST refuse PRs that add unguarded host-callable callbacks.
 - **ADR cadence**: every `/speckit-analyze` and `/speckit-implement` run
   produces or updates an ADR under `docs/adr/` (see Principle V). The
   workflow is incomplete until the ADR exists and is committed.
@@ -172,8 +244,8 @@ working in this repository:
   updates a corresponding file under `docs/ui/` (see Principle III).
 - **Definition of Done**: a task is complete only when all of the following
   hold — code formatted, static analysis clean, tests written and passing,
-  ADR / UI docs updated where applicable, and performance budgets
-  respected.
+  ADR / UI docs updated where applicable, performance budgets respected,
+  and every new plugin entry point wrapped per Principle VI.
 - **Gate sequencing**: `/speckit-plan` runs a Constitution Check before
   Phase 0 and again after Phase 1; violations MUST either be eliminated or
   justified in the plan's Complexity Tracking table with a Simpler
@@ -203,4 +275,4 @@ guidance conflict, this document wins until amended.
   `CLAUDE.md` and the per-feature plan; they MUST NOT contradict this
   constitution. When they drift, the constitution is the source of truth.
 
-**Version**: 1.0.0 | **Ratified**: 2026-05-16 | **Last Amended**: 2026-05-16
+**Version**: 1.1.0 | **Ratified**: 2026-05-16 | **Last Amended**: 2026-05-16
