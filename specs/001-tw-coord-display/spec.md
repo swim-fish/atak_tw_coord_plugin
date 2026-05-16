@@ -8,6 +8,39 @@
 
 **Input**: User description: "ATAK Android plugin that displays the map-centre coordinate and the user's current position coordinate. A settings page lets the user choose the display unit between Taipower grid, TWD97 and TWD67. Functionally analogous to the BNG (British National Grid) ATAK plugin. References: pwa_map repo for Taipower / TWD97 / TWD67 conversion formulas; ATAK-CIV 5.7.0.3 SDK and the `meshtastic_atak` sample for plugin scaffolding."
 
+## Clarifications
+
+### Session 2026-05-16
+
+- Q: How should the plugin determine which UI language to display (locale source)?
+  → A: Follow the Android system locale by default, and expose an in-app
+    override in the settings page (option list: "Use system", English,
+    中文（正體）, 日本語).
+- Q: When the Android system locale does not exactly match a supported
+  locale, what is the fallback chain?
+  → A: Use Android's standard BCP-47 resolution with an explicit script-
+    level mapping: any `zh-*` locale (regardless of script or region —
+    `zh`, `zh-TW`, `zh-Hans`, `zh-CN`, `zh-Hant-HK`, etc.) resolves to
+    Traditional Chinese (Taiwan); any `ja-*` resolves to Japanese; every
+    other locale falls back to English. Simplified Chinese is **not**
+    shipped as a separate translation in v1.
+- Q: When the user changes the language override in the settings page,
+  how quickly should the UI reflect the new language?
+  → A: All plugin UI (settings page and the on-map readout overlay) MUST
+    repaint immediately in the newly selected language. No ATAK restart
+    is required.
+- Q: Is "tap the readout to copy the coordinate to the clipboard" a v1
+  deliverable, or a nice-to-have?
+  → A: v1 MUST deliver clipboard copy on tap (FR-015 upgraded from
+    SHOULD to MUST). Copy-to-clipboard is core to the field workflow of
+    handing the coordinate off to a messenger or work-order system.
+- Q: What is the plugin's privacy / telemetry posture (does it send any
+  data off-device)?
+  → A: Zero outbound communication. No telemetry, no crash-reporting
+    SDK, no analytics. All coordinate handling stays on-device; the only
+    user-initiated outbound action is writing the displayed string to
+    the local Android clipboard on tap.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - View map-centre coordinate in the chosen Taiwan unit (Priority: P1)
@@ -173,8 +206,41 @@ previously selected unit is restored.
   plugin on ATAK-CIV 5.7.0.3 and compatible patch releases.
 - **FR-014**: The plugin MUST function entirely offline; coordinate
   conversion MUST NOT require network access.
-- **FR-015**: Tapping the readout SHOULD copy the displayed value to the
-  Android clipboard, with a brief visual confirmation toast.
+- **FR-015**: Tapping the readout MUST copy the displayed value to the
+  Android clipboard and MUST show a brief visual confirmation (toast or
+  inline pulse). The clipboard string MUST exactly match what is
+  displayed (same unit, same precision, same labelling) — no extra
+  whitespace, no unit suffix the user did not see on screen.
+- **FR-016**: The plugin MUST be localised for three UI languages —
+  English (`en`), Traditional Chinese — Taiwan (`zh-TW`), and Japanese
+  (`ja`). All user-visible strings — including readout labels, settings
+  entries, status messages, and "out of range" / "no fix" indicators —
+  MUST be translated; no hard-coded English in production widgets.
+  Simplified Chinese is **not** supplied as a separate translation in v1.
+- **FR-017**: The plugin MUST follow the Android system locale by default,
+  using the following resolution: any `zh-*` system locale resolves to the
+  Traditional Chinese (Taiwan) translation; any `ja-*` system locale
+  resolves to the Japanese translation; every other system locale falls
+  back to English. The settings page MUST expose a single-select language
+  override with the options "Use system", "English", "中文（正體）", and
+  "日本語"; the selection MUST persist across app restarts.
+- **FR-018**: When the user changes the language override, all plugin UI
+  surfaces — the settings page itself and the on-map readout overlay —
+  MUST repaint in the new language immediately, without requiring an ATAK
+  restart. The transition MUST occur within one rendered frame of the
+  setting being committed and MUST NOT lose the current readout value or
+  freeze the overlay.
+- **FR-019**: The plugin MUST NOT perform any outbound network
+  communication. It MUST NOT bundle telemetry, analytics, or crash-
+  reporting SDKs (e.g., Firebase, Crashlytics, Sentry, etc.), and MUST
+  NOT request the Android `INTERNET` permission. Coordinate values are
+  processed strictly on-device; the only outbound transfer of a value is
+  the user-initiated clipboard copy described in FR-015.
+- **FR-020**: The plugin MUST NOT write any user position fix, map
+  coordinate, or PII to persistent storage beyond what is strictly
+  required to render the live readout in-memory. The only persisted
+  state is User Preference (selected unit, selected UI language
+  override).
 
 ### Key Entities *(include if feature involves data)*
 
@@ -187,8 +253,9 @@ previously selected unit is restored.
   unit label) plus a status flag ("ok", "out of range", "no fix",
   "no permission") that the on-map overlay renders verbatim.
 - **User Preference**: A persisted record holding the user's selected
-  Coordinate Unit (and any future display preferences such as decimal
-  precision, label visibility, refresh rate).
+  Coordinate Unit, the selected UI language override ("Use system" or a
+  specific UI language among `en`, `zh-TW`, `ja`), and any future display
+  preferences such as decimal precision, label visibility, refresh rate.
 
 ## Success Criteria *(mandatory)*
 
@@ -214,6 +281,10 @@ previously selected unit is restored.
 - **SC-007**: The plugin runs without measurable impact on ATAK frame rate
   (≤ 1 fps median drop versus a baseline ATAK install) on the reference
   device.
+- **SC-008**: Tapping either readout copies the exact displayed value to
+  the clipboard with 100 % fidelity (string-equality check) across all
+  three units and all three UI languages in acceptance testing, and a
+  user-visible confirmation is shown within 200 ms of the tap.
 
 ## Assumptions
 
@@ -240,3 +311,17 @@ previously selected unit is restored.
 - The pwa_map repository (`C:\Users\hhhnr\source\repos\pwa_map`) and the
   ATAK SDK / `meshtastic_atak` sample are accessible at planning time for
   reference but are not run-time dependencies of the shipped plugin.
+- The reference BNG plugin (`com.atakmap.android.bng.plugin`) is in fact
+  the **ATAK TDAL** (Tactical Data Access Layer / "Tool Data Access
+  Layer") plugin. TDAL is ATAK's built-in mechanism for declaring custom
+  Coordinate Reference Systems via an XML file at
+  `atak/tools/coordinate_systems/coordinate_systems.xml`. Implementation
+  reference: <https://hackmd.io/@Shihyu/H12BTT46xl>.
+- TWD97 (EPSG:3826) and TWD67 (EPSG:3827 / 3828) are standard EPSG-defined
+  CRS and can therefore be rendered on the map-centre crosshair via TDAL
+  XML once the file is provisioned. Taipower grid is **not** a standard
+  EPSG CRS and MUST be implemented in plugin code (custom projection plus
+  a custom on-map readout overlay). Reconciliation of the two paths into
+  a single coherent UX is a planning concern, not a spec concern; the
+  spec only requires that the user sees one consistent readout per the
+  selected unit (FR-001, FR-007).
