@@ -72,7 +72,7 @@ has been API-23+, the framework method is sufficient — no
 The contract (`contracts/preference-store.md`) requires that the
 locale-rebuild fire BEFORE the widget repaints, to avoid a window
 where the widget reads stale `Strings`. We implement this with a
-single combined `PreferenceStore.Listener` in `TwPowerMapComponent`
+single combined `PreferenceStore.Listener` in `TwCoordMapComponent`
 that does locale-rebuild then render in sequence. Simpler than two
 listeners with order constraints, and idiomatic Java.
 
@@ -97,16 +97,16 @@ bundle together.
 ## Files added / changed this pass
 
 ```
-app/src/main/java/com/atakmap/android/twpower/
+app/src/main/java/com/atakmap/android/twcoord/
   SelfMarkerSubscriber.java                     (new — T038)
-  TwPowerPreferenceFragment.java                (new — T046)
-  TwPowerMapComponent.java                      (rewritten — T039/T040/T047/T048)
+  TwCoordPreferenceFragment.java                (new — T046)
+  TwCoordMapComponent.java                      (rewritten — T039/T040/T047/T048)
   i18n/LocaleOverride.java                      (new — T044)
   prefs/PreferenceStore.java                    (new — T043)
 app/src/main/res/
   xml/preferences.xml                           (new — T045)
   values/arrays.xml                             (new — supports T045)
-app/src/test/java/com/atakmap/android/twpower/
+app/src/test/java/com/atakmap/android/twcoord/
   SelfMarkerSubscriberTest.java                 (new — T037)
   i18n/LocaleOverrideTest.java                  (new — T042)
 docs/ui/settings-fragment.md                    (new — T048a)

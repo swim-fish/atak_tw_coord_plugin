@@ -155,7 +155,7 @@ specs/001-tw-coord-display/
 ### Source Code (repository root)
 
 ```text
-atak_tw_power_plugin/
+atak_tw_coord_plugin/
 ├── app/
 │   ├── build.gradle
 │   ├── src/
@@ -163,11 +163,11 @@ atak_tw_power_plugin/
 │   │   │   ├── AndroidManifest.xml
 │   │   │   ├── assets/
 │   │   │   │   └── plugin.xml             # IPlugin extension registration
-│   │   │   ├── java/com/atakmap/android/twpower/
-│   │   │   │   ├── TwPowerLifecycle.java        # extends AbstractPlugin
-│   │   │   │   ├── TwPowerMapComponent.java     # map listeners, widget mgmt
-│   │   │   │   ├── TwPowerWidget.java           # MapWidget subclass (the readout)
-│   │   │   │   ├── TwPowerPreferenceFragment.java
+│   │   │   ├── java/com/atakmap/android/twcoord/
+│   │   │   │   ├── TwCoordLifecycle.java        # extends AbstractPlugin
+│   │   │   │   ├── TwCoordMapComponent.java     # map listeners, widget mgmt
+│   │   │   │   ├── TwCoordWidget.java           # MapWidget subclass (the readout)
+│   │   │   │   ├── TwCoordPreferenceFragment.java
 │   │   │   │   ├── prefs/PreferenceStore.java   # typed wrapper around SharedPreferences
 │   │   │   │   ├── coord/
 │   │   │   │   │   ├── CoordinateUnit.java       # enum
@@ -187,15 +187,15 @@ atak_tw_power_plugin/
 │   │   │       ├── values-zh-rTW/strings.xml      # Traditional Chinese (Taiwan)
 │   │   │       ├── values-ja/strings.xml          # Japanese
 │   │   │       ├── xml/preferences.xml
-│   │   │       └── drawable/ic_tw_power.xml
-│   │   ├── test/java/com/atakmap/android/twpower/
+│   │   │       └── drawable/ic_tw_coord.xml
+│   │   ├── test/java/com/atakmap/android/twcoord/
 │   │   │   └── coord/
 │   │   │       ├── ProjectionsTest.java          # TWD97 golden vectors
 │   │   │       ├── DatumShiftTwd67Test.java      # TWD97↔TWD67 golden vectors
 │   │   │       ├── TaipowerGridTest.java         # Taipower golden vectors
 │   │   │       ├── CoordinateConverterTest.java  # end-to-end facade
 │   │   │       └── FormatterTest.java            # display string fidelity
-│   │   └── androidTest/java/com/atakmap/android/twpower/
+│   │   └── androidTest/java/com/atakmap/android/twcoord/
 │   │       ├── PreferenceFragmentTest.java       # unit-switch repaint
 │   │       ├── WidgetRenderTest.java             # overlay rendering
 │   │       └── ClipboardCopyTest.java            # FR-015 fidelity

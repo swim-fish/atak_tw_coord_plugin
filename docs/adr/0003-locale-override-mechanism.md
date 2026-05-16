@@ -40,7 +40,7 @@ Concrete shape (see `contracts/preference-store.md` and
   Locale systemLocale)` builds a `Configuration` with the resolved
   locale and returns `base.createConfigurationContext(cfg)`.
 - The plugin keeps a single `localisedContext` field on
-  `TwPowerMapComponent`, refreshed whenever the
+  `TwCoordMapComponent`, refreshed whenever the
   `PreferenceStore.Listener` fires for `pref_ui_language`.
 - The widget does *not* cache `Strings`. On every `render(...)` call
   the `MapComponent` resolves `Formatter.Strings` from

@@ -5,7 +5,7 @@
 This document captures the runtime data model: the value classes that
 flow from the coordinate sources (map centre / self-marker) through the
 conversion pipeline and into the on-map widget. All entities live under
-`app/src/main/java/com/atakmap/android/twpower/coord/` and are
+`app/src/main/java/com/atakmap/android/twcoord/coord/` and are
 immutable (Java records where possible) so they can be passed across
 threads without locking.
 
@@ -131,7 +131,7 @@ every case; exceptions would couple the renderer to control flow.
 
 ---
 
-## 6. `DisplayLine` (value class consumed by `TwPowerWidget`)
+## 6. `DisplayLine` (value class consumed by `TwCoordWidget`)
 
 What the widget actually renders, one per source.
 
@@ -202,7 +202,7 @@ self-marker debouncer.
                        DisplayLine (one per source)
                                │
                                ▼
-                       TwPowerWidget.render(...)
+                       TwCoordWidget.render(...)
 ```
 
 State transitions on the widget are driven entirely by inbound events

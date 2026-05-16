@@ -1,6 +1,6 @@
 # Contract: `CoordinateConverter`
 
-**Package**: `com.atakmap.android.twpower.coord`
+**Package**: `com.atakmap.android.twcoord.coord`
 **Module**: pure-Java (no Android dependency)
 **Tested at**: `app/src/test/java/.../coord/CoordinateConverterTest.java`
 

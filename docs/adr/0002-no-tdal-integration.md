@@ -33,7 +33,7 @@ during `/speckit-plan` (`research.md` R9):
 ## Decision
 
 Render **all three units** through a single in-plugin
-`TwPowerWidget` (a `MapWidget` subclass anchored in
+`TwCoordWidget` (a `MapWidget` subclass anchored in
 `RootLayoutWidget.TOP_RIGHT`). Drive the widget from
 `MapEvent.MAP_BOUNDS_CHANGED` (map centre) and `MapEvent.ITEM_CHANGED`
 on `MapView.getSelfMarker()` (own position). Do not ship a

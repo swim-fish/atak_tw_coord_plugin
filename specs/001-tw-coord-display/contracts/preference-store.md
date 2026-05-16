@@ -1,6 +1,6 @@
 # Contract: `PreferenceStore`
 
-**Package**: `com.atakmap.android.twpower.prefs`
+**Package**: `com.atakmap.android.twcoord.prefs`
 **Module**: Android (depends on `SharedPreferences`)
 **Tested at**: `app/src/androidTest/java/.../prefs/PreferenceStoreTest.java`
 

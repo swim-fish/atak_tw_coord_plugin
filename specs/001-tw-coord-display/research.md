@@ -34,7 +34,7 @@ and matches what `atak-gradle-takdev` is tested with.
 lifecycle, `plugin.xml` registering `gov.tak.api.plugin.IPlugin`,
 `atak-gradle-takdev` Gradle plugin, standard `MapComponent` registered
 inside the lifecycle. Output APK named
-`ATAK-Plugin-atak_tw_power_plugin-{version}-{variant}-{atakVersion}.apk`
+`ATAK-Plugin-atak_tw_coord_plugin-{version}-{variant}-{atakVersion}.apk`
 per the Gradle plugin's defaults.
 
 **Rationale**: This is the documented and most-tested path. Deviating
@@ -98,7 +98,7 @@ satisfies the spec while avoiding overdraw.
 
 ## R5. On-map readout overlay
 
-**Decision**: Custom `MapWidget` subclass (`TwPowerWidget`) added to
+**Decision**: Custom `MapWidget` subclass (`TwCoordWidget`) added to
 `RootLayoutWidget.getLayout(RootLayoutWidget.TOP_RIGHT)`. The widget
 renders a two-line text block (line 1 = "MAP: <coord>", line 2 = "ME:
 <coord>") with the active unit label. Tappable: on tap, copy the
@@ -234,7 +234,7 @@ Tolerances: TWD97 ±0.1 m, TWD67 ±3 m, Taipower 9-char ±10 m, 11-char
 ## R9. TDAL (Tactical/Tool Data Access Layer)
 
 **Decision**: **Do not integrate with TDAL.** Render all three units
-through the in-plugin `TwPowerWidget` overlay.
+through the in-plugin `TwCoordWidget` overlay.
 
 **Rationale**:
 1. Subagent A confirmed the TDAL plugin and its

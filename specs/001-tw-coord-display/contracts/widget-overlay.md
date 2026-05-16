@@ -1,6 +1,6 @@
-# Contract: `TwPowerWidget` (on-map readout overlay)
+# Contract: `TwCoordWidget` (on-map readout overlay)
 
-**Package**: `com.atakmap.android.twpower`
+**Package**: `com.atakmap.android.twcoord`
 **Module**: Android (depends on ATAK SDK `MapWidget`)
 **Tested at**: `app/src/androidTest/java/.../WidgetRenderTest.java`,
                  `app/src/androidTest/java/.../ClipboardCopyTest.java`
@@ -14,9 +14,9 @@ a single tap callback for clipboard copy.
 ## Lifecycle
 
 ```java
-public final class TwPowerWidget extends MapWidget {
+public final class TwCoordWidget extends MapWidget {
 
-    public TwPowerWidget(
+    public TwCoordWidget(
         MapView mapView,
         ClipboardManager clipboard,
         ToastCallback toastCallback

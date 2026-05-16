@@ -46,7 +46,7 @@ calling out in `quickstart.md` (follow-up task).
 
 ### D3 — Widget uses `LinearLayoutWidget` + 2× `TextWidget`
 
-`TwPowerWidget` was originally drafted as extending `MapWidget` and
+`TwCoordWidget` was originally drafted as extending `MapWidget` and
 self-anchoring. The final shape is simpler: it owns a vertically
 oriented `LinearLayoutWidget` container with two `TextWidget` rows.
 The container is added to `RootLayoutWidget.TOP_RIGHT` once on
@@ -138,7 +138,7 @@ intact through to a green build.
 
 - Commit: `b9cfd2b` (Phase 1+2+3 math) followed by the commit
   carrying this ADR.
-- APK: `app/build/outputs/apk/civ/debug/ATAK-Plugin-atak_tw_power_
+- APK: `app/build/outputs/apk/civ/debug/ATAK-Plugin-atak_tw_coord_
   plugin-1.0.0-b9cfd2bb-5.7.0.3-civ-debug.apk`.
 - ADR-0001..0004 (prior).
 - `tasks.md` "Implementation status (2026-05-16)" block.

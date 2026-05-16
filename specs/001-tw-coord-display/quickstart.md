@@ -21,7 +21,7 @@ the first time.
 ## 2. First build (no tests yet)
 
 ```powershell
-cd C:\Users\hhhnr\source\tak\atak_tw_power_plugin
+cd C:\Users\hhhnr\source\tak\atak_tw_coord_plugin
 .\gradlew :app:assembleCivDebug
 ```
 
