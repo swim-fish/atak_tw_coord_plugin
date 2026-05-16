@@ -38,5 +38,8 @@ app/proguard-gradle-repackage.txt
 # takdev-plugin temp dir (generated each build, git-status noise)
 .takdev/
 
+# ad-hoc on-device screenshots used during debugging
+/*.png
+
 # Manual acceptance log (per-run device data, sometimes contains location)
 specs/**/acceptance-log.md

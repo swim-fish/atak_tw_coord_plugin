@@ -9,11 +9,11 @@ public class FormatterTest {
 
   private static final Formatter.Strings EN =
       new TestStrings(
-          "MAP", "ME", "TPC", "TWD97", "TWD67", "out of range", "no fix", "no permission");
+          "MAP", "ME", "TGT", "TPC", "TWD97", "TWD67", "out of range", "no fix", "no permission");
   private static final Formatter.Strings ZH_TW =
-      new TestStrings("地圖", "我", "台電", "TWD97", "TWD67", "超出範圍", "無定位", "無權限");
+      new TestStrings("地圖", "我", "目標", "台電", "TWD97", "TWD67", "超出範圍", "無定位", "無權限");
   private static final Formatter.Strings JA =
-      new TestStrings("地図", "自機", "台電", "TWD97", "TWD67", "範囲外", "測位不可", "権限なし");
+      new TestStrings("地図", "自機", "目標", "台電", "TWD97", "TWD67", "範囲外", "測位不可", "権限なし");
 
   private final Formatter formatter = new Formatter(Locale.ROOT);
   private final CoordinateConverter conv = new CoordinateConverter();
@@ -105,11 +105,12 @@ public class FormatterTest {
   }
 
   private static final class TestStrings implements Formatter.Strings {
-    private final String labelMap, labelMe, tpc, twd97, twd67, oor, noFix, noPerm;
+    private final String labelMap, labelMe, labelTgt, tpc, twd97, twd67, oor, noFix, noPerm;
 
     TestStrings(
         String labelMap,
         String labelMe,
+        String labelTgt,
         String tpc,
         String twd97,
         String twd67,
@@ -118,6 +119,7 @@ public class FormatterTest {
         String noPerm) {
       this.labelMap = labelMap;
       this.labelMe = labelMe;
+      this.labelTgt = labelTgt;
       this.tpc = tpc;
       this.twd97 = twd97;
       this.twd67 = twd67;
@@ -134,6 +136,11 @@ public class FormatterTest {
     @Override
     public String labelMe() {
       return labelMe;
+    }
+
+    @Override
+    public String labelTarget() {
+      return labelTgt;
     }
 
     @Override

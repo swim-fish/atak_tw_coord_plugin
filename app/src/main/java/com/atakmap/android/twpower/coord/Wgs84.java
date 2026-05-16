@@ -7,7 +7,8 @@ public final class Wgs84 {
 
   public enum Source {
     MAP_CENTRE,
-    DEVICE_LOCATION
+    DEVICE_LOCATION,
+    COT_TARGET
   }
 
   private final double latitudeDeg;

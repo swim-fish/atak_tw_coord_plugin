@@ -8,6 +8,7 @@
     <!-- Widget row labels. -->
     <string name="label_map">MAP</string>
     <string name="label_me">ME</string>
+    <string name="label_target">TGT</string>
 
     <!-- Coordinate-unit tags shown on each row. -->
     <string name="unit_tag_taipower">TPC</string>

@@ -11,6 +11,8 @@ import com.atakmap.android.maps.MapEvent;
 import com.atakmap.android.maps.MapEventDispatcher;
 import com.atakmap.android.maps.MapItem;
 import com.atakmap.android.maps.MapView;
+import com.atakmap.android.maps.Marker;
+import com.atakmap.android.maps.PointMapItem;
 import com.atakmap.android.twpower.coord.ConversionResult;
 import com.atakmap.android.twpower.coord.CoordinateConverter;
 import com.atakmap.android.twpower.coord.CoordinateUnit;
@@ -51,20 +53,46 @@ public class TwPowerMapComponent extends AbstractMapComponent {
   private UserPreference activePrefs = UserPreference.defaults();
   private DisplayLine lastMapLine;
   private DisplayLine lastMeLine;
+  private DisplayLine lastTargetLine;
+  private MapItem lastClickedTarget;
   private boolean meStale = false;
   private boolean mePermissionDenied = false;
 
   private final MapEventDispatcher.MapEventDispatchListener mapCentreListener =
       event -> renderMapCentre();
 
-  private final MapEventDispatcher.MapEventDispatchListener selfItemListener =
+  /**
+   * CoT target click — render the tapped item's coordinate in the top-right row. ATAK fires
+   * ITEM_CLICK every time the user taps any MapItem with a position; we keep the most-recent one as
+   * the "current target" until either another item is tapped or the map itself is tapped (cleared
+   * via mapClickListener).
+   */
+  private final MapEventDispatcher.MapEventDispatchListener targetClickListener =
       event -> {
         MapItem item = event.getItem();
-        MapItem self = mapView != null ? mapView.getSelfMarker() : null;
-        if (item == null || self == null) return;
-        if (!self.getUID().equals(item.getUID())) return;
-        if (!(item instanceof com.atakmap.android.maps.Marker)) return;
-        GeoPoint p = ((com.atakmap.android.maps.Marker) item).getPoint();
+        if (item instanceof PointMapItem) {
+          lastClickedTarget = item;
+          renderTargetFrom((PointMapItem) item);
+        }
+      };
+
+  /** Tapping the map (not an item) clears the target row. */
+  private final MapEventDispatcher.MapEventDispatchListener mapClickListener =
+      event -> {
+        lastClickedTarget = null;
+        lastTargetLine = null;
+        if (widget != null) widget.render(null, null, null);
+      };
+
+  /**
+   * Drives the ME row from ANY ATAK location provider (GPS, network, fused, external CoT, Bluetooth
+   * GPS, etc.) by hooking the unified self-marker point. ATAK funnels every active location source
+   * into this single marker; observing it covers them all.
+   */
+  private final PointMapItem.OnPointChangedListener selfPointListener =
+      item -> {
+        if (item == null) return;
+        GeoPoint p = item.getPoint();
         if (p == null) return;
         Wgs84 fix =
             new Wgs84(
@@ -95,7 +123,7 @@ public class TwPowerMapComponent extends AbstractMapComponent {
               formatter.format(
                   Wgs84.Source.DEVICE_LOCATION, result, activePrefs.coordUnit(), strings);
           lastMeLine = line;
-          widget.render(lastMapLine, lastMeLine);
+          widget.render(lastMapLine, lastMeLine, lastTargetLine);
         }
 
         @Override
@@ -108,7 +136,7 @@ public class TwPowerMapComponent extends AbstractMapComponent {
           lastMeLine =
               new DisplayLine(
                   strings.labelMe(), unitTagFor(activePrefs.coordUnit()), value, "", state);
-          widget.render(lastMapLine, lastMeLine);
+          widget.render(lastMapLine, lastMeLine, lastTargetLine);
         }
       };
 
@@ -116,6 +144,25 @@ public class TwPowerMapComponent extends AbstractMapComponent {
       new Runnable() {
         @Override
         public void run() {
+          // Poll the self-marker every tick. ATAK only fires OnPointChangedListener when the
+          // position actually changes, but for a stationary tablet the position is held
+          // constant — yet still valid. Polling keeps the ME row live in both cases.
+          if (mapView != null && selfSub != null) {
+            Marker self = mapView.getSelfMarker();
+            if (self != null) {
+              GeoPoint p = self.getPoint();
+              if (p != null
+                  && Math.abs(p.getLatitude()) > 1e-6
+                  && Math.abs(p.getLongitude()) > 1e-6) {
+                selfSub.onEvent(
+                    new Wgs84(
+                        p.getLatitude(),
+                        p.getLongitude(),
+                        System.currentTimeMillis(),
+                        Wgs84.Source.DEVICE_LOCATION));
+              }
+            }
+          }
           if (selfSub != null) selfSub.tickStaleCheck();
           if (ui != null) ui.postDelayed(this, SELF_TICK_MS);
         }
@@ -127,7 +174,10 @@ public class TwPowerMapComponent extends AbstractMapComponent {
     this.mapView = view;
     this.ui = new Handler(Looper.getMainLooper());
 
-    this.prefs = new PreferenceStore(context);
+    // SharedPreferences MUST live in the ATAK process's data dir; the plugin's own data dir
+    // does not exist (the plugin runs hosted in ATAK's process, see SharedPreferencesImpl
+    // "Couldn't create directory" warning when using plugin context).
+    this.prefs = new PreferenceStore(view.getContext());
     this.activePrefs = prefs.snapshot();
     rebuildLocalisedContext();
 
@@ -138,15 +188,33 @@ public class TwPowerMapComponent extends AbstractMapComponent {
         new SelfMarkerSubscriber(
             System::currentTimeMillis, 1_000L, activePrefs.staleFixThresholdMs(), subListener);
 
+    // ATAK-CIV 5.7.0.3 fires MAP_SCROLL continuously during a user drag, MAP_SETTLED once when
+    // the drag finishes, MAP_SCALE on zoom, and MAP_MOVED on programmatic recentre. Subscribe
+    // to all four so the readout follows every kind of viewport change.
     view.getMapEventDispatcher().addMapEventListener(MapEvent.MAP_MOVED, mapCentreListener);
+    view.getMapEventDispatcher().addMapEventListener(MapEvent.MAP_SCROLL, mapCentreListener);
+    view.getMapEventDispatcher().addMapEventListener(MapEvent.MAP_SETTLED, mapCentreListener);
     view.getMapEventDispatcher().addMapEventListener(MapEvent.MAP_SCALE, mapCentreListener);
-    view.getMapEventDispatcher().addMapEventListener(MapEvent.ITEM_REFRESH, selfItemListener);
+
+    view.getMapEventDispatcher().addMapEventListener(MapEvent.ITEM_CLICK, targetClickListener);
+    view.getMapEventDispatcher()
+        .addMapEventListener(MapEvent.ITEM_CONFIRMED_CLICK, targetClickListener);
+    view.getMapEventDispatcher().addMapEventListener(MapEvent.MAP_CLICK, mapClickListener);
+
+    Marker selfNow = view.getSelfMarker();
+    if (selfNow != null) {
+      selfNow.addOnPointChangedListener(selfPointListener);
+    }
 
     prefs.registerOnChange(prefListener);
     ui.postDelayed(selfTick, SELF_TICK_MS);
 
     // Initial paint so the widget is not blank.
     renderMapCentre();
+    // Seed the me-row from the current self-marker position so the user sees something even
+    // before the first ITEM_REFRESH event fires. If the marker has no useful location yet,
+    // fall through to a `no fix` row.
+    seedSelfRow();
 
     // Settings entry under Tool Preferences (FR-004 / US3).
     prefFragment = new TwPowerPreferenceFragment(pluginContext);
@@ -165,8 +233,17 @@ public class TwPowerMapComponent extends AbstractMapComponent {
     if (ui != null) ui.removeCallbacks(selfTick);
     if (view != null) {
       view.getMapEventDispatcher().removeMapEventListener(MapEvent.MAP_MOVED, mapCentreListener);
+      view.getMapEventDispatcher().removeMapEventListener(MapEvent.MAP_SCROLL, mapCentreListener);
+      view.getMapEventDispatcher().removeMapEventListener(MapEvent.MAP_SETTLED, mapCentreListener);
       view.getMapEventDispatcher().removeMapEventListener(MapEvent.MAP_SCALE, mapCentreListener);
-      view.getMapEventDispatcher().removeMapEventListener(MapEvent.ITEM_REFRESH, selfItemListener);
+      view.getMapEventDispatcher().removeMapEventListener(MapEvent.ITEM_CLICK, targetClickListener);
+      view.getMapEventDispatcher()
+          .removeMapEventListener(MapEvent.ITEM_CONFIRMED_CLICK, targetClickListener);
+      view.getMapEventDispatcher().removeMapEventListener(MapEvent.MAP_CLICK, mapClickListener);
+      Marker selfNow = view.getSelfMarker();
+      if (selfNow != null) {
+        selfNow.removeOnPointChangedListener(selfPointListener);
+      }
     }
     if (prefs != null) {
       prefs.unregisterOnChange(prefListener);
@@ -189,6 +266,35 @@ public class TwPowerMapComponent extends AbstractMapComponent {
     strings = new ResourceStrings(localisedPluginContext);
   }
 
+  private void seedSelfRow() {
+    if (mapView == null || widget == null || strings == null) return;
+    Marker self = mapView.getSelfMarker();
+    if (self != null) {
+      GeoPoint p = self.getPoint();
+      if (p != null && Math.abs(p.getLatitude()) > 1e-6 && Math.abs(p.getLongitude()) > 1e-6) {
+        Wgs84 fix =
+            new Wgs84(
+                p.getLatitude(),
+                p.getLongitude(),
+                System.currentTimeMillis(),
+                Wgs84.Source.DEVICE_LOCATION);
+        if (selfSub != null) {
+          selfSub.onEvent(fix);
+          return;
+        }
+      }
+    }
+    // No usable self-marker position yet — render an explicit "no fix" so the row is not
+    // a placeholder dash forever.
+    mePermissionDenied = !hasLocationPermission();
+    DisplayLine.State state =
+        mePermissionDenied ? DisplayLine.State.NO_PERMISSION : DisplayLine.State.NO_FIX;
+    String value = mePermissionDenied ? strings.stateNoPermission() : strings.stateNoFix();
+    lastMeLine =
+        new DisplayLine(strings.labelMe(), unitTagFor(activePrefs.coordUnit()), value, "", state);
+    widget.render(lastMapLine, lastMeLine, lastTargetLine);
+  }
+
   private void renderMapCentre() {
     if (mapView == null || widget == null || strings == null) return;
     GeoPoint centre = mapView.getPoint().get();
@@ -203,7 +309,7 @@ public class TwPowerMapComponent extends AbstractMapComponent {
     DisplayLine line =
         formatter.format(Wgs84.Source.MAP_CENTRE, result, activePrefs.coordUnit(), strings);
     lastMapLine = line;
-    widget.render(lastMapLine, lastMeLine);
+    widget.render(lastMapLine, lastMeLine, lastTargetLine);
   }
 
   /**
@@ -233,7 +339,20 @@ public class TwPowerMapComponent extends AbstractMapComponent {
               lastMeLine.fallback(),
               lastMeLine.state());
     }
-    widget.render(lastMapLine, lastMeLine);
+    widget.render(lastMapLine, lastMeLine, lastTargetLine);
+  }
+
+  private void renderTargetFrom(PointMapItem item) {
+    if (item == null || widget == null || strings == null) return;
+    GeoPoint p = item.getPoint();
+    if (p == null) return;
+    Wgs84 fix =
+        new Wgs84(
+            p.getLatitude(), p.getLongitude(), System.currentTimeMillis(), Wgs84.Source.COT_TARGET);
+    ConversionResult result = converter.convert(fix, activePrefs.coordUnit());
+    lastTargetLine =
+        formatter.format(Wgs84.Source.COT_TARGET, result, activePrefs.coordUnit(), strings);
+    widget.render(null, null, lastTargetLine);
   }
 
   private String unitTagFor(CoordinateUnit u) {
@@ -271,6 +390,11 @@ public class TwPowerMapComponent extends AbstractMapComponent {
     @Override
     public String labelMe() {
       return ctx.getString(R.string.label_me);
+    }
+
+    @Override
+    public String labelTarget() {
+      return ctx.getString(R.string.label_target);
     }
 
     @Override

@@ -6,6 +6,7 @@
 
     <string name="label_map">地圖</string>
     <string name="label_me">我</string>
+    <string name="label_target">目標</string>
 
     <string name="unit_tag_taipower">台電</string>
     <string name="unit_tag_twd97">TWD97</string>

@@ -18,6 +18,8 @@ public final class Formatter {
 
     String labelMe();
 
+    String labelTarget();
+
     String unitTagTaipower();
 
     String unitTagTwd97();
@@ -49,7 +51,20 @@ public final class Formatter {
     Objects.requireNonNull(unit, "unit");
     Objects.requireNonNull(strings, "strings");
 
-    String labelPrefix = source == Wgs84.Source.MAP_CENTRE ? strings.labelMap() : strings.labelMe();
+    String labelPrefix;
+    switch (source) {
+      case MAP_CENTRE:
+        labelPrefix = strings.labelMap();
+        break;
+      case DEVICE_LOCATION:
+        labelPrefix = strings.labelMe();
+        break;
+      case COT_TARGET:
+        labelPrefix = strings.labelTarget();
+        break;
+      default:
+        labelPrefix = "?";
+    }
     String unitTag = unitTag(unit, strings);
 
     if (result.isNoFix()) {

@@ -1,6 +1,5 @@
 package com.atakmap.android.twpower;
 
-import android.graphics.Color;
 import com.atakmap.android.maps.MapView;
 import com.atakmap.android.twpower.coord.DisplayLine;
 import com.atakmap.android.widgets.LinearLayoutWidget;
@@ -8,74 +7,110 @@ import com.atakmap.android.widgets.RootLayoutWidget;
 import com.atakmap.android.widgets.TextWidget;
 
 /**
- * On-map readout overlay (T034 + T035 + T036). Anchors a small vertical stack in the top-right
- * corner of ATAK's root layout: two text rows (map-centre, own-position), each row optionally
- * carrying a second-line WGS84 fallback when state == OUT_OF_RANGE.
+ * Three on-map readouts sitting alongside ATAK's native widgets:
+ *
+ * <ul>
+ *   <li>MAP coordinate → BOTTOM-LEFT (next to ATAK's Eye Alt readout)
+ *   <li>ME coordinate → BOTTOM-RIGHT (next to the self-callsign card)
+ *   <li>CoT target coordinate → TOP-RIGHT (next to the cursor-on-target callout). Hidden until the
+ *       user taps a target.
+ * </ul>
+ *
+ * <p>Styling mirrors the ATAK SDK's own EyeAlt widget exactly (reverse-engineered from {@code
+ * com.atakmap.android.navigation.widgets.NavWidgetsMapComponent} — see ADR-0007): shared {@link
+ * MapView#getTextFormat(Typeface, int)} bold font at "default size minus 2", background style
+ * {@code 2}, margin 16 dp on the outside edges and 0 on the inside.
  */
 public final class TwPowerWidget {
 
-  private static final int COLOR_OK = Color.WHITE;
-  private static final int COLOR_OUT_OF_RANGE = 0xFFFFA000;
-  private static final int COLOR_NO_FIX = 0xFFB0B0B0;
-  private static final int COLOR_NO_PERMISSION = 0xFFB0B0B0;
+  /**
+   * Mirror EyeAlt construction (NavWidgetsMapComponent decompile, ADR-0007): {@code new
+   * TextWidget("", 2)} = text + size-offset 2 above default, default font, default background. By
+   * passing the offset only and NOT setting our own {@link com.atakmap.android.maps.MapTextFormat}
+   * or background, we automatically inherit any future SDK change to its default styling.
+   */
+  private static final int TEXT_SIZE_OFFSET = 2;
+
+  // Per-state colour applied via setColor(int). EyeAlt itself doesn't call setColor and shows
+  // white text; we keep white for OK and reuse ATAK's amber/red palette for the warning
+  // states so the widget reads at a glance.
+  private static final int COLOR_OK = 0xFFFFFFFF;
+  private static final int COLOR_OUT_OF_RANGE = 0xFFFFB300;
+  private static final int COLOR_NO_FIX = 0xFFFF5555;
+  private static final int COLOR_NO_PERMISSION = 0xFFFF5555;
+
+  private static final float EDGE = 16f;
 
   private final MapView mapView;
-  private LinearLayoutWidget container;
-  private LinearLayoutWidget anchor;
+
+  private LinearLayoutWidget mapAnchor;
+  private LinearLayoutWidget meAnchor;
+  private LinearLayoutWidget targetAnchor;
   private TextWidget mapRow;
   private TextWidget meRow;
+  private TextWidget targetRow;
 
   private DisplayLine lastMap;
   private DisplayLine lastMe;
+  private DisplayLine lastTarget;
 
   public TwPowerWidget(MapView mapView) {
     this.mapView = mapView;
   }
 
-  /** Attach to the standard ATAK root layout (top-right anchor). */
   public void attach() {
     RootLayoutWidget root = (RootLayoutWidget) mapView.getComponentExtra("rootLayoutWidget");
-    anchor = root.getLayout(RootLayoutWidget.TOP_RIGHT);
+    mapAnchor = root.getLayout(RootLayoutWidget.BOTTOM_LEFT);
+    meAnchor = root.getLayout(RootLayoutWidget.BOTTOM_RIGHT);
+    targetAnchor = root.getLayout(RootLayoutWidget.TOP_RIGHT);
 
-    container = new LinearLayoutWidget();
-    container.setOrientation(LinearLayoutWidget.VERTICAL);
+    // Margins follow EyeAlt's convention: 16 dp on the outside edges, 0 on the inside
+    // (where ATAK natives sit). Mirror the left/right for the bottom-right corner.
+    mapRow = newStyledTextWidget("MAP —", EDGE, EDGE, 0f, EDGE);
+    meRow = newStyledTextWidget("ME —", 0f, EDGE, EDGE, EDGE);
+    targetRow = newStyledTextWidget("", 0f, EDGE, EDGE, EDGE);
 
-    mapRow = new TextWidget("", TextWidget.TRANSLUCENT_BLACK);
-    meRow = new TextWidget("", TextWidget.TRANSLUCENT_BLACK);
-    container.addChildWidget(mapRow);
-    container.addChildWidget(meRow);
-
-    anchor.addChildWidget(container);
+    mapAnchor.addWidget(mapRow);
+    meAnchor.addWidget(meRow);
+    targetAnchor.addWidget(targetRow);
   }
 
-  /** Detach from the anchor and release children (called from MapComponent.onDestroyImpl). */
+  private static TextWidget newStyledTextWidget(
+      String initial, float left, float top, float right, float bottom) {
+    // Constructor (String, int) — the int is size offset, font is Typeface.DEFAULT, the
+    // background is TextWidget's built-in default. This is the EXACT call EyeAlt makes.
+    TextWidget tw = new TextWidget(initial, TEXT_SIZE_OFFSET);
+    tw.setMargins(left, top, right, bottom);
+    return tw;
+  }
+
   public void detach() {
-    if (anchor != null && container != null) {
-      anchor.removeChildWidget(container);
-    }
-    container = null;
+    if (mapAnchor != null && mapRow != null) mapAnchor.removeWidget(mapRow);
+    if (meAnchor != null && meRow != null) meAnchor.removeWidget(meRow);
+    if (targetAnchor != null && targetRow != null) targetAnchor.removeWidget(targetRow);
+    mapAnchor = null;
+    meAnchor = null;
+    targetAnchor = null;
     mapRow = null;
     meRow = null;
-    anchor = null;
+    targetRow = null;
     lastMap = null;
     lastMe = null;
+    lastTarget = null;
   }
 
-  /**
-   * Update both rows. No-op if both arguments equal the previous render (cuts redundant invalidate
-   * calls in line with contracts/widget-overlay.md). Must be called on the UI thread.
-   */
-  public void render(DisplayLine mapCentreLine, DisplayLine selfLine) {
-    if (mapRow == null || meRow == null) {
-      return;
-    }
-    if (!equalsNullable(mapCentreLine, lastMap)) {
+  public void render(DisplayLine mapCentreLine, DisplayLine selfLine, DisplayLine targetLine) {
+    if (mapRow != null && mapCentreLine != null && !equalsNullable(mapCentreLine, lastMap)) {
       paint(mapRow, mapCentreLine);
       lastMap = mapCentreLine;
     }
-    if (!equalsNullable(selfLine, lastMe)) {
+    if (meRow != null && selfLine != null && !equalsNullable(selfLine, lastMe)) {
       paint(meRow, selfLine);
       lastMe = selfLine;
+    }
+    if (targetRow != null && !equalsNullable(targetLine, lastTarget)) {
+      paint(targetRow, targetLine);
+      lastTarget = targetLine;
     }
   }
 
