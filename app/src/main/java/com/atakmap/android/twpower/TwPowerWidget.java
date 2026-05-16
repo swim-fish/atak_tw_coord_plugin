@@ -99,6 +99,23 @@ public final class TwPowerWidget {
     lastTarget = null;
   }
 
+  /** Toggle all three rows on/off. Returns the new visibility state (true = visible). */
+  public boolean toggleVisibility() {
+    boolean newVisible = mapRow == null || !mapRow.isVisible();
+    setVisible(newVisible);
+    return newVisible;
+  }
+
+  public boolean isVisible() {
+    return mapRow != null && mapRow.isVisible();
+  }
+
+  public void setVisible(boolean visible) {
+    if (mapRow != null) mapRow.setVisible(visible);
+    if (meRow != null) meRow.setVisible(visible);
+    if (targetRow != null) targetRow.setVisible(visible);
+  }
+
   public void render(DisplayLine mapCentreLine, DisplayLine selfLine, DisplayLine targetLine) {
     if (mapRow != null && mapCentreLine != null && !equalsNullable(mapCentreLine, lastMap)) {
       paint(mapRow, mapCentreLine);

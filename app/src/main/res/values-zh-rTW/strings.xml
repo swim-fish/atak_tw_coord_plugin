@@ -17,6 +17,8 @@
     <string name="state_no_permission">無權限</string>
 
     <string name="toast_copied">座標已複製</string>
+    <string name="toast_widget_shown">台灣座標：讀數已顯示</string>
+    <string name="toast_widget_hidden">台灣座標：讀數已隱藏</string>
 
     <string name="pref_screen_title">台灣座標</string>
     <string name="pref_coord_unit_title">顯示座標單位</string>
@@ -35,6 +37,6 @@
 
     <string name="pref_accuracy_header">座標精度說明</string>
     <string name="pref_accuracy_title">Datum 位移精度</string>
-    <string name="pref_accuracy_summary">TWD97 全境誤差 &lt; 1 公尺。\n\nTWD67 採用 ADR-0001 (pwa_map) 的 4 參數位移。典型誤差:\n• 本島:±3 至 ±5 公尺\n• 外島（澎湖 / 金門 / 馬祖）:±10 至 ±20 公尺，因 4 參數常數係針對本島校正，與內政部官方 7 參數 Bursa-Wolf 位移在外島差異較大。\n\n台電座標僅本島支援；外島讀數會顯示「超出範圍」並附 WGS84 fallback line。</string>
+    <string name="pref_accuracy_summary">TWD97 全境誤差 &lt; 1 公尺。\n\nTWD67 典型誤差:\n• 本島:±3 至 ±5 公尺\n• 外島（澎湖 / 金門 / 馬祖）:±10 至 ±20 公尺\n\n台電座標僅本島支援；外島讀數會顯示「超出範圍」並附 WGS84 fallback line。</string>
 
 </resources>

@@ -1,11 +1,15 @@
 package com.atakmap.android.twpower;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.widget.Toast;
+import com.atakmap.android.ipc.AtakBroadcast;
 import com.atakmap.android.maps.AbstractMapComponent;
 import com.atakmap.android.maps.MapEvent;
 import com.atakmap.android.maps.MapEventDispatcher;
@@ -35,6 +39,8 @@ import java.util.Locale;
 public class TwPowerMapComponent extends AbstractMapComponent {
 
   private static final String PREF_KEY = "tw_power_settings";
+  /** Action fired by the Tools-menu icon (see TwPowerTool constructor). */
+  static final String ACTION_SHOW_PLUGIN = "com.atakmap.android.twpower.SHOW_PLUGIN";
   private static final long SELF_TICK_MS = 1_000L;
 
   private Context pluginContext;
@@ -140,6 +146,23 @@ public class TwPowerMapComponent extends AbstractMapComponent {
         }
       };
 
+  /**
+   * Tools-menu tap handler. ATAK fires {@link #ACTION_SHOW_PLUGIN} when the user taps the
+   * "TW Coordinates" icon under Tools; we toggle the on-map readouts on/off (a common
+   * affordance for plugins whose primary surface is a HUD overlay).
+   */
+  private final BroadcastReceiver toggleReceiver =
+      new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context ctx, Intent intent) {
+          if (widget == null) return;
+          boolean nowVisible = widget.toggleVisibility();
+          int msgRes =
+              nowVisible ? R.string.toast_widget_shown : R.string.toast_widget_hidden;
+          Toast.makeText(pluginContext, msgRes, Toast.LENGTH_SHORT).show();
+        }
+      };
+
   private final Runnable selfTick =
       new Runnable() {
         @Override
@@ -209,6 +232,11 @@ public class TwPowerMapComponent extends AbstractMapComponent {
     prefs.registerOnChange(prefListener);
     ui.postDelayed(selfTick, SELF_TICK_MS);
 
+    AtakBroadcast.DocumentedIntentFilter toggleFilter =
+        new AtakBroadcast.DocumentedIntentFilter();
+    toggleFilter.addAction(ACTION_SHOW_PLUGIN);
+    AtakBroadcast.getInstance().registerReceiver(toggleReceiver, toggleFilter);
+
     // Initial paint so the widget is not blank.
     renderMapCentre();
     // Seed the me-row from the current self-marker position so the user sees something even
@@ -229,6 +257,11 @@ public class TwPowerMapComponent extends AbstractMapComponent {
 
   @Override
   protected void onDestroyImpl(Context context, MapView view) {
+    try {
+      AtakBroadcast.getInstance().unregisterReceiver(toggleReceiver);
+    } catch (IllegalArgumentException ignored) {
+      // Receiver was never registered (onCreate aborted) — nothing to do.
+    }
     ToolsPreferenceFragment.unregister(PREF_KEY);
     if (ui != null) ui.removeCallbacks(selfTick);
     if (view != null) {

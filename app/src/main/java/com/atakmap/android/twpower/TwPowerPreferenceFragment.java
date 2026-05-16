@@ -76,17 +76,62 @@ public class TwPowerPreferenceFragment extends PluginPreferenceFragment
   }
 
   /**
-   * Updates each preference's summary in the form {@code "<entry label> — <live preview>"} so the
-   * user can see the effect of the current selection without opening the dialog.
+   * Re-resolves every visible string against the currently-selected UI language and writes it
+   * back onto the live Preference objects. Without this, switching language updates the on-map
+   * readouts but leaves the entire settings page frozen in the locale it was opened with — the
+   * Preference framework binds {@code @string/...} references at inflate time and does not
+   * react to a later config change.
+   *
+   * <p>Each visible row (category header, title, summary) is refreshed:
+   *
+   * <ul>
+   *   <li>The two {@link android.preference.ListPreference} summaries get the live preview
+   *       (entry label + sample formatted coordinate / sample translations).
+   *   <li>The two PreferenceCategory headers and the Accuracy-notice row get their title /
+   *       summary re-read from a {@link Context} wrapped via {@link LocaleOverride}.
+   * </ul>
    */
   private void refreshAllSummaries() {
-    refreshCoordUnitSummary();
-    refreshLanguageSummary();
+    LanguageOverride lang = currentLanguageOverride();
+    Context wrapped = LocaleOverride.contextFor(pluginContext, lang, Locale.getDefault());
+
+    setPreferenceTitle("pref_screen_header", wrapped.getString(R.string.pref_screen_title));
+    setPreferenceTitle("pref_coord_unit", wrapped.getString(R.string.pref_coord_unit_title));
+    setPreferenceTitle("pref_ui_language", wrapped.getString(R.string.pref_ui_language_title));
+    setPreferenceTitle(
+        "pref_accuracy_header_key", wrapped.getString(R.string.pref_accuracy_header));
+
+    android.preference.Preference notice = findPreference("pref_accuracy_notice");
+    if (notice != null) {
+      notice.setTitle(wrapped.getString(R.string.pref_accuracy_title));
+      notice.setSummary(wrapped.getString(R.string.pref_accuracy_summary));
+    }
+
+    refreshCoordUnitSummary(wrapped);
+    refreshLanguageSummary(wrapped);
   }
 
-  private void refreshCoordUnitSummary() {
+  private void setPreferenceTitle(String key, CharSequence title) {
+    android.preference.Preference p = findPreference(key);
+    if (p != null) p.setTitle(title);
+  }
+
+  private LanguageOverride currentLanguageOverride() {
+    android.preference.ListPreference pref =
+        (android.preference.ListPreference) findPreference("pref_ui_language");
+    if (pref == null) return LanguageOverride.SYSTEM;
+    try {
+      return LanguageOverride.valueOf(pref.getValue());
+    } catch (IllegalArgumentException | NullPointerException e) {
+      return LanguageOverride.SYSTEM;
+    }
+  }
+
+  private void refreshCoordUnitSummary(Context wrapped) {
     ListPreference pref = (ListPreference) findPreference("pref_coord_unit");
     if (pref == null) return;
+    // Re-set entries from the wrapped context so the dialog list rows also translate.
+    pref.setEntries(wrapped.getResources().getStringArray(R.array.coord_unit_entries));
     String value = pref.getValue();
     if (value == null) value = CoordinateUnit.TWD97.name();
     CoordinateUnit unit;
@@ -97,12 +142,13 @@ public class TwPowerPreferenceFragment extends PluginPreferenceFragment
     }
     CharSequence entry = pref.getEntry();
     if (entry == null) entry = value;
-    pref.setSummary(entry + " — " + sampleCoordPreview(unit));
+    pref.setSummary(entry + " — " + sampleCoordPreview(unit, wrapped));
   }
 
-  private void refreshLanguageSummary() {
+  private void refreshLanguageSummary(Context wrapped) {
     ListPreference pref = (ListPreference) findPreference("pref_ui_language");
     if (pref == null) return;
+    pref.setEntries(wrapped.getResources().getStringArray(R.array.ui_language_entries));
     String value = pref.getValue();
     if (value == null) value = LanguageOverride.SYSTEM.name();
     LanguageOverride lang;
@@ -117,11 +163,11 @@ public class TwPowerPreferenceFragment extends PluginPreferenceFragment
   }
 
   /** Returns "TWD97: 306,963m 2,769,619m" style preview for Taipei 101 in the given unit. */
-  private String sampleCoordPreview(CoordinateUnit unit) {
+  private String sampleCoordPreview(CoordinateUnit unit, Context wrapped) {
     Wgs84 fix =
         new Wgs84(SAMPLE_LAT, SAMPLE_LON, System.currentTimeMillis(), Wgs84.Source.MAP_CENTRE);
     ConversionResult result = converter.convert(fix, unit);
-    StaticStrings strings = new StaticStrings(pluginContext);
+    StaticStrings strings = new StaticStrings(wrapped);
     DisplayLine line = formatter.format(Wgs84.Source.MAP_CENTRE, result, unit, strings);
     if (line.state() != DisplayLine.State.OK) return strings.stateOutOfRange();
     return line.unitTag() + ": " + line.value();

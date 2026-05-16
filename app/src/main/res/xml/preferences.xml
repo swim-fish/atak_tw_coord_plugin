@@ -3,6 +3,7 @@
 
     <PreferenceCategory
         android:layout="@layout/pref_category"
+        android:key="pref_screen_header"
         android:title="@string/pref_screen_title"/>
 
     <com.atakmap.android.gui.PanListPreference
@@ -27,6 +28,7 @@
 
     <PreferenceCategory
         android:layout="@layout/pref_category"
+        android:key="pref_accuracy_header_key"
         android:title="@string/pref_accuracy_header"/>
 
     <Preference
