@@ -88,4 +88,14 @@
     <string name="pref_open_goto_title">開啟座標輸入頁</string>
     <string name="pref_open_goto_summary">輸入台電 / TWD97 / TWD67 座標並讓地圖平移過去。</string>
 
+    <string name="goto_marker_mode_header">落點模式</string>
+    <string name="goto_mode_move">僅移動</string>
+    <string name="goto_mode_waypoint">航點</string>
+    <string name="goto_mode_friendly">友軍</string>
+    <string name="goto_mode_hostile">敵軍</string>
+    <string name="goto_mode_neutral">中立</string>
+    <string name="goto_mode_unknown">未知</string>
+    <string name="goto_mode_spi">關注點</string>
+    <string name="goto_mode_mission">目的地</string>
+
 </resources>

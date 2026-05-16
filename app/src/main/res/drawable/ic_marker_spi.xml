@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPI (Sensor Point of Interest) — orange concentric target rings. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Outer ring -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M12,2 a10,10 0 1,1 0,20 a10,10 0 1,1 0,-20 Z"/>
+    <!-- Dark gap -->
+    <path
+        android:fillColor="#1B1B1B"
+        android:pathData="M12,5 a7,7 0 1,1 0,14 a7,7 0 1,1 0,-14 Z"/>
+    <!-- Middle ring -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M12,7 a5,5 0 1,1 0,10 a5,5 0 1,1 0,-10 Z"/>
+    <!-- Centre dark dot -->
+    <path
+        android:fillColor="#1B1B1B"
+        android:pathData="M12,10 a2,2 0 1,1 0,4 a2,2 0 1,1 0,-4 Z"/>
+</vector>

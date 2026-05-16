@@ -113,4 +113,17 @@
     <string name="pref_open_goto_title">Open Coordinate Input</string>
     <string name="pref_open_goto_summary">Type a Taipower / TWD97 / TWD67 coordinate and pan the map there.</string>
 
+    <!-- Marker-drop mode picker on the Submit row. -->
+    <string name="goto_marker_mode_header">Marker mode</string>
+    <string name="goto_mode_move">Move only</string>
+    <string name="goto_mode_waypoint">Waypoint</string>
+    <string name="goto_mode_friendly">Friendly</string>
+    <string name="goto_mode_hostile">Hostile</string>
+    <string name="goto_mode_neutral">Neutral</string>
+    <string name="goto_mode_unknown">Unknown</string>
+    <!-- ATAK calls this "Point of Interest" in its own UI even though the CoT type
+         is b-m-p-s-p-i (Sensor Point of Interest); see com.atakmap.android.util.PointOfInterest. -->
+    <string name="goto_mode_spi">Point of Interest</string>
+    <string name="goto_mode_mission">GoTo Pin</string>
+
 </resources>

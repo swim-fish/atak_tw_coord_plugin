@@ -88,4 +88,14 @@
     <string name="pref_open_goto_title">座標入力を開く</string>
     <string name="pref_open_goto_summary">台電 / TWD97 / TWD67 座標を入力し地図をその場所へ移動します。</string>
 
+    <string name="goto_marker_mode_header">マーカー種別</string>
+    <string name="goto_mode_move">移動のみ</string>
+    <string name="goto_mode_waypoint">ウェイポイント</string>
+    <string name="goto_mode_friendly">友軍</string>
+    <string name="goto_mode_hostile">敵対</string>
+    <string name="goto_mode_neutral">中立</string>
+    <string name="goto_mode_unknown">不明</string>
+    <string name="goto_mode_spi">関心地点</string>
+    <string name="goto_mode_mission">目的地ピン</string>
+
 </resources>

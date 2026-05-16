@@ -330,13 +330,146 @@
             android:visibility="gone"/>
     </LinearLayout>
 
+    <!-- Marker-drop mode picker (8 options laid out 4×2). Manual mutual exclusion is
+         enforced in TwCoordGotoView.applyMarkerModeUI because Android RadioGroup only
+         scopes its mutual exclusion to direct child RadioButtons — splitting into 2 rows
+         loses that scope, so the controller handles it. Default = Move only. -->
+    <TextView
+        android:id="@+id/goto_marker_mode_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/goto_marker_mode_header"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:textStyle="bold"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="2dp">
+        <RadioButton
+            android:id="@+id/goto_mode_move"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/goto_mode_move"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:button="@null"
+            android:drawableTop="@drawable/ic_marker_move"
+            android:drawablePadding="2dp"
+            android:gravity="center"
+            android:padding="4dp"
+            android:checked="true"/>
+        <RadioButton
+            android:id="@+id/goto_mode_waypoint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/goto_mode_waypoint"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:button="@null"
+            android:drawableTop="@drawable/ic_marker_waypoint"
+            android:drawablePadding="2dp"
+            android:gravity="center"
+            android:padding="4dp"/>
+        <RadioButton
+            android:id="@+id/goto_mode_mission"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/goto_mode_mission"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:button="@null"
+            android:drawableTop="@drawable/ic_marker_mission"
+            android:drawablePadding="2dp"
+            android:gravity="center"
+            android:padding="4dp"/>
+        <RadioButton
+            android:id="@+id/goto_mode_spi"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/goto_mode_spi"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:button="@null"
+            android:drawableTop="@drawable/ic_marker_spi"
+            android:drawablePadding="2dp"
+            android:gravity="center"
+            android:padding="4dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="2dp">
+        <RadioButton
+            android:id="@+id/goto_mode_friendly"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/goto_mode_friendly"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:button="@null"
+            android:drawableTop="@drawable/ic_marker_friendly"
+            android:drawablePadding="2dp"
+            android:gravity="center"
+            android:padding="4dp"/>
+        <RadioButton
+            android:id="@+id/goto_mode_hostile"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/goto_mode_hostile"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:button="@null"
+            android:drawableTop="@drawable/ic_marker_hostile"
+            android:drawablePadding="2dp"
+            android:gravity="center"
+            android:padding="4dp"/>
+        <RadioButton
+            android:id="@+id/goto_mode_neutral"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/goto_mode_neutral"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:button="@null"
+            android:drawableTop="@drawable/ic_marker_neutral"
+            android:drawablePadding="2dp"
+            android:gravity="center"
+            android:padding="4dp"/>
+        <RadioButton
+            android:id="@+id/goto_mode_unknown"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/goto_mode_unknown"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:button="@null"
+            android:drawableTop="@drawable/ic_marker_unknown"
+            android:drawablePadding="2dp"
+            android:gravity="center"
+            android:padding="4dp"/>
+    </LinearLayout>
+
     <!-- Submit button shared by all tabs. Disabled until the active tab's
          input is in ParseResult.Ok state. -->
     <Button
         android:id="@+id/goto_btn_submit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="6dp"
         android:text="@string/goto_btn_submit"
         android:enabled="false"/>
 

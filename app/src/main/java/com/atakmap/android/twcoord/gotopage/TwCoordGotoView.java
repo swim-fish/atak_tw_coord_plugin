@@ -33,6 +33,7 @@ import com.atakmap.coremap.log.Log;
 import com.atakmap.coremap.maps.coords.GeoPoint;
 import com.atakmap.map.CameraController;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -103,6 +104,19 @@ public final class TwCoordGotoView {
   private final LinearLayout recentList;
   private final TextView recentEmpty;
 
+  // Marker mode (Move-only vs Drop-{type}). In-session only — resets when the receiver is
+  // reconstructed (i.e. on ATAK restart) so an operator who set Drop in a previous session does
+  // not accidentally pin new markers next session.
+  private final RadioButton modeMove;
+  private final RadioButton modeWaypoint;
+  private final RadioButton modeMission;
+  private final RadioButton modeSpi;
+  private final RadioButton modeFriendly;
+  private final RadioButton modeHostile;
+  private final RadioButton modeNeutral;
+  private final RadioButton modeUnknown;
+  private MarkerMode markerMode = MarkerMode.MOVE_ONLY;
+
   // State.
   private CoordinateUnit activeTab = CoordinateUnit.TAIPOWER;
   private ParseResult lastTaipowerParse;
@@ -168,6 +182,24 @@ public final class TwCoordGotoView {
     this.autoFillTwd67 = root.findViewById(R.id.goto_autofill_twd67);
     this.recentList = root.findViewById(R.id.goto_recent_list);
     this.recentEmpty = root.findViewById(R.id.goto_recent_empty);
+
+    this.modeMove = root.findViewById(R.id.goto_mode_move);
+    this.modeWaypoint = root.findViewById(R.id.goto_mode_waypoint);
+    this.modeMission = root.findViewById(R.id.goto_mode_mission);
+    this.modeSpi = root.findViewById(R.id.goto_mode_spi);
+    this.modeFriendly = root.findViewById(R.id.goto_mode_friendly);
+    this.modeHostile = root.findViewById(R.id.goto_mode_hostile);
+    this.modeNeutral = root.findViewById(R.id.goto_mode_neutral);
+    this.modeUnknown = root.findViewById(R.id.goto_mode_unknown);
+
+    modeMove.setOnClickListener(v -> setMarkerMode(MarkerMode.MOVE_ONLY));
+    modeWaypoint.setOnClickListener(v -> setMarkerMode(MarkerMode.WAYPOINT));
+    modeMission.setOnClickListener(v -> setMarkerMode(MarkerMode.MISSION_POINT));
+    modeSpi.setOnClickListener(v -> setMarkerMode(MarkerMode.SPI));
+    modeFriendly.setOnClickListener(v -> setMarkerMode(MarkerMode.FRIENDLY));
+    modeHostile.setOnClickListener(v -> setMarkerMode(MarkerMode.HOSTILE));
+    modeNeutral.setOnClickListener(v -> setMarkerMode(MarkerMode.NEUTRAL));
+    modeUnknown.setOnClickListener(v -> setMarkerMode(MarkerMode.UNKNOWN));
 
     autoFillTaipower.setOnClickListener(v -> onAutoFill(CoordinateUnit.TAIPOWER));
     autoFillTwd97.setOnClickListener(v -> onAutoFill(CoordinateUnit.TWD97));
@@ -235,6 +267,20 @@ public final class TwCoordGotoView {
       TextView recentHeader = root.findViewById(R.id.goto_recent_header);
       if (recentHeader != null) recentHeader.setText(c.getString(R.string.goto_recent_header));
       recentEmpty.setText(c.getString(R.string.goto_recent_empty));
+
+      // Marker mode header + 8 radios.
+      TextView markerModeHeader = root.findViewById(R.id.goto_marker_mode_header);
+      if (markerModeHeader != null) {
+        markerModeHeader.setText(c.getString(R.string.goto_marker_mode_header));
+      }
+      modeMove.setText(c.getString(R.string.goto_mode_move));
+      modeWaypoint.setText(c.getString(R.string.goto_mode_waypoint));
+      modeMission.setText(c.getString(R.string.goto_mode_mission));
+      modeSpi.setText(c.getString(R.string.goto_mode_spi));
+      modeFriendly.setText(c.getString(R.string.goto_mode_friendly));
+      modeHostile.setText(c.getString(R.string.goto_mode_hostile));
+      modeNeutral.setText(c.getString(R.string.goto_mode_neutral));
+      modeUnknown.setText(c.getString(R.string.goto_mode_unknown));
     } catch (Throwable t) {
       Log.w(TAG, "refreshLocalisedStrings failed", t);
     }
@@ -290,6 +336,7 @@ public final class TwCoordGotoView {
       applyZoneRadio(zoneTwd67_121, zoneTwd67_119, state.twd67Zone());
     }
     applyTabVisibility();
+    applyMarkerModeUI();
     validateTaipower();
     validateTwd97();
     validateTwd67();
@@ -523,6 +570,31 @@ public final class TwCoordGotoView {
     paneTwd67.setVisibility(activeTab == CoordinateUnit.TWD67 ? View.VISIBLE : View.GONE);
   }
 
+  private void setMarkerMode(MarkerMode mode) {
+    this.markerMode = mode;
+    applyMarkerModeUI();
+  }
+
+  private void applyMarkerModeUI() {
+    // Manual mutual exclusion across the 8 radios — they live in 2 separate LinearLayout rows
+    // rather than one RadioGroup, so Android won't uncheck the others automatically. Also,
+    // `button="@null"` removes the default radio bullet so the selection is shown via background
+    // tint (same pattern as the tab strip).
+    styleMarkerModeRadio(modeMove, markerMode == MarkerMode.MOVE_ONLY);
+    styleMarkerModeRadio(modeWaypoint, markerMode == MarkerMode.WAYPOINT);
+    styleMarkerModeRadio(modeMission, markerMode == MarkerMode.MISSION_POINT);
+    styleMarkerModeRadio(modeSpi, markerMode == MarkerMode.SPI);
+    styleMarkerModeRadio(modeFriendly, markerMode == MarkerMode.FRIENDLY);
+    styleMarkerModeRadio(modeHostile, markerMode == MarkerMode.HOSTILE);
+    styleMarkerModeRadio(modeNeutral, markerMode == MarkerMode.NEUTRAL);
+    styleMarkerModeRadio(modeUnknown, markerMode == MarkerMode.UNKNOWN);
+  }
+
+  private static void styleMarkerModeRadio(RadioButton btn, boolean selected) {
+    btn.setChecked(selected);
+    btn.setBackgroundColor(selected ? 0xFF333333 : 0x00000000);
+  }
+
   private static void styleTab(RadioButton tab, boolean selected) {
     if (selected) {
       tab.setTextColor(0xFFFFFFFF);
@@ -656,8 +728,8 @@ public final class TwCoordGotoView {
     dest.set(wgs84.latitudeDeg(), wgs84.longitudeDeg());
     try {
       CameraController.Programmatic.panTo(mapView.getRenderer3(), dest, /*animate*/ false);
-    } catch (Exception e) {
-      Log.w(TAG, "camera pan failed", e);
+    } catch (Throwable t) {
+      Log.w(TAG, "camera pan failed", t);
     }
     Log.d(
         TAG,
@@ -669,6 +741,32 @@ public final class TwCoordGotoView {
             + wgs84.latitudeDeg()
             + ", "
             + wgs84.longitudeDeg());
+
+    // If the operator picked a Drop-{type} marker mode, drop the marker via ATAK's standard
+    // PlacePointTool.MarkerCreator using the same minimalist pattern the helloworld SDK sample
+    // uses in SpeechPointDropper.pointPlotter: only UID + type + callsign, then placePoint().
+    //
+    // Earlier attempts that added setHow("h-g-i-g-o") and setMetaString("entry", "user") made
+    // ATAK treat the marker as if it had come in via CoT from an external source, which
+    // suppressed the long-press radial's Delete affordance. The minimalist call below lets
+    // PlacePointTool's internal defaults populate the "user-placed" metadata correctly so the
+    // resulting marker behaves like ATAK's own long-press drop-pin (movable + editable +
+    // removable, standard radial menu).
+    //
+    // Constitution VI: SDK call wrapped — any fault must NEVER take down ATAK.
+    if (markerMode.dropsMarker()) {
+      try {
+        String callsign = input.unit().name() + " " + input.displayString();
+        new com.atakmap.android.user.PlacePointTool.MarkerCreator(dest)
+            .setUid(UUID.randomUUID().toString())
+            .setType(markerMode.cotType())
+            .setCallsign(callsign)
+            .placePoint();
+        Log.d(TAG, "Dropped " + markerMode + " marker at " + callsign);
+      } catch (Throwable t) {
+        Log.w(TAG, "marker placement failed (" + markerMode + ")", t);
+      }
+    }
 
     // Confirmation toast (FR-010). Append a "zone 119" suffix when the resolved zone is 119, so
     // the operator can spot zone misuse at a glance.

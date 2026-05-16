@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Unknown (a-u-G) — yellow quatrefoil, MIL-STD-2525 frame for unknown
+     affiliation. The full 4-lobed quatrefoil is approximated with 4 overlapping
+     circles for vector simplicity. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFCC00"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1"
+        android:pathData="M12,3 A5,5 0 1,1 12,13 A5,5 0 1,1 22,12 A5,5 0 1,1 12,22 A5,5 0 1,1 2,12 A5,5 0 1,1 12,3 Z"/>
+</vector>

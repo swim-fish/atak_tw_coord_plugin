@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GoTo Pin (b-m-p-w-GOTO) — orange teardrop pin with white crosshair, signalling
+     "navigate to this point". Matches the semantic of ATAK's native GoTo destination
+     marker. Filename retained as `ic_marker_mission.xml` to avoid churn across the
+     layout / view references that key off the MISSION_POINT enum. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Teardrop balloon body -->
+    <path
+        android:fillColor="#FF8800"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1"
+        android:pathData="M12,2 C7.5,2 4,5.5 4,10 C4,15.5 12,22 12,22 C12,22 20,15.5 20,10 C20,5.5 16.5,2 12,2 Z"/>
+    <!-- Inner ring -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,5.5 a4.5,4.5 0 1,1 0,9 a4.5,4.5 0 1,1 0,-9 Z"/>
+    <!-- Crosshair lines (horizontal + vertical) -->
+    <path
+        android:fillColor="#FF8800"
+        android:pathData="M11.4,7 L12.6,7 L12.6,13 L11.4,13 Z M9,9.4 L15,9.4 L15,10.6 L9,10.6 Z"/>
+    <!-- Centre dot -->
+    <path
+        android:fillColor="#FF8800"
+        android:pathData="M12,9 a1,1 0 1,1 0,2 a1,1 0 1,1 0,-2 Z"/>
+</vector>
