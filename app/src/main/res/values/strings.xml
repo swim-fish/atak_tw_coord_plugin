@@ -47,6 +47,6 @@
     <!-- Settings accuracy advisory section. -->
     <string name="pref_accuracy_header">Accuracy notice</string>
     <string name="pref_accuracy_title">Datum-shift accuracy</string>
-    <string name="pref_accuracy_summary">TWD97 is sub-metre across all coverage areas.\n\nTWD67 uses the 4-parameter shift documented in ADR-0001 (pwa_map). Typical accuracy:\n• Main island: ±3-5 m\n• Outer islands (Penghu / Kinmen / Matsu): ±10-20 m, because the 4-parameter constants were calibrated for the main island and the official 7-parameter Bursa-Wolf shift differs more on the outer islands.\n\nTaipower grid coverage is main-island only; outer-island fixes show "out of range" with a WGS84 fallback line.</string>
+    <string name="pref_accuracy_summary">TWD97: error &lt; 1 m across all coverage areas.\n\nTWD67 uses the 4-parameter shift documented in ADR-0001 (pwa_map). Typical accuracy:\n• Main island: ±3 to ±5 m\n• Outer islands (Penghu / Kinmen / Matsu): ±10 to ±20 m, because the 4-parameter constants were calibrated for the main island and the official 7-parameter Bursa-Wolf shift differs more on the outer islands.\n\nTaipower grid coverage is main-island only; outer-island fixes show "out of range" with a WGS84 fallback line.</string>
 
 </resources>

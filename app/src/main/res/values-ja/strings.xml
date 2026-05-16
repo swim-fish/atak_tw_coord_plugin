@@ -35,6 +35,6 @@
 
     <string name="pref_accuracy_header">座標精度の注意</string>
     <string name="pref_accuracy_title">Datum 変換精度</string>
-    <string name="pref_accuracy_summary">TWD97 は全域でサブメートル精度。\n\nTWD67 は ADR-0001 (pwa_map) の 4 パラメータシフトを使用。代表的な誤差:\n• 本島:±3-5 m\n• 離島(澎湖 / 金門 / 馬祖):±10-20 m。4 パラメータ定数は本島用に較正されており、内政部公式の 7 パラメータ Bursa-Wolf シフトとの差が離島では大きくなるため。\n\n台電グリッドは本島のみ対応。離島座標は「範囲外」表示と WGS84 フォールバック行を返します。</string>
+    <string name="pref_accuracy_summary">TWD97: 全域で誤差 &lt; 1 m。\n\nTWD67 は ADR-0001 (pwa_map) の 4 パラメータシフトを使用。代表的な誤差:\n• 本島:±3〜±5 m\n• 離島(澎湖 / 金門 / 馬祖):±10〜±20 m。4 パラメータ定数は本島用に較正されており、内政部公式の 7 パラメータ Bursa-Wolf シフトとの差が離島では大きくなるため。\n\n台電グリッドは本島のみ対応。離島座標は「範囲外」表示と WGS84 フォールバック行を返します。</string>
 
 </resources>
