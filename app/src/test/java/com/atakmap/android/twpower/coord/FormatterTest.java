@@ -57,15 +57,24 @@ public class FormatterTest {
     assertThat(line.value()).hasSize(12); // "B7039 BD32XY"
   }
 
+  /**
+   * Tokyo Tower is clearly outside Taiwan; assert the WGS84 fallback line carries the real lat/lon
+   * at 6 decimal places.
+   */
   @Test
-  public void out_of_range_carries_localised_state_and_wgs84_fallback() {
-    Wgs84 fix = new Wgs84(40.0, 121.0, 1L, Wgs84.Source.MAP_CENTRE);
+  public void tokyo_out_of_range_carries_localised_state_and_wgs84_fallback() {
+    Wgs84 fix =
+        new Wgs84(
+            GoldenVectors.TOKYO_TOWER.latDeg,
+            GoldenVectors.TOKYO_TOWER.lonDeg,
+            1L,
+            Wgs84.Source.MAP_CENTRE);
     ConversionResult r = conv.convert(fix, CoordinateUnit.TWD97);
     DisplayLine line = formatter.format(Wgs84.Source.MAP_CENTRE, r, CoordinateUnit.TWD97, JA);
 
     assertThat(line.state()).isEqualTo(DisplayLine.State.OUT_OF_RANGE);
     assertThat(line.value()).isEqualTo("範囲外");
-    assertThat(line.fallback()).isEqualTo("40.000000, 121.000000");
+    assertThat(line.fallback()).isEqualTo("35.658600, 139.745400");
   }
 
   @Test
@@ -100,12 +109,17 @@ public class FormatterTest {
   }
 
   @Test
-  public void clipboard_for_out_of_range_includes_wgs84_fallback_line() {
-    Wgs84 fix = new Wgs84(40.0, 121.0, 1L, Wgs84.Source.MAP_CENTRE);
+  public void clipboard_for_hong_kong_out_of_range_includes_wgs84_fallback_line() {
+    Wgs84 fix =
+        new Wgs84(
+            GoldenVectors.HONG_KONG_IFC.latDeg,
+            GoldenVectors.HONG_KONG_IFC.lonDeg,
+            1L,
+            Wgs84.Source.MAP_CENTRE);
     ConversionResult r = conv.convert(fix, CoordinateUnit.TWD97);
     DisplayLine line = formatter.format(Wgs84.Source.MAP_CENTRE, r, CoordinateUnit.TWD97, EN);
     String clip = formatter.forClipboard(line);
-    assertThat(clip).contains("out of range").contains("(40.000000, 121.000000)");
+    assertThat(clip).contains("out of range").contains("(22.285800, 114.158300)");
   }
 
   private static final class TestStrings implements Formatter.Strings {

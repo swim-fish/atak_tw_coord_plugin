@@ -56,4 +56,34 @@ public class TaipowerGridTest {
         c.tenMeterE(),
         c.tenMeterN());
   }
+
+  /**
+   * Real-world 11-char regression: Hualien Railway Station is the one point in pwa_map's
+   * test-vectors.json where the 11-char code is pinned (other locations only pin 9-char). If this
+   * fails, the 1 m sub-cell math drifted from upstream.
+   */
+  @Test
+  public void taipower_11char_for_hualien_matches_pwa_map_golden() {
+    GoldenVectors.Point p = GoldenVectors.HUALIEN_STN;
+    assertThat(p.taipower11Char).as("test fixture sanity").isNotNull();
+    TaipowerCode code =
+        TaipowerGrid.fromTwd67(
+            new Twd67Tm2(p.twd67E, p.twd67N), TaipowerGrid.Precision.ELEVEN_CHAR);
+    String formatted = formatElevenChar(code);
+    assertThat(formatted).isEqualTo(p.taipower11Char);
+  }
+
+  /** "H7509 DB4016" — 9-char prefix + 2-digit 1 m sub-cell. */
+  static String formatElevenChar(TaipowerCode c) {
+    return String.format(
+        "%c%04d %c%c%d%d%d%d",
+        c.region(),
+        c.subRegion(),
+        c.hundredMeterE(),
+        c.hundredMeterN(),
+        c.tenMeterE(),
+        c.tenMeterN(),
+        c.oneMeterE(),
+        c.oneMeterN());
+  }
 }

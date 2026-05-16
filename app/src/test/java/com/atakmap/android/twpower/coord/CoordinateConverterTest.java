@@ -42,19 +42,30 @@ public class CoordinateConverterTest {
     assertThat(v.hasOneMetrePrecision()).isTrue();
   }
 
+  /** Naha (Okinawa) is north of Taiwan's TM2 box — all three units MUST report out-of-range. */
   @Test
-  public void outside_taiwan_north_returns_out_of_range_for_all_units() {
-    Wgs84 fix = new Wgs84(40.0, 121.0, 1L, Wgs84.Source.MAP_CENTRE);
+  public void naha_okinawa_returns_out_of_range_for_all_units() {
+    Wgs84 fix = wgs(GoldenVectors.NAHA_OKINAWA);
     for (CoordinateUnit u : CoordinateUnit.values()) {
-      assertThat(conv.convert(fix, u).isOutOfRange()).as("unit=%s", u).isTrue();
+      assertThat(conv.convert(fix, u).isOutOfRange()).as("Naha, unit=%s", u).isTrue();
     }
   }
 
+  /** Hong Kong is west of Penghu — out of Taiwan box for all three units. */
   @Test
-  public void outside_taiwan_west_returns_out_of_range_for_all_units() {
-    Wgs84 fix = new Wgs84(22.0, 100.0, 1L, Wgs84.Source.MAP_CENTRE);
+  public void hong_kong_returns_out_of_range_for_all_units() {
+    Wgs84 fix = wgs(GoldenVectors.HONG_KONG_IFC);
     for (CoordinateUnit u : CoordinateUnit.values()) {
-      assertThat(conv.convert(fix, u).isOutOfRange()).as("unit=%s", u).isTrue();
+      assertThat(conv.convert(fix, u).isOutOfRange()).as("Hong Kong, unit=%s", u).isTrue();
+    }
+  }
+
+  /** Tokyo — north + east of Taiwan, deep out-of-range. */
+  @Test
+  public void tokyo_returns_out_of_range_for_all_units() {
+    Wgs84 fix = wgs(GoldenVectors.TOKYO_TOWER);
+    for (CoordinateUnit u : CoordinateUnit.values()) {
+      assertThat(conv.convert(fix, u).isOutOfRange()).as("Tokyo, unit=%s", u).isTrue();
     }
   }
 
@@ -63,8 +74,8 @@ public class CoordinateConverterTest {
    * (Y/Z letters not implemented; main-island grid only — ADR-0001).
    */
   @Test
-  public void penghu_returns_ok_for_twd97_zone_119() {
-    Wgs84 fix = new Wgs84(23.566, 119.566, 1L, Wgs84.Source.MAP_CENTRE); // Magong / 馬公
+  public void magong_penghu_returns_ok_for_twd97_zone_119() {
+    Wgs84 fix = wgs(GoldenVectors.MAGONG_PENGHU);
     ConversionResult r = conv.convert(fix, CoordinateUnit.TWD97);
     assertThat(r.isOk()).as("TWD97 in Penghu").isTrue();
     @SuppressWarnings("unchecked")
@@ -76,8 +87,8 @@ public class CoordinateConverterTest {
   }
 
   @Test
-  public void penghu_returns_ok_for_twd67() {
-    Wgs84 fix = new Wgs84(23.566, 119.566, 1L, Wgs84.Source.MAP_CENTRE);
+  public void magong_penghu_returns_ok_for_twd67() {
+    Wgs84 fix = wgs(GoldenVectors.MAGONG_PENGHU);
     ConversionResult r = conv.convert(fix, CoordinateUnit.TWD67);
     assertThat(r.isOk()).as("TWD67 in Penghu").isTrue();
     @SuppressWarnings("unchecked")
@@ -87,8 +98,8 @@ public class CoordinateConverterTest {
 
   /** Taipower grid remains main-island-only — ADR-0001 caveat. */
   @Test
-  public void penghu_returns_out_of_range_for_taipower() {
-    Wgs84 fix = new Wgs84(23.566, 119.566, 1L, Wgs84.Source.MAP_CENTRE);
+  public void magong_penghu_returns_out_of_range_for_taipower() {
+    Wgs84 fix = wgs(GoldenVectors.MAGONG_PENGHU);
     assertThat(conv.convert(fix, CoordinateUnit.TAIPOWER).isOutOfRange()).isTrue();
   }
 
