@@ -10,6 +10,31 @@
 
 ## Clarifications
 
+### Session 2026-05-16 (post-MVP, on-device polish)
+
+- Q: After shipping FR-011 with Taipower 10 m default, end users asked for
+  "more digits". What is the correct default?
+  → A: Flip the default to **11-char (1 m precision)**. 9-char (10 m)
+    remains an option for a future user-precision toggle but is no
+    longer the v1 default.
+- Q: Outer islands (Penghu, Kinmen, Matsu) were originally deferred. The
+  authoritative CSV ships values for all 22 county seats. Do we ship
+  z119 support?
+  → A: Yes. Auto-pick zone by longitude (<120° → z119, else z121),
+    expose the "z119" suffix on the readout, accept the documented
+    ±10-20 m TWD67 degradation, keep Taipower main-island only.
+- Q: The Tools-menu icon was registered with an action but did nothing
+  on tap. What behaviour does it get?
+  → A: Cycle Off → Taipower → TWD97 → TWD67 → Off, persisting the unit
+    choice and toasting the new state. Replaces the no-op the user
+    flagged on device.
+- Q: The settings page text was hard to read AND the user couldn't see
+  the effect of a change without opening the dialog.
+  → A: Two additions: per-row live preview in the summary (entry label
+    + Taipei-101 sample formatted), and a dedicated accuracy advisory
+    block listing TWD67 main / outer-island error bands. Plain-language
+    wording, no ADR / library references in the user-facing text.
+
 ### Session 2026-05-16
 
 - Q: How should the plugin determine which UI language to display (locale source)?
@@ -197,12 +222,16 @@ previously selected unit is restored.
   readout MUST show a distinct "no fix" state and MUST NOT display a numeric
   value.
 - **FR-011**: Each unit MUST be displayed with a precision appropriate to
-  the underlying data source. v1 defaults: **Taipower grid → 10 m
-  precision (9-character codes)**; **TWD97 / TWD67 → 1 m precision** for
-  easting and northing. A 1 m Taipower precision (11-character codes)
-  MAY be exposed behind a future precision flag but is NOT required in
-  v1 (rationale: typical GPS-fix accuracy is 3-5 m, and 10 m matches the
-  pwa_map reference's default precision — see ADR-0001).
+  the underlying data source. v1 defaults: **Taipower grid → 1 m
+  precision (11-character codes)** to match Taipower field-survey
+  conventions; **TWD97 / TWD67 → 1 m precision** for easting and
+  northing. A 10 m Taipower precision (9-character codes) MAY be
+  exposed behind a future user-precision flag but is NOT required in
+  v1. Rationale for shipping 11-char by default: end users explicitly
+  asked for the extra digits and the trailing 1 m sub-cell is
+  computable from the same TWD67 input; the spec previously deferred
+  this and the deferral was rolled back during post-MVP iteration (see
+  ADR-0008).
 - **FR-012**: The readout MUST visually identify which unit is currently
   displayed (label or short prefix) so the user is never ambiguous about
   what numbers they are seeing.
@@ -245,6 +274,55 @@ previously selected unit is restored.
   required to render the live readout in-memory. The only persisted
   state is User Preference (selected unit, selected UI language
   override).
+- **FR-021**: The plugin MUST support Taiwan's outer islands (Penghu /
+  Kinmen / Matsu / 連江) for the TWD97 and TWD67 units via TM2 zone
+  119 (EPSG:3825). Zone selection MUST be derived from longitude
+  automatically: any fix with longitude < 120.0° resolves to zone
+  119, otherwise zone 121. The TWD97 / TWD67 readout MUST visually
+  identify the zone when non-default (e.g., a " z119" suffix on the
+  easting/northing string) so the user is never ambiguous about which
+  TM2 grid the numbers belong to.
+  - For TWD67 specifically, the outer-island accuracy MAY degrade to
+    ±10-20 m versus the official 7-parameter Bursa-Wolf shift because
+    the plugin uses the simpler 4-parameter shift calibrated for the
+    main island (see ADR-0008). This degradation MUST be disclosed in
+    the settings-page accuracy advisory (FR-023).
+  - The Taipower grid coordinate system remains **main-island only**
+    in v1 (Y/Z letters reserved for outer islands are NOT
+    implemented); outer-island fixes in the Taipower unit MUST return
+    the standard `OUT_OF_RANGE` state with the WGS84 fallback line
+    (FR-009).
+- **FR-022**: The plugin MUST expose a Tools-menu icon ("TW
+  Coordinates") whose tap action cycles the on-map readouts through
+  four states in this exact order:
+  ```
+  Off → Taipower (11-char) → TWD97 → TWD67 → Off → …
+  ```
+  Each transition MUST:
+  - Update the selected unit in the persisted User Preference
+    (FR-005) so the settings page reflects the cycle position.
+  - Show a brief localised toast naming the new state (the active
+    unit's tag, or a localised "off" string).
+  - Toggle visibility of all three readouts (MAP / ME / TGT) together
+    when entering / leaving the Off state — individual rows are not
+    independently toggleable from the Tools icon.
+- **FR-023**: The settings page MUST surface two end-user advisories
+  in addition to the unit / language controls:
+  - **Live preview in each row's summary**: each `ListPreference`
+    summary MUST update on selection change to show
+    `"<entry label> — <sample formatted output>"` where the sample
+    output is a fixed reference point (Taipei 101) converted into
+    the currently-selected unit, OR for the language preference the
+    three row labels (MAP / ME / TGT) translated into the candidate
+    locale. The user MUST be able to see the effect of a change
+    without re-opening the dialog.
+  - **Accuracy notice section**: a dedicated, non-clickable
+    advisory block listing TWD97 sub-metre coverage and TWD67
+    accuracy bands (main island ±3-5 m; outer islands ±10-20 m),
+    plus the Taipower main-island-only constraint. The wording
+    MUST be intelligible to a non-technical field operator (no
+    references to internal ADRs or library names) and MUST be
+    localised in all three UI languages.
 
 ### Key Entities *(include if feature involves data)*
 

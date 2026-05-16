@@ -17,7 +17,7 @@ Represents the user's selected display unit.
 
 | Value | Display label key | Underlying CRS | Notes |
 |---|---|---|---|
-| `TAIPOWER` | `unit.taipower` | Taipower grid over TWD67 TM2 z121 | Letters Y/Z rejected (out-of-coverage). Default precision: 9-char (10 m). 11-char (1 m) is a future option. |
+| `TAIPOWER` | `unit.taipower` | Taipower grid over TWD67 TM2 z121 | Letters Y/Z rejected (out-of-coverage; main-island only). Default precision: **11-char (1 m)** per FR-011 (flipped from the original 9-char default during post-MVP iteration — see ADR-0008). 9-char (10 m) reserved for a future user-precision toggle. |
 | `TWD97` | `unit.twd97` | EPSG:3826 (TWD97 / TM2 z121) | Easting/northing in metres, 1 m precision. |
 | `TWD67` | `unit.twd67` | EPSG:3828-like (TWD67 / TM2 z121) but using the 4-parameter shift from TWD97 — see R8 | Easting/northing in metres, 1 m precision. ±3 m accuracy vs. official TWD67. |
 
