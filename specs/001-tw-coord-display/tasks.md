@@ -42,8 +42,8 @@ All paths in tasks below are repo-relative.
 - [ ] T004 [P] Author `app/src/main/AndroidManifest.xml`: declare ATAK plugin component activity, `android:extractNativeLibs="true"`, and **explicitly omit** `android.permission.INTERNET` (FR-019 enforced by construction).
 - [ ] T005 [P] Author `app/src/main/assets/plugin.xml` registering `gov.tak.api.plugin.IPlugin` impl `com.atakmap.android.twpower.TwPowerLifecycle` with `singleton="true"`.
 - [ ] T006 [P] Author `app/proguard-gradle.txt` keeping `TwPowerLifecycle`, `TwPowerMapComponent`, `TwPowerPreferenceFragment`, all `coord/` classes, and `org.locationtech.proj4j.**`; suppress lambda-eaten warnings per SDK README §44-48.
-- [ ] T007 [P] Seed `docs/adr/README.md` with the ADR template (number, title, status, context, decision, alternatives, consequences) per Constitution Principle V.
-- [ ] T008 [P] Seed `docs/ui/README.md` describing the docs-as-design-record practice per Constitution Principle III, with sections for the readout widget and the settings fragment to be filled in Phase 6.
+- [x] T007 [P] Seed `docs/adr/README.md` with the ADR template — **DONE 2026-05-16** during `/speckit-analyze` remediation (file exists; verify it still matches the template referenced by ADR-0001..0003 before marking the phase complete).
+- [ ] T008 [P] Seed `docs/ui/README.md` describing the docs-as-design-record practice per Constitution Principle III, with sections for the readout widget and the settings fragment to be filled in per the per-story tasks T036a and T048a.
 
 ---
 
@@ -97,6 +97,7 @@ All paths in tasks below are repo-relative.
 - [ ] T034 [US1] Implement `app/src/main/java/com/atakmap/android/twpower/TwPowerWidget.java` skeleton extending `MapWidget`: two-line text layout, monospace font, 60% opaque dark-grey background, colour-by-state (white/amber/grey), `attach()` adds to `RootLayoutWidget.TOP_RIGHT`, `detach()` removes. No tap behaviour yet.
 - [ ] T035 [US1] Wire `MapEvent.MAP_BOUNDS_CHANGED` listener inside `TwPowerMapComponent.onCreate`: on each event, build `Wgs84` from `MapView.getMapView()` centre, run `CoordinateConverter.convert(...)` with default unit `TWD97`, format via `Formatter`, call `widget.render(mapLine, currentSelfLine)`.
 - [ ] T036 [US1] Implement out-of-range fallback rendering in `TwPowerWidget.render(...)`: when `DisplayLine.state == OUT_OF_RANGE`, draw a second line with the WGS84 lat/lon to 6 decimal places, in amber.
+- [ ] T036a [US1] Author `docs/ui/readout-widget.md` accompanying the widget code from T034-T036: document anchor (`RootLayoutWidget.TOP_RIGHT`), two-row layout, monospace 14 dp, colour-by-state palette (white / amber / grey), and the OK / OUT_OF_RANGE visual variants. Include at least one screenshot or wireframe. Per Constitution Principle III, UI changes MUST be *accompanied* by docs/ui updates — do not defer to Polish.
 
 **Checkpoint**: At this point, User Story 1 is fully functional — manual acceptance scenarios 1-3 of US1 in quickstart.md §7 should pass. Demoable as MVP.
 
@@ -141,6 +142,7 @@ All paths in tasks below are repo-relative.
 - [ ] T046 [US3] Implement `app/src/main/java/com/atakmap/android/twpower/TwPowerPreferenceFragment.java` extending `PluginPreferenceFragment(context, R.xml.preferences)` per `meshtastic_atak` precedent (PluginPreferencesFragment.java:13-26).
 - [ ] T047 [US3] Register fragment in `TwPowerMapComponent.onCreate` via `ToolsPreferenceFragment.register(new ToolPreference(title, summary, key, drawable, new TwPowerPreferenceFragment(context)))`; unregister by key in `onDestroyImpl`.
 - [ ] T048 [US3] Wire `PreferenceStore.Listener` in `TwPowerMapComponent`: on unit change → recompute both `DisplayLine`s and call `widget.render(...)`; on language change → first rebuild the localised `Context` via `LocaleOverride.contextFor(...)`, then re-resolve `Formatter.Strings` from the new context, then re-render. Locale-listener fires BEFORE widget-listener (registration order guarantee).
+- [ ] T048a [US3] Author `docs/ui/settings-fragment.md` accompanying T045-T048: document both `PanListPreference` entries (coord unit, UI language), the live-repaint contract (FR-018), the locale option list ("Use system" / English / 中文（正體） / 日本語), and the listener registration order constraint. Include screenshots in each of the three UI languages. Per Constitution Principle III, do not defer to Polish.
 
 **Checkpoint**: User Story 3 demoable — acceptance scenarios 1-3 of US3 in quickstart.md §7 pass. All three stories now work; manual walk in quickstart.md §7 should be 100% green.
 
@@ -151,17 +153,18 @@ All paths in tasks below are repo-relative.
 **Purpose**: Cross-cutting requirements that span multiple stories — clipboard copy (FR-015), instrumented UI verification, ADR records (Constitution V), `docs/ui` updates (Constitution III), and final acceptance.
 
 - [ ] T049 [P] Write `app/src/androidTest/java/com/atakmap/android/twpower/ClipboardCopyTest.java` per `contracts/widget-overlay.md`: tap each row in each of the three units × three UI languages (9 combos); assert `clipboardManager.getPrimaryClip().getItemAt(0).getText().toString().equals(displayedString)`; assert toast appears within 200 ms. MUST fail before T051.
-- [ ] T050 [P] Write `app/src/androidTest/java/com/atakmap/android/twpower/WidgetRenderTest.java` covering the four widget visual states (OK / OUT_OF_RANGE / NO_FIX / NO_PERMISSION) and the no-double-write-per-frame contract on rapid taps.
+- [ ] T050 [P] Write `app/src/androidTest/java/com/atakmap/android/twpower/WidgetRenderTest.java` covering the four widget visual states (OK / OUT_OF_RANGE / NO_FIX / NO_PERMISSION), the no-double-write-per-frame contract on rapid taps, AND an SC-003 next-frame assertion: "trigger preference change → invalidate widget → on the very next `Choreographer.FrameCallback` the rendered text equals the post-change value" (using `CountDownLatch` + frame callback hook).
 - [ ] T051 Implement tap-to-copy in `TwPowerWidget`: two independent tap targets (one per row); on tap, call `Formatter.forClipboard(line)`, write to `ClipboardManager` under label `"tw-coord"`, fire `ToastCallback.showCopiedToast(...)` with the localised resource. Make T049 pass.
 - [ ] T052 [P] Write `app/src/androidTest/java/com/atakmap/android/twpower/PreferenceFragmentTest.java` confirming the fragment renders both `PanListPreference` entries with localised labels in each of the three UI languages and that selection actually mutates `SharedPreferences`.
-- [ ] T053 Author `docs/ui/readout-widget.md` documenting widget anchor (`TOP_RIGHT`), layout (two rows, monospace, 14 dp), colour palette per state, screenshot of OK and OUT_OF_RANGE variants captured on the reference device.
-- [ ] T054 Author `docs/ui/settings-fragment.md` documenting the two preference entries, the live-repaint contract, screenshots in each of the three UI languages.
-- [ ] T055 [P] Author `docs/adr/0001-coordinate-math-source.md` — provenance pinned to pwa_map repo + the Taiwan Coordinate Systems Reference v2.0.0 (MIT) sections §6 (4-param shift) and §8 (Taipower grid). Quote the four golden vectors verbatim. Per Constitution Principle V.
-- [ ] T056 [P] Author `docs/adr/0002-no-tdal-integration.md` — decision to render all three units through the in-plugin widget. Context: TDAL not in SDK bundle; Taipower not EPSG. Alternatives considered: TDAL-only (covers only 2/3 units), hybrid (UX confusion). Per Constitution Principle V.
-- [ ] T057 [P] Author `docs/adr/0003-locale-override-mechanism.md` — decision to use `Context.createConfigurationContext(Configuration)` for the in-app language override instead of `Activity.recreate()`. Rationale: satisfies FR-018 (live repaint, no restart). Per Constitution Principle V.
+- [x] T053 ~~Author `docs/ui/readout-widget.md`...~~ **MOVED to T036a (end of US1)** per `/speckit-analyze` finding F2 (Constitution III: docs/ui MUST accompany UI changes).
+- [x] T054 ~~Author `docs/ui/settings-fragment.md`...~~ **MOVED to T048a (end of US3)** per `/speckit-analyze` finding F2.
+- [x] T055 ~~Author `docs/adr/0001-coordinate-math-source.md`...~~ **DONE 2026-05-16** during `/speckit-analyze` remediation (file exists; see ADR-0001).
+- [x] T056 ~~Author `docs/adr/0002-no-tdal-integration.md`...~~ **DONE 2026-05-16** during `/speckit-analyze` remediation (file exists; see ADR-0002).
+- [x] T057 ~~Author `docs/adr/0003-locale-override-mechanism.md`...~~ **DONE 2026-05-16** during `/speckit-analyze` remediation (file exists; see ADR-0003).
 - [ ] T058 Run `./gradlew spotlessApply lint testCivDebugUnitTest connectedCivDebugAndroidTest` — all four MUST be green. Fix any failure before progressing.
-- [ ] T059 Execute manual acceptance walk per `quickstart.md` §7 on the reference device against ATAK-CIV 5.7.0.3; record pass/fail per acceptance scenario in `specs/001-tw-coord-display/acceptance-log.md`; flag any scenario that did not pass for follow-up.
-- [ ] T060 Update `CLAUDE.md` SPECKIT block (if changed during implementation) and the `MEMORY.md` index in the user-memory directory with any newly captured user preferences. Per Constitution Principle V (English only).
+- [ ] T059 Execute manual acceptance walk per `quickstart.md` §7 on the reference device against ATAK-CIV 5.7.0.3; record pass/fail per acceptance scenario in `specs/001-tw-coord-display/acceptance-log.md`; flag any scenario that did not pass for follow-up. **MUST include an SC-001 time-box sub-step**: stopwatch the duration from cold-launch tap → first valid `ME` readout and record the exact seconds; assert ≤ 5 s on the reference device.
+- [ ] T060 Verify `CLAUDE.md` SPECKIT block still points at `specs/001-tw-coord-display/plan.md`; update only if the plan path moved. Also refresh `MEMORY.md` index in the user-memory directory if implementation revealed durable user preferences worth capturing. Per Constitution Principle V (English only).
+- [ ] T061 Author `app/src/androidTest/java/com/atakmap/android/twpower/FpsImpactTest.java` (or a scripted `adb shell dumpsys gfxinfo` benchmark in `tools/bench/fps_impact.ps1`) that compares ATAK frame rate over a 60 s map-pan workload with the plugin loaded vs. baseline ATAK, asserts ≤ 1 fps median drop per SC-007, and records the run in `specs/001-tw-coord-display/acceptance-log.md` alongside T059's results. Addresses analyze finding F4.
 
 ---
 
@@ -237,17 +240,19 @@ Implementations of independent math files in parallel:
   T030  TaipowerGrid (anchor table + steps)
 ```
 
-### Phase 6 Polish — tests + ADRs in parallel
+### Phase 6 Polish — instrumented tests + fps benchmark in parallel
 
 ```text
 Run in parallel:
   T049  ClipboardCopyTest (androidTest)
-  T050  WidgetRenderTest  (androidTest)
+  T050  WidgetRenderTest  (androidTest, includes SC-003 next-frame)
   T052  PreferenceFragmentTest (androidTest)
-  T055  ADR 0001 coordinate-math-source
-  T056  ADR 0002 no-tdal-integration
-  T057  ADR 0003 locale-override-mechanism
+  T061  FpsImpactTest / fps bench (SC-007)
 ```
+
+(T053-T057 are listed as DONE/MOVED above — see strikethrough notes:
+docs/ui authoring moved into US1/US3; design ADRs were authored on
+2026-05-16 during `/speckit-analyze` remediation.)
 
 ---
 
@@ -284,10 +289,26 @@ With two or three developers:
 
 ## Format Validation Check
 
-All 60 tasks above conform to the required format:
+After `/speckit-analyze` remediation (2026-05-16):
 
-- ✅ Each task starts with `- [ ]` checkbox.
-- ✅ Each task has a `T0NN` sequential ID.
+- Active tasks: **59** (T001-T061 with T053/T054/T055/T056/T057
+  closed; new T036a, T048a, T061).
+- ✅ Every active task starts with `- [ ]` (or `- [x]` for the closed
+  ones).
+- ✅ Every task has a `T0NN[a]` ID; IDs are append-only — never
+  recycled.
 - ✅ `[P]` marker is present only where the task is parallelisable.
-- ✅ `[US1]` / `[US2]` / `[US3]` story labels are present on every Phase 3-5 task and absent from Setup / Foundational / Polish tasks.
-- ✅ Every task description contains a concrete repo-relative file path (or paths for cross-file tasks).
+- ✅ `[US1]` / `[US2]` / `[US3]` story labels are present on every
+  Phase 3-5 task and absent from Setup / Foundational / Polish tasks.
+- ✅ Every task description contains a concrete repo-relative file
+  path (or paths for cross-file tasks).
+- ✅ Phase ordering reflects the constitution: docs/ui tasks live
+  inside US1 / US3 (T036a, T048a); design ADRs were authored at
+  decision time, not deferred.
+
+## Changelog
+
+| Date | Change | Origin |
+|---|---|---|
+| 2026-05-16 | Initial 60-task generation | `/speckit-tasks` |
+| 2026-05-16 | T053 → T036a (docs/ui readout-widget into US1); T054 → T048a (docs/ui settings-fragment into US3); T055-T057 closed (ADRs authored as files); T050 augmented with SC-003 next-frame assertion; T059 augmented with SC-001 stopwatch sub-step; T060 reworded to explicit verification; added T061 (fps impact bench for SC-007) | `/speckit-analyze` findings F1-F6 remediation |

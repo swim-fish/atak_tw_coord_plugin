@@ -197,8 +197,12 @@ previously selected unit is restored.
   readout MUST show a distinct "no fix" state and MUST NOT display a numeric
   value.
 - **FR-011**: Each unit MUST be displayed with a precision appropriate to
-  the underlying data source: Taipower grid to the nearest 1 m; TWD97/TWD67
-  to the nearest 1 m for easting/northing.
+  the underlying data source. v1 defaults: **Taipower grid → 10 m
+  precision (9-character codes)**; **TWD97 / TWD67 → 1 m precision** for
+  easting and northing. A 1 m Taipower precision (11-character codes)
+  MAY be exposed behind a future precision flag but is NOT required in
+  v1 (rationale: typical GPS-fix accuracy is 3-5 m, and 10 m matches the
+  pwa_map reference's default precision — see ADR-0001).
 - **FR-012**: The readout MUST visually identify which unit is currently
   displayed (label or short prefix) so the user is never ambiguous about
   what numbers they are seeing.
