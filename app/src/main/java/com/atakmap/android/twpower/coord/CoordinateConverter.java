@@ -8,11 +8,15 @@ import java.util.Objects;
  */
 public final class CoordinateConverter {
 
-  // Taiwan box covering both the main island (TM2 z121) and Penghu (TM2 z119). Penghu sits
-  // around 23.5°N 119.5°E; we relax LON_MIN to 119.0 so it falls inside.
+  // Taiwan box covering main island + Penghu + Kinmen + Matsu (Lienchiang). All four
+  // territories use TM2 zone 119 or 121 selected by longitude. The widened box catches:
+  //   - main island (~21.9..25.3°N, 120..122°E)
+  //   - Penghu     (~23.2..23.7°N, 119.5..119.7°E)
+  //   - Kinmen     (~24.4..24.5°N, 118.2..118.5°E)  → lower LON_MIN
+  //   - Matsu      (~26.1..26.4°N, 119.9..120.5°E)  → higher LAT_MAX
   private static final double LAT_MIN = 21.5;
-  private static final double LAT_MAX = 25.5;
-  private static final double LON_MIN = 119.0;
+  private static final double LAT_MAX = 26.5;
+  private static final double LON_MIN = 118.0;
   private static final double LON_MAX = 122.5;
 
   public ConversionResult convert(Wgs84 fix, CoordinateUnit unit) {

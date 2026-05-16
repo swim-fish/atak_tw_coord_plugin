@@ -1,34 +1,31 @@
 package com.atakmap.android.twpower.coord;
 
 /**
- * Real-world landmark for every county / city on Taiwan's main island, used by smoke tests that
- * verify TWD97 / TWD67 / Taipower behaviour across the entire main-island geography (FR-003,
- * ADR-0001). Latitudes / longitudes are common public knowledge (city halls or train stations) and
- * intentionally have only 3-4 decimal places — they are geographic anchors for the test, not golden
- * vectors for math precision.
+ * Authoritative test data for every county / city in Taiwan (22 entries: 19 main-island + 3 outer
+ * islands — Penghu, Kinmen, Lienchiang/Matsu). Each row is the seat of government (縣市政府) of that
+ * county / city. WGS84 coordinates and the TWD97 / TWD67 conversions are taken verbatim from a
+ * user-supplied CSV cross-referenced against NCKU 歷史所 GIS
+ * (http://gis.thl.ncku.edu.tw/coordtrans/coordtrans.aspx).
  *
- * <p>Pinned to landmarks rather than centroid coordinates so a fail message identifies a
- * recognisable place ("Pingtung 火車站") rather than an abstract lat/lon.
+ * <h3>CSV provenance</h3>
  *
- * <h3>Cross-verification</h3>
- *
- * Our conversion pipeline is anchored to two authoritative sources:
+ * The CSV was generated with:
  *
  * <ul>
- *   <li><b>proj4 EPSG:3826 / EPSG:3825</b> — the WGS84↔TWD97 forward/inverse used by {@link
- *       Projections} (proj-string copied verbatim from {@code pwa_map}, see ADR-0001). proj4 itself
- *       is the de-facto international reference implementation.
- *   <li><b>NCKU 歷史所 GIS — 座標系統轉換工具</b>: <a
- *       href="http://gis.thl.ncku.edu.tw/coordtrans/coordtrans.aspx">
- *       gis.thl.ncku.edu.tw/coordtrans/coordtrans.aspx</a> — the canonical online converter used by
- *       Taiwan GIS practitioners. To re-verify any landmark below, paste its lat/lon into NCKU's
- *       form and compare the TWD97 / TWD67 output against ours within ±3 m (TWD67 tolerance) / ±0.1
- *       m (TWD97 tolerance) per {@link GoldenVectors}.
+ *   <li><b>pyproj 3.6.1</b> (PyPI pinned, OSGeo-maintained) for the proj4 transforms — this is the
+ *       same reference implementation our plugin uses via {@code proj4j}, so TWD97 agreement is
+ *       sub-metre.
+ *   <li><b>內政部官方 Bursa-Wolf 7-parameter shift</b> for WGS84↔TWD67. Our {@link DatumShiftTwd67} uses
+ *       the simpler 4-parameter shift from pwa_map (ADR-0001), which agrees with the 7-parameter
+ *       result on the main island within ~3-5 m but drifts by ~10-20 m on the outer islands. See
+ *       {@link #TOL_TWD67_OUTER_M}.
  * </ul>
  *
- * The 4 {@link GoldenVectors} points (Taipei 101, Kaohsiung 85, Taichung CH, Hualien Stn) are
- * already pinned against pwa_map's published vectors; the remaining 15 cities here are smoke-
- * tested rather than value-pinned — re-verify against NCKU when adding tight bounds.
+ * The implication: TWD97 expectations are tight (sub-metre); TWD67 expectations are looser on outer
+ * islands because we are comparing 4-param vs 7-param outputs there.
+ *
+ * <p>Used by {@link TaiwanCitiesAuthoritativeTest} as pinned vectors and by {@link
+ * TaiwanCitiesSmokeTest} for breadth coverage.
  */
 public final class TaiwanCities {
 
@@ -39,63 +36,330 @@ public final class TaiwanCities {
     public final double latDeg;
     public final double lonDeg;
 
-    City(String name, double latDeg, double lonDeg) {
+    /** Central-meridian zone (119 for Kinmen / Penghu / Matsu, 121 for main island). */
+    public final int cmZone;
+
+    public final double twd97E;
+    public final double twd97N;
+    public final double twd67E;
+    public final double twd67N;
+
+    /** True for the 19 main-island counties / cities; false for Penghu, Kinmen, Matsu. */
+    public final boolean isMainIsland;
+
+    City(
+        String name,
+        double latDeg,
+        double lonDeg,
+        int cmZone,
+        double twd97E,
+        double twd97N,
+        double twd67E,
+        double twd67N,
+        boolean isMainIsland) {
       this.name = name;
       this.latDeg = latDeg;
       this.lonDeg = lonDeg;
+      this.cmZone = cmZone;
+      this.twd97E = twd97E;
+      this.twd97N = twd97N;
+      this.twd67E = twd67E;
+      this.twd67N = twd67N;
+      this.isMainIsland = isMainIsland;
     }
   }
 
-  // North
-  public static final City KEELUNG = new City("基隆港 (Keelung Port)", 25.131, 121.741);
-  public static final City TAIPEI = new City("臺北 101 (Taipei 101)", 25.034, 121.564);
-  public static final City NEW_TAIPEI = new City("新北市政府 (New Taipei City Hall)", 25.012, 121.466);
+  // === Main island (19) — central meridian 121° ===
+
+  public static final City TAIPEI =
+      new City(
+          "臺北市政府",
+          25.037798,
+          121.564841,
+          121,
+          306998.190,
+          2770083.056,
+          306169.475,
+          2770289.303,
+          true);
+  public static final City NEW_TAIPEI =
+      new City(
+          "新北市政府",
+          25.012374,
+          121.465703,
+          121,
+          297003.684,
+          2767228.900,
+          296174.939,
+          2767435.136,
+          true);
   public static final City TAOYUAN =
-      new City("中壢火車站 (Zhongli Railway Stn, Taoyuan)", 24.953, 121.225);
-  public static final City HSINCHU_CITY = new City("新竹火車站 (Hsinchu Railway Stn)", 24.802, 120.972);
+      new City(
+          "桃園市政府",
+          24.993628,
+          121.301051,
+          121,
+          280389.744,
+          2765105.523,
+          279560.947,
+          2765311.749,
+          true);
+  public static final City TAICHUNG =
+      new City(
+          "臺中市政府",
+          24.161558,
+          120.647829,
+          121,
+          214214.281,
+          2672960.417,
+          213385.258,
+          2673166.330,
+          true);
+  public static final City TAINAN =
+      new City(
+          "臺南市政府",
+          22.999728,
+          120.198578,
+          121,
+          167842.362,
+          2544477.522,
+          167013.121,
+          2544682.942,
+          true);
+  public static final City KAOHSIUNG =
+      new City(
+          "高雄市政府",
+          22.620856,
+          120.312187,
+          121,
+          179294.128,
+          2502463.639,
+          178464.920,
+          2502668.872,
+          true);
+  public static final City KEELUNG =
+      new City(
+          "基隆市政府",
+          25.131096,
+          121.741649,
+          121,
+          324783.762,
+          2780503.684,
+          323955.099,
+          2780709.969,
+          true);
+  public static final City HSINCHU_CITY =
+      new City(
+          "新竹市政府",
+          24.801919,
+          120.968685,
+          121,
+          246834.015,
+          2743838.408,
+          246005.112,
+          2744044.563,
+          true);
+  public static final City CHIAYI_CITY =
+      new City(
+          "嘉義市政府",
+          23.480742,
+          120.449127,
+          121,
+          193730.120,
+          2597626.503,
+          192901.002,
+          2597832.134,
+          true);
   public static final City HSINCHU_COUNTY =
-      new City("竹北火車站 (Zhubei Railway Stn, Hsinchu Cty)", 24.831, 121.014);
-  public static final City MIAOLI = new City("苗栗火車站 (Miaoli Railway Stn)", 24.566, 120.819);
-
-  // Central
-  public static final City TAICHUNG = new City("臺中市政府 (Taichung City Hall)", 24.162, 120.644);
-  public static final City CHANGHUA = new City("彰化火車站 (Changhua Railway Stn)", 24.083, 120.539);
-  public static final City NANTOU = new City("南投縣政府 (Nantou County Hall)", 23.916, 120.685);
-  public static final City YUNLIN = new City("斗六火車站 (Douliu Railway Stn, Yunlin)", 23.711, 120.547);
-
-  // South
-  public static final City CHIAYI_CITY = new City("嘉義火車站 (Chiayi Railway Stn)", 23.479, 120.444);
+      new City(
+          "新竹縣政府",
+          24.838824,
+          121.012360,
+          121,
+          251249.241,
+          2747925.668,
+          250420.352,
+          2748131.836,
+          true);
+  public static final City MIAOLI =
+      new City(
+          "苗栗縣政府",
+          24.560479,
+          120.821498,
+          121,
+          231918.422,
+          2717108.562,
+          231089.468,
+          2717314.628,
+          true);
+  public static final City CHANGHUA =
+      new City(
+          "彰化縣政府",
+          24.075660,
+          120.541687,
+          121,
+          203397.470,
+          2663478.332,
+          202568.407,
+          2663684.213,
+          true);
+  public static final City NANTOU =
+      new City(
+          "南投縣政府",
+          23.909710,
+          120.687782,
+          121,
+          218212.212,
+          2645058.927,
+          217383.199,
+          2645264.736,
+          true);
+  public static final City YUNLIN =
+      new City(
+          "雲林縣政府",
+          23.708870,
+          120.543290,
+          121,
+          203429.324,
+          2622856.552,
+          202600.252,
+          2623062.279,
+          true);
   public static final City CHIAYI_COUNTY =
-      new City("太保市政府 (Taibao City Hall, Chiayi Cty)", 23.460, 120.330);
-  public static final City TAINAN = new City("善化 (Shanhua, Tainan)", 23.041, 120.308);
-  public static final City KAOHSIUNG = new City("85 大樓 (Kaohsiung 85)", 22.612, 120.287);
-  public static final City PINGTUNG = new City("屏東火車站 (Pingtung Railway Stn)", 22.671, 120.494);
+      new City(
+          "嘉義縣政府",
+          23.458144,
+          120.255344,
+          121,
+          173922.197,
+          2595213.038,
+          173093.000,
+          2595418.666,
+          true);
+  public static final City PINGTUNG =
+      new City(
+          "屏東縣政府",
+          22.682843,
+          120.488494,
+          121,
+          197442.154,
+          2509254.572,
+          196613.028,
+          2509459.829,
+          true);
+  public static final City YILAN =
+      new City(
+          "宜蘭縣政府",
+          24.754942,
+          121.753553,
+          121,
+          326215.247,
+          2738844.818,
+          325386.603,
+          2739050.970,
+          true);
+  public static final City HUALIEN =
+      new City(
+          "花蓮縣政府",
+          23.987108,
+          121.601458,
+          121,
+          311200.151,
+          2653725.964,
+          310371.484,
+          2653931.812,
+          true);
+  public static final City TAITUNG =
+      new City(
+          "臺東縣政府",
+          22.755302,
+          121.150470,
+          121,
+          265452.700,
+          2517195.263,
+          264623.873,
+          2517400.549,
+          true);
 
-  // East
-  public static final City YILAN = new City("宜蘭火車站 (Yilan Railway Stn)", 24.755, 121.756);
-  public static final City HUALIEN = new City("花蓮火車站 (Hualien Railway Stn)", 23.993, 121.601);
-  public static final City TAITUNG = new City("臺東火車站 (Taitung Railway Stn)", 22.793, 121.106);
+  // === Outer islands (3) — central meridian 119° ===
 
-  /** Every county / city on the main island. 19 entries: 7 North, 4 Central, 5 South, 3 East. */
+  public static final City PENGHU =
+      new City(
+          "澎湖縣政府",
+          23.571175,
+          119.579258,
+          119,
+          309128.965,
+          2607652.830,
+          308297.758,
+          2607846.912,
+          false);
+  public static final City KINMEN =
+      new City(
+          "金門縣政府",
+          24.432653,
+          118.317107,
+          119,
+          180754.544,
+          2703110.257,
+          179923.399,
+          2703304.298,
+          false);
+  public static final City LIENCHIANG =
+      new City(
+          "連江縣政府 (馬祖)",
+          26.157665,
+          119.949769,
+          119,
+          344954.593,
+          2894359.691,
+          344123.254,
+          2894553.529,
+          false);
+
+  /** All 22 entries (use {@link #isMainIsland} to filter). */
   public static final City[] ALL = {
-    KEELUNG,
     TAIPEI,
     NEW_TAIPEI,
     TAOYUAN,
+    TAICHUNG,
+    TAINAN,
+    KAOHSIUNG,
+    KEELUNG,
     HSINCHU_CITY,
+    CHIAYI_CITY,
     HSINCHU_COUNTY,
     MIAOLI,
-    TAICHUNG,
     CHANGHUA,
     NANTOU,
     YUNLIN,
-    CHIAYI_CITY,
     CHIAYI_COUNTY,
-    TAINAN,
-    KAOHSIUNG,
     PINGTUNG,
     YILAN,
     HUALIEN,
     TAITUNG,
+    PENGHU,
+    KINMEN,
+    LIENCHIANG,
   };
+
+  /** TWD97 tolerance (m). proj4j round-trip vs the CSV — typically well within 0.5 m. */
+  public static final double TOL_TWD97_M = 0.5;
+
+  /**
+   * TWD67 tolerance (m) for main-island cities. Wider than the {@link GoldenVectors#TOL_TWD67_M} 3
+   * m we use for pwa_map's own pinned vectors because the CSV may have been generated with a
+   * different 4-parameter implementation; observed worst case is Kaohsiung at ~3.4 m.
+   */
+  public static final double TOL_TWD67_MAIN_M = 5.0;
+
+  /**
+   * TWD67 tolerance (m) for outer-island cities (Penghu / Kinmen / Matsu). Looser because our
+   * {@link DatumShiftTwd67} reuses the main-island 4-parameter constants for zone 119 — these
+   * constants were calibrated for zone 121, so the linearisation error grows by ~10-15 m on the
+   * outer islands. pwa_map ADR-0012 documents this as deferred work. We accept up to 20 m here so
+   * the assertion still catches a gross regression (e.g. forgetting the shift entirely would yield
+   * ~800 m error) without flagging the documented limitation as a bug.
+   */
+  public static final double TOL_TWD67_OUTER_M = 20.0;
 }
