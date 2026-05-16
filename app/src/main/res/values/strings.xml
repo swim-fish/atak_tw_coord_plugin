@@ -26,6 +26,9 @@
     <!-- Settings (Tool Preferences entry). -->
     <string name="pref_screen_title">TW Coordinates</string>
     <string name="pref_coord_unit_title">Display unit</string>
+    <!-- Summary is overridden at runtime by TwPowerPreferenceFragment with a live preview
+         (entry label + sample formatted coordinate). This default is only seen on first
+         render before refreshAllSummaries() lands. -->
     <string name="pref_coord_unit_summary">Choose Taipower / TWD97 / TWD67</string>
     <string name="pref_ui_language_title">UI language</string>
     <string name="pref_ui_language_summary">Override the plugin\'s UI language</string>
