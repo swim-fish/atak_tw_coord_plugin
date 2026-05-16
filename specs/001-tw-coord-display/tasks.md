@@ -313,18 +313,19 @@ After `/speckit-analyze` remediation (2026-05-16):
 | 2026-05-16 | Initial 60-task generation | `/speckit-tasks` |
 | 2026-05-16 | T053 → T036a (docs/ui readout-widget into US1); T054 → T048a (docs/ui settings-fragment into US3); T055-T057 closed (ADRs authored as files); T050 augmented with SC-003 next-frame assertion; T059 augmented with SC-001 stopwatch sub-step; T060 reworded to explicit verification; added T061 (fps impact bench for SC-007) | `/speckit-analyze` findings F1-F6 remediation |
 | 2026-05-16 | First `/speckit-implement` pass — MVP completed: Phase 1 (T001-T008), Phase 2 (T009-T022), and Phase 3 US1 minus T032 (T023-T036a). All 22 JVM unit tests GREEN, APK assembles successfully (ATAK-Plugin-atak_tw_power_plugin-1.0.0-b9cfd2bb-5.7.0.3-civ-debug.apk). T032 JMH bench deferred per analyze finding F9 (JMH source-set placement is an implementation concern). T037-T061 are NOT yet started — they belong to the next `/speckit-implement` continuation. See ADR-0005 for the implement-cycle record. | `/speckit-implement` |
+| 2026-05-16 | Second `/speckit-implement` pass — US2 + US3 implementation complete: T037 (SelfMarkerSubscriberTest with RED→GREEN bug catch on Long.MIN_VALUE sentinel overflow), T038 (SelfMarkerSubscriber pure-Java debouncer + stale detector), T039 (self-marker ITEM_REFRESH wiring via UID filter), T040 (NO_PERMISSION rendering; tap-to-settings deferred to T051), T042 (LocaleOverrideTest covering 12 fallback paths), T043 (PreferenceStore typed wrapper with commit() and CopyOnWriteArrayList listeners), T044 (LocaleOverride via createConfigurationContext), T045 (preferences.xml + arrays.xml), T046 (TwPowerPreferenceFragment), T047 (ToolsPreferenceFragment.register from the **com.atakmap.app.preferences** package), T048 (combined unit+language listener with locale-rebuild before render), T048a (docs/ui/settings-fragment.md). T041 (instrumented PreferenceStoreTest) deferred to Polish phase. All 31 JVM unit tests GREEN; APK 172 KB. See ADR-0006. | `/speckit-implement` |
 
-## Implementation status (2026-05-16, first `/speckit-implement` pass)
+## Implementation status (updated 2026-05-16, second `/speckit-implement` pass)
 
 | Phase | Task range | Status |
 |---|---|---|
 | Phase 1 Setup | T001-T008 | ✅ all complete (T007 closed during analyze remediation) |
 | Phase 2 Foundational | T009-T022 | ✅ all complete |
 | Phase 3 US1 | T023-T036a | ✅ all complete EXCEPT T032 (JMH bench deferred per F9) |
-| Phase 4 US2 | T037-T040 | ⏸ not started |
-| Phase 5 US3 | T041-T048a | ⏸ not started |
+| Phase 4 US2 | T037-T040 | ✅ all complete (T040 tap-to-settings deferred to T051) |
+| Phase 5 US3 | T041-T048a | ✅ implementation complete; T041 (instrumented test) deferred to next pass |
 | Phase 6 Polish | T049-T061 | ⏸ not started (T053-T057 closed during analyze remediation) |
 
-**Build status**: `./gradlew :app:testCivDebugUnitTest :app:assembleCivDebug` → BUILD SUCCESSFUL (22/22 tests green, signed civ-debug APK produced).
+**Build status**: `./gradlew :app:testCivDebugUnitTest :app:assembleCivDebug` → BUILD SUCCESSFUL (31/31 tests green, signed civ-debug APK produced, 172 KB).
 
-**Next entry-point**: `/speckit-implement` (continuation) should pick up at T037 (US2 — SelfMarkerSubscriber + own-position wiring), or pause here for on-device verification of the MVP per `quickstart.md` §7 acceptance scenarios 1-3 of US1.
+**Next entry-point**: `/speckit-implement` (continuation) should pick up the Polish phase — instrumented tests (T041 / T049 / T050 / T052), tap handlers (T051 clipboard + T040 settings), JMH (T032), fps bench (T061), and the manual acceptance walk (T059). Two research-doc drifts noted in ADR-0006 (ToolsPreferenceFragment package, MAP_BOUNDS_CHANGED vs MAP_MOVED/SCALE + ITEM_REFRESH) should be folded back via a `/speckit-analyze` cycle before further code work.
