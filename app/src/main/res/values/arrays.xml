@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="coord_unit_entries">
+        <item>@string/opt_unit_taipower</item>
+        <item>@string/opt_unit_twd97</item>
+        <item>@string/opt_unit_twd67</item>
+    </string-array>
+
+    <string-array name="coord_unit_values" translatable="false">
+        <item>TAIPOWER</item>
+        <item>TWD97</item>
+        <item>TWD67</item>
+    </string-array>
+
+    <string-array name="ui_language_entries">
+        <item>@string/opt_lang_system</item>
+        <item>@string/opt_lang_en</item>
+        <item>@string/opt_lang_zh_tw</item>
+        <item>@string/opt_lang_ja</item>
+    </string-array>
+
+    <string-array name="ui_language_values" translatable="false">
+        <item>SYSTEM</item>
+        <item>EN</item>
+        <item>ZH_TW</item>
+        <item>JA</item>
+    </string-array>
+
+</resources>

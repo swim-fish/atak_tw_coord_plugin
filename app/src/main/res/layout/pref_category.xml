@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Custom layout for the PreferenceCategory header. Uses ATAK-like accent colour so the
+    section title is unmistakeable on the dark Settings background.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/title"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="8dp"
+    android:textColor="#FFFFB300"
+    android:textSize="13sp"
+    android:textStyle="bold"
+    android:textAllCaps="true"/>
