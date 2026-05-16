@@ -17,8 +17,8 @@
     <string name="state_no_permission">無權限</string>
 
     <string name="toast_copied">座標已複製</string>
-    <string name="toast_widget_shown">台灣座標：讀數已顯示</string>
-    <string name="toast_widget_hidden">台灣座標：讀數已隱藏</string>
+    <string name="toast_widget_hidden">台灣座標：已關閉</string>
+    <string name="toast_widget_cycle">台灣座標：%1$s</string>
 
     <string name="pref_screen_title">台灣座標</string>
     <string name="pref_coord_unit_title">顯示座標單位</string>

@@ -10,7 +10,7 @@
 -keepattributes SourceFile,LineNumberTable
 
 -applymapping <atak.proguard.mapping>
--repackageclasses atakplugin.atak_tw_power_plugin
+-repackageclasses atakplugin.atak_tw_coord_plugin
 
 -keepattributes *Annotation*
 -keepattributes Signature, InnerClasses
@@ -37,14 +37,14 @@
 }
 -keep class * extends com.atak.plugins.impl.AbstractPluginTool {
 }
--keep class com.atakmap.android.twpower.TwPowerLifecycle { *; }
--keep class com.atakmap.android.twpower.plugin.** { *; }
--keep class com.atakmap.android.twpower.TwPowerMapComponent { *; }
--keep class com.atakmap.android.twpower.TwPowerPreferenceFragment { *; }
--keep class com.atakmap.android.twpower.TwPowerWidget { *; }
--keep class com.atakmap.android.twpower.coord.** { *; }
--keep class com.atakmap.android.twpower.prefs.** { *; }
--keep class com.atakmap.android.twpower.i18n.** { *; }
+-keep class com.atakmap.android.twcoord.TwCoordLifecycle { *; }
+-keep class com.atakmap.android.twcoord.plugin.** { *; }
+-keep class com.atakmap.android.twcoord.TwCoordMapComponent { *; }
+-keep class com.atakmap.android.twcoord.TwCoordPreferenceFragment { *; }
+-keep class com.atakmap.android.twcoord.TwCoordWidget { *; }
+-keep class com.atakmap.android.twcoord.coord.** { *; }
+-keep class com.atakmap.android.twcoord.prefs.** { *; }
+-keep class com.atakmap.android.twcoord.i18n.** { *; }
 
 # proj4j needs to keep CRS registrations available via reflection.
 -keep class org.locationtech.proj4j.** { *; }

@@ -1,6 +1,6 @@
 # UI: on-map readout widget
 
-**Surface owner**: `com.atakmap.android.twpower.TwPowerWidget`
+**Surface owner**: `com.atakmap.android.twcoord.TwCoordWidget`
 **Anchor**: `RootLayoutWidget.TOP_RIGHT` (top-right corner of the map)
 **Phase**: US1 — initial widget shipped 2026-05-16 (T034 / T035 / T036)
 
@@ -34,7 +34,7 @@ the widget itself contains no English literals.
 
 ## Render protocol
 
-- `TwPowerWidget.render(mapCentreLine, selfLine)` MUST be called on
+- `TwCoordWidget.render(mapCentreLine, selfLine)` MUST be called on
   the ATAK UI thread.
 - The widget keeps the previously-rendered `DisplayLine` for each row
   and short-circuits when both arguments equal-by-fields the previous

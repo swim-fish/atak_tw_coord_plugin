@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 include ':app'
-rootProject.name = "atak_tw_power_plugin"
+rootProject.name = "atak_tw_coord_plugin"

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-// atak_tw_power_plugin — Taiwan coordinate display plugin for ATAK-CIV
+// atak_tw_coord_plugin — Taiwan coordinate display plugin for ATAK-CIV
 //
 // PLUGIN_VERSION  — common version name for this plugin
 // ATAK_VERSION    — the ATAK runtime this plugin targets
@@ -88,7 +88,7 @@ def supportedFlavors = [
 
 android {
     compileSdk 36
-    namespace 'com.atakmap.android.twpower.plugin'
+    namespace 'com.atakmap.android.twcoord.plugin'
 
     buildFeatures {
         buildConfig = true

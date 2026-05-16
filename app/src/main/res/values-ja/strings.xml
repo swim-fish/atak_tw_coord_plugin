@@ -17,8 +17,8 @@
     <string name="state_no_permission">権限なし</string>
 
     <string name="toast_copied">座標をコピーしました</string>
-    <string name="toast_widget_shown">台湾座標：読み出しを表示</string>
-    <string name="toast_widget_hidden">台湾座標：読み出しを非表示</string>
+    <string name="toast_widget_hidden">台湾座標：オフ</string>
+    <string name="toast_widget_cycle">台湾座標:%1$s</string>
 
     <string name="pref_screen_title">台湾座標</string>
     <string name="pref_coord_unit_title">表示座標単位</string>

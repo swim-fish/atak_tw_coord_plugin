@@ -1,6 +1,6 @@
 # UI: settings (preference) fragment
 
-**Surface owner**: `com.atakmap.android.twpower.TwPowerPreferenceFragment`
+**Surface owner**: `com.atakmap.android.twcoord.TwCoordPreferenceFragment`
 **Hosted at**: ATAK menu → `Settings` → `Tool Preferences` → `Specific Tool Preferences` → **TW Coordinates**
 **Phase**: US3 — shipped 2026-05-16 (T045 / T046 / T047 / T048)
 
@@ -37,7 +37,7 @@ When the user dismisses the ListPreference dialog with a new value:
 1. Android writes the new value into `SharedPreferences`.
 2. `PreferenceStore.onSharedPreferenceChanged(...)` fires synchronously
    on the UI thread.
-3. `TwPowerMapComponent.prefListener` runs:
+3. `TwCoordMapComponent.prefListener` runs:
    - If the language key changed, it first rebuilds
      `localisedPluginContext` via `LocaleOverride.contextFor(...)`,
      so subsequent `R.string.*` lookups go to the new

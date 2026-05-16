@@ -22,13 +22,14 @@
 
     <!-- Clipboard confirmation toast. -->
     <string name="toast_copied">Coordinate copied</string>
-    <string name="toast_widget_shown">TW Coordinates: readout shown</string>
-    <string name="toast_widget_hidden">TW Coordinates: readout hidden</string>
+    <string name="toast_widget_hidden">TW Coordinates: off</string>
+    <!-- %1$s is the localised unit tag (台電 / TWD97 / TWD67) — auto-filled by code. -->
+    <string name="toast_widget_cycle">TW Coordinates: %1$s</string>
 
     <!-- Settings (Tool Preferences entry). -->
     <string name="pref_screen_title">TW Coordinates</string>
     <string name="pref_coord_unit_title">Display unit</string>
-    <!-- Summary is overridden at runtime by TwPowerPreferenceFragment with a live preview
+    <!-- Summary is overridden at runtime by TwCoordPreferenceFragment with a live preview
          (entry label + sample formatted coordinate). This default is only seen on first
          render before refreshAllSummaries() lands. -->
     <string name="pref_coord_unit_summary">Choose Taipower / TWD97 / TWD67</string>
