@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">台灣座標</string>
+    <string name="app_desc">於 ATAK 中顯示地圖中心與自身位置的台電 / TWD97 / TWD67 座標。</string>
+
+    <string name="label_map">地圖</string>
+    <string name="label_me">我</string>
+
+    <string name="unit_tag_taipower">台電</string>
+    <string name="unit_tag_twd97">TWD97</string>
+    <string name="unit_tag_twd67">TWD67</string>
+
+    <string name="state_out_of_range">超出範圍</string>
+    <string name="state_no_fix">無定位</string>
+    <string name="state_no_permission">無權限</string>
+
+    <string name="toast_copied">座標已複製</string>
+
+    <string name="pref_screen_title">台灣座標</string>
+    <string name="pref_coord_unit_title">顯示座標單位</string>
+    <string name="pref_coord_unit_summary">選擇 台電座標 / TWD97 / TWD67</string>
+    <string name="pref_ui_language_title">介面語系</string>
+    <string name="pref_ui_language_summary">覆寫外掛的介面語系</string>
+
+    <string name="opt_unit_taipower">台電座標</string>
+    <string name="opt_unit_twd97">TWD97 / TM2 z121</string>
+    <string name="opt_unit_twd67">TWD67 / TM2 z121</string>
+
+    <string name="opt_lang_system">跟隨系統設定</string>
+    <string name="opt_lang_en">English</string>
+    <string name="opt_lang_zh_tw">中文（正體）</string>
+    <string name="opt_lang_ja">日本語</string>
+
+</resources>

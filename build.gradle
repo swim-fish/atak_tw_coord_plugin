@@ -1,0 +1,12 @@
+plugins {
+    id("com.android.application") version "8.13.0" apply false
+    id("com.diffplug.spotless") version "6.25.0" apply false
+}
+
+ext {
+    ABI_FILTERS = project.hasProperty('ABI_FILTERS') ? project.ABI_FILTERS : "arm64-v8a"
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

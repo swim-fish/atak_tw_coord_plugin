@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Plugin identity (shown in ATAK plugin list, tools menu). -->
+    <string name="app_name">TW Coordinates</string>
+    <string name="app_desc">Display map-centre and own-position coordinates in Taipower / TWD97 / TWD67 units.</string>
+
+    <!-- Widget row labels. -->
+    <string name="label_map">MAP</string>
+    <string name="label_me">ME</string>
+
+    <!-- Coordinate-unit tags shown on each row. -->
+    <string name="unit_tag_taipower">TPC</string>
+    <string name="unit_tag_twd97">TWD97</string>
+    <string name="unit_tag_twd67">TWD67</string>
+
+    <!-- Readout state messages. -->
+    <string name="state_out_of_range">out of range</string>
+    <string name="state_no_fix">no fix</string>
+    <string name="state_no_permission">no permission</string>
+
+    <!-- Clipboard confirmation toast. -->
+    <string name="toast_copied">Coordinate copied</string>
+
+    <!-- Settings (Tool Preferences entry). -->
+    <string name="pref_screen_title">TW Coordinates</string>
+    <string name="pref_coord_unit_title">Display unit</string>
+    <string name="pref_coord_unit_summary">Choose Taipower / TWD97 / TWD67</string>
+    <string name="pref_ui_language_title">UI language</string>
+    <string name="pref_ui_language_summary">Override the plugin\'s UI language</string>
+
+    <!-- Coord unit option labels. -->
+    <string name="opt_unit_taipower">Taipower grid (台電座標)</string>
+    <string name="opt_unit_twd97">TWD97 / TM2 z121</string>
+    <string name="opt_unit_twd67">TWD67 / TM2 z121</string>
+
+    <!-- UI language option labels. -->
+    <string name="opt_lang_system">Use system locale</string>
+    <string name="opt_lang_en">English</string>
+    <string name="opt_lang_zh_tw">中文（正體）</string>
+    <string name="opt_lang_ja">日本語</string>
+
+</resources>

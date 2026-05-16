@@ -1,0 +1,42 @@
+# Build outputs
+build/
+.gradle/
+out/
+bin/
+obj/
+
+# Java / Kotlin
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+*.tmp
+*.log
+
+# Android Studio / IntelliJ
+.idea/
+*.ipr
+*.iws
+captures/
+local.properties
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor swap
+*.swp
+
+# Plugin signing keystores live alongside the build but are NEVER committed
+key.jks
+*.keystore
+
+# Generated proguard repackage instruction (rewritten on every build)
+app/proguard-gradle-repackage.txt
+
+# takdev-plugin temp dir (generated each build, git-status noise)
+.takdev/
+
+# Manual acceptance log (per-run device data, sometimes contains location)
+specs/**/acceptance-log.md

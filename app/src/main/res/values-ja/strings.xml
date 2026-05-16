@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">台湾座標</string>
+    <string name="app_desc">ATAK で地図中央と自端末位置の台電 / TWD97 / TWD67 座標を表示します。</string>
+
+    <string name="label_map">地図</string>
+    <string name="label_me">自機</string>
+
+    <string name="unit_tag_taipower">台電</string>
+    <string name="unit_tag_twd97">TWD97</string>
+    <string name="unit_tag_twd67">TWD67</string>
+
+    <string name="state_out_of_range">範囲外</string>
+    <string name="state_no_fix">測位不可</string>
+    <string name="state_no_permission">権限なし</string>
+
+    <string name="toast_copied">座標をコピーしました</string>
+
+    <string name="pref_screen_title">台湾座標</string>
+    <string name="pref_coord_unit_title">表示座標単位</string>
+    <string name="pref_coord_unit_summary">台電 / TWD97 / TWD67 を選択</string>
+    <string name="pref_ui_language_title">UI 言語</string>
+    <string name="pref_ui_language_summary">プラグインの UI 言語を上書き</string>
+
+    <string name="opt_unit_taipower">台電座標 (Taipower)</string>
+    <string name="opt_unit_twd97">TWD97 / TM2 z121</string>
+    <string name="opt_unit_twd67">TWD67 / TM2 z121</string>
+
+    <string name="opt_lang_system">システム設定に従う</string>
+    <string name="opt_lang_en">English</string>
+    <string name="opt_lang_zh_tw">中文（正體）</string>
+    <string name="opt_lang_ja">日本語</string>
+
+</resources>

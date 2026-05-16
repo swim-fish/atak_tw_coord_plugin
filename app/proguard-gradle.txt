@@ -1,0 +1,51 @@
+-dontskipnonpubliclibraryclasses
+-dontshrink
+-dontoptimize
+
+-keepattributes SourceFile,LineNumberTable
+-dontobfuscate
+-optimizations !code/simplification/arithmetic,!field/*,!class/merging/*,!code/allocation/variable
+
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable
+
+-applymapping <atak.proguard.mapping>
+-repackageclasses atakplugin.atak_tw_power_plugin
+
+-keepattributes *Annotation*
+-keepattributes Signature, InnerClasses
+
+-keep class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator *;
+}
+
+-keepclassmembers class **.R$* {
+    public static <fields>;
+}
+
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# Plugin entry points (SDK README requires these survive shrinking).
+-keep class * implements gov.tak.api.plugin.IPlugin {
+}
+-keep class * extends com.atak.plugins.impl.AbstractPluginTool {
+}
+-keep class com.atakmap.android.twpower.TwPowerLifecycle { *; }
+-keep class com.atakmap.android.twpower.plugin.** { *; }
+-keep class com.atakmap.android.twpower.TwPowerMapComponent { *; }
+-keep class com.atakmap.android.twpower.TwPowerPreferenceFragment { *; }
+-keep class com.atakmap.android.twpower.TwPowerWidget { *; }
+-keep class com.atakmap.android.twpower.coord.** { *; }
+-keep class com.atakmap.android.twpower.prefs.** { *; }
+-keep class com.atakmap.android.twpower.i18n.** { *; }
+
+# proj4j needs to keep CRS registrations available via reflection.
+-keep class org.locationtech.proj4j.** { *; }
+-keepclassmembers class org.locationtech.proj4j.** { *; }
