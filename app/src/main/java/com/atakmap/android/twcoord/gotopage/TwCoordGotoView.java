@@ -226,40 +226,42 @@ public final class TwCoordGotoView {
     this.customIconHint = root.findViewById(R.id.goto_custom_icon_hint);
     this.iconResolver = new IconResolver(pluginContext);
 
-    modeMove.setOnClickListener(v -> setMarkerMode(MarkerMode.MOVE_ONLY));
-    modeWaypoint.setOnClickListener(v -> setMarkerMode(MarkerMode.WAYPOINT));
-    modeMission.setOnClickListener(v -> setMarkerMode(MarkerMode.MISSION_POINT));
-    modeSpi.setOnClickListener(v -> setMarkerMode(MarkerMode.SPI));
-    modeFriendly.setOnClickListener(v -> setMarkerMode(MarkerMode.FRIENDLY));
-    modeHostile.setOnClickListener(v -> setMarkerMode(MarkerMode.HOSTILE));
-    modeNeutral.setOnClickListener(v -> setMarkerMode(MarkerMode.NEUTRAL));
-    modeUnknown.setOnClickListener(v -> setMarkerMode(MarkerMode.UNKNOWN));
-    // Feature 003 — 9th radio + preview tap. Both wrapped in try/catch (Throwable) per
-    // Constitution VI.
+    // Constitution VI: every onClick body wrapped via safeClick(...) so an inner SDK fault
+    // (Toast / Resources / setBackgroundColor / etc.) cannot propagate up and crash ATAK.
+    // safeClick(tag, runnable) catches Throwable and logs via Log.w(TAG, tag + " failed", t).
+    modeMove.setOnClickListener(
+        v -> safeClick("modeMove", () -> setMarkerMode(MarkerMode.MOVE_ONLY)));
+    modeWaypoint.setOnClickListener(
+        v -> safeClick("modeWaypoint", () -> setMarkerMode(MarkerMode.WAYPOINT)));
+    modeMission.setOnClickListener(
+        v -> safeClick("modeMission", () -> setMarkerMode(MarkerMode.MISSION_POINT)));
+    modeSpi.setOnClickListener(v -> safeClick("modeSpi", () -> setMarkerMode(MarkerMode.SPI)));
+    modeFriendly.setOnClickListener(
+        v -> safeClick("modeFriendly", () -> setMarkerMode(MarkerMode.FRIENDLY)));
+    modeHostile.setOnClickListener(
+        v -> safeClick("modeHostile", () -> setMarkerMode(MarkerMode.HOSTILE)));
+    modeNeutral.setOnClickListener(
+        v -> safeClick("modeNeutral", () -> setMarkerMode(MarkerMode.NEUTRAL)));
+    modeUnknown.setOnClickListener(
+        v -> safeClick("modeUnknown", () -> setMarkerMode(MarkerMode.UNKNOWN)));
     modeCustomIcon.setOnClickListener(
-        v -> {
-          try {
-            setMarkerMode(MarkerMode.CUSTOM_ICON);
-          } catch (Throwable t) {
-            Log.w(TAG, "modeCustomIcon click failed", t);
-          }
-        });
+        v -> safeClick("modeCustomIcon", () -> setMarkerMode(MarkerMode.CUSTOM_ICON)));
     customIconPreviewRow.setOnClickListener(
-        v -> {
-          try {
-            openCustomIconPicker();
-          } catch (Throwable t) {
-            Log.w(TAG, "customIconPreviewRow click failed", t);
-          }
-        });
+        v -> safeClick("customIconPreviewRow", this::openCustomIconPicker));
 
-    autoFillTaipower.setOnClickListener(v -> onAutoFill(CoordinateUnit.TAIPOWER));
-    autoFillTwd97.setOnClickListener(v -> onAutoFill(CoordinateUnit.TWD97));
-    autoFillTwd67.setOnClickListener(v -> onAutoFill(CoordinateUnit.TWD67));
+    autoFillTaipower.setOnClickListener(
+        v -> safeClick("autoFillTaipower", () -> onAutoFill(CoordinateUnit.TAIPOWER)));
+    autoFillTwd97.setOnClickListener(
+        v -> safeClick("autoFillTwd97", () -> onAutoFill(CoordinateUnit.TWD97)));
+    autoFillTwd67.setOnClickListener(
+        v -> safeClick("autoFillTwd67", () -> onAutoFill(CoordinateUnit.TWD67)));
 
-    tabTaipower.setOnClickListener(v -> setActiveTab(CoordinateUnit.TAIPOWER));
-    tabTwd97.setOnClickListener(v -> setActiveTab(CoordinateUnit.TWD97));
-    tabTwd67.setOnClickListener(v -> setActiveTab(CoordinateUnit.TWD67));
+    tabTaipower.setOnClickListener(
+        v -> safeClick("tabTaipower", () -> setActiveTab(CoordinateUnit.TAIPOWER)));
+    tabTwd97.setOnClickListener(
+        v -> safeClick("tabTwd97", () -> setActiveTab(CoordinateUnit.TWD97)));
+    tabTwd67.setOnClickListener(
+        v -> safeClick("tabTwd67", () -> setActiveTab(CoordinateUnit.TWD67)));
 
     inputTaipower.addTextChangedListener(textWatcher(this::validateTaipower));
     inputTwd97Easting.addTextChangedListener(textWatcher(this::validateTwd97));
@@ -270,7 +272,24 @@ public final class TwCoordGotoView {
     zoneTwd97.setOnCheckedChangeListener((g, id) -> validateTwd97());
     zoneTwd67.setOnCheckedChangeListener((g, id) -> validateTwd67());
 
-    submitButton.setOnClickListener(v -> onSubmit());
+    submitButton.setOnClickListener(v -> safeClick("submitButton", this::onSubmit));
+  }
+
+  /**
+   * Constitution VI helper. Every {@code OnClickListener} the page registers SHOULD route its body
+   * through this method so an inner SDK fault (Toast, Resources, view-mutator throw) is caught at
+   * the entry-point's outer scope per Constitution Principle VI, logged via {@code Log.w(TAG, tag +
+   * " failed", t)}, and returns without re-throwing into ATAK.
+   *
+   * <p>The {@code tag} is the static name of the click source ({@code "modeMove"}, {@code
+   * "tabTaipower"}, etc.) so logcat narrows down which handler tripped.
+   */
+  private static void safeClick(String tag, Runnable body) {
+    try {
+      body.run();
+    } catch (Throwable t) {
+      Log.w(TAG, tag + " failed", t);
+    }
   }
 
   /**
@@ -584,7 +603,7 @@ public final class TwCoordGotoView {
     // is an attribute id, not a drawable resource id; trying to use it crashes ATAK with
     // Resources.NotFoundException. The TextView is still clickable without a ripple drawable.
     label.setClickable(true);
-    label.setOnClickListener(v -> refillFromRecent(entry));
+    label.setOnClickListener(v -> safeClick("recentLabel", () -> refillFromRecent(entry)));
 
     Button del = new Button(ctx);
     LinearLayout.LayoutParams delLp =
@@ -598,9 +617,12 @@ public final class TwCoordGotoView {
     int dp10 = (int) (ctx.getResources().getDisplayMetrics().density * 10);
     del.setPadding(dp10, dp4, dp10, dp4);
     del.setOnClickListener(
-        v -> {
-          if (recentStore != null) recentStore.removeAt(index);
-        });
+        v ->
+            safeClick(
+                "recentDelete",
+                () -> {
+                  if (recentStore != null) recentStore.removeAt(index);
+                }));
 
     row.addView(label);
     row.addView(del);
@@ -792,6 +814,50 @@ public final class TwCoordGotoView {
               });
     }
     customIconPicker.show(currentSelection);
+  }
+
+  /**
+   * Called by the receiver's ICONSET_REMOVED broadcast handler with the removed iconset's uid. If
+   * the operator's currently-selected icon belonged to that iconset, fire the FR-009 fallback path
+   * inline: atomic-clear the prefs, reset markerMode to MOVE_ONLY, queue the one-shot "Selected
+   * icon no longer installed" hint, and repaint. Always invalidates the IconResolver cache and
+   * notifies the picker dialog so step-1 / step-2 reflect the new iconset list.
+   *
+   * <p>Wrapped in {@code try/catch (Throwable)} per Constitution VI.
+   */
+  public void onIconsetRemoved(String removedUid) {
+    try {
+      iconResolver.invalidateCaches();
+      boolean ourSelectionGone =
+          currentSelection != null
+              && removedUid != null
+              && removedUid.equals(currentSelection.iconsetUid());
+      if (ourSelectionGone) {
+        prefs.clearCustomIconSelectionAtomic();
+        this.markerMode = MarkerMode.MOVE_ONLY;
+        this.currentSelection = null;
+        this.pendingFallbackHint = true;
+        applyMarkerModeUI();
+        refreshSubmitEnabled();
+        Log.w(TAG, "ICONSET_REMOVED for our selection; cleared. uid=" + removedUid);
+      }
+      if (customIconPicker != null) customIconPicker.onIconsetsChanged();
+    } catch (Throwable t) {
+      Log.w(TAG, "onIconsetRemoved(" + removedUid + ") failed", t);
+    }
+  }
+
+  /**
+   * Called by the receiver's ICONSET_ADDED broadcast handler. Invalidates the IconResolver cache so
+   * the next picker open sees the new iconset, and notifies the dialog if it's open.
+   */
+  public void onIconsetsChanged() {
+    try {
+      iconResolver.invalidateCaches();
+      if (customIconPicker != null) customIconPicker.onIconsetsChanged();
+    } catch (Throwable t) {
+      Log.w(TAG, "onIconsetsChanged failed", t);
+    }
   }
 
   /** Called by the receiver's onDropDownClose; force-dismiss + tear down worker. */

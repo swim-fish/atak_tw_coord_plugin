@@ -178,9 +178,9 @@ description: "Task list for feature 003-custom-marker-icon"
 
 ### Implementation for User Story 4
 
-- [ ] T042 [US4] Add the bind-path fallback branch to `TwCoordGotoView.bind(...)`: when `prefs.getGotoMarkerMode() == CUSTOM_ICON && persistedPath != null && !iconResolver.isValidIconsetPath(persistedPath)`, fire `prefs.clearCustomIconSelectionAtomic()`, set `markerMode = MOVE_ONLY`, set `currentSelection = null`, set `pendingFallbackHint = true`, log at WARN with the cleared path. This replaces the TODO bookmark left in T036. Re-run T039 AC1 — MUST pass
-- [ ] T043 [US4] Add the one-shot hint render in `renderCustomIconPreview()`: when `markerMode == CUSTOM_ICON && pendingFallbackHint`, render the `FallbackHint` state (show `goto_custom_icon_hint` TextView with `R.string.goto_custom_icon_hint_lost`), and on return set `pendingFallbackHint = false`. Subsequent renders show the normal empty-state. Re-run T039 AC2+AC3 — MUST pass
-- [ ] T044 [US4] Wire the `ICONSET_ADDED` / `ICONSET_REMOVED` broadcast receiver in `TwCoordGotoReceiver`: register on `onDropDownVisible(true)`, unregister on `onDropDownClose()`. `onReceive` body wrapped in `try/catch (Throwable)` per Constitution VI. On `ICONSET_REMOVED` whose `uid` matches `currentSelection.iconsetUid`, dispatch to view layer to fire the fallback path (extract a `view.onIconsetRemoved(String uid)` method that runs the same atomic-clear logic as T042 plus repaint). On any `ICONSET_*`, call `iconResolver.invalidateCaches()` and `pickerDialog.onIconsetsChanged()` if the dialog is open. Re-run T040 — MUST pass
+- [X] T042 [US4] Add the bind-path fallback branch to `TwCoordGotoView.bind(...)`: when `prefs.getGotoMarkerMode() == CUSTOM_ICON && persistedPath != null && !iconResolver.isValidIconsetPath(persistedPath)`, fire `prefs.clearCustomIconSelectionAtomic()`, set `markerMode = MOVE_ONLY`, set `currentSelection = null`, set `pendingFallbackHint = true`, log at WARN with the cleared path. This replaces the TODO bookmark left in T036. Re-run T039 AC1 — MUST pass
+- [X] T043 [US4] Add the one-shot hint render in `renderCustomIconPreview()`: when `markerMode == CUSTOM_ICON && pendingFallbackHint`, render the `FallbackHint` state (show `goto_custom_icon_hint` TextView with `R.string.goto_custom_icon_hint_lost`), and on return set `pendingFallbackHint = false`. Subsequent renders show the normal empty-state. Re-run T039 AC2+AC3 — MUST pass
+- [X] T044 [US4] Wire the `ICONSET_ADDED` / `ICONSET_REMOVED` broadcast receiver in `TwCoordGotoReceiver`: register on `onDropDownVisible(true)`, unregister on `onDropDownClose()`. `onReceive` body wrapped in `try/catch (Throwable)` per Constitution VI. On `ICONSET_REMOVED` whose `uid` matches `currentSelection.iconsetUid`, dispatch to view layer to fire the fallback path (extract a `view.onIconsetRemoved(String uid)` method that runs the same atomic-clear logic as T042 plus repaint). On any `ICONSET_*`, call `iconResolver.invalidateCaches()` and `pickerDialog.onIconsetsChanged()` if the dialog is open. Re-run T040 — MUST pass
 - [ ] T045 [US4] Run T041 — Espresso Flow D MUST pass on device
 
 **Checkpoint**: All four user stories independently functional. Feature is implementation-complete.
@@ -193,14 +193,14 @@ description: "Task list for feature 003-custom-marker-icon"
 
 ### Constitution VI audit (NON-NEGOTIABLE)
 
-- [ ] T046 Run the grep from [quickstart.md § 8](./quickstart.md#8-constitution-vi-sanity-check-before-commit) against the new code: every match for `onReceive` / `onClick` / `onItemClick` / `getView` / `onCancel` / `run` in `app/src/main/java/com/atakmap/android/twcoord/gotopage/` MUST have a `try { ... } catch (Throwable t) { Log.w(TAG, ..., t); }` body. Any unguarded entry point is a CRITICAL finding — fix before continuing
-- [ ] T047 Re-read `IconResolver`, `CustomIconPickerDialog`, `TwCoordGotoView` and confirm every SDK call (`UserIconDatabase.*`, `PlacePointTool.*`, `AtakBroadcast.*`) is inside a `try/catch (Throwable)`. The `placePoint()` call inherits feature 002's existing wrap; everything else added by this feature MUST have its own
+- [X] T046 Run the grep from [quickstart.md § 8](./quickstart.md#8-constitution-vi-sanity-check-before-commit) against the new code: every match for `onReceive` / `onClick` / `onItemClick` / `getView` / `onCancel` / `run` in `app/src/main/java/com/atakmap/android/twcoord/gotopage/` MUST have a `try { ... } catch (Throwable t) { Log.w(TAG, ..., t); }` body. Any unguarded entry point is a CRITICAL finding — fix before continuing
+- [X] T047 Re-read `IconResolver`, `CustomIconPickerDialog`, `TwCoordGotoView` and confirm every SDK call (`UserIconDatabase.*`, `PlacePointTool.*`, `AtakBroadcast.*`) is inside a `try/catch (Throwable)`. The `placePoint()` call inherits feature 002's existing wrap; everything else added by this feature MUST have its own
 
 ### Locale parity
 
-- [ ] T048 [P] Replace the placeholder zh-rTW values added in T003 with proofread Traditional-Chinese translations in `app/src/main/res/values-zh-rTW/strings.xml`. Run through the `zhtw-mcp` MCP for tone consistency with feature 001/002 strings (e.g. `自訂圖示`, `挑選圖示`)
-- [ ] T049 [P] Replace the placeholder ja values added in T003 with Japanese translations in `app/src/main/res/values-ja/strings.xml` (e.g. `カスタムアイコン`, `アイコンを選択`)
-- [ ] T050 [P] Run `./gradlew :app:lint` and verify zero `MissingTranslation` warnings on the new keys
+- [X] T048 [P] Replace the placeholder zh-rTW values added in T003 with proofread Traditional-Chinese translations in `app/src/main/res/values-zh-rTW/strings.xml`. Run through the `zhtw-mcp` MCP for tone consistency with feature 001/002 strings (e.g. `自訂圖示`, `挑選圖示`)
+- [X] T049 [P] Replace the placeholder ja values added in T003 with Japanese translations in `app/src/main/res/values-ja/strings.xml` (e.g. `カスタムアイコン`, `アイコンを選択`)
+- [X] T050 [P] Run `./gradlew :app:lint` and verify zero `MissingTranslation` warnings on the new keys
 
 ### Accessibility audit (Constitution III)
 
@@ -208,15 +208,15 @@ description: "Task list for feature 003-custom-marker-icon"
 
 ### Documentation
 
-- [ ] T051 [P] Update `docs/ui/input-page.md` with a new "Custom Icon picker" section covering (a) the 9th radio's appearance, (b) the preview row's three render states, (c) the two-step dialog's layout, (d) screenshots from the Galaxy Tab S10+ run of Acceptance Flow A. Per Constitution III mandate that every UI change updates `docs/ui/`
-- [ ] T052 Author `docs/adr/0011-custom-marker-icon-implementation.md` per Constitution V's post-`/speckit-implement` ADR cadence. Capture: any spec deviations encountered, on-device pivots, final structural decisions that drifted from plan.md, performance measurements vs SC-002/003/004, links to commits between branch creation and merge
+- [X] T051 [P] Update `docs/ui/input-page.md` with a new "Custom Icon picker" section covering (a) the 9th radio's appearance, (b) the preview row's three render states, (c) the two-step dialog's layout, (d) screenshots from the Galaxy Tab S10+ run of Acceptance Flow A. Per Constitution III mandate that every UI change updates `docs/ui/`
+- [X] T052 Author `docs/adr/0011-custom-marker-icon-implementation.md` per Constitution V's post-`/speckit-implement` ADR cadence. Capture: any spec deviations encountered, on-device pivots, final structural decisions that drifted from plan.md, performance measurements vs SC-002/003/004, links to commits between branch creation and merge
 
 ### Build & test gate
 
-- [ ] T053 Run `./gradlew :app:spotlessApply` per Constitution I (formatter is enforced by the build; this MUST be the last code-touching step before commit)
-- [ ] T054 Run `./gradlew :app:testCivDebugUnitTest` — every JVM test MUST pass (new tests + the entire feature-001/002 baseline must remain green)
+- [X] T053 Run `./gradlew :app:spotlessApply` per Constitution I (formatter is enforced by the build; this MUST be the last code-touching step before commit)
+- [X] T054 Run `./gradlew :app:testCivDebugUnitTest` — every JVM test MUST pass (new tests + the entire feature-001/002 baseline must remain green)
 - [ ] T055 Run `./gradlew :app:connectedCivDebugAndroidTest` on the reference device — every Espresso test MUST pass including T018 (Flow A), T038 (Flow C extension), T041 (Flow D)
-- [ ] T056 Run `./gradlew :app:lint` — zero errors, zero new warnings
+- [X] T056 Run `./gradlew :app:lint` — zero errors, zero new warnings
 
 ### On-device validation
 
@@ -226,7 +226,7 @@ description: "Task list for feature 003-custom-marker-icon"
 
 ### Memory + README
 
-- [ ] T059 [P] Update top-level `README.md` Features table with a row for the new "Custom Icon marker mode" capability; bump `Project layout` ADR count if needed (10 → 11 once T052 lands)
+- [X] T059 [P] Update top-level `README.md` Features table with a row for the new "Custom Icon marker mode" capability; bump `Project layout` ADR count if needed (10 → 11 once T052 lands)
 
 **Final checkpoint**: All Constitution principles satisfied (I: formatted, II: TDD-first, III: docs/ui updated, IV: performance measured, V: ADR-0011 authored, VI: every new entry point wrapped). Feature is ready for `/speckit-analyze` then merge.
 

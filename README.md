@@ -50,7 +50,8 @@ captured under `docs/ui/` (`readout-widget.md`, `settings-fragment.md`).
 | **Coordinate input page** ("GoTo") | Second Tools-menu icon opens a DropDown with three tabs (Taipower / TWD97 / TWD67), submit pans the camera to the resolved location (X/Y only — operator's zoom is preserved) |
 | **Auto Fill** | One-tap fill of the active tab from the current map centre, with zone toggle (TWD97/TWD67) auto-set from longitude; disabled in real time when the centre is unrepresentable in the active tab |
 | **Recent list** | Up to 10 prior successful submissions, deduped on (unit, value), persisted across ATAK restarts; tap any row to re-fill, per-row delete |
-| **No auto-marker** | Submit pans only; marker placement (waypoint / Mission Point / SPI / etc.) uses ATAK's standard long-press → radial menu — zero new UX to learn |
+| **In-page marker-mode picker** | 9 radios under Submit (Move only + 7 affiliation/spot-map types + **Custom Icon**). Selecting non-Move-only drops a marker of that type at the resolved coord; selection persists across plugin restarts |
+| **Custom Icon picker** | Two-step modal (iconset list → icon grid) reading exclusively from ATAK's existing iconset library (5 bundled iconsets out of the box + any operator-loaded). Picked icon is applied via `MarkerCreator.setIconPath`; marker behaves identically to host-placed ones. Graceful one-shot fallback when the picked iconset is removed |
 
 ## Coverage and accuracy
 
@@ -233,7 +234,7 @@ The build outputs an APK at
 │           ├── layout/pref_item.xml              # custom preference row layouts
 │           └── xml/preferences.xml               # PanListPreference declarations
 ├── docs/
-│   ├── adr/                                      # 10 Architecture Decision Records
+│   ├── adr/                                      # 11 Architecture Decision Records
 │   └── ui/                                       # readout + settings layout docs
 ├── specs/001-tw-coord-display/                   # spec / plan / tasks / contracts (display)
 ├── specs/002-tw-coord-goto/                      # spec / plan / tasks / contracts (GoTo input page)
@@ -252,9 +253,10 @@ spec / plan / tasks / contracts live under `specs/NNN-<short-name>/`:
 - [`specs/002-tw-coord-goto/`](specs/002-tw-coord-goto/) — GoTo input page
 - [`specs/003-custom-marker-icon/`](specs/003-custom-marker-icon/) — Custom Icon marker mode *(in flight)*
 
-Ten ADRs under [`docs/adr/`](docs/adr/) cover every architecturally
-significant decision (ADR-0001 is the entry point; ADR-0010 records the
-SDK reconnaissance for the in-flight Custom Icon feature).
+Eleven ADRs under [`docs/adr/`](docs/adr/) cover every architecturally
+significant decision (ADR-0001 is the entry point; ADR-0010 captures the
+SDK reconnaissance for the Custom Icon feature, ADR-0011 the
+post-implementation pivots).
 
 ## References
 
