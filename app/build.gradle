@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 buildscript {
-    ext.PLUGIN_VERSION = "1.0.2"
+    ext.PLUGIN_VERSION = "1.0.3"
     // ATAK_VERSION drives the plugin-api meta-data string in AndroidManifest.xml.
     // We target 5.4.0 to maximise device compatibility — meshtastic ships 5.4.0 and works
     // unchanged on every ATAK-CIV release we have access to (5.4..5.7). Compile-time SDK

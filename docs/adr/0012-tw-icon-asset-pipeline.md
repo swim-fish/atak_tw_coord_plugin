@@ -42,7 +42,16 @@ Outputs:
 - `docs/images/08a-tools-icon-tw-coord.png`
 - `docs/images/08b-tools-icon-tw-coord-goto.png`
 
-It parses each vector drawable via `xml.etree.ElementTree`, walks every `<path>`, and dispatches a minimal SVG-path subset (`M`, `L`, `Z` polygons; `a` arcs in the "two half-arcs that close" idiom recognised as full circles/ellipses; single `M+L` recognised as a stroked line) to PIL primitives. The output is a pure-white silhouette composited on a pure-black panel — visually identical to how the icon renders inside an ATAK Tools-menu cell, suitable for inline embedding in `docs/user-guide.md` and `docs/user-guide_zh.md`.
+It parses each vector drawable via `xml.etree.ElementTree`, walks every `<path>`, and dispatches a minimal SVG-path subset to PIL primitives. Supported patterns:
+
+| Pattern | Path-data shape | Rendered as |
+| --- | --- | --- |
+| Polygon (single subpath) | `M` + only `L`s + optional `Z` | `PIL.polygon(pts, fill=…)` |
+| Stroked line (single segment) | `M` + one `L`, no `Z` | `PIL.line([p1, p2], width=…)` |
+| Stroked polyline (multi-subpath) | one or more (`M` + `L`s) subpaths, no `Z`, stroke colour set | Each subpath as `PIL.line(pts, width=…, joint="curve")` — used by the lowercase `tw` label inside `ic_tw_coord_goto.xml` |
+| Full ellipse | `M cx-rx,cy a rx,ry … +2rx,0 a rx,ry … -2rx,0 Z` | `PIL.ellipse(bbox, outline=…)` |
+
+The output is a pure-white silhouette composited on a pure-black panel — visually identical to how the icon renders inside an ATAK Tools-menu cell, suitable for inline embedding in `docs/user-guide.md` and `docs/user-guide_zh.md`.
 
 Unknown path commands print `! skipping unrecognised path:` rather than failing silently. When the XML grows to use curves or other commands, extend the dispatcher in `render_path()`.
 

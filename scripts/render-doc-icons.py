@@ -124,6 +124,26 @@ def is_stroke_line(cmds: list[tuple[str, list[float]]]) -> bool:
             and cmds[1][0] == "L")
 
 
+def is_stroke_polyline(cmds: list[tuple[str, list[float]]]) -> bool:
+    """Pattern: one or more (M + Ls) subpaths, no Z. Used by stroked-only
+    paths that draw multiple disconnected line runs in a single <path>
+    element — e.g. the small lowercase 'tw' label in ic_tw_coord_goto.xml
+    declares three subpaths (t stem, t crossbar, w polyline) inside one
+    pathData string."""
+    if not cmds or cmds[0][0] != "M":
+        return False
+    has_extra_m = False
+    for c, _ in cmds[1:]:
+        if c == "M":
+            has_extra_m = True
+        elif c not in "L":
+            # Z, arcs or anything else — not a pure stroked polyline.
+            return False
+    # Only call this "polyline" if there's at least one extra M (otherwise
+    # is_stroke_line / is_polygon would have matched).
+    return has_extra_m
+
+
 def is_two_arc_ellipse(cmds: list[tuple[str, list[float]]]) -> tuple[float, float, float, float] | None:
     """Pattern: M cx-rx,cy a rx,ry … +2rx,0 a rx,ry … -2rx,0 Z.
     Returns (cx-rx, cy-ry, cx+rx, cy+ry) bounding box for PIL.ellipse,
@@ -171,6 +191,30 @@ def render_path(
         if stroke is not None:
             draw.line([(x1, y1), (x2, y2)], fill=stroke,
                       width=max(1, int(round(stroke_w))))
+        return
+
+    if is_stroke_polyline(cmds):
+        # Split into subpaths at every M command, render each subpath as a
+        # connected stroked line through its points.
+        if stroke is None:
+            return
+        subpaths: list[list[tuple[float, float]]] = []
+        current: list[tuple[float, float]] = []
+        for c, args in cmds:
+            if c == "M":
+                if current:
+                    subpaths.append(current)
+                current = [(args[0], args[1])]
+            elif c == "L":
+                current.append((args[0], args[1]))
+        if current:
+            subpaths.append(current)
+        for sub in subpaths:
+            if len(sub) < 2:
+                continue
+            draw.line(sub, fill=stroke,
+                      width=max(1, int(round(stroke_w))),
+                      joint="curve")
         return
 
     if is_polygon(cmds):

@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Tools-menu silhouette icon for the GoTo input page (feature 002).
-    Pure white stroke + fill on a fully transparent canvas — see the sibling
-    ic_tw_coord.xml for the silhouette-tint rationale.
+    Pure white stroke + fill on a fully transparent canvas — see the
+    sibling ic_tw_coord.xml for the silhouette-tint rationale.
 
     Composition:
+      - Small lowercase "tw" label in the top-left corner (Taiwan-flavour
+        marker so this icon doesn't read as a generic globe-goto)
       - Globe outer circle (stroke only), centred, radius 72
       - Equator (horizontal stroke through centre)
       - One oblique meridian (vertical thin ellipse) for 3D feel
-      - Small right-pointing arrow at the lower-right, overlapping the globe
-        ring so the silhouette reads as "globe + GO direction"
+      - Small right-pointing arrow at the lower-right, overlapping the
+        globe ring so the silhouette reads as "globe + GO direction"
 
-    Viewport 192×192 matches tmp/icon-candidates' design canvas.
+    Viewport 192×192. See docs/adr/0012-tw-icon-asset-pipeline.md for
+    the parser subset required to render this file to a doc preview.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
@@ -19,17 +22,30 @@
     android:viewportWidth="192"
     android:viewportHeight="192">
 
-    <!-- Globe outer circle (stroked outline). Two half-arc segments form the
-         full circle; large-arc-flag=1, sweep-flag=0 traces the loop. -->
+    <!-- Lowercase "tw" label in the top-left, drawn as 3 stroked subpaths:
+         1. M 18,8  L 18,28   — 't' stem
+         2. M 10,16 L 26,16   — 't' crossbar (mid-height = lowercase t)
+         3. M 30,16 L 35,28 L 40,18 L 45,28 L 50,16   — 'w' polyline
+                                                       (4 strokes, V valleys) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M 18,8 L 18,28 M 10,16 L 26,16 M 30,16 L 35,28 L 40,18 L 45,28 L 50,16"/>
+
+    <!-- Globe outer circle (stroked outline). Two half-arc segments form
+         the full circle; large-arc-flag=1, sweep-flag=0 traces the loop. -->
     <path
         android:strokeColor="#FFFFFF"
         android:strokeWidth="8"
         android:fillColor="#00000000"
         android:pathData="M 24,96 a 72,72 0 1,0 144,0 a 72,72 0 1,0 -144,0 Z"/>
 
-    <!-- Equator — horizontal stroke through the globe centre. Inset slightly
-         from the outer ring so the line endpoints don't merge with the ring
-         stroke at small sizes. -->
+    <!-- Equator — horizontal stroke through the globe centre. Inset
+         slightly from the outer ring so the line endpoints don't merge
+         with the ring stroke at small sizes. -->
     <path
         android:strokeColor="#FFFFFF"
         android:strokeWidth="6"
