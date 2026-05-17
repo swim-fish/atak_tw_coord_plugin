@@ -123,6 +123,22 @@ The 8 quick-radio marker modes survive untouched; they remain the no-extra-click
 
 **ADR-0010 alternative D (originally rejected)** has effectively been re-adopted in a narrower form. D's rejection was "splits the GoTo UX across two visible drop-downs" + "loses our toast / persist / close / CoT-broadcast sequencing". We address both by (i) explicitly making the operator opt into the delegation via a dedicated button (so the two-drop-down sequence is a deliberate user choice, not an unexpected side-effect of Submit), and (ii) doing the persist + Recent + NAV_COMPLETED broadcast ourselves before the delegation call. ADR-0010 D's original objection that "the data-layer reuse (D1) gives us the same icon coverage" turned out to be false in practice: a bespoke UI-layer reuse on top of `UserIconDatabase` reproduces ATAK's picker badly. Reusing ATAK's picker directly is cheaper and better.
 
+### D8a — drop the `processPoint` attempt; always open ATAK's pane via `START`
+
+**Status**: Accepted 2026-05-17 (same day as D8). Refines D8's implementation, not its decision.
+
+**Context**: D8 step 4 above tried `EnterLocationDropDownReceiver.getInstance(mapView).processPoint(GeoPointMetaData.wrap(p))` as a one-click drop, falling back to broadcasting `START` only when `processPoint` returned `null` (commits `e03624a` Option B pivot + `97a7bc8` pan-before-drop fix). On-device sideload showed `processPoint` returning `null` on every tap and triggering a user-visible English toast `"Unable to process point with empty intent"` from upstream (logcat: `W EnterLocationDropDownReceiver: Unable to process point with empty intent` originating from `Icon2525cPallet.getPointPlacedIntent(SourceFile:50)`).
+
+**Root cause**: `_selectedIconPallet` is initialised to `Icon2525cPallet` in `_initView()` (constructor path, confirmed via upstream source), but the pallet only produces a non-empty placement intent after the operator has *selected a concrete SIDC code or icon cell within the pallet's own UI*. Our calling context — the operator has typed a coordinate in our pane and tapped our button — never warms the pallet's per-cell selection state, so `pallet.getPointPlacedIntent(point, uuid)` returns an empty intent on every call. `processPoint` detects the empty intent, calls `Log.w(...)` and `Toast.makeText(...).show()`, then returns `null` — our fallback path then opens ATAK's pane. The fallback worked; the toast was the bug.
+
+**Decision**: Stop trying `processPoint` entirely. The button now unconditionally pans + broadcasts `START`. The operator picks a pallet/icon from ATAK's pane and drops a marker via ATAK's own tap-to-drop UX. This:
+
+1. Eliminates the spurious upstream toast on every button tap.
+2. Removes the `MapItem` / `GeoPointMetaData` imports and a ~20-line conditional branch from `onAtakPicker`.
+3. Keeps the UX identical from the operator's POV — they were always going to see ATAK's pane open anyway.
+
+**Trade-off**: A future ATAK version that loosens `processPoint`'s "pallet must have a concrete selection" precondition would let us re-introduce the one-click drop. Re-adding the `processPoint` path is straightforward at that point — see commit `97a7bc8` for the exact branch we removed.
+
 ## Alternatives considered
 
 - **Embed `UserIconPalletFragment` instead of writing `CustomIconPickerDialog`** — rejected per ADR-0010 D3 (fragment vs DropDownReceiver lifecycle mismatch). Confirmed during implementation: the fragment also fans out marker-placement itself, which would conflict with our `submitOk` path.
