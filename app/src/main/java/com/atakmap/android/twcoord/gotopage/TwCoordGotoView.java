@@ -3,6 +3,8 @@ package com.atakmap.android.twcoord.gotopage;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
@@ -10,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -34,6 +37,8 @@ import com.atakmap.coremap.maps.coords.GeoPoint;
 import com.atakmap.map.CameraController;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -104,9 +109,10 @@ public final class TwCoordGotoView {
   private final LinearLayout recentList;
   private final TextView recentEmpty;
 
-  // Marker mode (Move-only vs Drop-{type}). In-session only — resets when the receiver is
-  // reconstructed (i.e. on ATAK restart) so an operator who set Drop in a previous session does
-  // not accidentally pin new markers next session.
+  // Marker mode (Move-only vs Drop-{type}). Feature 003 changes the prior in-session-only
+  // behaviour: markerMode is now persisted across plugin restarts via
+  // pref_goto_marker_mode (ADR-0010 D5). MOVE_ONLY remains the install-time default so the
+  // "no accidental marker drops" property is preserved on fresh installs.
   private final RadioButton modeMove;
   private final RadioButton modeWaypoint;
   private final RadioButton modeMission;
@@ -116,6 +122,25 @@ public final class TwCoordGotoView {
   private final RadioButton modeNeutral;
   private final RadioButton modeUnknown;
   private MarkerMode markerMode = MarkerMode.MOVE_ONLY;
+
+  // Feature 003 — Custom Icon marker mode + picker dialog.
+  private final RadioButton modeCustomIcon;
+  private final LinearLayout customIconPreviewRow;
+  private final ImageView customIconThumb;
+  private final TextView customIconLabel;
+  private final TextView customIconHint;
+  private final IconResolver iconResolver;
+  // Picker dialog is constructed lazily on first open and re-used across opens within a session;
+  // forcibly dismissed in onDropDownClose via dismissCustomIconPicker().
+  private CustomIconPickerDialog customIconPicker;
+  private IconSelection currentSelection;
+  // One-shot FR-009 hint flag: set true when the bind-path detects the persisted icon's iconset
+  // is gone; consumed (cleared) the first time the operator switches *to* CUSTOM_ICON after that.
+  private boolean pendingFallbackHint;
+  // Shared worker pool for off-main-thread iconset enumeration and bitmap loads (R10). Lazy
+  // start on first picker open; shut down in dismissCustomIconPicker().
+  private ExecutorService customIconWorker;
+  private final Handler mainThreadHandler = new Handler(Looper.getMainLooper());
 
   // State.
   private CoordinateUnit activeTab = CoordinateUnit.TAIPOWER;
@@ -192,6 +217,15 @@ public final class TwCoordGotoView {
     this.modeNeutral = root.findViewById(R.id.goto_mode_neutral);
     this.modeUnknown = root.findViewById(R.id.goto_mode_unknown);
 
+    // Feature 003 view-id plumbing. Behaviour wiring follows immediately below in this ctor
+    // (radio click, preview tap, dialog onPicked/onCancelled).
+    this.modeCustomIcon = root.findViewById(R.id.goto_mode_custom_icon);
+    this.customIconPreviewRow = root.findViewById(R.id.goto_custom_icon_preview);
+    this.customIconThumb = root.findViewById(R.id.goto_custom_icon_thumb);
+    this.customIconLabel = root.findViewById(R.id.goto_custom_icon_label);
+    this.customIconHint = root.findViewById(R.id.goto_custom_icon_hint);
+    this.iconResolver = new IconResolver(pluginContext);
+
     modeMove.setOnClickListener(v -> setMarkerMode(MarkerMode.MOVE_ONLY));
     modeWaypoint.setOnClickListener(v -> setMarkerMode(MarkerMode.WAYPOINT));
     modeMission.setOnClickListener(v -> setMarkerMode(MarkerMode.MISSION_POINT));
@@ -200,6 +234,24 @@ public final class TwCoordGotoView {
     modeHostile.setOnClickListener(v -> setMarkerMode(MarkerMode.HOSTILE));
     modeNeutral.setOnClickListener(v -> setMarkerMode(MarkerMode.NEUTRAL));
     modeUnknown.setOnClickListener(v -> setMarkerMode(MarkerMode.UNKNOWN));
+    // Feature 003 — 9th radio + preview tap. Both wrapped in try/catch (Throwable) per
+    // Constitution VI.
+    modeCustomIcon.setOnClickListener(
+        v -> {
+          try {
+            setMarkerMode(MarkerMode.CUSTOM_ICON);
+          } catch (Throwable t) {
+            Log.w(TAG, "modeCustomIcon click failed", t);
+          }
+        });
+    customIconPreviewRow.setOnClickListener(
+        v -> {
+          try {
+            openCustomIconPicker();
+          } catch (Throwable t) {
+            Log.w(TAG, "customIconPreviewRow click failed", t);
+          }
+        });
 
     autoFillTaipower.setOnClickListener(v -> onAutoFill(CoordinateUnit.TAIPOWER));
     autoFillTwd97.setOnClickListener(v -> onAutoFill(CoordinateUnit.TWD97));
@@ -281,6 +333,9 @@ public final class TwCoordGotoView {
       modeHostile.setText(c.getString(R.string.goto_mode_hostile));
       modeNeutral.setText(c.getString(R.string.goto_mode_neutral));
       modeUnknown.setText(c.getString(R.string.goto_mode_unknown));
+      // Feature 003 — 9th radio + preview labels. customIconLabel / customIconHint are
+      // (re-)written in renderCustomIconPreview() per current PickerPreviewState.
+      modeCustomIcon.setText(c.getString(R.string.goto_mode_custom_icon));
     } catch (Throwable t) {
       Log.w(TAG, "refreshLocalisedStrings failed", t);
     }
@@ -335,12 +390,63 @@ public final class TwCoordGotoView {
       inputTwd67Northing.setText(state.twd67NorthingDraft());
       applyZoneRadio(zoneTwd67_121, zoneTwd67_119, state.twd67Zone());
     }
+    // Feature 003 — restore persisted markerMode + currentSelection. FR-008 + FR-009.
+    restoreCustomIconStateOnBind();
+
     applyTabVisibility();
     applyMarkerModeUI();
     validateTaipower();
     validateTwd97();
     validateTwd67();
     renderRecentList();
+  }
+
+  /**
+   * Bind-path restore for the marker-mode preference and the persisted Custom Icon selection.
+   * Mirrors the algorithm in [data-model.md §4]:
+   *
+   * <ul>
+   *   <li>mode != CUSTOM_ICON ⇒ restore mode as-is, clear currentSelection.
+   *   <li>mode == CUSTOM_ICON, path present, path resolves ⇒ restore mode + selection.
+   *   <li>mode == CUSTOM_ICON, path present, path does NOT resolve ⇒ atomic-clear, fall back to
+   *       MOVE_ONLY, set pendingFallbackHint = true (FR-009).
+   *   <li>mode == CUSTOM_ICON, path null ⇒ defensive fallback to MOVE_ONLY (shouldn't happen if
+   *       writes go through {@link CustomIconPickerDialog.Listener#onIconPicked}).
+   * </ul>
+   *
+   * <p>Wrapped in try/catch (Throwable) per Constitution VI.
+   */
+  private void restoreCustomIconStateOnBind() {
+    try {
+      MarkerMode persistedMode = prefs.getGotoMarkerMode();
+      String persistedPath = prefs.getGotoLastIconsetPath();
+      if (persistedMode != MarkerMode.CUSTOM_ICON) {
+        this.markerMode = persistedMode;
+        this.currentSelection = null;
+        return;
+      }
+      if (persistedPath == null) {
+        this.markerMode = MarkerMode.MOVE_ONLY;
+        this.currentSelection = null;
+        return;
+      }
+      IconSelection resolved = iconResolver.resolveSelection(persistedPath);
+      if (resolved != null) {
+        this.markerMode = MarkerMode.CUSTOM_ICON;
+        this.currentSelection = resolved;
+      } else {
+        // FR-009 atomic-clear path. Both prefs cleared in one apply().
+        prefs.clearCustomIconSelectionAtomic();
+        this.markerMode = MarkerMode.MOVE_ONLY;
+        this.currentSelection = null;
+        this.pendingFallbackHint = true;
+        Log.w(TAG, "Persisted iconsetPath no longer resolves; cleared: " + persistedPath);
+      }
+    } catch (Throwable t) {
+      Log.w(TAG, "restoreCustomIconStateOnBind failed", t);
+      this.markerMode = MarkerMode.MOVE_ONLY;
+      this.currentSelection = null;
+    }
   }
 
   /** Captured for {@link TwCoordGotoReceiver#onDropDownClose()} per FR-018. */
@@ -572,11 +678,19 @@ public final class TwCoordGotoView {
 
   private void setMarkerMode(MarkerMode mode) {
     this.markerMode = mode;
+    // Feature 003 — persist the choice so the next page-open / plugin-restart re-binds it.
+    // This intentionally changes feature 002's session-reset behaviour (ADR-0010 D5).
+    try {
+      prefs.setGotoMarkerMode(mode);
+    } catch (Throwable t) {
+      Log.w(TAG, "setGotoMarkerMode failed", t);
+    }
     applyMarkerModeUI();
+    refreshSubmitEnabled();
   }
 
   private void applyMarkerModeUI() {
-    // Manual mutual exclusion across the 8 radios — they live in 2 separate LinearLayout rows
+    // Manual mutual exclusion across the 9 radios — they live in 3 separate LinearLayout rows
     // rather than one RadioGroup, so Android won't uncheck the others automatically. Also,
     // `button="@null"` removes the default radio bullet so the selection is shown via background
     // tint (same pattern as the tab strip).
@@ -588,6 +702,112 @@ public final class TwCoordGotoView {
     styleMarkerModeRadio(modeHostile, markerMode == MarkerMode.HOSTILE);
     styleMarkerModeRadio(modeNeutral, markerMode == MarkerMode.NEUTRAL);
     styleMarkerModeRadio(modeUnknown, markerMode == MarkerMode.UNKNOWN);
+    styleMarkerModeRadio(modeCustomIcon, markerMode == MarkerMode.CUSTOM_ICON);
+    // Feature 003 — preview row visibility is purely a function of markerMode.
+    renderCustomIconPreview();
+  }
+
+  /**
+   * Compute the {@link PickerPreviewState} from (markerMode, currentSelection, pendingFallbackHint)
+   * and apply it to the preview row. {@link PickerPreviewState.FallbackHint} is one-shot —
+   * consuming it clears {@code pendingFallbackHint} so a subsequent switch shows {@link
+   * PickerPreviewState.Empty}.
+   */
+  private void renderCustomIconPreview() {
+    if (markerMode != MarkerMode.CUSTOM_ICON) {
+      customIconPreviewRow.setVisibility(View.GONE);
+      return;
+    }
+    customIconPreviewRow.setVisibility(View.VISIBLE);
+    PickerPreviewState state = computePreviewState();
+    if (state.isEmpty()) {
+      customIconThumb.setImageDrawable(null);
+      customIconThumb.setContentDescription(
+          localisedContext.getString(R.string.goto_custom_icon_empty));
+      customIconLabel.setText(localisedContext.getString(R.string.goto_custom_icon_empty));
+      customIconHint.setVisibility(View.GONE);
+    } else if (state.isFallbackHint()) {
+      customIconThumb.setImageDrawable(null);
+      customIconThumb.setContentDescription(
+          localisedContext.getString(R.string.goto_custom_icon_empty));
+      customIconLabel.setText(localisedContext.getString(R.string.goto_custom_icon_empty));
+      customIconHint.setText(localisedContext.getString(R.string.goto_custom_icon_hint_lost));
+      customIconHint.setVisibility(View.VISIBLE);
+      // One-shot: clear the flag now that the operator has seen the hint.
+      pendingFallbackHint = false;
+    } else if (state.isPopulated()) {
+      PickerPreviewState.Populated p = (PickerPreviewState.Populated) state;
+      IconSelection sel = p.selection();
+      android.graphics.Bitmap bmp = iconResolver.loadBitmap(sel.iconId());
+      if (bmp != null) customIconThumb.setImageBitmap(bmp);
+      customIconLabel.setText(
+          String.format(
+              localisedContext.getString(R.string.goto_custom_icon_preview_label_format),
+              sel.iconsetName()));
+      customIconThumb.setContentDescription(sel.iconsetName() + " " + sel.iconFileName());
+      customIconHint.setVisibility(View.GONE);
+    }
+  }
+
+  private PickerPreviewState computePreviewState() {
+    if (markerMode != MarkerMode.CUSTOM_ICON) return PickerPreviewState.empty();
+    if (pendingFallbackHint) return PickerPreviewState.fallbackHint();
+    if (currentSelection != null) return PickerPreviewState.populated(currentSelection);
+    return PickerPreviewState.empty();
+  }
+
+  /**
+   * Lazy-construct the picker dialog + worker pool on first open. Listener wires {@code
+   * onIconPicked} to persist + render + re-eval Submit; {@code onCancelled} is no-op (per spec edge
+   * case — preview state unchanged on cancel).
+   */
+  private void openCustomIconPicker() {
+    if (customIconWorker == null || customIconWorker.isShutdown()) {
+      customIconWorker = Executors.newFixedThreadPool(2);
+    }
+    if (customIconPicker == null) {
+      customIconPicker =
+          new CustomIconPickerDialog(
+              localisedContext,
+              iconResolver,
+              customIconWorker,
+              mainThreadHandler,
+              new CustomIconPickerDialog.Listener() {
+                @Override
+                public void onIconPicked(IconSelection sel) {
+                  try {
+                    currentSelection = sel;
+                    prefs.setGotoLastIconsetPath(sel.iconsetPath());
+                    renderCustomIconPreview();
+                    refreshSubmitEnabled();
+                  } catch (Throwable t) {
+                    Log.w(TAG, "onIconPicked handler failed", t);
+                  }
+                }
+
+                @Override
+                public void onCancelled() {
+                  // No-op: preview state unchanged on cancel (spec edge case).
+                }
+              });
+    }
+    customIconPicker.show(currentSelection);
+  }
+
+  /** Called by the receiver's onDropDownClose; force-dismiss + tear down worker. */
+  public void dismissCustomIconPicker() {
+    try {
+      if (customIconPicker != null) customIconPicker.dismissIfShowing();
+    } catch (Throwable t) {
+      Log.w(TAG, "dismissCustomIconPicker dialog failed", t);
+    }
+    try {
+      if (customIconWorker != null && !customIconWorker.isShutdown()) {
+        customIconWorker.shutdownNow();
+      }
+    } catch (Throwable t) {
+      Log.w(TAG, "dismissCustomIconPicker worker shutdown failed", t);
+    }
   }
 
   private static void styleMarkerModeRadio(RadioButton btn, boolean selected) {
@@ -672,8 +892,17 @@ public final class TwCoordGotoView {
   }
 
   private void refreshSubmitEnabled() {
-    boolean enabled = activeTabParse() != null && activeTabParse().isOk();
-    submitButton.setEnabled(enabled);
+    boolean coordOk = activeTabParse() != null && activeTabParse().isOk();
+    submitButton.setEnabled(coordOk && validMarkerSelection());
+  }
+
+  /**
+   * Feature 003 — for the 8 non-custom modes always true; for CUSTOM_ICON require {@code
+   * currentSelection != null}. Per [contracts/marker-mode-v2.md § Submit-enabled rule].
+   */
+  private boolean validMarkerSelection() {
+    if (!markerMode.requiresIconPath()) return true;
+    return currentSelection != null;
   }
 
   private ParseResult activeTabParse() {
@@ -757,11 +986,18 @@ public final class TwCoordGotoView {
     if (markerMode.dropsMarker()) {
       try {
         String callsign = input.unit().name() + " " + input.displayString();
-        new com.atakmap.android.user.PlacePointTool.MarkerCreator(dest)
-            .setUid(UUID.randomUUID().toString())
-            .setType(markerMode.cotType())
-            .setCallsign(callsign)
-            .placePoint();
+        com.atakmap.android.user.PlacePointTool.MarkerCreator builder =
+            new com.atakmap.android.user.PlacePointTool.MarkerCreator(dest)
+                .setUid(UUID.randomUUID().toString())
+                .setType(markerMode.cotType())
+                .setCallsign(callsign);
+        // Feature 003 — apply the operator's picked iconset path when CUSTOM_ICON is selected.
+        // setIconPath rejects null/empty internally, so the null-check is defence-in-depth
+        // (Submit should also be disabled by validMarkerSelection() at this point).
+        if (markerMode.requiresIconPath() && currentSelection != null) {
+          builder.setIconPath(currentSelection.iconsetPath());
+        }
+        builder.placePoint();
         Log.d(TAG, "Dropped " + markerMode + " marker at " + callsign);
       } catch (Throwable t) {
         Log.w(TAG, "marker placement failed (" + markerMode + ")", t);

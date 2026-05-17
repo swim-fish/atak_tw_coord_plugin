@@ -137,6 +137,8 @@ public class TwCoordGotoReceiver extends DropDownReceiver implements OnStateList
     // Persist the in-memory state for the next open within the same ATAK process (FR-018).
     if (controller != null) {
       inSessionState = controller.snapshotState();
+      // Feature 003 — tear down picker dialog + worker pool so neither outlives the page.
+      controller.dismissCustomIconPicker();
     }
     autoFillStream.detach();
   }

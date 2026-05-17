@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shared empty-state row used both at step 1 (no iconsets installed) and step 2 (iconset has
+     no usable icons). Caller sets the text. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/custom_icon_picker_empty_row_text"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp"
+    android:textColor="#7C7C7C"
+    android:textSize="13sp"
+    android:gravity="center"/>

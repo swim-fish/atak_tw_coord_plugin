@@ -98,4 +98,23 @@
     <string name="goto_mode_spi">關注點</string>
     <string name="goto_mode_mission">目的地</string>
 
+    <!-- ============================================================
+         Feature 003 — 自訂圖示落點模式
+         ============================================================ -->
+
+    <string name="goto_mode_custom_icon">自訂圖示</string>
+
+    <string name="goto_custom_icon_empty">挑選圖示</string>
+    <string name="goto_custom_icon_hint_lost">原先挑選的圖示已不存在，請重新挑選。</string>
+    <string name="goto_custom_icon_preview_label_format">%1$s</string>
+
+    <string name="goto_custom_icon_dialog_title_iconsets">選擇圖示集</string>
+    <string name="goto_custom_icon_dialog_title_icons">%1$s 內的圖示</string>
+    <string name="goto_custom_icon_back">返回</string>
+
+    <string name="goto_custom_icon_empty_iconsets">尚未安裝任何圖示集。請透過 ATAK 的圖示集管理員新增。</string>
+    <string name="goto_custom_icon_empty_icons">此圖示集沒有可用圖示。</string>
+
+    <string name="goto_custom_icon_iconset_count_suffix">（%1$d）</string>
+
 </resources>

@@ -98,4 +98,23 @@
     <string name="goto_mode_spi">関心地点</string>
     <string name="goto_mode_mission">目的地ピン</string>
 
+    <!-- ============================================================
+         Feature 003 — カスタムアイコン マーカーモード
+         ============================================================ -->
+
+    <string name="goto_mode_custom_icon">カスタムアイコン</string>
+
+    <string name="goto_custom_icon_empty">アイコンを選択</string>
+    <string name="goto_custom_icon_hint_lost">選択中のアイコンは現在インストールされていません。再度選択してください。</string>
+    <string name="goto_custom_icon_preview_label_format">%1$s</string>
+
+    <string name="goto_custom_icon_dialog_title_iconsets">アイコンセットを選択</string>
+    <string name="goto_custom_icon_dialog_title_icons">%1$s のアイコン</string>
+    <string name="goto_custom_icon_back">戻る</string>
+
+    <string name="goto_custom_icon_empty_iconsets">アイコンセットがインストールされていません。ATAK のアイコンセット マネージャから追加してください。</string>
+    <string name="goto_custom_icon_empty_icons">このアイコンセットには使用可能なアイコンがありません。</string>
+
+    <string name="goto_custom_icon_iconset_count_suffix"> (%1$d)</string>
+
 </resources>

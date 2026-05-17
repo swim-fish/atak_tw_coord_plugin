@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Outer frame for the Custom Icon picker dialog. Title row + back button + a FrameLayout
+     content area that the controller fills with either the iconset ListView or the icon
+     GridView depending on the current PickerDialogState. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="#1B1B1B">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <Button
+            android:id="@+id/custom_icon_picker_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/goto_custom_icon_back"
+            android:minHeight="0dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:contentDescription="@string/goto_custom_icon_back"/>
+
+        <TextView
+            android:id="@+id/custom_icon_picker_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center"/>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#2E2E2E"
+        android:layout_marginBottom="6dp"/>
+
+    <FrameLayout
+        android:id="@+id/custom_icon_picker_content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- Step 1: iconset list. -->
+        <ListView
+            android:id="@+id/custom_icon_picker_iconset_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="#2E2E2E"
+            android:dividerHeight="1dp"/>
+
+        <!-- Step 2: icon grid (3 columns at 64dp thumbnails). -->
+        <GridView
+            android:id="@+id/custom_icon_picker_icon_grid"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:numColumns="3"
+            android:columnWidth="80dp"
+            android:horizontalSpacing="4dp"
+            android:verticalSpacing="4dp"
+            android:gravity="center"
+            android:visibility="gone"/>
+
+        <!-- Shared empty-state row, swapped in by the controller. -->
+        <TextView
+            android:id="@+id/custom_icon_picker_empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:padding="16dp"
+            android:textColor="#7C7C7C"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:visibility="gone"/>
+    </FrameLayout>
+</LinearLayout>

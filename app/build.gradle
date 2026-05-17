@@ -112,6 +112,15 @@ android {
         abortOnError true
     }
 
+    testOptions {
+        // Android stub jars in the unit-test classpath throw `RuntimeException("not mocked")` on
+        // any method call by default. Setting returnDefaultValues=true makes them return
+        // null/0/false instead, which is what JVM unit tests assume when they don't bring in
+        // Robolectric. Required for tests that touch Android types they don't fully mock — e.g.
+        // any code path calling `com.atakmap.coremap.log.Log.w(...)` inside the code under test.
+        unitTests.returnDefaultValues = true
+    }
+
     signingConfigs {
         debug {
             storeFile file("${buildDir}/android_keystore")

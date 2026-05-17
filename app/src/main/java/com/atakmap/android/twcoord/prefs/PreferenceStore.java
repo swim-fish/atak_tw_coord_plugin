@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
+import com.atakmap.android.twcoord.gotopage.MarkerMode;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
 import com.atakmap.coremap.log.Log;
 import java.util.List;
@@ -38,6 +39,12 @@ public final class PreferenceStore {
   public static final String KEY_GOTO_LAST_TWD67_ZONE = "pref_goto_last_twd67_zone";
   public static final String KEY_GOTO_RECENT_JSON = "pref_goto_recent_json";
 
+  // Feature 003 (Custom Icon marker mode) — durable across plugin restarts. Default:
+  // MOVE_ONLY (safe — install-time default matches feature 002's session-reset behaviour);
+  // path defaults to null. Atomic-clear is exposed via clearCustomIconSelectionAtomic().
+  public static final String KEY_GOTO_MARKER_MODE = "pref_goto_marker_mode";
+  public static final String KEY_GOTO_LAST_ICONSET_PATH = "pref_goto_last_iconset_path";
+
   private static final String TAG = "TwCoordPrefs";
 
   private final SharedPreferences sp;
@@ -45,8 +52,16 @@ public final class PreferenceStore {
   private final SharedPreferences.OnSharedPreferenceChangeListener spListener;
 
   public PreferenceStore(Context context) {
-    Objects.requireNonNull(context, "context");
-    this.sp = PreferenceManager.getDefaultSharedPreferences(context);
+    this(PreferenceManager.getDefaultSharedPreferences(Objects.requireNonNull(context, "context")));
+  }
+
+  /**
+   * Package-private test seam. Accepts a {@link SharedPreferences} directly so JVM unit tests can
+   * supply a Mockito mock without bringing in Robolectric. Production code MUST use the {@link
+   * #PreferenceStore(Context)} constructor.
+   */
+  PreferenceStore(SharedPreferences sp) {
+    this.sp = Objects.requireNonNull(sp, "sp");
     this.spListener =
         new SharedPreferences.OnSharedPreferenceChangeListener() {
           @Override
@@ -212,5 +227,58 @@ public final class PreferenceStore {
 
   public void setGotoRecentJson(String json) {
     sp.edit().putString(KEY_GOTO_RECENT_JSON, json == null ? "[]" : json).apply();
+  }
+
+  // ============================================================
+  // Feature 003 (Custom Icon marker mode) — durable across plugin restarts.
+  // The eight feature-002 marker modes ALSO persist through getGotoMarkerMode/setGotoMarkerMode
+  // — this changes feature 002's in-session-only behaviour, per ADR-0010 D5. MOVE_ONLY is the
+  // install-time default, so the "no surprise marker drops on fresh install" property is kept.
+  // ============================================================
+
+  /**
+   * Last persisted marker-mode selection. Defaults to {@link MarkerMode#MOVE_ONLY}; falls back to
+   * MOVE_ONLY on a corrupt value (e.g. an enum name from a future version we don't know).
+   */
+  public MarkerMode getGotoMarkerMode() {
+    String s = sp.getString(KEY_GOTO_MARKER_MODE, MarkerMode.MOVE_ONLY.name());
+    try {
+      return MarkerMode.valueOf(s);
+    } catch (IllegalArgumentException e) {
+      Log.w(TAG, "Unknown goto-marker-mode pref value '" + s + "', falling back to MOVE_ONLY");
+      return MarkerMode.MOVE_ONLY;
+    }
+  }
+
+  public void setGotoMarkerMode(MarkerMode mode) {
+    Objects.requireNonNull(mode, "mode");
+    sp.edit().putString(KEY_GOTO_MARKER_MODE, mode.name()).apply();
+  }
+
+  /** Last persisted iconset path (canonical {@code <uid>/<group>/<filename>} form), or null. */
+  public String getGotoLastIconsetPath() {
+    return sp.getString(KEY_GOTO_LAST_ICONSET_PATH, null);
+  }
+
+  public void setGotoLastIconsetPath(String iconsetPath) {
+    sp.edit().putString(KEY_GOTO_LAST_ICONSET_PATH, iconsetPath).apply();
+  }
+
+  /** Remove the persisted iconset path. Called when the operator clears their selection. */
+  public void clearGotoLastIconsetPath() {
+    sp.edit().remove(KEY_GOTO_LAST_ICONSET_PATH).apply();
+  }
+
+  /**
+   * Atomic FR-009 fallback path: in a single {@code apply()} call, set marker mode to MOVE_ONLY and
+   * remove the iconset-path key. The single-commit guarantee prevents any observer seeing the
+   * inconsistent intermediate state where {@code mode == CUSTOM_ICON} but {@code iconsetPath ==
+   * null}.
+   */
+  public void clearCustomIconSelectionAtomic() {
+    sp.edit()
+        .putString(KEY_GOTO_MARKER_MODE, MarkerMode.MOVE_ONLY.name())
+        .remove(KEY_GOTO_LAST_ICONSET_PATH)
+        .apply();
   }
 }

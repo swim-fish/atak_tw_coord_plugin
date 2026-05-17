@@ -463,6 +463,77 @@
             android:padding="4dp"/>
     </LinearLayout>
 
+    <!-- Feature 003: 9th marker mode (Custom Icon) on its own row, matching the
+         visual weight of the 8 above. layout_weight skewing puts the radio in the
+         leftmost quarter so the row looks balanced even though it carries one option. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="2dp">
+        <RadioButton
+            android:id="@+id/goto_mode_custom_icon"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/goto_mode_custom_icon"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:button="@null"
+            android:drawableTop="@drawable/ic_marker_custom_icon"
+            android:drawablePadding="2dp"
+            android:gravity="center"
+            android:padding="4dp"
+            android:contentDescription="@string/goto_mode_custom_icon"/>
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"/>
+    </LinearLayout>
+
+    <!-- Feature 003: picker preview row — visible only when markerMode == CUSTOM_ICON.
+         Tap opens the picker dialog. Either the empty-state hint OR the populated
+         thumbnail+label is shown; controlled programmatically per PickerPreviewState. -->
+    <LinearLayout
+        android:id="@+id/goto_custom_icon_preview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="6dp"
+        android:layout_marginTop="2dp"
+        android:background="#222222"
+        android:visibility="gone"
+        android:focusable="true"
+        android:clickable="true"
+        android:importantForAccessibility="yes">
+
+        <ImageView
+            android:id="@+id/goto_custom_icon_thumb"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/goto_custom_icon_empty"
+            android:layout_marginEnd="8dp"/>
+
+        <TextView
+            android:id="@+id/goto_custom_icon_label"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"/>
+
+        <TextView
+            android:id="@+id/goto_custom_icon_hint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="#FFB74D"
+            android:textSize="12sp"
+            android:visibility="gone"/>
+    </LinearLayout>
+
     <!-- Submit button shared by all tabs. Disabled until the active tab's
          input is in ParseResult.Ok state. -->
     <Button
