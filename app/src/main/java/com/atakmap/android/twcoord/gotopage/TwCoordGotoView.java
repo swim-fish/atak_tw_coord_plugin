@@ -16,6 +16,7 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.atakmap.android.ipc.AtakBroadcast;
+import com.atakmap.android.maps.MapItem;
 import com.atakmap.android.maps.MapView;
 import com.atakmap.android.twcoord.coord.ConversionResult;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
@@ -830,17 +831,24 @@ public final class TwCoordGotoView {
   // ----------- ATAK picker delegation (Option B — ADR-0011 D8) -----------
 
   /**
-   * "Drop via ATAK picker" button handler. Mirrors Submit's housekeeping (persist + recent + close)
-   * but, instead of dropping our own fixed-type marker, hands the resolved coordinate to ATAK's
-   * native {@link EnterLocationDropDownReceiver#processPoint(GeoPointMetaData)} which drops a
-   * marker using whichever icon pallet the operator currently has selected in ATAK's enter-location
-   * pane.
+   * "Drop via ATAK picker" button handler. Mirrors Submit's housekeeping (persist + recent + pan +
+   * close) but, instead of dropping our own fixed-type marker, hands the resolved coordinate to
+   * ATAK's native {@link EnterLocationDropDownReceiver#processPoint(GeoPointMetaData)} which drops
+   * a marker using whichever icon pallet the operator currently has selected in ATAK's
+   * enter-location pane.
    *
-   * <p>We do NOT pan the camera here — {@code processPoint} handles centring internally as part of
-   * its own UX, and panning first would compete with that. We DO close our drop-down before the
-   * delegation call so ATAK's drop-down (if any) is not stacked behind ours.
+   * <p><b>Pan-before-drop is required.</b> {@code processPoint} only adds the marker — it does NOT
+   * move the camera. Without a pan first the marker drops off-screen and the operator perceives
+   * "nothing happened" (this was the live bug after the initial Option B rollout).
    *
-   * <p>Constitution VI: SDK call wrapped — any fault must NEVER take down ATAK.
+   * <p><b>Fallback for un-warmed-up singletons.</b> {@code processPoint} silently returns {@code
+   * null} if {@code _selectedIconPallet} was never initialised — the four early-return paths in
+   * upstream {@code EnterLocationDropDownReceiver.processPoint(GeoPointMetaData, MapItem)} include
+   * "no pallet selected" with no toast. When that happens we broadcast {@link
+   * EnterLocationDropDownReceiver#START} to bring ATAK's enter-location pane up at the
+   * already-centred coordinate, so the operator can drop manually with full pallet UI.
+   *
+   * <p>Constitution VI: every SDK call wrapped — any fault must NEVER take down ATAK.
    */
   private void onAtakPicker() {
     if (!submitInFlight.compareAndSet(false, true)) return;
@@ -859,11 +867,19 @@ public final class TwCoordGotoView {
       GeoPoint dest = GeoPoint.createMutable();
       dest.set(wgs84.latitudeDeg(), wgs84.longitudeDeg());
 
-      closeDropDown();
-
+      // Pan first — X/Y only, Z preserved — so whatever happens next (auto-dropped marker OR
+      // ATAK pane opening) is centred on the typed coordinate from the operator's POV.
       try {
-        EnterLocationDropDownReceiver.getInstance(mapView)
-            .processPoint(GeoPointMetaData.wrap(dest));
+        CameraController.Programmatic.panTo(mapView.getRenderer3(), dest, /*animate*/ false);
+      } catch (Throwable t) {
+        Log.w(TAG, "camera pan failed", t);
+      }
+
+      MapItem dropped = null;
+      try {
+        dropped =
+            EnterLocationDropDownReceiver.getInstance(mapView)
+                .processPoint(GeoPointMetaData.wrap(dest));
         Log.d(
             TAG,
             "Delegated to ATAK picker @ "
@@ -872,12 +888,28 @@ public final class TwCoordGotoView {
                 + wgs84.longitudeDeg()
                 + " ("
                 + input.unit()
-                + ")");
+                + "); droppedUid="
+                + (dropped != null ? dropped.getUID() : "null"));
       } catch (Throwable t) {
         Log.w(TAG, "EnterLocationDropDownReceiver.processPoint failed", t);
       }
 
+      if (dropped == null) {
+        // No marker was created. Open ATAK's enter-location pane so the operator can pick an
+        // icon pallet and drop manually — the map is already panned to the typed coordinate.
+        try {
+          AtakBroadcast.getInstance()
+              .sendBroadcast(new Intent(EnterLocationDropDownReceiver.START));
+          Log.d(TAG, "processPoint returned null; opened ATAK enter-location pane as fallback");
+        } catch (Throwable t) {
+          Log.w(TAG, "open ATAK enter-location pane failed", t);
+        }
+      } else {
+        showSubmitConfirmationToast(wgs84, input);
+      }
+
       broadcastNavCompleted(wgs84, input);
+      closeDropDown();
     } finally {
       submitInFlight.set(false);
     }
