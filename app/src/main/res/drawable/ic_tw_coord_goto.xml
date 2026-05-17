@@ -1,30 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Tools-menu silhouette icon for the GoTo input page (feature 002).
+    Pure white stroke + fill on a fully transparent canvas — see the sibling
+    ic_tw_coord.xml for the silhouette-tint rationale.
+
+    Composition:
+      - Globe outer circle (stroke only), centred, radius 72
+      - Equator (horizontal stroke through centre)
+      - One oblique meridian (vertical thin ellipse) for 3D feel
+      - Small right-pointing arrow at the lower-right, overlapping the globe
+        ring so the silhouette reads as "globe + GO direction"
+
+    Viewport 192×192 matches tmp/icon-candidates' design canvas.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
-    android:viewportWidth="48"
-    android:viewportHeight="48">
+    android:viewportWidth="192"
+    android:viewportHeight="192">
 
-    <!-- Background tile, matches feature-001 ic_tw_coord for visual consistency. -->
+    <!-- Globe outer circle (stroked outline). Two half-arc segments form the
+         full circle; large-arc-flag=1, sweep-flag=0 traces the loop. -->
     <path
-        android:fillColor="#1976D2"
-        android:pathData="M4,4 L44,4 L44,44 L4,44 Z"/>
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="8"
+        android:fillColor="#00000000"
+        android:pathData="M 24,96 a 72,72 0 1,0 144,0 a 72,72 0 1,0 -144,0 Z"/>
 
-    <!-- Crosshair-style target glyph (distinct from the unit-cycle icon). Filled rectangles
-         instead of stroked lines so the path renders identically on every API level. -->
+    <!-- Equator — horizontal stroke through the globe centre. Inset slightly
+         from the outer ring so the line endpoints don't merge with the ring
+         stroke at small sizes. -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:pathData="M 28,96 L 164,96"/>
+
+    <!-- Oblique meridian: vertical thin ellipse (rx=30, ry=68). -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:fillColor="#00000000"
+        android:pathData="M 66,96 a 30,68 0 1,0 60,0 a 30,68 0 1,0 -60,0 Z"/>
+
+    <!-- Arrow stem (filled rectangle ~10 px tall, 26 px wide). -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M22,8 L26,8 L26,18 L22,18 Z M22,30 L26,30 L26,40 L22,40 Z M8,22 L18,22 L18,26 L8,26 Z M30,22 L40,22 L40,26 L30,26 Z"/>
+        android:pathData="M 132,151 L 158,151 L 158,161 L 132,161 Z"/>
 
-    <!-- Central target ring (outer ring + filled centre dot). -->
+    <!-- Arrow head — right-pointing triangle with tip at (176, 156). -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M24,16 A 8,8 0 1,1 24,32 A 8,8 0 1,1 24,16 Z"/>
-    <path
-        android:fillColor="#1976D2"
-        android:pathData="M24,18 A 6,6 0 1,1 24,30 A 6,6 0 1,1 24,18 Z"/>
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M24,22 A 2,2 0 1,1 24,26 A 2,2 0 1,1 24,22 Z"/>
-
+        android:pathData="M 176,156 L 158,138 L 158,174 Z"/>
 </vector>

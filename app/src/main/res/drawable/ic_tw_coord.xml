@@ -1,20 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Tools-menu silhouette icon for the coordinate-unit cycle (feature 001).
+    ATAK applies a silhouette tint to Tools-menu drawables, so any filled
+    background plate becomes a solid colour block that destroys the glyph.
+    This vector therefore renders white-only line/fill geometry on a fully
+    transparent canvas:
+
+      - 4 open corner brackets form an implied frame
+      - Bold block "TW" letters with a horizontal stencil cut at y=96-104
+
+    Letters are split into two separate paths each (upper above the cut,
+    lower below the cut) so the stencil slot is rendered as an actual gap
+    in the white area rather than via an even-odd fill which would leak
+    fill outside the letter outlines.
+
+    Viewport 192×192 matches the design canvas used in tmp/icon-candidates.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
-    android:viewportWidth="48"
-    android:viewportHeight="48">
+    android:viewportWidth="192"
+    android:viewportHeight="192">
 
-    <path
-        android:fillColor="#1976D2"
-        android:pathData="M4,4 L44,4 L44,44 L4,44 Z"/>
-
+    <!-- Corner bracket: top-left -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M10,14 L22,14 L22,18 L18,18 L18,34 L14,34 L14,18 L10,18 Z"/>
+        android:pathData="M 16,28 L 40,28 L 40,38 L 26,38 L 26,52 L 16,52 Z"/>
 
+    <!-- Corner bracket: top-right -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M24,14 L38,14 L36,34 L32,34 L33,18 L29,18 L30,34 L26,34 Z"/>
+        android:pathData="M 176,28 L 152,28 L 152,38 L 166,38 L 166,52 L 176,52 Z"/>
 
+    <!-- Corner bracket: bottom-left -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 16,164 L 40,164 L 40,154 L 26,154 L 26,140 L 16,140 Z"/>
+
+    <!-- Corner bracket: bottom-right -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 176,164 L 152,164 L 152,154 L 166,154 L 166,140 L 176,140 Z"/>
+
+    <!-- T — upper half (top crossbar + upper stem above the stencil cut) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 40,56 L 88,56 L 88,72 L 72,72 L 72,96 L 56,96 L 56,72 L 40,72 Z"/>
+
+    <!-- T — lower half (lower stem below the stencil cut) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 56,104 L 72,104 L 72,136 L 56,136 Z"/>
+
+    <!-- W — upper half (the two outer arms + the inner top dip, capped at y=96) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 96,56 L 152,56 L 148,96 L 131,96 L 132,72 L 116,72 L 117,96 L 100,96 Z"/>
+
+    <!-- W — lower-right stub (between the right-mid valley and the right valley) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 147,104 L 144,136 L 128,136 L 130,104 Z"/>
+
+    <!-- W — lower-left stub (between the left valley and the left-mid valley) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 118,104 L 120,136 L 104,136 L 101,104 Z"/>
 </vector>

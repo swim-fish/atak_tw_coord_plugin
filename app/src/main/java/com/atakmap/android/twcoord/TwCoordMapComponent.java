@@ -304,7 +304,7 @@ public class TwCoordMapComponent extends AbstractMapComponent {
             pluginContext.getString(R.string.pref_screen_title),
             pluginContext.getString(R.string.app_desc),
             PREF_KEY,
-            pluginContext.getResources().getDrawable(R.drawable.ic_tw_coord),
+            pluginContext.getResources().getDrawable(R.drawable.ic_tw_coord_plugin),
             prefFragment));
   }
 
