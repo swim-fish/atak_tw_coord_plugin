@@ -43,6 +43,11 @@ EXCLUDE_PREFIXES: tuple[str, ...] = (
     # leaking internal Claude Code / Speckit state to a public-facing pipeline.
     ".claude/",
     ".specify/",
+    # Doc-only screenshots + icon-preview PNGs. They live in docs/images/
+    # purely for embedding into docs/user-guide{,_zh}.md and have zero
+    # effect on `assembleCivRelease`. Currently ~4 MB of bulk; dropping
+    # them keeps the upload close to the 400 KB code+config baseline.
+    "docs/images/",
 )
 EXCLUDE_EXACT: frozenset[str] = frozenset({
     "CLAUDE.md",
