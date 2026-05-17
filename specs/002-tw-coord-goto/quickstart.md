@@ -16,10 +16,9 @@ need beyond what is here is reused from feature 001 unchanged.
 You should already have the feature-001 environment running:
 
 - JDK 17 on `JAVA_HOME` (Android Gradle 8.13 requirement).
-- ATAK-CIV 5.7.0.3 SDK unpacked at
-  `C:\Users\hhhnr\source\tak\ATAK-CIV-5.7.0.3-SDK`.
-- `local.properties` containing both `sdk.dir=...` and
-  `sdk.path=C:/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.3-SDK`.
+- ATAK-CIV 5.7.0.3 SDK unpacked somewhere on disk (per-developer).
+- `local.properties` containing both `sdk.dir=<Android SDK path>` and
+  `sdk.path=<ATAK-CIV-5.7.0.3-SDK extraction path>`.
 - A Galaxy Tab S10+ (or any ATAK-CIV 5.7.0.3-compatible device) on
   USB with `adb devices` listing it.
 - ATAK installed on the device. The plugin shares its

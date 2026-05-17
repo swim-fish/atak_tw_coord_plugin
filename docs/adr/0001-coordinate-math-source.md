@@ -19,9 +19,9 @@ The spec (FR-003, FR-011) and SC-005 (1 m agreement with the reference
 implementation) require a single authoritative source for the math so
 that the same test vectors flow through both implementations.
 
-The user nominated `C:\Users\hhhnr\source\repos\pwa_map` as the
-reference (`spec.md` Assumptions). The Phase-0 research agent
-extracted the full algorithm verbatim (`research.md` R8).
+The user nominated a local clone of the `pwa_map` repository as the
+reference (`spec.md` Assumptions). The Phase-0 research agent extracted
+the full algorithm verbatim (`research.md` R8).
 
 ## Decision
 

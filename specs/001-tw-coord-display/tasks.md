@@ -36,7 +36,7 @@ All paths in tasks below are repo-relative.
 
 **Purpose**: Initialise the Gradle project skeleton, Android manifest, plugin descriptor, formatting tooling, and constitution-mandated docs directories.
 
-- [ ] T001 Initialise root Gradle project with wrapper, `settings.gradle`, root `build.gradle`, and `gradle.properties` declaring `ATAK_VERSION=5.7.0.3`, `PLUGIN_VERSION=1.0.0`, and `atak.sdk.path` pointing at `C:/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.3-SDK`.
+- [ ] T001 Initialise root Gradle project with wrapper, `settings.gradle`, root `build.gradle`, and `gradle.properties` declaring `ATAK_VERSION=5.7.0.3`, `PLUGIN_VERSION=1.0.0`, and `atak.sdk.path` pointing at the local `ATAK-CIV-5.7.0.3-SDK` extraction (per-developer; configured via `local.properties`).
 - [ ] T002 Author `app/build.gradle` applying `atak-takdev-plugin`, Java 17 source/target compatibility, `compileSdk 36 / minSdk 26 / targetSdk 34`, signing config (debug + civ), `proguard-gradle.txt` reference, and `proj4j 1.3.x` dependency. Exclude `androidx.core`, `androidx.fragment`, `androidx.lifecycle` transitives per `meshtastic_atak` precedent.
 - [ ] T003 [P] Add Spotless plugin to `app/build.gradle` with `googleJavaFormat()` over `src/main/java/**` and `src/test/java/**`; wire `spotlessCheck` into `check` task. Add `.git/hooks/pre-commit` (or `gradle/git-hooks/pre-commit`) that runs `./gradlew spotlessApply` and fails on unformatted code.
 - [ ] T004 [P] Author `app/src/main/AndroidManifest.xml`: declare ATAK plugin component activity, `android:extractNativeLibs="true"`, and **explicitly omit** `android.permission.INTERNET` (FR-019 enforced by construction).

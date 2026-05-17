@@ -29,9 +29,9 @@ Expected output: `app/build/outputs/apk/civ/debug/ATAK-Plugin-atak_tw_
 power_plugin-<version>-civ-debug-5.7.0.3.apk`.
 
 If `atak-gradle-takdev` cannot find `main.jar`, set
-`atak.sdk.path=C\:/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.3-SDK` in
+`atak.sdk.path=<path-to-your-ATAK-CIV-5.7.0.3-SDK>` in
 `gradle.properties` (escape backslashes per the Gradle properties
-format).
+format — e.g. `C\:\\path\\to\\ATAK-CIV-5.7.0.3-SDK` on Windows).
 
 ## 3. Run the unit tests (pure JVM — TDD inner loop)
 
