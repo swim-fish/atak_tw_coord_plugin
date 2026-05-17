@@ -397,6 +397,23 @@ def verify_single_root(zip_path: Path, expected_root: str) -> Check:
                  f"all {len(names)} entries under {expected_root}/")
 
 
+def verify_gradle_wrapper(zip_path: Path, expected_root: str) -> Check:
+    """TPP failure 2026-05-17 (06:13 build) was caused by gradle-wrapper.jar
+    being .gitignored via the global *.jar rule. Without it, TPP's bootstrap
+    fails immediately with:
+        Error: Could not find or load main class
+        org.gradle.wrapper.GradleWrapperMain
+    so we always assert it's present in the zip."""
+    needed = f"{expected_root}/gradle/wrapper/gradle-wrapper.jar"
+    with zipfile.ZipFile(zip_path, "r") as z:
+        if needed in z.namelist():
+            return Check("gradle-wrapper.jar present", Check.PASS,
+                         f"{needed} found")
+    return Check("gradle-wrapper.jar present", Check.FAIL,
+                 f"missing {needed} — add `!gradle/wrapper/gradle-wrapper.jar` "
+                 "to .gitignore + git add it")
+
+
 # ---------- Main ----------
 
 def main() -> int:
@@ -452,7 +469,9 @@ def main() -> int:
         print(f"  size: {size:,} bytes ({size / 1024:.1f} KB)")
         print()
         print("--- Archive shape checks ---")
-        for c in (verify_single_root(out_path, name), verify_safety(out_path)):
+        for c in (verify_single_root(out_path, name),
+                  verify_gradle_wrapper(out_path, name),
+                  verify_safety(out_path)):
             print(c.render())
             results.append(c)
 

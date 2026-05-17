@@ -14,6 +14,12 @@ obj/
 *.tmp
 *.log
 
+# Exception: the Gradle wrapper jar MUST be committed so fresh clones
+# (and TAK TPP's ephemeral build environment) can bootstrap ./gradlew.
+# Without this, TPP fails with "Could not find or load main class
+# org.gradle.wrapper.GradleWrapperMain".
+!gradle/wrapper/gradle-wrapper.jar
+
 # Android Studio / IntelliJ
 .idea/
 *.ipr
