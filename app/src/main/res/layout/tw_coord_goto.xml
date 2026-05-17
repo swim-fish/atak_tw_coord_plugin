@@ -14,13 +14,26 @@
   - Auto Fill button overlay (T060, US5)
   - Recent section (T076, US4)
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/goto_root"
+<!--
+  Outer ScrollView so the page is scrollable on short screens — without it,
+  on phones the marker-mode grid + Submit + ATAK-picker button + Recent
+  section get clipped below the fold and the operator cannot reach them.
+  The dark background lives on the ScrollView so it fills the whole pane;
+  padding stays on the inner LinearLayout so the scrollbar tracks the
+  outer edge.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="12dp"
-    android:background="#1B1B1B">
+    android:background="#1B1B1B"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:id="@+id/goto_root"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
 
     <TextView
         android:id="@+id/goto_title"
@@ -552,4 +565,5 @@
             android:orientation="vertical"/>
     </LinearLayout>
 
-</LinearLayout>
+    </LinearLayout>
+</ScrollView>
