@@ -1,0 +1,28 @@
+## Template for local.properties. Copy this file to `local.properties` and
+## fill in the paths/passwords appropriate to your machine. local.properties is
+## gitignored — never commit it. See keystore/README.md for the release-keystore
+## setup recipe.
+
+# Android SDK location (path containing the `platforms/`, `build-tools/`,
+# `platform-tools/` subdirectories). On Windows, escape backslashes.
+sdk.dir=C\:\\path\\to\\Android\\Sdk
+
+# ATAK CIV SDK — the takdev plugin jar shipped inside the SDK zip, plus the
+# SDK root directory. Required for the build to pull in `main.jar`.
+takdev.plugin=C\:\\path\\to\\ATAK-CIV-5.7.0.3-SDK\\atak-gradle-takdev.jar
+sdk.path=C\:\\path\\to\\ATAK-CIV-5.7.0.3-SDK
+
+# Release signing — see keystore/README.md for how to generate. When these are
+# absent the build still works but produces an UNSIGNED release APK (which is
+# fine for TAK TPP submissions; TPP re-signs with the Government third-party
+# cert downstream).
+releaseStoreFile=keystore/release.keystore
+releaseStorePassword=<choose-strong-password>
+releaseKeyAlias=twcoord-release
+releaseKeyPassword=<choose-strong-password>
+
+# Optional — only set when verifying TPP-equivalent builds locally with your
+# tak.gov / artifacts.tak.gov credentials. See docs/pipe/Third Party Pipeline.md.
+# takrepo.url=https\://artifacts.tak.gov/artifactory/maven
+# takrepo.user=<your tak.gov user>
+# takrepo.password=<your artifacts.tak.gov password or API token>
