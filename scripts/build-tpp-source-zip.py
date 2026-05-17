@@ -113,6 +113,20 @@ def run(cmd: list[str], cwd: Path, check: bool = True) -> subprocess.CompletedPr
     return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check)
 
 
+def read_plugin_version(root: Path) -> Optional[str]:
+    """Pull PLUGIN_VERSION out of app/build.gradle so the output zip can be
+    named with the version (e.g. atak_tw_coord_plugin-source-tpp-v1.0.3.zip)
+    for easy identification when shuffling between local builds and TPP
+    submissions. Returns None if app/build.gradle is missing or doesn't
+    declare PLUGIN_VERSION."""
+    bg = root / "app" / "build.gradle"
+    if not bg.is_file():
+        return None
+    m = re.search(r"""PLUGIN_VERSION\s*=\s*["']([^"']+)["']""",
+                  bg.read_text(encoding="utf-8"))
+    return m.group(1) if m else None
+
+
 def read_local_property(root: Path, key: str) -> Optional[str]:
     path = root / "local.properties"
     if not path.is_file():
@@ -427,7 +441,10 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=Path, default=None,
-                    help="Output zip path (default: build/<repo>-source-tpp.zip).")
+                    help="Output zip path "
+                         "(default: build/<repo>-source-tpp-v<PLUGIN_VERSION>.zip; "
+                         "falls back to build/<repo>-source-tpp.zip when "
+                         "PLUGIN_VERSION cannot be parsed from app/build.gradle).")
     ap.add_argument("--ref", default="HEAD",
                     help="Git ref to archive (default: HEAD).")
     ap.add_argument("--check-only", action="store_true",
@@ -438,7 +455,10 @@ def main() -> int:
     args = ap.parse_args()
 
     name = repo_name(root)
-    out_path = args.out or (root / "build" / f"{name}-source-tpp.zip")
+    version = read_plugin_version(root)
+    default_basename = (f"{name}-source-tpp-v{version}.zip" if version
+                        else f"{name}-source-tpp.zip")
+    out_path = args.out or (root / "build" / default_basename)
 
     print("=== TPP submission preflight ===")
     print(f"Repo:        {root}")
