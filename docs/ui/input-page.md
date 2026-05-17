@@ -20,7 +20,7 @@ The TW Coord GoTo input page is a `DropDownReceiver` side-pane opened by the sec
 │ [Outer-island advisory, amber]         │  ← visible only when zone = 119
 │                                        │
 │ [        Submit        ]               │  ← disabled until input is Ok
-│ [ Drop via ATAK picker ]               │  ← optional: delegate to ATAK
+│ [ Open ATAK icon menu ]                │  ← optional: delegate to ATAK
 │                                        │
 │ Recent                                 │  ← section header
 │ ──────────────                          │
@@ -115,9 +115,9 @@ Below the Submit button, the page shows a 2-row × 4-column grid of marker-mode 
 
 Mode selection persists across plugin restarts via `pref_goto_marker_mode` (since feature 003 — ADR-0010 D5 / ADR-0011 D8). `MOVE_ONLY` is the install-time default so a fresh install never auto-drops markers.
 
-### "Drop via ATAK picker" delegation button (feature 003 — ADR-0011 D8)
+### "Open ATAK icon menu" delegation button (feature 003 — ADR-0011 D8)
 
-Immediately below the Submit button the page shows a sibling button labelled **Drop via ATAK picker** (zh-TW: 「改用 ATAK 圖示挑選器落點」; ja: 「ATAK アイコン選択でドロップ」). It is enabled under the same condition as Submit — the active tab's input must parse cleanly — and the 8 marker-mode radios above do **not** gate it.
+Immediately below the Submit button the page shows a sibling button labelled **Open ATAK icon menu** (zh-TW: 「開啟 ATAK 圖示選單」; ja: 「ATAK アイコンメニューを開く」). It is enabled under the same condition as Submit — the active tab's input must parse cleanly — and the 8 marker-mode radios above do **not** gate it.
 
 Tapping the button:
 

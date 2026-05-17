@@ -102,6 +102,6 @@
          Feature 003（Option B / ADR-0011 D8）— ATAK アイコン選択への委譲ボタン
          ============================================================ -->
 
-    <string name="goto_btn_atak_picker">ATAK アイコン選択でドロップ</string>
+    <string name="goto_btn_atak_picker">ATAK アイコンメニューを開く</string>
 
 </resources>

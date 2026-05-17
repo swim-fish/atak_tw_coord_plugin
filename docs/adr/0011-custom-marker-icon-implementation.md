@@ -84,7 +84,7 @@ The receiver also invokes `view.onIconsetsChanged()` for `ICONSET_ADDED`, which 
 
 **Context**: After the MVP (`7688624`) and polish (`1861fb8`) commits, on-device sideload surfaced two issues. First, tapping the "挑選圖示" preview row produced no visible dialog (the `AlertDialog.setView()` host rendered at 0×0 size until `getWindow().setLayout(MATCH_PARENT, MATCH_PARENT)` was called after `show()`, AND the dialog needed an `Activity` context — `mapView.getContext()` — not the plugin context, to acquire a window token). Second — and more important — the operator pushback was direct: "選單可以仿照 Marker 的方式嗎? 重用舊的 UI 設計與邏輯" ("can the menu work like the Marker one — reuse the old UI design and logic?"). The 0×0 bug was fixable; the design objection was that we had built a bespoke picker dialog at all when ATAK already ships one.
 
-**Decision**: Remove the bespoke `CustomIconPickerDialog` flow entirely. Replace the 9th `CUSTOM_ICON` marker-mode radio with a new sibling button below Submit ("Drop via ATAK picker" / 「改用 ATAK 圖示挑選器落點」 / 「ATAK アイコン選択でドロップ」) that:
+**Decision**: Remove the bespoke `CustomIconPickerDialog` flow entirely. Replace the 9th `CUSTOM_ICON` marker-mode radio with a new sibling button below Submit ("Open ATAK icon menu" / 「開啟 ATAK 圖示選單」 / 「ATAK アイコンメニューを開く」 — relabelled from the initial "Drop via ATAK picker" / 「改用 ATAK 圖示挑選器落點」 / 「ATAK アイコン選択でドロップ」 in commit `ee1d6fc`-follow-up after operator pushback on the awkward wording) that:
 
 1. Parses the active tab into a `Wgs84` (same path as Submit).
 2. Persists the last-input tuple + appends to Recent (same housekeeping as Submit).

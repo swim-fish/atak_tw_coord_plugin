@@ -499,7 +499,7 @@
         android:text="@string/goto_btn_submit"
         android:enabled="false"/>
 
-    <!-- Feature 003 (Option B / ADR-0011 D8): "Drop via ATAK picker" sibling of Submit.
+    <!-- Feature 003 (Option B / ADR-0011 D8): "Open ATAK icon menu" sibling of Submit.
          Hands the parsed coordinate to ATAK's native EnterLocationDropDownReceiver, which
          drops a marker using whichever pallet/icon the operator already has selected in
          ATAK's own enter-location pane. The 8 marker-mode radios above do NOT gate this

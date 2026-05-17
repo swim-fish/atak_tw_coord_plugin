@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p><b>Marker policy:</b> Submit pans the camera (X/Y only — Z / zoom is preserved) and optionally
  * drops a marker using one of the 8 fixed marker-mode radios. For custom icons the page exposes a
- * separate "Drop via ATAK picker" button that pans the camera and opens ATAK's native {@link
+ * separate "Open ATAK icon menu" button that pans the camera and opens ATAK's native {@link
  * EnterLocationDropDownReceiver} pane so the operator picks an icon from there (ADR-0011 D8). That
  * delegation reuses the host's existing pallet/iconset UI instead of bundling our own picker.
  */
@@ -111,7 +111,7 @@ public final class TwCoordGotoView {
   // behaviour: markerMode is now persisted across plugin restarts via
   // pref_goto_marker_mode (ADR-0010 D5). MOVE_ONLY remains the install-time default so the
   // "no accidental marker drops" property is preserved on fresh installs. Custom icons are
-  // handled by the separate "Drop via ATAK picker" button — they do NOT live in this enum.
+  // handled by the separate "Open ATAK icon menu" button — they do NOT live in this enum.
   private final RadioButton modeMove;
   private final RadioButton modeWaypoint;
   private final RadioButton modeMission;
@@ -796,26 +796,34 @@ public final class TwCoordGotoView {
             + wgs84.longitudeDeg());
 
     // If the operator picked a Drop-{type} marker mode, drop the marker via ATAK's standard
-    // PlacePointTool.MarkerCreator using the same minimalist pattern the helloworld SDK sample
-    // uses in SpeechPointDropper.pointPlotter: only UID + type + callsign, then placePoint().
+    // PlacePointTool.MarkerCreator. We mirror the EXACT minimalist call pattern that ATAK's
+    // own GoToMapTool.createPoint uses (cf. upstream
+    // com.atakmap.android.routes.GoToMapTool.createPoint, lines 239–245):
     //
-    // Earlier attempts that added setHow("h-g-i-g-o") and setMetaString("entry", "user") made
-    // ATAK treat the marker as if it had come in via CoT from an external source, which
-    // suppressed the long-press radial's Delete affordance. The minimalist call below lets
-    // PlacePointTool's internal defaults populate the "user-placed" metadata correctly so the
-    // resulting marker behaves like ATAK's own long-press drop-pin (movable + editable +
-    // removable, standard radial menu).
+    //     new PlacePointTool.MarkerCreator(geoPoint)
+    //         .setType("b-m-p-w-GOTO")
+    //         .setUid(...)
+    //         .showCotDetails(false)
+    //         .placePoint();
+    //
+    // Specifically we do NOT call setCallsign(...) — PlacePointTool then auto-generates an
+    // S.NN.HHmmss-style callsign matching ATAK's own GoTo destination pin convention. (Earlier
+    // builds passed "TAIPOWER H7509 DB4016"-style callsigns; that hijacked the marker's name
+    // away from ATAK's standard and made the resulting marker look subtly different from one
+    // dropped via the long-press radial menu.) Earlier attempts to add setHow("h-g-i-g-o") and
+    // setMetaString("entry", "user") made ATAK treat the marker as if it had come in via CoT
+    // from an external source, suppressing the long-press radial's Delete affordance — those
+    // are deliberately omitted.
     //
     // Constitution VI: SDK call wrapped — any fault must NEVER take down ATAK.
     if (markerMode.dropsMarker()) {
       try {
-        String callsign = input.unit().name() + " " + input.displayString();
         new com.atakmap.android.user.PlacePointTool.MarkerCreator(dest)
             .setUid(UUID.randomUUID().toString())
             .setType(markerMode.cotType())
-            .setCallsign(callsign)
+            .showCotDetails(false)
             .placePoint();
-        Log.d(TAG, "Dropped " + markerMode + " marker at " + callsign);
+        Log.d(TAG, "Dropped " + markerMode + " marker via ATAK auto-callsign");
       } catch (Throwable t) {
         Log.w(TAG, "marker placement failed (" + markerMode + ")", t);
       }
@@ -829,7 +837,7 @@ public final class TwCoordGotoView {
   // ----------- ATAK picker delegation (Option B — ADR-0011 D8) -----------
 
   /**
-   * "Drop via ATAK picker" button handler. Mirrors Submit's housekeeping (persist + recent + pan +
+   * "Open ATAK icon menu" button handler. Mirrors Submit's housekeeping (persist + recent + pan +
    * close), then closes our drop-down and broadcasts {@link EnterLocationDropDownReceiver#START} so
    * ATAK's native enter-location pane takes the stage. The operator picks a pallet/icon from there
    * and drops a marker via ATAK's own UX — the map is already centred on the typed coordinate.

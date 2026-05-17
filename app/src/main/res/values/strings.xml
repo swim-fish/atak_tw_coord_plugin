@@ -135,6 +135,6 @@
          ============================================================ -->
 
     <!-- Label on the "Drop via ATAK picker" button (sibling of Submit). -->
-    <string name="goto_btn_atak_picker">Drop via ATAK picker</string>
+    <string name="goto_btn_atak_picker">Open ATAK icon menu</string>
 
 </resources>
