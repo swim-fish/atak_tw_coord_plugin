@@ -154,32 +154,46 @@
             android:textSize="12sp"
             android:text="@string/goto_btn_autofill"/>
 
-        <EditText
-            android:id="@+id/goto_input_twd97_easting"
+        <!-- Easting + Northing on a single horizontal row to save vertical space. Each takes
+             half the pane width via layout_weight; a 6dp spacer between keeps them visually
+             distinct. -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/goto_hint_easting"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#7C7C7C"
-            android:textSize="16sp"
-            android:inputType="number"
-            android:maxLines="1"
-            android:backgroundTint="#FFFFFF"
-            android:autofillHints="postalAddress"/>
+            android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/goto_input_twd97_northing"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:hint="@string/goto_hint_northing"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#7C7C7C"
-            android:textSize="16sp"
-            android:inputType="number"
-            android:maxLines="1"
-            android:backgroundTint="#FFFFFF"
-            android:autofillHints="postalAddress"/>
+            <EditText
+                android:id="@+id/goto_input_twd97_easting"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/goto_hint_easting"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#7C7C7C"
+                android:textSize="16sp"
+                android:inputType="number"
+                android:maxLines="1"
+                android:backgroundTint="#FFFFFF"
+                android:autofillHints="postalAddress"/>
+
+            <Space
+                android:layout_width="6dp"
+                android:layout_height="wrap_content"/>
+
+            <EditText
+                android:id="@+id/goto_input_twd97_northing"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/goto_hint_northing"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#7C7C7C"
+                android:textSize="16sp"
+                android:inputType="number"
+                android:maxLines="1"
+                android:backgroundTint="#FFFFFF"
+                android:autofillHints="postalAddress"/>
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -253,32 +267,44 @@
             android:textSize="12sp"
             android:text="@string/goto_btn_autofill"/>
 
-        <EditText
-            android:id="@+id/goto_input_twd67_easting"
+        <!-- Easting + Northing on a single horizontal row (same compaction as TWD97 above). -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/goto_hint_easting"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#7C7C7C"
-            android:textSize="16sp"
-            android:inputType="number"
-            android:maxLines="1"
-            android:backgroundTint="#FFFFFF"
-            android:autofillHints="postalAddress"/>
+            android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/goto_input_twd67_northing"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:hint="@string/goto_hint_northing"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#7C7C7C"
-            android:textSize="16sp"
-            android:inputType="number"
-            android:maxLines="1"
-            android:backgroundTint="#FFFFFF"
-            android:autofillHints="postalAddress"/>
+            <EditText
+                android:id="@+id/goto_input_twd67_easting"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/goto_hint_easting"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#7C7C7C"
+                android:textSize="16sp"
+                android:inputType="number"
+                android:maxLines="1"
+                android:backgroundTint="#FFFFFF"
+                android:autofillHints="postalAddress"/>
+
+            <Space
+                android:layout_width="6dp"
+                android:layout_height="wrap_content"/>
+
+            <EditText
+                android:id="@+id/goto_input_twd67_northing"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/goto_hint_northing"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#7C7C7C"
+                android:textSize="16sp"
+                android:inputType="number"
+                android:maxLines="1"
+                android:backgroundTint="#FFFFFF"
+                android:autofillHints="postalAddress"/>
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
