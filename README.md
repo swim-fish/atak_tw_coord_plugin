@@ -233,9 +233,11 @@ The build outputs an APK at
 │           ├── layout/pref_item.xml              # custom preference row layouts
 │           └── xml/preferences.xml               # PanListPreference declarations
 ├── docs/
-│   ├── adr/                                      # 8 Architecture Decision Records
+│   ├── adr/                                      # 10 Architecture Decision Records
 │   └── ui/                                       # readout + settings layout docs
-├── specs/001-tw-coord-display/                   # spec / plan / tasks / contracts
+├── specs/001-tw-coord-display/                   # spec / plan / tasks / contracts (display)
+├── specs/002-tw-coord-goto/                      # spec / plan / tasks / contracts (GoTo input page)
+├── specs/003-custom-marker-icon/                 # spec (in-flight) — Custom Icon marker mode
 ├── test-data/taiwan_cities_coords.csv            # 22-city authoritative coords
 └── .specify/memory/constitution.md               # project constitution
 ```
@@ -243,11 +245,16 @@ The build outputs an APK at
 ## Spec-Kit workflow
 
 This project is developed with the
-[GitHub Spec Kit](https://github.com/github/spec-kit). The spec, plan,
-tasks, and contracts live under
-[`specs/001-tw-coord-display/`](specs/001-tw-coord-display/). Eight ADRs
-under [`docs/adr/`](docs/adr/) cover every architecturally significant
-decision; ADR-0001 is the entry point.
+[GitHub Spec Kit](https://github.com/github/spec-kit). Per-feature
+spec / plan / tasks / contracts live under `specs/NNN-<short-name>/`:
+
+- [`specs/001-tw-coord-display/`](specs/001-tw-coord-display/) — on-map readout widget
+- [`specs/002-tw-coord-goto/`](specs/002-tw-coord-goto/) — GoTo input page
+- [`specs/003-custom-marker-icon/`](specs/003-custom-marker-icon/) — Custom Icon marker mode *(in flight)*
+
+Ten ADRs under [`docs/adr/`](docs/adr/) cover every architecturally
+significant decision (ADR-0001 is the entry point; ADR-0010 records the
+SDK reconnaissance for the in-flight Custom Icon feature).
 
 ## References
 
@@ -257,9 +264,18 @@ decision; ADR-0001 is the entry point.
   canonical online converter for spot-checking new test points.
 - [proj4j](https://github.com/locationtech/proj4j) — the Java port of
   proj4 that powers TWD97 (EPSG:3826) and TWD97 zone 119 (EPSG:3825).
-- [ATAK Plugin Development Guide](https://github.com/deptofdefense/AndroidTacticalAssaultKit-CIV) —
-  the upstream SDK and sample plugins (`meshtastic_atak`, `helloworld`)
-  this project mirrors.
+- [ATAK-CIV upstream source](https://github.com/TAK-Product-Center/atak-civ) —
+  the active upstream Java source for ATAK-CIV (default branch `main`).
+  Use this when cross-checking SDK signatures the plugin compiles against
+  (`ATAK-CIV-5.7.0.3-SDK/main.jar`) — the SDK jar holds the pinned
+  contract, the upstream repo holds the implementation bodies for
+  reading. The older `deptofdefense/AndroidTacticalAssaultKit-CIV`
+  mirror is stale.
+- [ATAK Plugin Development Guide](https://github.com/TAK-Product-Center/atak-civ/blob/main/ATAK_Plugin_Development_Guide.pdf) —
+  shipped alongside the SDK; the sample plugins (`meshtastic_atak`,
+  `helloworld`) this project mirrors are under
+  [`atak/ATAK/app/src/main/java/`](https://github.com/TAK-Product-Center/atak-civ/tree/main/atak/ATAK/app/src/main/java)
+  and adjacent sample modules.
 
 ## License
 
