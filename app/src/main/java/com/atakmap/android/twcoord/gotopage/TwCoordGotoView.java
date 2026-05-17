@@ -3,8 +3,6 @@ package com.atakmap.android.twcoord.gotopage;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
-import android.os.Handler;
-import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
@@ -12,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -32,13 +29,13 @@ import com.atakmap.android.twcoord.coord.Wgs84;
 import com.atakmap.android.twcoord.i18n.LocaleOverride;
 import com.atakmap.android.twcoord.plugin.R;
 import com.atakmap.android.twcoord.prefs.PreferenceStore;
+import com.atakmap.android.user.EnterLocationDropDownReceiver;
 import com.atakmap.coremap.log.Log;
 import com.atakmap.coremap.maps.coords.GeoPoint;
+import com.atakmap.coremap.maps.coords.GeoPointMetaData;
 import com.atakmap.map.CameraController;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -46,10 +43,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Taipower / TWD97 / TWD67 panes, runs keystroke validation, and on Submit drives the pan + persist
  * + toast + close path.
  *
- * <p><b>Marker policy:</b> Submit only pans the camera (X/Y only — Z / zoom is preserved). It does
- * not auto-create any marker. The operator drops markers (waypoint / Mission Point / SPI / etc.)
- * via ATAK's standard long-press → radial menu at the destination — the same UX they already know,
- * zero learning cost.
+ * <p><b>Marker policy:</b> Submit pans the camera (X/Y only — Z / zoom is preserved) and optionally
+ * drops a marker using one of the 8 fixed marker-mode radios. For custom icons the page exposes a
+ * separate "Drop via ATAK picker" button that hands the resolved coordinate to ATAK's native {@link
+ * EnterLocationDropDownReceiver#processPoint(GeoPointMetaData)} (ADR-0011 D8). That delegation
+ * reuses the host's existing pallet/iconset machinery instead of bundling our own picker dialog.
  */
 public final class TwCoordGotoView {
 
@@ -95,8 +93,9 @@ public final class TwCoordGotoView {
   private final TextView advisoryTwd67;
   private final TextView errorTwd67;
 
-  // Shared submit button.
+  // Shared submit button + ATAK picker delegation button.
   private final Button submitButton;
+  private final Button atakPickerButton;
 
   // Auto Fill (US5).
   private final Button autoFillTaipower;
@@ -112,7 +111,8 @@ public final class TwCoordGotoView {
   // Marker mode (Move-only vs Drop-{type}). Feature 003 changes the prior in-session-only
   // behaviour: markerMode is now persisted across plugin restarts via
   // pref_goto_marker_mode (ADR-0010 D5). MOVE_ONLY remains the install-time default so the
-  // "no accidental marker drops" property is preserved on fresh installs.
+  // "no accidental marker drops" property is preserved on fresh installs. Custom icons are
+  // handled by the separate "Drop via ATAK picker" button — they do NOT live in this enum.
   private final RadioButton modeMove;
   private final RadioButton modeWaypoint;
   private final RadioButton modeMission;
@@ -122,25 +122,6 @@ public final class TwCoordGotoView {
   private final RadioButton modeNeutral;
   private final RadioButton modeUnknown;
   private MarkerMode markerMode = MarkerMode.MOVE_ONLY;
-
-  // Feature 003 — Custom Icon marker mode + picker dialog.
-  private final RadioButton modeCustomIcon;
-  private final LinearLayout customIconPreviewRow;
-  private final ImageView customIconThumb;
-  private final TextView customIconLabel;
-  private final TextView customIconHint;
-  private final IconResolver iconResolver;
-  // Picker dialog is constructed lazily on first open and re-used across opens within a session;
-  // forcibly dismissed in onDropDownClose via dismissCustomIconPicker().
-  private CustomIconPickerDialog customIconPicker;
-  private IconSelection currentSelection;
-  // One-shot FR-009 hint flag: set true when the bind-path detects the persisted icon's iconset
-  // is gone; consumed (cleared) the first time the operator switches *to* CUSTOM_ICON after that.
-  private boolean pendingFallbackHint;
-  // Shared worker pool for off-main-thread iconset enumeration and bitmap loads (R10). Lazy
-  // start on first picker open; shut down in dismissCustomIconPicker().
-  private ExecutorService customIconWorker;
-  private final Handler mainThreadHandler = new Handler(Looper.getMainLooper());
 
   // State.
   private CoordinateUnit activeTab = CoordinateUnit.TAIPOWER;
@@ -202,6 +183,7 @@ public final class TwCoordGotoView {
     this.errorTwd67 = root.findViewById(R.id.goto_error_twd67);
 
     this.submitButton = root.findViewById(R.id.goto_btn_submit);
+    this.atakPickerButton = root.findViewById(R.id.goto_btn_atak_picker);
     this.autoFillTaipower = root.findViewById(R.id.goto_autofill_taipower);
     this.autoFillTwd97 = root.findViewById(R.id.goto_autofill_twd97);
     this.autoFillTwd67 = root.findViewById(R.id.goto_autofill_twd67);
@@ -216,15 +198,6 @@ public final class TwCoordGotoView {
     this.modeHostile = root.findViewById(R.id.goto_mode_hostile);
     this.modeNeutral = root.findViewById(R.id.goto_mode_neutral);
     this.modeUnknown = root.findViewById(R.id.goto_mode_unknown);
-
-    // Feature 003 view-id plumbing. Behaviour wiring follows immediately below in this ctor
-    // (radio click, preview tap, dialog onPicked/onCancelled).
-    this.modeCustomIcon = root.findViewById(R.id.goto_mode_custom_icon);
-    this.customIconPreviewRow = root.findViewById(R.id.goto_custom_icon_preview);
-    this.customIconThumb = root.findViewById(R.id.goto_custom_icon_thumb);
-    this.customIconLabel = root.findViewById(R.id.goto_custom_icon_label);
-    this.customIconHint = root.findViewById(R.id.goto_custom_icon_hint);
-    this.iconResolver = new IconResolver(pluginContext);
 
     // Constitution VI: every onClick body wrapped via safeClick(...) so an inner SDK fault
     // (Toast / Resources / setBackgroundColor / etc.) cannot propagate up and crash ATAK.
@@ -244,10 +217,6 @@ public final class TwCoordGotoView {
         v -> safeClick("modeNeutral", () -> setMarkerMode(MarkerMode.NEUTRAL)));
     modeUnknown.setOnClickListener(
         v -> safeClick("modeUnknown", () -> setMarkerMode(MarkerMode.UNKNOWN)));
-    modeCustomIcon.setOnClickListener(
-        v -> safeClick("modeCustomIcon", () -> setMarkerMode(MarkerMode.CUSTOM_ICON)));
-    customIconPreviewRow.setOnClickListener(
-        v -> safeClick("customIconPreviewRow", this::openCustomIconPicker));
 
     autoFillTaipower.setOnClickListener(
         v -> safeClick("autoFillTaipower", () -> onAutoFill(CoordinateUnit.TAIPOWER)));
@@ -273,6 +242,7 @@ public final class TwCoordGotoView {
     zoneTwd67.setOnCheckedChangeListener((g, id) -> validateTwd67());
 
     submitButton.setOnClickListener(v -> safeClick("submitButton", this::onSubmit));
+    atakPickerButton.setOnClickListener(v -> safeClick("atakPickerButton", this::onAtakPicker));
   }
 
   /**
@@ -328,8 +298,9 @@ public final class TwCoordGotoView {
       zoneTwd67_119.setText(c.getString(R.string.goto_zone_119));
       advisoryTwd67.setText(c.getString(R.string.goto_outer_island_advisory));
 
-      // Buttons (Submit + Auto Fill ×3).
+      // Buttons (Submit + ATAK picker + Auto Fill ×3).
       submitButton.setText(c.getString(R.string.goto_btn_submit));
+      atakPickerButton.setText(c.getString(R.string.goto_btn_atak_picker));
       autoFillTaipower.setText(c.getString(R.string.goto_btn_autofill));
       autoFillTwd97.setText(c.getString(R.string.goto_btn_autofill));
       autoFillTwd67.setText(c.getString(R.string.goto_btn_autofill));
@@ -352,9 +323,6 @@ public final class TwCoordGotoView {
       modeHostile.setText(c.getString(R.string.goto_mode_hostile));
       modeNeutral.setText(c.getString(R.string.goto_mode_neutral));
       modeUnknown.setText(c.getString(R.string.goto_mode_unknown));
-      // Feature 003 — 9th radio + preview labels. customIconLabel / customIconHint are
-      // (re-)written in renderCustomIconPreview() per current PickerPreviewState.
-      modeCustomIcon.setText(c.getString(R.string.goto_mode_custom_icon));
     } catch (Throwable t) {
       Log.w(TAG, "refreshLocalisedStrings failed", t);
     }
@@ -409,8 +377,13 @@ public final class TwCoordGotoView {
       inputTwd67Northing.setText(state.twd67NorthingDraft());
       applyZoneRadio(zoneTwd67_121, zoneTwd67_119, state.twd67Zone());
     }
-    // Feature 003 — restore persisted markerMode + currentSelection. FR-008 + FR-009.
-    restoreCustomIconStateOnBind();
+    // Feature 003 — restore persisted markerMode. Defensive try/catch wraps the pref read.
+    try {
+      this.markerMode = prefs.getGotoMarkerMode();
+    } catch (Throwable t) {
+      Log.w(TAG, "restore markerMode failed; defaulting to MOVE_ONLY", t);
+      this.markerMode = MarkerMode.MOVE_ONLY;
+    }
 
     applyTabVisibility();
     applyMarkerModeUI();
@@ -418,54 +391,6 @@ public final class TwCoordGotoView {
     validateTwd97();
     validateTwd67();
     renderRecentList();
-  }
-
-  /**
-   * Bind-path restore for the marker-mode preference and the persisted Custom Icon selection.
-   * Mirrors the algorithm in [data-model.md §4]:
-   *
-   * <ul>
-   *   <li>mode != CUSTOM_ICON ⇒ restore mode as-is, clear currentSelection.
-   *   <li>mode == CUSTOM_ICON, path present, path resolves ⇒ restore mode + selection.
-   *   <li>mode == CUSTOM_ICON, path present, path does NOT resolve ⇒ atomic-clear, fall back to
-   *       MOVE_ONLY, set pendingFallbackHint = true (FR-009).
-   *   <li>mode == CUSTOM_ICON, path null ⇒ defensive fallback to MOVE_ONLY (shouldn't happen if
-   *       writes go through {@link CustomIconPickerDialog.Listener#onIconPicked}).
-   * </ul>
-   *
-   * <p>Wrapped in try/catch (Throwable) per Constitution VI.
-   */
-  private void restoreCustomIconStateOnBind() {
-    try {
-      MarkerMode persistedMode = prefs.getGotoMarkerMode();
-      String persistedPath = prefs.getGotoLastIconsetPath();
-      if (persistedMode != MarkerMode.CUSTOM_ICON) {
-        this.markerMode = persistedMode;
-        this.currentSelection = null;
-        return;
-      }
-      if (persistedPath == null) {
-        this.markerMode = MarkerMode.MOVE_ONLY;
-        this.currentSelection = null;
-        return;
-      }
-      IconSelection resolved = iconResolver.resolveSelection(persistedPath);
-      if (resolved != null) {
-        this.markerMode = MarkerMode.CUSTOM_ICON;
-        this.currentSelection = resolved;
-      } else {
-        // FR-009 atomic-clear path. Both prefs cleared in one apply().
-        prefs.clearCustomIconSelectionAtomic();
-        this.markerMode = MarkerMode.MOVE_ONLY;
-        this.currentSelection = null;
-        this.pendingFallbackHint = true;
-        Log.w(TAG, "Persisted iconsetPath no longer resolves; cleared: " + persistedPath);
-      }
-    } catch (Throwable t) {
-      Log.w(TAG, "restoreCustomIconStateOnBind failed", t);
-      this.markerMode = MarkerMode.MOVE_ONLY;
-      this.currentSelection = null;
-    }
   }
 
   /** Captured for {@link TwCoordGotoReceiver#onDropDownClose()} per FR-018. */
@@ -712,7 +637,7 @@ public final class TwCoordGotoView {
   }
 
   private void applyMarkerModeUI() {
-    // Manual mutual exclusion across the 9 radios — they live in 3 separate LinearLayout rows
+    // Manual mutual exclusion across the 8 radios — they live in 2 separate LinearLayout rows
     // rather than one RadioGroup, so Android won't uncheck the others automatically. Also,
     // `button="@null"` removes the default radio bullet so the selection is shown via background
     // tint (same pattern as the tab strip).
@@ -724,156 +649,6 @@ public final class TwCoordGotoView {
     styleMarkerModeRadio(modeHostile, markerMode == MarkerMode.HOSTILE);
     styleMarkerModeRadio(modeNeutral, markerMode == MarkerMode.NEUTRAL);
     styleMarkerModeRadio(modeUnknown, markerMode == MarkerMode.UNKNOWN);
-    styleMarkerModeRadio(modeCustomIcon, markerMode == MarkerMode.CUSTOM_ICON);
-    // Feature 003 — preview row visibility is purely a function of markerMode.
-    renderCustomIconPreview();
-  }
-
-  /**
-   * Compute the {@link PickerPreviewState} from (markerMode, currentSelection, pendingFallbackHint)
-   * and apply it to the preview row. {@link PickerPreviewState.FallbackHint} is one-shot —
-   * consuming it clears {@code pendingFallbackHint} so a subsequent switch shows {@link
-   * PickerPreviewState.Empty}.
-   */
-  private void renderCustomIconPreview() {
-    if (markerMode != MarkerMode.CUSTOM_ICON) {
-      customIconPreviewRow.setVisibility(View.GONE);
-      return;
-    }
-    customIconPreviewRow.setVisibility(View.VISIBLE);
-    PickerPreviewState state = computePreviewState();
-    if (state.isEmpty()) {
-      customIconThumb.setImageDrawable(null);
-      customIconThumb.setContentDescription(
-          localisedContext.getString(R.string.goto_custom_icon_empty));
-      customIconLabel.setText(localisedContext.getString(R.string.goto_custom_icon_empty));
-      customIconHint.setVisibility(View.GONE);
-    } else if (state.isFallbackHint()) {
-      customIconThumb.setImageDrawable(null);
-      customIconThumb.setContentDescription(
-          localisedContext.getString(R.string.goto_custom_icon_empty));
-      customIconLabel.setText(localisedContext.getString(R.string.goto_custom_icon_empty));
-      customIconHint.setText(localisedContext.getString(R.string.goto_custom_icon_hint_lost));
-      customIconHint.setVisibility(View.VISIBLE);
-      // One-shot: clear the flag now that the operator has seen the hint.
-      pendingFallbackHint = false;
-    } else if (state.isPopulated()) {
-      PickerPreviewState.Populated p = (PickerPreviewState.Populated) state;
-      IconSelection sel = p.selection();
-      android.graphics.Bitmap bmp = iconResolver.loadBitmap(sel.iconId());
-      if (bmp != null) customIconThumb.setImageBitmap(bmp);
-      customIconLabel.setText(
-          String.format(
-              localisedContext.getString(R.string.goto_custom_icon_preview_label_format),
-              sel.iconsetName()));
-      customIconThumb.setContentDescription(sel.iconsetName() + " " + sel.iconFileName());
-      customIconHint.setVisibility(View.GONE);
-    }
-  }
-
-  private PickerPreviewState computePreviewState() {
-    if (markerMode != MarkerMode.CUSTOM_ICON) return PickerPreviewState.empty();
-    if (pendingFallbackHint) return PickerPreviewState.fallbackHint();
-    if (currentSelection != null) return PickerPreviewState.populated(currentSelection);
-    return PickerPreviewState.empty();
-  }
-
-  /**
-   * Lazy-construct the picker dialog + worker pool on first open. Listener wires {@code
-   * onIconPicked} to persist + render + re-eval Submit; {@code onCancelled} is no-op (per spec edge
-   * case — preview state unchanged on cancel).
-   */
-  private void openCustomIconPicker() {
-    if (customIconWorker == null || customIconWorker.isShutdown()) {
-      customIconWorker = Executors.newFixedThreadPool(2);
-    }
-    if (customIconPicker == null) {
-      customIconPicker =
-          new CustomIconPickerDialog(
-              localisedContext,
-              iconResolver,
-              customIconWorker,
-              mainThreadHandler,
-              new CustomIconPickerDialog.Listener() {
-                @Override
-                public void onIconPicked(IconSelection sel) {
-                  try {
-                    currentSelection = sel;
-                    prefs.setGotoLastIconsetPath(sel.iconsetPath());
-                    renderCustomIconPreview();
-                    refreshSubmitEnabled();
-                  } catch (Throwable t) {
-                    Log.w(TAG, "onIconPicked handler failed", t);
-                  }
-                }
-
-                @Override
-                public void onCancelled() {
-                  // No-op: preview state unchanged on cancel (spec edge case).
-                }
-              });
-    }
-    customIconPicker.show(currentSelection);
-  }
-
-  /**
-   * Called by the receiver's ICONSET_REMOVED broadcast handler with the removed iconset's uid. If
-   * the operator's currently-selected icon belonged to that iconset, fire the FR-009 fallback path
-   * inline: atomic-clear the prefs, reset markerMode to MOVE_ONLY, queue the one-shot "Selected
-   * icon no longer installed" hint, and repaint. Always invalidates the IconResolver cache and
-   * notifies the picker dialog so step-1 / step-2 reflect the new iconset list.
-   *
-   * <p>Wrapped in {@code try/catch (Throwable)} per Constitution VI.
-   */
-  public void onIconsetRemoved(String removedUid) {
-    try {
-      iconResolver.invalidateCaches();
-      boolean ourSelectionGone =
-          currentSelection != null
-              && removedUid != null
-              && removedUid.equals(currentSelection.iconsetUid());
-      if (ourSelectionGone) {
-        prefs.clearCustomIconSelectionAtomic();
-        this.markerMode = MarkerMode.MOVE_ONLY;
-        this.currentSelection = null;
-        this.pendingFallbackHint = true;
-        applyMarkerModeUI();
-        refreshSubmitEnabled();
-        Log.w(TAG, "ICONSET_REMOVED for our selection; cleared. uid=" + removedUid);
-      }
-      if (customIconPicker != null) customIconPicker.onIconsetsChanged();
-    } catch (Throwable t) {
-      Log.w(TAG, "onIconsetRemoved(" + removedUid + ") failed", t);
-    }
-  }
-
-  /**
-   * Called by the receiver's ICONSET_ADDED broadcast handler. Invalidates the IconResolver cache so
-   * the next picker open sees the new iconset, and notifies the dialog if it's open.
-   */
-  public void onIconsetsChanged() {
-    try {
-      iconResolver.invalidateCaches();
-      if (customIconPicker != null) customIconPicker.onIconsetsChanged();
-    } catch (Throwable t) {
-      Log.w(TAG, "onIconsetsChanged failed", t);
-    }
-  }
-
-  /** Called by the receiver's onDropDownClose; force-dismiss + tear down worker. */
-  public void dismissCustomIconPicker() {
-    try {
-      if (customIconPicker != null) customIconPicker.dismissIfShowing();
-    } catch (Throwable t) {
-      Log.w(TAG, "dismissCustomIconPicker dialog failed", t);
-    }
-    try {
-      if (customIconWorker != null && !customIconWorker.isShutdown()) {
-        customIconWorker.shutdownNow();
-      }
-    } catch (Throwable t) {
-      Log.w(TAG, "dismissCustomIconPicker worker shutdown failed", t);
-    }
   }
 
   private static void styleMarkerModeRadio(RadioButton btn, boolean selected) {
@@ -959,16 +734,10 @@ public final class TwCoordGotoView {
 
   private void refreshSubmitEnabled() {
     boolean coordOk = activeTabParse() != null && activeTabParse().isOk();
-    submitButton.setEnabled(coordOk && validMarkerSelection());
-  }
-
-  /**
-   * Feature 003 — for the 8 non-custom modes always true; for CUSTOM_ICON require {@code
-   * currentSelection != null}. Per [contracts/marker-mode-v2.md § Submit-enabled rule].
-   */
-  private boolean validMarkerSelection() {
-    if (!markerMode.requiresIconPath()) return true;
-    return currentSelection != null;
+    submitButton.setEnabled(coordOk);
+    // The ATAK-picker button shares Submit's enable rule: the active tab must parse cleanly.
+    // markerMode does not gate it — picker delegation always uses ATAK's currently-active pallet.
+    atakPickerButton.setEnabled(coordOk);
   }
 
   private ParseResult activeTabParse() {
@@ -998,17 +767,7 @@ public final class TwCoordGotoView {
   }
 
   private void submitOk(Wgs84 wgs84, CoordinateInput input) {
-    // Persist (FR-014) so next open pre-fills the last value the operator submitted.
-    prefs.setGotoLastUnit(input.unit());
-    if (input instanceof CoordinateInput.Taipower) {
-      prefs.setGotoLastTaipower(((CoordinateInput.Taipower) input).rawValue());
-    } else if (input instanceof CoordinateInput.Twd97) {
-      CoordinateInput.Twd97 t = (CoordinateInput.Twd97) input;
-      prefs.setGotoLastTwd97(t.easting(), t.northing(), t.zone());
-    } else if (input instanceof CoordinateInput.Twd67) {
-      CoordinateInput.Twd67 t = (CoordinateInput.Twd67) input;
-      prefs.setGotoLastTwd67(t.easting(), t.northing(), t.zone());
-    }
+    persistLastInput(input);
 
     // US4: append to Recent (capacity-10, FIFO, dedup on (unit, rawValue)).
     if (recentStore != null) {
@@ -1052,26 +811,96 @@ public final class TwCoordGotoView {
     if (markerMode.dropsMarker()) {
       try {
         String callsign = input.unit().name() + " " + input.displayString();
-        com.atakmap.android.user.PlacePointTool.MarkerCreator builder =
-            new com.atakmap.android.user.PlacePointTool.MarkerCreator(dest)
-                .setUid(UUID.randomUUID().toString())
-                .setType(markerMode.cotType())
-                .setCallsign(callsign);
-        // Feature 003 — apply the operator's picked iconset path when CUSTOM_ICON is selected.
-        // setIconPath rejects null/empty internally, so the null-check is defence-in-depth
-        // (Submit should also be disabled by validMarkerSelection() at this point).
-        if (markerMode.requiresIconPath() && currentSelection != null) {
-          builder.setIconPath(currentSelection.iconsetPath());
-        }
-        builder.placePoint();
+        new com.atakmap.android.user.PlacePointTool.MarkerCreator(dest)
+            .setUid(UUID.randomUUID().toString())
+            .setType(markerMode.cotType())
+            .setCallsign(callsign)
+            .placePoint();
         Log.d(TAG, "Dropped " + markerMode + " marker at " + callsign);
       } catch (Throwable t) {
         Log.w(TAG, "marker placement failed (" + markerMode + ")", t);
       }
     }
 
-    // Confirmation toast (FR-010). Append a "zone 119" suffix when the resolved zone is 119, so
-    // the operator can spot zone misuse at a glance.
+    showSubmitConfirmationToast(wgs84, input);
+    broadcastNavCompleted(wgs84, input);
+    closeDropDown();
+  }
+
+  // ----------- ATAK picker delegation (Option B — ADR-0011 D8) -----------
+
+  /**
+   * "Drop via ATAK picker" button handler. Mirrors Submit's housekeeping (persist + recent + close)
+   * but, instead of dropping our own fixed-type marker, hands the resolved coordinate to ATAK's
+   * native {@link EnterLocationDropDownReceiver#processPoint(GeoPointMetaData)} which drops a
+   * marker using whichever icon pallet the operator currently has selected in ATAK's enter-location
+   * pane.
+   *
+   * <p>We do NOT pan the camera here — {@code processPoint} handles centring internally as part of
+   * its own UX, and panning first would compete with that. We DO close our drop-down before the
+   * delegation call so ATAK's drop-down (if any) is not stacked behind ours.
+   *
+   * <p>Constitution VI: SDK call wrapped — any fault must NEVER take down ATAK.
+   */
+  private void onAtakPicker() {
+    if (!submitInFlight.compareAndSet(false, true)) return;
+    try {
+      ParseResult r = activeTabParse();
+      if (r == null || !r.isOk()) return;
+      ParseResult.Ok ok = (ParseResult.Ok) r;
+      Wgs84 wgs84 = ok.wgs84();
+      CoordinateInput input = ok.input();
+
+      persistLastInput(input);
+      if (recentStore != null) {
+        recentStore.append(RecentEntry.fromCoordinateInput(input, System.currentTimeMillis()));
+      }
+
+      GeoPoint dest = GeoPoint.createMutable();
+      dest.set(wgs84.latitudeDeg(), wgs84.longitudeDeg());
+
+      closeDropDown();
+
+      try {
+        EnterLocationDropDownReceiver.getInstance(mapView)
+            .processPoint(GeoPointMetaData.wrap(dest));
+        Log.d(
+            TAG,
+            "Delegated to ATAK picker @ "
+                + wgs84.latitudeDeg()
+                + ", "
+                + wgs84.longitudeDeg()
+                + " ("
+                + input.unit()
+                + ")");
+      } catch (Throwable t) {
+        Log.w(TAG, "EnterLocationDropDownReceiver.processPoint failed", t);
+      }
+
+      broadcastNavCompleted(wgs84, input);
+    } finally {
+      submitInFlight.set(false);
+    }
+  }
+
+  // ----------- shared post-action helpers -----------
+
+  /** Persist the active-tab last-submitted tuple so the next open pre-fills it (FR-014). */
+  private void persistLastInput(CoordinateInput input) {
+    prefs.setGotoLastUnit(input.unit());
+    if (input instanceof CoordinateInput.Taipower) {
+      prefs.setGotoLastTaipower(((CoordinateInput.Taipower) input).rawValue());
+    } else if (input instanceof CoordinateInput.Twd97) {
+      CoordinateInput.Twd97 t = (CoordinateInput.Twd97) input;
+      prefs.setGotoLastTwd97(t.easting(), t.northing(), t.zone());
+    } else if (input instanceof CoordinateInput.Twd67) {
+      CoordinateInput.Twd67 t = (CoordinateInput.Twd67) input;
+      prefs.setGotoLastTwd67(t.easting(), t.northing(), t.zone());
+    }
+  }
+
+  /** Show the FR-010 confirmation toast (with zone-119 suffix when applicable). */
+  private void showSubmitConfirmationToast(Wgs84 wgs84, CoordinateInput input) {
     int resolvedZone = resolvedZoneOf(input);
     String unitLabel = unitLabel(input.unit());
     String unitWithZone =
@@ -1089,15 +918,19 @@ public final class TwCoordGotoView {
             wgs84.latitudeDeg(),
             wgs84.longitudeDeg());
     Toast.makeText(pluginContext, toastMsg, Toast.LENGTH_LONG).show();
+  }
 
-    // Outbound intent for downstream observers.
+  /** Broadcast the outbound NAV_COMPLETED intent so downstream observers can react. */
+  private void broadcastNavCompleted(Wgs84 wgs84, CoordinateInput input) {
     Intent done = new Intent(TwCoordGotoIntents.ACTION_GOTO_NAV_COMPLETED);
     done.putExtra(TwCoordGotoIntents.EXTRA_UNIT, input.unit().name());
     done.putExtra(TwCoordGotoIntents.EXTRA_LAT, wgs84.latitudeDeg());
     done.putExtra(TwCoordGotoIntents.EXTRA_LON, wgs84.longitudeDeg());
     done.putExtra(TwCoordGotoIntents.EXTRA_RAW_VALUE, input.displayString());
     AtakBroadcast.getInstance().sendBroadcast(done);
+  }
 
+  private void closeDropDown() {
     if (dropDownCloser != null) {
       try {
         dropDownCloser.run();

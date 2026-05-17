@@ -1,7 +1,7 @@
 # UI — TW Coord GoTo input page
 
-**Features**: 002-tw-coord-goto (base page) + 003-custom-marker-icon (Custom Icon mode & picker)
-**Source**: `app/src/main/res/layout/tw_coord_goto.xml` + `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoView.java` + `CustomIconPickerDialog.java` + `IconResolver.java` + dialog layouts under `app/src/main/res/layout/custom_icon_picker_*.xml`
+**Features**: 002-tw-coord-goto (base page) + 003-custom-marker-icon (ATAK-picker delegation button — ADR-0011 D8)
+**Source**: `app/src/main/res/layout/tw_coord_goto.xml` + `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoView.java`
 
 The TW Coord GoTo input page is a `DropDownReceiver` side-pane opened by the second Tools-menu icon (or the settings-page button). It is the *only* new user-facing surface this feature adds; everything downstream of Submit is pure ATAK behaviour the operator already knows.
 
@@ -20,6 +20,7 @@ The TW Coord GoTo input page is a `DropDownReceiver` side-pane opened by the sec
 │ [Outer-island advisory, amber]         │  ← visible only when zone = 119
 │                                        │
 │ [        Submit        ]               │  ← disabled until input is Ok
+│ [ Drop via ATAK picker ]               │  ← optional: delegate to ATAK
 │                                        │
 │ Recent                                 │  ← section header
 │ ──────────────                          │
@@ -105,68 +106,31 @@ Language changes via the settings page take effect when the operator next opens 
 
 ## Marker-mode picker (feature 002 + 003)
 
-Below the Submit button, the page shows a 3-row × ~4-column grid of marker-mode `RadioButton`s. Selecting one (other than **Move only**) means that when Submit fires, the camera pans **and** a marker of the chosen type is dropped at the resolved coordinate using `PlacePointTool.MarkerCreator`. The marker behaves identically to one placed via ATAK's own long-press radial menu (long-press → edit / delete / route / details).
+Below the Submit button, the page shows a 2-row × 4-column grid of marker-mode `RadioButton`s. Selecting one (other than **Move only**) means that when Submit fires, the camera pans **and** a marker of the chosen type is dropped at the resolved coordinate using `PlacePointTool.MarkerCreator`. The marker behaves identically to one placed via ATAK's own long-press radial menu (long-press → edit / delete / route / details).
 
 | Row | Options |
 |---|---|
 | 1 | **Move only** (default), **Waypoint**, **GoTo Pin**, **Point of Interest** |
 | 2 | **Friendly**, **Hostile**, **Neutral**, **Unknown** |
-| 3 | **Custom Icon** (feature 003) + 3 empty cells for visual balance |
 
-Mode selection persists across plugin restarts via `pref_goto_marker_mode` (since feature 003 — ADR-0010 D5). `MOVE_ONLY` is the install-time default so a fresh install never auto-drops markers.
+Mode selection persists across plugin restarts via `pref_goto_marker_mode` (since feature 003 — ADR-0010 D5 / ADR-0011 D8). `MOVE_ONLY` is the install-time default so a fresh install never auto-drops markers.
 
-### Custom Icon picker (feature 003)
+### "Drop via ATAK picker" delegation button (feature 003 — ADR-0011 D8)
 
-Selecting **Custom Icon** reveals a picker preview row immediately below the marker-mode grid. The row has three render states:
+Immediately below the Submit button the page shows a sibling button labelled **Drop via ATAK picker** (zh-TW: 「改用 ATAK 圖示挑選器落點」; ja: 「ATAK アイコン選択でドロップ」). It is enabled under the same condition as Submit — the active tab's input must parse cleanly — and the 8 marker-mode radios above do **not** gate it.
 
-```
-─────────────────────────────────────────────
-[ icon thumb 32dp ]  iconset name           ← Populated state
-─────────────────────────────────────────────
-[ empty 32dp ]       Pick an icon           ← Empty state
-─────────────────────────────────────────────
-[ empty 32dp ]       Pick an icon
-                     Selected icon no       ← FallbackHint (one-shot, FR-009)
-                     longer installed.
-─────────────────────────────────────────────
-```
+Tapping the button:
 
-Tapping the row opens a modal **two-step picker dialog** (`CustomIconPickerDialog`):
+1. Persists the last-submitted `(unit, value)` tuple (same housekeeping as Submit).
+2. Appends a `RecentEntry`.
+3. Closes the TW Coord GoTo DropDown so ATAK's own DropDown can take the stage.
+4. Calls `EnterLocationDropDownReceiver.getInstance(mapView).processPoint(GeoPointMetaData.wrap(geoPoint))`, handing the resolved coordinate to ATAK's native enter-location pane.
+5. Fires the outbound `GOTO_NAV_COMPLETED` intent (same observability hook as Submit).
 
-- **Step 1 (iconset list)**: ATAK's `UserIconDatabase.getIconSets(...)` enumerated and sorted alphabetically. Each row reads `<iconset name> (<icon count>)`. Tap an iconset to advance.
-- **Step 2 (icon grid)**: 3-column grid of 48 dp thumbnails, each labelled with the icon's filename (extension stripped). Tap an icon to commit. Title shows "Icons in `<iconset>`"; a Back button returns to step 1.
+ATAK's enter-location pane then drops a marker at the typed coordinate using whichever pallet/icon the operator already has selected there. This is the **same picker the operator uses every other time they drop a custom-icon marker in ATAK** — there is no plugin-side UI to learn.
 
-The dialog re-opens contextually per FR-003: if the operator already has a selection AND its iconset still exists, the dialog opens at step 2 of that iconset (one-tap re-pick). Otherwise it opens at step 1.
-
-### Data sourcing
-
-- The plugin contributes **zero** image assets. Every icon shown comes from `UserIconDatabase` — including the 5 iconsets ATAK ships out-of-box (`falconview`, `incident_management`, `ps_air`, `responder`, `wildfire`) plus the `Military` seed set and anything the operator self-loaded through ATAK's iconset manager.
-- New iconsets installed mid-session arrive via `IconsMapAdapter.ICONSET_ADDED` broadcasts; the receiver invalidates `IconResolver`'s cache and notifies the open dialog (if any).
-- Iconsets removed mid-session fire `IconsMapAdapter.ICONSET_REMOVED`. If the operator's currently-selected icon belonged to the removed iconset, the page atomic-clears (`pref_goto_marker_mode` ← `MOVE_ONLY` + remove `pref_goto_last_iconset_path` in a single `apply()`) and queues a one-shot fallback hint (FR-009).
-
-### Submit-path integration
-
-When the operator submits with `CUSTOM_ICON` selected and a valid icon picked, the existing `PlacePointTool.MarkerCreator` chain in `submitOk()` gains one builder call:
-
-```java
-new MarkerCreator(dest)
-    .setUid(UUID.randomUUID().toString())
-    .setType("b-m-p-s-m")         // generic Spot Map pin — no affiliation semantics
-    .setCallsign(callsign)
-    .setIconPath(currentSelection.iconsetPath())   // NEW
-    .placePoint();
-```
-
-`PlacePointTool` automatically writes the `IconsetPath` marker metadata and routes the marker into the User Icons MapGroup, so the dropped marker is indistinguishable from one the operator placed via ATAK's own marker tools.
-
-### Threading
-
-`IconResolver` queries `UserIconDatabase` synchronously (SQLite + `BitmapFactory.decodeByteArray`), so the dialog uses a `Executors.newFixedThreadPool(2)` for iconset enumeration and per-cell bitmap fetch. Results post back to the main thread via a `Handler(Looper.getMainLooper())`. The pool is lifecycle-managed: lazily started on first picker open, shut down in `dismissCustomIconPicker()` on drop-down close.
-
-### Corrupt-bitmap policy (FR-010a)
-
-Rows whose bitmap fails to decode are silently filtered out at picker bind time via `CustomIconPickerDialog.filterRenderable(...)`. The adapter's `getCount()` reflects only renderable rows; `getView()` is never invoked for skipped ones. Each skip is logged at WARN with the iconset UID + filename; no operator-visible toast or placeholder.
+Originally (commits `7688624` MVP + `1861fb8` polish) feature 003 added a 9th "Custom Icon" radio + a bespoke two-step `CustomIconPickerDialog` reading directly from `UserIconDatabase`. That implementation was scrapped after on-device sideload surfaced both an `AlertDialog` 0×0 host-window bug and direct operator feedback that the dialog should "work like the Marker one — reuse the old UI design and logic". The Option B pivot (ADR-0011 D8) deletes ~1300 LOC of plugin-side picker code in favour of one button that hands the work to ATAK. See ADR-0011 D8 for the full rationale, file-deletion list, and discussion of the trade-offs (no inline preview, two-click instead of one-click) that this pivot accepts.
 
 ### Constitution VI compliance
 
-Every entry point in `gotopage/` (`onReceive`, `onClick`, `onItemClick`, `getView`, `onCancel`, worker `Runnable.run`) wraps its body in `try/catch (Throwable)` and logs via `Log.w(TAG, ..., t)`. The `safeClick(tag, body)` helper in `TwCoordGotoView` is the standard wrap for click listeners; the dialog's adapter `getView` overrides and `BroadcastReceiver.onReceive` use inline guards.
+Every entry point in `gotopage/` (`onReceive`, `onClick`) wraps its body in `try/catch (Throwable)` and logs via `Log.w(TAG, ..., t)`. The `safeClick(tag, body)` helper in `TwCoordGotoView` is the standard wrap for click listeners.

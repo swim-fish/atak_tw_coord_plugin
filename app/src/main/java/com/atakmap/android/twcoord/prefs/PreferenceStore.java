@@ -39,11 +39,12 @@ public final class PreferenceStore {
   public static final String KEY_GOTO_LAST_TWD67_ZONE = "pref_goto_last_twd67_zone";
   public static final String KEY_GOTO_RECENT_JSON = "pref_goto_recent_json";
 
-  // Feature 003 (Custom Icon marker mode) — durable across plugin restarts. Default:
-  // MOVE_ONLY (safe — install-time default matches feature 002's session-reset behaviour);
-  // path defaults to null. Atomic-clear is exposed via clearCustomIconSelectionAtomic().
+  // Feature 003: marker-mode is durable across plugin restarts (changes feature 002's prior
+  // in-session-only behaviour — ADR-0010 D5). MOVE_ONLY is the install-time default so a fresh
+  // install never auto-drops markers. The Option B refactor (ADR-0011 D8) removed the
+  // KEY_GOTO_LAST_ICONSET_PATH key and its atomic-clear helper since the custom picker was
+  // scrapped in favour of EnterLocationDropDownReceiver delegation.
   public static final String KEY_GOTO_MARKER_MODE = "pref_goto_marker_mode";
-  public static final String KEY_GOTO_LAST_ICONSET_PATH = "pref_goto_last_iconset_path";
 
   private static final String TAG = "TwCoordPrefs";
 
@@ -253,32 +254,5 @@ public final class PreferenceStore {
   public void setGotoMarkerMode(MarkerMode mode) {
     Objects.requireNonNull(mode, "mode");
     sp.edit().putString(KEY_GOTO_MARKER_MODE, mode.name()).apply();
-  }
-
-  /** Last persisted iconset path (canonical {@code <uid>/<group>/<filename>} form), or null. */
-  public String getGotoLastIconsetPath() {
-    return sp.getString(KEY_GOTO_LAST_ICONSET_PATH, null);
-  }
-
-  public void setGotoLastIconsetPath(String iconsetPath) {
-    sp.edit().putString(KEY_GOTO_LAST_ICONSET_PATH, iconsetPath).apply();
-  }
-
-  /** Remove the persisted iconset path. Called when the operator clears their selection. */
-  public void clearGotoLastIconsetPath() {
-    sp.edit().remove(KEY_GOTO_LAST_ICONSET_PATH).apply();
-  }
-
-  /**
-   * Atomic FR-009 fallback path: in a single {@code apply()} call, set marker mode to MOVE_ONLY and
-   * remove the iconset-path key. The single-commit guarantee prevents any observer seeing the
-   * inconsistent intermediate state where {@code mode == CUSTOM_ICON} but {@code iconsetPath ==
-   * null}.
-   */
-  public void clearCustomIconSelectionAtomic() {
-    sp.edit()
-        .putString(KEY_GOTO_MARKER_MODE, MarkerMode.MOVE_ONLY.name())
-        .remove(KEY_GOTO_LAST_ICONSET_PATH)
-        .apply();
   }
 }

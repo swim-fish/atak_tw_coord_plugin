@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -14,12 +13,18 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Unit tests for the feature-003 additions to {@link PreferenceStore}: marker-mode persistence and
- * iconset-path persistence + atomic clear. Uses a Mockito-mocked {@link SharedPreferences} so the
- * test runs on the JVM without Android/Robolectric.
+ * Unit tests for the feature-003 marker-mode persistence additions to {@link PreferenceStore}. Uses
+ * a Mockito-mocked {@link SharedPreferences} so the test runs on the JVM without
+ * Android/Robolectric.
  *
  * <p>The {@link PreferenceStore} package-private constructor accepting a {@code SharedPreferences}
  * directly is the test seam — production code still calls {@code new PreferenceStore(Context)}.
+ *
+ * <p>Pre-Option-B (ADR-0011 D8) this class also covered the {@code KEY_GOTO_LAST_ICONSET_PATH}
+ * accessors + the {@code clearCustomIconSelectionAtomic} helper. Those were removed alongside
+ * {@link com.atakmap.android.twcoord.gotopage.MarkerMode#values() the CUSTOM_ICON enum value} and
+ * the in-page picker dialog when the custom-icon flow was redirected to ATAK's native
+ * EnterLocationDropDownReceiver.
  */
 public final class PreferenceStoreCustomIconTest {
 
@@ -40,12 +45,12 @@ public final class PreferenceStoreCustomIconTest {
   @Test
   public void markerMode_roundTrip() {
     when(sp.getString(eq(PreferenceStore.KEY_GOTO_MARKER_MODE), anyString()))
-        .thenReturn("CUSTOM_ICON");
+        .thenReturn("WAYPOINT");
 
-    assertThat(prefs.getGotoMarkerMode()).isSameAs(MarkerMode.CUSTOM_ICON);
+    assertThat(prefs.getGotoMarkerMode()).isSameAs(MarkerMode.WAYPOINT);
 
-    prefs.setGotoMarkerMode(MarkerMode.WAYPOINT);
-    verify(editor).putString(PreferenceStore.KEY_GOTO_MARKER_MODE, "WAYPOINT");
+    prefs.setGotoMarkerMode(MarkerMode.MISSION_POINT);
+    verify(editor).putString(PreferenceStore.KEY_GOTO_MARKER_MODE, "MISSION_POINT");
   }
 
   @Test
@@ -64,31 +69,15 @@ public final class PreferenceStoreCustomIconTest {
     assertThat(prefs.getGotoMarkerMode()).isSameAs(MarkerMode.MOVE_ONLY);
   }
 
+  /**
+   * Forward-compatibility: an SP value of "CUSTOM_ICON" left behind by a pre-Option-B install must
+   * fall back to MOVE_ONLY instead of throwing, since the enum value was removed in ADR-0011 D8.
+   */
   @Test
-  public void iconsetPath_roundTrip() {
-    when(sp.getString(eq(PreferenceStore.KEY_GOTO_LAST_ICONSET_PATH), eq(null)))
-        .thenReturn("uid-X/grp/icon.png");
+  public void markerMode_legacyCustomIconValueFallsBackToMoveOnly() {
+    when(sp.getString(eq(PreferenceStore.KEY_GOTO_MARKER_MODE), anyString()))
+        .thenReturn("CUSTOM_ICON");
 
-    assertThat(prefs.getGotoLastIconsetPath()).isEqualTo("uid-X/grp/icon.png");
-
-    prefs.setGotoLastIconsetPath("uid-Y/grp2/other.png");
-    verify(editor).putString(PreferenceStore.KEY_GOTO_LAST_ICONSET_PATH, "uid-Y/grp2/other.png");
-  }
-
-  @Test
-  public void iconsetPath_defaultsToNull() {
-    when(sp.getString(eq(PreferenceStore.KEY_GOTO_LAST_ICONSET_PATH), eq(null))).thenReturn(null);
-
-    assertThat(prefs.getGotoLastIconsetPath()).isNull();
-  }
-
-  @Test
-  public void clearCustomIconSelectionAtomic_writesMoveOnlyAndRemovesPath_inOneCommit() {
-    prefs.clearCustomIconSelectionAtomic();
-
-    // Both mutations issued on the same editor instance, then commit() / apply() called once.
-    verify(editor).putString(PreferenceStore.KEY_GOTO_MARKER_MODE, "MOVE_ONLY");
-    verify(editor).remove(PreferenceStore.KEY_GOTO_LAST_ICONSET_PATH);
-    verify(editor, times(1)).apply();
+    assertThat(prefs.getGotoMarkerMode()).isSameAs(MarkerMode.MOVE_ONLY);
   }
 }

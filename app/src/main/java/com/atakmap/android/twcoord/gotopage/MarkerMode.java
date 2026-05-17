@@ -31,13 +31,12 @@ public enum MarkerMode {
   // marker (cf. javap of com.atakmap.android.routes.GoToMapTool, line 18 of createPoint). This
   // makes the resulting marker indistinguishable from ATAK's own native GoTo destination pin,
   // including the auto-generated `S.NN.HHmmss` callsign produced by PlacePointTool.
-  MISSION_POINT("b-m-p-w-GOTO"),
-  // Feature 003: operator-picked custom icon from any installed iconset. CoT type is
-  // b-m-p-s-m (Spot Map, identical to WAYPOINT) so the marker carries no affiliation
-  // semantics; identity is fully expressed by the iconset path applied via
-  // PlacePointTool.MarkerCreator.setIconPath at placement time. See ADR-0010 D4 and
-  // contracts/marker-mode-v2.md.
-  CUSTOM_ICON("b-m-p-s-m");
+  MISSION_POINT("b-m-p-w-GOTO");
+
+  // Feature 003 originally added a 9th CUSTOM_ICON enum value backed by a custom in-page picker
+  // (CustomIconPickerDialog). That picker was scrapped in favour of delegating to ATAK's native
+  // EnterLocationDropDownReceiver (ADR-0011 D8); the delegation is a one-shot Submit-button
+  // sibling on the page, not a MarkerMode enum value, so CUSTOM_ICON was removed.
 
   private final String cotType;
 
@@ -53,18 +52,5 @@ public enum MarkerMode {
   /** True for every mode except {@link #MOVE_ONLY}. */
   public boolean dropsMarker() {
     return cotType != null;
-  }
-
-  /**
-   * True only for {@link #CUSTOM_ICON}. Submit-path branching uses this to decide whether to append
-   * a {@code .setIconPath(...)} call to the {@code MarkerCreator} chain.
-   */
-  public boolean requiresIconPath() {
-    return this == CUSTOM_ICON;
-  }
-
-  /** Convenience alias for {@code requiresIconPath()} — readability in view-layer switch arms. */
-  public boolean isCustomIcon() {
-    return this == CUSTOM_ICON;
   }
 }

@@ -127,29 +127,14 @@
     <string name="goto_mode_mission">GoTo Pin</string>
 
     <!-- ============================================================
-         Feature 003 — Custom Icon marker mode + picker dialog
+         Feature 003 (Option B / ADR-0011 D8) — ATAK picker delegation button.
+         The Custom Icon marker-mode radio + picker dialog from the earlier
+         spec was scrapped in favour of delegating directly to ATAK's native
+         EnterLocationDropDownReceiver. The custom icon strings were removed
+         alongside CustomIconPickerDialog.
          ============================================================ -->
 
-    <!-- 9th marker-mode radio label. -->
-    <string name="goto_mode_custom_icon">Custom Icon</string>
-
-    <!-- Picker preview row — three states (empty / fallback hint / populated label). -->
-    <string name="goto_custom_icon_empty">Pick an icon</string>
-    <string name="goto_custom_icon_hint_lost">Selected icon no longer installed. Pick again.</string>
-    <!-- %1$s = iconset name resolved from the picked icon\'s iconset UID. -->
-    <string name="goto_custom_icon_preview_label_format">%1$s</string>
-
-    <!-- Picker dialog titles (step 1: iconset list, step 2: icons within iconset). -->
-    <string name="goto_custom_icon_dialog_title_iconsets">Choose iconset</string>
-    <!-- %1$s = iconset name. -->
-    <string name="goto_custom_icon_dialog_title_icons">Icons in %1$s</string>
-    <string name="goto_custom_icon_back">Back</string>
-
-    <!-- Picker dialog empty states. -->
-    <string name="goto_custom_icon_empty_iconsets">No iconsets installed. Add iconsets via ATAK\'s iconset manager.</string>
-    <string name="goto_custom_icon_empty_icons">This iconset has no usable icons.</string>
-
-    <!-- Step-1 iconset row count suffix; %1$d = icon count in that iconset. -->
-    <string name="goto_custom_icon_iconset_count_suffix"> (%1$d)</string>
+    <!-- Label on the "Drop via ATAK picker" button (sibling of Submit). -->
+    <string name="goto_btn_atak_picker">Drop via ATAK picker</string>
 
 </resources>

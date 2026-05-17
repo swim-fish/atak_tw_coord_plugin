@@ -1,15 +1,11 @@
 package com.atakmap.android.twcoord.gotopage;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import com.atakmap.android.dropdown.DropDown.OnStateListener;
 import com.atakmap.android.dropdown.DropDownReceiver;
-import com.atakmap.android.icons.IconsMapAdapter;
-import com.atakmap.android.ipc.AtakBroadcast;
-import com.atakmap.android.ipc.AtakBroadcast.DocumentedIntentFilter;
 import com.atakmap.android.maps.MapView;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
@@ -24,7 +20,8 @@ import com.atakmap.coremap.log.Log;
  * settings page.
  *
  * <p>This file handles the DropDown lifecycle and wires the view to the parser / marker store /
- * preferences. Submit / Auto Fill / Recent logic lives in {@link TwCoordGotoView}.
+ * preferences. Submit / ATAK-picker delegation / Auto Fill / Recent logic lives in {@link
+ * TwCoordGotoView}.
  */
 public class TwCoordGotoReceiver extends DropDownReceiver implements OnStateListener {
 
@@ -43,34 +40,6 @@ public class TwCoordGotoReceiver extends DropDownReceiver implements OnStateList
 
   /** In-memory cache of the in-progress input page state (FR-018: survives close-reopen). */
   private InputPageState inSessionState;
-
-  /**
-   * Feature 003 — receiver for {@link IconsMapAdapter#ICONSET_ADDED} and {@link
-   * IconsMapAdapter#ICONSET_REMOVED} broadcasts. Registered on {@link #onDropDownVisible(boolean)}
-   * {@code true}, unregistered on {@link #onDropDownClose()}, so the subscription is alive only
-   * while the GoTo page is showing. Wraps the {@code onReceive} body in {@code try/catch
-   * (Throwable)} per Constitution VI — an SDK fault here must NEVER take down the host process.
-   */
-  private final BroadcastReceiver iconsetChangeReceiver =
-      new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context c, Intent intent) {
-          try {
-            if (intent == null || controller == null) return;
-            String action = intent.getAction();
-            String uid = intent.getStringExtra("uid");
-            if (IconsMapAdapter.ICONSET_REMOVED.equals(action) && uid != null) {
-              controller.onIconsetRemoved(uid);
-            } else if (IconsMapAdapter.ICONSET_ADDED.equals(action)) {
-              controller.onIconsetsChanged();
-            }
-          } catch (Throwable t) {
-            Log.w(TAG, "iconsetChangeReceiver.onReceive failed", t);
-          }
-        }
-      };
-
-  private boolean iconsetChangeReceiverRegistered;
 
   public TwCoordGotoReceiver(MapView mapView, Context pluginContext, PreferenceStore prefs) {
     super(mapView);
@@ -159,19 +128,7 @@ public class TwCoordGotoReceiver extends DropDownReceiver implements OnStateList
   }
 
   @Override
-  public void onDropDownVisible(boolean v) {
-    try {
-      if (v && !iconsetChangeReceiverRegistered) {
-        DocumentedIntentFilter f = new DocumentedIntentFilter();
-        f.addAction(IconsMapAdapter.ICONSET_ADDED);
-        f.addAction(IconsMapAdapter.ICONSET_REMOVED);
-        AtakBroadcast.getInstance().registerReceiver(iconsetChangeReceiver, f);
-        iconsetChangeReceiverRegistered = true;
-      }
-    } catch (Throwable t) {
-      Log.w(TAG, "iconsetChangeReceiver register failed", t);
-    }
-  }
+  public void onDropDownVisible(boolean v) {}
 
   @Override
   public void onDropDownSelectionRemoved() {}
@@ -181,19 +138,8 @@ public class TwCoordGotoReceiver extends DropDownReceiver implements OnStateList
     // Persist the in-memory state for the next open within the same ATAK process (FR-018).
     if (controller != null) {
       inSessionState = controller.snapshotState();
-      // Feature 003 — tear down picker dialog + worker pool so neither outlives the page.
-      controller.dismissCustomIconPicker();
     }
     autoFillStream.detach();
-    // Feature 003 — drop the ICONSET_* subscription so we don't leak across opens.
-    if (iconsetChangeReceiverRegistered) {
-      try {
-        AtakBroadcast.getInstance().unregisterReceiver(iconsetChangeReceiver);
-      } catch (Throwable t) {
-        Log.w(TAG, "iconsetChangeReceiver unregister failed", t);
-      }
-      iconsetChangeReceiverRegistered = false;
-    }
   }
 
   @Override
