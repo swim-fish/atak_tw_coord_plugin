@@ -66,10 +66,8 @@ adb shell am force-stop com.atakmap.app.civ
 
 打開 ATAK 的 **Tools** 選單（右下角工具列按鈕，或從邊緣滑入）。外掛新增了 **兩個** 項目：
 
-| 圖示 | 名稱 | 按下後會發生什麼 |
-| --- | --- | --- |
-| ![TW Coord GoTo 圖示](images/08b-tools-icon-tw-coord-goto.png) | **TW Coord GoTo** | 從右側滑出側面板，輸入台灣座標後地圖會跳過去（§3.1）。 |
-| ![TW Coordinates 圖示](images/08a-tools-icon-tw-coord.png) | **TW Coordinates** | 循環切換地圖讀值小工具的顯示單位：台電 → TWD97 → TWD67 → 關閉 → 台電 …（§3.2）。 |
+- <img src="images/08b-tools-icon-tw-coord-goto.png" alt="TW Coord GoTo 圖示" width="24"> **TW Coord GoTo** — 從右側滑出側面板，輸入台灣座標後地圖會跳過去（§3.1）。
+- <img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates 圖示" width="24"> **TW Coordinates** — 循環切換地圖讀值小工具的顯示單位：台電 → TWD97 → TWD67 → 關閉 → 台電 …（§3.2）。
 
 </td>
 </tr>
@@ -132,11 +130,9 @@ adb shell am force-stop com.atakmap.app.civ
 
 實際上你能調整的就只有 **兩項**，再加一個捷徑按鈕：
 
-| 設定項 | 作用 |
-| --- | --- |
-| **Display unit** | 決定地圖讀值小工具使用的座標系統：台電 / TWD97 / TWD67。效果等同於從 Tools 選單循環切換（§3.2）。 |
-| **UI language** | 強制此外掛的介面字串使用 *系統語系* / *英文* / *中文（正體）* / *日文*。只影響本外掛，不會動到 ATAK 其他部分。 |
-| **Open Coordinate Input** *(按鈕)* | 等同於 Tools → TW Coord GoTo 的捷徑。 |
+- **Display unit** — 決定地圖讀值小工具使用的座標系統：台電 / TWD97 / TWD67。效果等同於從 Tools 選單循環切換（§3.2）。
+- **UI language** — 強制此外掛的介面字串使用 *系統語系* / *英文* / *中文（正體）* / *日文*。只影響本外掛，不會動到 ATAK 其他部分。
+- **Open Coordinate Input** *(按鈕)* — 等同於 Tools → TW Coord GoTo 的捷徑。
 
 頁面下方還有一塊唯讀的 **Accuracy notice（精度說明）**，整理了誤差範圍（TWD97< 1 m、TWD67 本島 ±3–5 m / 外島 ±10–20 m、台電網格僅支援本島）。純參考資訊，不需要操作。
 

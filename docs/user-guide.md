@@ -66,10 +66,8 @@ adb shell am force-stop com.atakmap.app.civ
 
 Open ATAK's **Tools** menu (the toolbar button in the bottom-right, or edge-swipe). The plugin adds **two** entries:
 
-| Icon | Name | What happens when you tap it |
-| --- | --- | --- |
-| ![TW Coord GoTo icon](images/08b-tools-icon-tw-coord-goto.png) | **TW Coord GoTo** | Opens a side panel where you type a Taiwan coordinate and the map jumps there (§3.1). |
-| ![TW Coordinates icon](images/08a-tools-icon-tw-coord.png) | **TW Coordinates** | Cycles the on-map readout widget through Taipower → TWD97 → TWD67 → Off → Taipower … (§3.2). |
+- <img src="images/08b-tools-icon-tw-coord-goto.png" alt="TW Coord GoTo icon" width="24"> **TW Coord GoTo** — opens a side panel where you type a Taiwan coordinate and the map jumps there (§3.1).
+- <img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates icon" width="24"> **TW Coordinates** — cycles the on-map readout widget through Taipower → TWD97 → TWD67 → Off → Taipower … (§3.2).
 
 </td>
 </tr>
@@ -132,11 +130,9 @@ Open: ATAK → **Settings** (gear icon) → **Tool Preferences** → **Specific 
 
 There are exactly **two** things you can change, plus one shortcut button:
 
-| Setting | What it does |
-| --- | --- |
-| **Display unit** | Which coordinate system the on-map readout widget uses: Taipower / TWD97 / TWD67. Same effect as cycling via the Tools menu (§3.2). |
-| **UI language** | Forces the plugin's strings to *Use system locale* / *English* / *中文（正體）* / *日本語*. Only affects this plugin — the rest of ATAK is untouched. |
-| **Open Coordinate Input** *(button)* | Shortcut equivalent of Tools → TW Coord GoTo. |
+- **Display unit** — which coordinate system the on-map readout widget uses: Taipower / TWD97 / TWD67. Same effect as cycling via the Tools menu (§3.2).
+- **UI language** — forces the plugin's strings to *Use system locale* / *English* / *中文（正體）* / *日本語*. Only affects this plugin — the rest of ATAK is untouched.
+- **Open Coordinate Input** *(button)* — shortcut equivalent of Tools → TW Coord GoTo.
 
 There is also a read-only **Accuracy notice** block summarising error bounds (TWD97 < 1 m, TWD67 ±3–5 m main island / ±10–20 m outer islands, Taipower main-island only). Reference info — nothing to tap.
 
