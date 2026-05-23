@@ -192,12 +192,19 @@ to within the published tolerances:
   - Y67 = Y97 + Δy − a·Y97 − b·X97
   (pwa_map `src/coord/twd67.ts:4-14`)
 - **Taipower grid**: built on TWD67 TM2 z121 with anchors
-  ANCHOR_E_WEST = 170 000, ANCHOR_N_SOUTH = 2 400 000,
-  REGION_WIDTH = 80 000, REGION_HEIGHT = 50 000, 8 rows × 3 columns of
-  letter regions. Sub-region 800 m × 500 m; 100 m letter (A–J × A–J);
-  10 m digits; optional 1 m digits at precision 11.
-  Letters Y/Z → out-of-coverage (outer islands deferred, ADR 0012 in
-  pwa_map).
+  ANCHOR_E_WEST = 90 000, ANCHOR_N_SOUTH = 2 400 000,
+  REGION_WIDTH = 80 000, REGION_HEIGHT = 50 000, 8 rows × 4 columns of
+  letter regions following the OSGeo / Jidanni / Sunriver consensus
+  TAIWAN_MAP layout (skips I underwater; leaves S, X, Y, Z for offshore
+  anchors not yet implemented). Sub-region 800 m × 500 m; 100 m letter
+  (A–J × A–J); 10 m digits; optional 1 m digits at precision 11.
+  Letters Y/Z → reserved; I, S, X plus blank cells → out-of-coverage in
+  v1 (outer-island anchors deferred, ADR 0012 in pwa_map).
+
+  Note (2026-05-23): pwa_map shipped an 8 × 3 table anchored at
+  170 000 m that mis-labelled rows 3–7 (e.g. K vs L on the central
+  east coast and P vs Q in Kaohsiung). The 8 × 4 layout above is the
+  correction — see ADR-0001 follow-up note.
 
 **Rationale**: pwa_map is the user-named source of truth (spec
 Assumptions). Reusing the exact algorithm gives us a free property:

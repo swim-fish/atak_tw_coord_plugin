@@ -1,12 +1,15 @@
 package com.atakmap.android.twcoord.coord;
 
 /**
- * Taipower grid arithmetic over TWD67 TM2 zone 121. Anchors and step sizes copied verbatim from
- * pwa_map src/coord/taipower.ts:82-150 — see ADR-0001 for provenance.
+ * Taipower grid arithmetic over TWD67 TM2 zone 121. Anchors, cell sizes, and letter layout follow
+ * the OSGeo / Jidanni / Sunriver consensus for the Taiwan Power Company main-island grid — see
+ * ADR-0001 for the original pwa_map provenance and the 2026-05 correction note.
  *
- * <p>Coverage in v1: the 8 (north→south) × 3 (west→east) main-island letter grid, A..X. Letters Y
- * and Z (outer islands, Penghu / Lanyu) are NOT supported in v1 and trigger {@link
- * OutOfCoverageException}.
+ * <p>The mainland grid is 8 (north→south) × 4 (west→east) cells of 80 km × 50 km, with the
+ * westernmost easting at 90 000 m TWD67 TM2 zone 121. Some cells carry no letter because they are
+ * underwater (I) or are reserved for offshore zones served by separate anchors (S = Matsu, X/Y =
+ * Penghu, Z = Kinmen). Encoding into one of those blank cells throws {@link
+ * OutOfCoverageException}; v1 does not support the offshore anchors.
  */
 public final class TaipowerGrid {
 
@@ -21,28 +24,32 @@ public final class TaipowerGrid {
     }
   }
 
-  private static final double ANCHOR_E_WEST = 170_000;
+  private static final double ANCHOR_E_WEST = 90_000;
   private static final double ANCHOR_N_SOUTH = 2_400_000;
   private static final double REGION_WIDTH = 80_000;
   private static final double REGION_HEIGHT = 50_000;
   private static final int ROWS = 8;
-  private static final int COLS = 3;
+  private static final int COLS = 4;
   private static final double SUB_STEP_E = 800;
   private static final double SUB_STEP_N = 500;
 
   /**
-   * Letter table: rowIdx 0 = northernmost row, rowIdx 7 = southernmost. Order verified against the
-   * four golden vectors (Taipei 101 → B, Kaohsiung 85 → P, Taichung CH → G, Hualien Stn → H).
+   * Letter table: rowIdx 0 = northernmost row, rowIdx 7 = southernmost; colIdx 0 = westernmost.
+   * Cells set to {@code 0} carry no main-island letter — they are either underwater (row 2 col 3 =
+   * I) or reserved for offshore zones (S = Matsu, X/Y = Penghu, Z = Kinmen). Verified against the
+   * four pwa_map golden vectors (Taipei 101 → B, Kaohsiung 85 → Q, Taichung CH → G, Hualien Stn →
+   * H) and the user-reported regression L0593 BA86 → (23.92°N, 121.05°E).
    */
   private static final char[][] REGION_LETTERS = {
-    {'A', 'B', 'C'},
-    {'D', 'E', 'F'},
-    {'G', 'H', 'I'},
-    {'J', 'K', 'L'},
-    {'M', 'N', 'O'},
-    {'P', 'Q', 'R'},
-    {'S', 'T', 'U'},
-    {'V', 'W', 'X'},
+    // col0   col1   col2   col3
+    {0, 'A', 'B', 'C'}, // row 0 (north)
+    {0, 'D', 'E', 'F'}, // row 1
+    {0, 'G', 'H', 0}, // row 2 (col3 = I underwater)
+    {'J', 'K', 'L', 0}, // row 3
+    {'M', 'N', 'O', 0}, // row 4
+    {'P', 'Q', 'R', 0}, // row 5
+    {0, 'T', 'U', 0}, // row 6 (col0 = S, served by separate Matsu anchor)
+    {0, 'V', 'W', 0}, // row 7 (south)
   };
 
   private TaipowerGrid() {}
@@ -66,6 +73,14 @@ public final class TaipowerGrid {
     }
     int rowIdx = ROWS - 1 - geoRow;
     char region = REGION_LETTERS[rowIdx][colIdx];
+    if (region == 0) {
+      throw new OutOfCoverageException(
+          "no Taipower letter at rowIdx="
+              + rowIdx
+              + " colIdx="
+              + colIdx
+              + " — cell is underwater or reserved for an offshore zone (S/X/Y/Z)");
+    }
 
     double xBase = ANCHOR_E_WEST + colIdx * REGION_WIDTH;
     double yBase = ANCHOR_N_SOUTH + geoRow * REGION_HEIGHT;

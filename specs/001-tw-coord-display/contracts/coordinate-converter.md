@@ -40,7 +40,7 @@ public final class CoordinateConverter {
 |---|---|---|
 | `TWD97` | `120.0 ≤ lon ≤ 122.5` AND `21.5 ≤ lat ≤ 25.5` (Taiwan main island), enforced before calling proj4 | Anything else → `OutOfRange(fix)` |
 | `TWD67` | Same window as TWD97 (it is computed by post-shifting the TWD97 result) | Same as TWD97 |
-| `TAIPOWER` | TWD67 easting ∈ [170 000, 410 000) AND northing ∈ [2 400 000, 2 750 000), AND the resulting region letter is in `A..X` (excludes `Y`/`Z`) | Anything else → `OutOfRange(fix)` |
+| `TAIPOWER` | TWD67 easting ∈ [90 000, 410 000) AND northing ∈ [2 400 000, 2 800 000), AND the resulting (row, col) cell holds a non-blank letter (excludes `I` underwater and `S`/`X`/`Y`/`Z` offshore) | Anything else → `OutOfRange(fix)` |
 
 The 120.0 / 122.5 / 21.5 / 25.5 window is the published valid domain
 for TM2 z121 over the Taiwan main island; it deliberately excludes
@@ -56,12 +56,15 @@ The unit-test class MUST include these four cases (from
 | Location | WGS84 in | TWD97 expect (±0.1 m) | TWD67 expect (±3 m) | Taipower-9 expect (±10 m) |
 |---|---|---|---|---|
 | Taipei 101 | 25.033611, 121.564472 | 306962.887, 2769619.124 | 306132.271, 2769822.821 | B7039 BD32 |
-| Kaohsiung 85 | 22.61225, 120.2867 | 176669.456, 2501522.988 | 175842.607, 2501731.687 | P0703 CC43 |
+| Kaohsiung 85 | 22.61225, 120.2867 | 176669.456, 2501522.988 | 175842.607, 2501731.687 | Q0703 CC43 |
 | Taichung CH | 24.1416, 120.6437 | 213789.087, 2670751.115 | 212960.559, 2670956.951 | G5341 FE65 |
 | Hualien Stn | 23.9932, 121.6012 | 311171.020, 2654400.548 | 310341.091, 2654606.002 | H7509 DB40 |
+| Hualien inland (L) | 23.9217588, 121.0492519 | 255013.996, 2646359.053 | 254185.000, 2646565.000 | L0593 BA86 |
 
 Tolerance numbers come straight from the pwa_map reference (see
-`research.md` R8).
+`research.md` R8). The Kaohsiung 85 letter was corrected from `P` to
+`Q` and a fifth `L`-region vector was added on 2026-05-23 — see
+ADR-0001 follow-up note for the letter-table correction.
 
 ---
 

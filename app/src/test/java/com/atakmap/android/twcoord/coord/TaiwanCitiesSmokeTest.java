@@ -9,8 +9,8 @@ import org.junit.Test;
  * focuses on zone selection (main-island → 121, outer-islands → 119) and the Taipower grid status
  * across the 22 cities. Taipower is main-island-only by design (ADR-0001), so outer-island cities
  * MUST return OutOfRange and main-island cities MUST either return Ok with a valid region letter OR
- * a documented OutOfRange (the handful of western coastal city seats whose easting < 170 000 m
- * falls outside the Taipower grid anchor).
+ * a documented OutOfRange (city seats that land in a blank cell of the 8×4 letter table — I
+ * underwater, S = Matsu offshore — are not codable in v1).
  */
 public class TaiwanCitiesSmokeTest {
 

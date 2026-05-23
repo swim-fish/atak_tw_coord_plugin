@@ -42,12 +42,15 @@ Concrete shape:
   a = 1.549 × 10⁻⁵, b = 6.521 × 10⁻⁶
   (identical to `pwa_map src/coord/twd67.ts:4-14`).
 - **Taipower grid**: hand-rolled grid arithmetic built on the TWD67
-  output. Anchors: `ANCHOR_E_WEST = 170 000`,
+  output. Anchors: `ANCHOR_E_WEST = 90 000`,
   `ANCHOR_N_SOUTH = 2 400 000`, `REGION_WIDTH = 80 000`,
-  `REGION_HEIGHT = 50 000`, 8 rows × 3 columns of letter regions
-  excluding Y/Z. Sub-region 800 m × 500 m; 100 m letter A–J × A–J;
-  10 m digits 0-9; optional 1 m digits at precision 11
-  (identical to `pwa_map src/coord/taipower.ts:82-150`).
+  `REGION_HEIGHT = 50 000`, 8 rows × 4 columns of letter regions per
+  the OSGeo / Jidanni / Sunriver consensus TAIWAN_MAP layout (Y/Z
+  reserved offshore; I, S, X and blank cells out of coverage in v1).
+  Sub-region 800 m × 500 m; 100 m letter A–J × A–J; 10 m digits 0-9;
+  optional 1 m digits at precision 11. (See the 2026-05-23 follow-up
+  note below — pwa_map's original 8 × 3 / anchor-170 000 layout
+  mis-labelled rows 3–7 and has been replaced.)
 
 The four golden vectors are the source of truth for v1 tests
 (`contracts/coordinate-converter.md`).
@@ -81,8 +84,9 @@ The four golden vectors are the source of truth for v1 tests
   4-parameter model).
 - Future changes to pwa_map's algorithm require a coordinated update
   here; we MUST track upstream changes manually.
-- The Taipower grid is unsupported outside the 8 × 3 main-island grid
-  (letters Y/Z rejected); Penghu / Lanyu users see "out of range".
+- The Taipower grid is unsupported outside the 8 × 4 main-island grid
+  (letters I underwater; S, X, Y, Z reserved for offshore anchors not
+  yet implemented); Penghu / Matsu / Kinmen users see "out of range".
 
 ## Links
 
@@ -91,3 +95,56 @@ The four golden vectors are the source of truth for v1 tests
 - Contracts: `contracts/coordinate-converter.md`
 - Upstream provenance: `pwa_map/tests/unit/fixtures/test-vectors.json`
   v2.0.0; Taiwan Coordinate Systems Reference v2.0.0 (MIT) §6 and §8
+
+## 2026-05-23 follow-up — Taipower letter-table correction
+
+**Reported by**: end-user bug ticket
+`L0593BA86 → (23.9217149, 121.0492016)`. Our decoder placed
+`L0593BA86` at TWD67 `(334 185, 2 646 565)` — in the Pacific Ocean
+east of Hualien — instead of the user-supplied inland location.
+
+**Root cause**: the letter table that we copied verbatim from
+`pwa_map src/coord/taipower.ts` ships an 8-row × 3-column rectangle
+anchored at easting 170 000 m TWD67. That layout dropped the
+westernmost mainland column entirely. The actual Taiwan Power Company
+mainland grid is 8 × 4 anchored at easting 90 000 m, with the western
+column populated only for rows 3–5 (J, M, P) and otherwise blank.
+
+Symptom by row:
+
+| Row | pwa_map letters (anchor 170 km) | Correct letters (anchor 90 km)       |
+|-----|---------------------------------|--------------------------------------|
+| 0   | A, B, C                         | _, A, B, C — matches pwa_map         |
+| 1   | D, E, F                         | _, D, E, F — matches pwa_map         |
+| 2   | G, H, I                         | _, G, H, _ (I = underwater)          |
+| 3   | J, K, L                         | J, K, L, _ — shifted east by 80 km!  |
+| 4   | M, N, O                         | M, N, O, _ — shifted east by 80 km!  |
+| 5   | P, Q, R                         | P, Q, R, _ — shifted east by 80 km!  |
+| 6   | S, T, U                         | _, T, U, _ (S = Matsu offshore)      |
+| 7   | V, W, X                         | _, V, W, _ (X = Penghu offshore)     |
+
+The shift mis-labelled Kaohsiung 85 building as P0703 (should be
+Q0703) and put L outside the main island. The user's L0593BA86 maps
+correctly to the central-Hualien inland cell at TWD67
+`(254 185, 2 646 565)` under the corrected layout.
+
+**Decision**: replace `TaipowerGrid.REGION_LETTERS` (and the parser
+mirror in `TaipowerParser`) with the OSGeo / Jidanni / Sunriver
+consensus layout. Update the Kaohsiung 85 golden vector from
+`P0703 CC43` to `Q0703 CC43` and add a fifth golden vector
+`L0593 BA86 ↔ (23.9217588, 121.0492519)` so the L region is exercised
+by `TaipowerGridTest`.
+
+**References**:
+- <https://wiki.osgeo.org/wiki/Taiwan_Power_Company_grid>
+- <https://www.jidanni.org/geo/taipower/programs/taipowergrid>
+  (Perl `TAIWAN_MAP` constant)
+- <https://www.sunriver.com.tw/grid_taipower.htm>
+- User-supplied verification tool
+  <https://linspace.somee.com/TPCToMap/>
+
+**Provenance note**: pwa_map remains the upstream reference for TWD97
+/ TWD67 math; the Taipower grid table is now sourced from the OSGeo
+consensus instead of pwa_map, since the latter is empirically wrong
+for the mainland-west column. We MUST flag this divergence whenever
+re-syncing with pwa_map.

@@ -20,24 +20,25 @@ final class TaipowerParser {
   private TaipowerParser() {}
 
   // Constants shadowed from TaipowerGrid (intentional duplication — see class Javadoc).
-  private static final double ANCHOR_E_WEST = 170_000;
+  private static final double ANCHOR_E_WEST = 90_000;
   private static final double ANCHOR_N_SOUTH = 2_400_000;
   private static final double REGION_WIDTH = 80_000;
   private static final double REGION_HEIGHT = 50_000;
   private static final double SUB_STEP_E = 800;
   private static final double SUB_STEP_N = 500;
   private static final int ROWS = 8;
-  private static final int COLS = 3;
+  private static final int COLS = 4;
 
   private static final char[][] REGION_LETTERS = {
-    {'A', 'B', 'C'},
-    {'D', 'E', 'F'},
-    {'G', 'H', 'I'},
-    {'J', 'K', 'L'},
-    {'M', 'N', 'O'},
-    {'P', 'Q', 'R'},
-    {'S', 'T', 'U'},
-    {'V', 'W', 'X'},
+    // col0   col1   col2   col3
+    {0, 'A', 'B', 'C'}, // row 0 (north)
+    {0, 'D', 'E', 'F'}, // row 1
+    {0, 'G', 'H', 0}, // row 2 (col3 = I underwater)
+    {'J', 'K', 'L', 0}, // row 3
+    {'M', 'N', 'O', 0}, // row 4
+    {'P', 'Q', 'R', 0}, // row 5
+    {0, 'T', 'U', 0}, // row 6 (col0 = S, offshore Matsu anchor)
+    {0, 'V', 'W', 0}, // row 7 (south)
   };
 
   /** Output of {@link #parse(String)}: either Ok(Twd67) or a {@link ParseResult.Reason}. */
@@ -98,7 +99,9 @@ final class TaipowerParser {
     if (region == 'Y' || region == 'Z') {
       return new ParseAttempt(n, Outcome.invalid(ParseResult.Reason.RESERVED_LETTER_YZ));
     }
-    if (region < 'A' || region > 'X') {
+    // A..Z range guard; letters that are inside A..Z but not in the main-island table (I, S, X)
+    // fall through to the table lookup below and are reported as BAD_LETTER there.
+    if (region < 'A' || region > 'Z') {
       return new ParseAttempt(n, Outcome.invalid(ParseResult.Reason.BAD_LETTER));
     }
 
@@ -147,7 +150,8 @@ final class TaipowerParser {
       }
     }
     if (rowIdx < 0) {
-      // Region letter passed A..X check but not in table — defensive guard, should be unreachable.
+      // Letter is A..Z but not in the main-island table: I (underwater), S (Matsu),
+      // X (Penghu) — these are not covered by v1's mainland anchor.
       return new ParseAttempt(n, Outcome.invalid(ParseResult.Reason.BAD_LETTER));
     }
     int geoRow = ROWS - 1 - rowIdx;

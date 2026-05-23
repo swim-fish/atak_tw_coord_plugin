@@ -39,11 +39,9 @@ public class CoordinateParserRoundTripTest {
       Wgs84 fixIn =
           new Wgs84(city.latDeg, city.lonDeg, /*epochMs*/ 1_000L, Wgs84.Source.MAP_CENTRE);
       ConversionResult forward = converter.convert(fixIn, CoordinateUnit.TAIPOWER);
-      // The Taipower grid is an 8×3 letter rectangle anchored at TWD67 (170km, 2400km), 240km
-      // wide × 400km high. Several main-island cities (Tainan, Kaohsiung, Pingtung) fall west /
-      // south of that rectangle by a few km — forward returns OutOfRange there and the round-trip
-      // invariant does not apply. Skip them; the rest of the main-island set still exercises the
-      // round-trip across the whole coverage zone.
+      // Forward may return OutOfRange for a city that falls into a blank cell in the 8×4 letter
+      // table (I underwater, S = Matsu offshore). The round-trip invariant does not apply there,
+      // so just skip such cities; the covered>=10 guard below still keeps the test honest.
       if (!forward.isOk()) continue;
       covered++;
       @SuppressWarnings("rawtypes")
