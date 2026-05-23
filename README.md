@@ -69,10 +69,10 @@ supplied pyproj 3.6.1 + 內政部 7-parameter Bursa-Wolf CSV:
 Test coverage:
 
 - **22 of 22** county/city seats (19 main-island + Penghu + Kinmen + Matsu) are pinned vectors in `TaiwanCitiesAuthoritativeTest`
-- **4 of 4** pwa_map golden vectors (Taipei 101 / Kaohsiung 85 / Taichung CH / Hualien Stn) pinned in `GoldenVectors`
+- **9 golden vectors** in `GoldenVectors`: 4 pwa_map landmarks (Taipei 101 / Kaohsiung 85 / Taichung CH / Hualien Stn) + 5 cell-centroid regression vectors covering the L / E / D / O / T regions (added in v1.0.4 alongside the Taipower letter-table correction — see ADR-0001 follow-up note)
 - **Hualien Stn 11-char** (`H7509 DB4016`) pinned as the canonical 1-m precision regression
 - **3 real-world out-of-range points** (Naha Airport, Hong Kong IFC, Tokyo Tower)
-- **40 JVM unit tests** total; all green
+- **88 JVM unit tests** total; all green
 
 ## Installation
 
@@ -199,7 +199,7 @@ version we have tested, 5.4 through 5.7.0.3).
 ### Common commands
 
 ```
-./gradlew :app:testCivDebugUnitTest      # 40 JVM unit tests
+./gradlew :app:testCivDebugUnitTest      # 88 JVM unit tests
 ./gradlew :app:assembleCivDebug          # signed civ-debug APK
 ./gradlew :app:spotlessApply             # google-java-format the codebase
 ./gradlew :app:lint                      # Android lint
@@ -234,7 +234,7 @@ The build outputs an APK at
 │           ├── layout/pref_item.xml              # custom preference row layouts
 │           └── xml/preferences.xml               # PanListPreference declarations
 ├── docs/
-│   ├── adr/                                      # 11 Architecture Decision Records
+│   ├── adr/                                      # 13 Architecture Decision Records
 │   └── ui/                                       # readout + settings layout docs
 ├── specs/001-tw-coord-display/                   # spec / plan / tasks / contracts (display)
 ├── specs/002-tw-coord-goto/                      # spec / plan / tasks / contracts (GoTo input page)
@@ -253,10 +253,12 @@ spec / plan / tasks / contracts live under `specs/NNN-<short-name>/`:
 - [`specs/002-tw-coord-goto/`](specs/002-tw-coord-goto/) — GoTo input page
 - [`specs/003-custom-marker-icon/`](specs/003-custom-marker-icon/) — Custom Icon marker mode *(in flight)*
 
-Eleven ADRs under [`docs/adr/`](docs/adr/) cover every architecturally
-significant decision (ADR-0001 is the entry point; ADR-0010 captures the
-SDK reconnaissance for the Custom Icon feature, ADR-0011 the
-post-implementation pivots).
+Thirteen ADRs under [`docs/adr/`](docs/adr/) cover every architecturally
+significant decision (ADR-0001 is the entry point and carries the
+2026-05-23 Taipower letter-table correction follow-up; ADR-0010
+captures the SDK reconnaissance for the Custom Icon feature, ADR-0011
+the post-implementation pivots, ADR-0012 the icon asset pipeline, and
+ADR-0013 the TPP-to-GitHub release pipeline).
 
 ## References
 
