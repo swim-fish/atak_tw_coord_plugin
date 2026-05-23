@@ -2,7 +2,7 @@
 
 > **Traditional Chinese version:** [user-guide_zh.md](user-guide_zh.md)
 
-**Version:** v1.0.3 | **ATAK-CIV compatibility:** 5.4.0 — 5.7.x
+**Version:** v1.0.4 | **ATAK-CIV compatibility:** 5.4.0 — 5.7.x
 **Latest release:** <https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest>
 
 This is the short version. If you just want to install the plugin and use it, read this. For deeper background — accuracy notes, datum shift internals, MIL-STD-2525 marker reference — see the source files in `docs/`.
