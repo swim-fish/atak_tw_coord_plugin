@@ -352,8 +352,12 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     // SHOW_OFFLINE_ADDRESS which this receiver consumes. The importer + executor are owned
     // here so they outlive any single drop-down open/close cycle and so US2's AddressSubsystem
     // can reuse the same importer to read activeOrNull() without re-opening files.
+    // Pass `2` as the max supported schema version — per the generator's
+    // docs/data-contract.md (v2, 2026-05-24 evening) v2 adds `places_rtree`. The importer
+    // accepts both v1 (plugin builds R*Tree at import) and v2 (generator already shipped it,
+    // plugin skips the build).
     addressImporter =
-        new AddressBundleImporter(new AtakFileSystem(), new MessageDigestShaCalculator(), 1);
+        new AddressBundleImporter(new AtakFileSystem(), new MessageDigestShaCalculator(), 2);
     addressImportExecutor =
         Executors.newSingleThreadExecutor(
             r -> {

@@ -46,11 +46,18 @@ public final class AddressBundleImporterTest {
   private MessageDigestShaCalculator sha;
   private AddressBundleImporter importer;
 
+  /**
+   * The plugin's pinned max supported schema version. Per data-contract.md v2 (2026-05-24 evening)
+   * the generator emits {@code schema_version=2} (adds {@code places_rtree}); v1 stays accepted as
+   * a backward-compat path (plugin builds R*Tree itself).
+   */
+  private static final int MAX_SUPPORTED_SCHEMA = 2;
+
   @Before
   public void setUp() throws IOException {
     fs = new TempFileSystem(tmp.getRoot().toPath());
     sha = new MessageDigestShaCalculator();
-    importer = new AddressBundleImporter(fs, sha, 1);
+    importer = new AddressBundleImporter(fs, sha, MAX_SUPPORTED_SCHEMA);
   }
 
   // ----------------------------------------------------------------------
@@ -155,7 +162,9 @@ public final class AddressBundleImporterTest {
 
   @Test
   public void import_rejectsWrongSchemaVersion() throws Exception {
-    byte[] bytes = buildFixture(/* schemaVersion= */ "2", /* withPlacesRtree= */ false);
+    // Use 99 (clearly future) so we exercise the upper-bound rejection regardless of how the
+    // plugin's MAX_SUPPORTED_SCHEMA evolves.
+    byte[] bytes = buildFixture(/* schemaVersion= */ "99", /* withPlacesRtree= */ false);
     AddressBundleImporter.ImportResult r =
         importer.importFrom(new ByteArrayInputStream(bytes), null);
 
@@ -164,7 +173,26 @@ public final class AddressBundleImporterTest {
         (AddressBundleImporter.ImportResult.Failure) r;
     assertThat(fail.reason())
         .isEqualTo(AddressBundleImporter.ImportResult.Reason.UNSUPPORTED_SCHEMA_VERSION);
-    assertThat(fail.details()).contains("expected 1").contains("got 2");
+    assertThat(fail.details()).contains("supported 1..2").contains("got 99");
+  }
+
+  /**
+   * data-contract.md v2 (2026-05-24 evening) bumps {@code schema_version} from `'1'` to `'2'` and
+   * ships {@code places_rtree} pre-built. The plugin MUST accept v2 imports unchanged AND skip the
+   * R*Tree build step.
+   */
+  @Test
+  public void import_acceptsSchemaVersion2AndSkipsRtreeBuild() throws Exception {
+    byte[] bytes = buildFixture(/* schemaVersion= */ "2", /* withPlacesRtree= */ true);
+    AddressBundleImporter.ImportResult r =
+        importer.importFrom(new ByteArrayInputStream(bytes), null);
+
+    assertThat(r.isSuccess()).as("v2 fixture must be accepted").isTrue();
+    AddressBundleImporter.ImportResult.Success ok = (AddressBundleImporter.ImportResult.Success) r;
+    assertThat(ok.dataset().generator().schemaVersion()).isEqualTo(2);
+    assertThat(ok.dataset().imported().rtreeBuilt())
+        .as("generator already shipped the R*Tree — plugin must NOT build")
+        .isFalse();
   }
 
   // ----------------------------------------------------------------------

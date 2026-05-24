@@ -65,15 +65,30 @@ public final class AddressBundleImporter {
   private static final int COPY_BUFFER = 64 * 1024;
   private static final long PROGRESS_TICK_MS = 100L;
 
+  /** Lowest data-contract version the plugin understands. */
+  private static final int MIN_SUPPORTED_SCHEMA_VERSION = 1;
+
   private final FileSystem fs;
   private final ShaCalculator shaCalculator;
-  private final int pinnedSchemaVersion;
+  private final int maxSupportedSchemaVersion;
 
+  /**
+   * @param maxSupportedSchemaVersion the highest {@code metadata.schema_version} value the plugin
+   *     accepts (inclusive). Imports with {@code schema_version} in {@code
+   *     [MIN_SUPPORTED_SCHEMA_VERSION, maxSupportedSchemaVersion]} pass validation. Per {@code
+   *     atak-tw-address-generator/docs/data-contract.md}: v1 (2026-05-24 morning) shipped bare
+   *     {@code places} + {@code places_fts}; v2 (2026-05-24 evening) adds {@code places_rtree} for
+   *     native nearest-address lookup. Production passes the latest known version (currently 2).
+   */
   public AddressBundleImporter(
-      FileSystem fs, ShaCalculator shaCalculator, int pinnedSchemaVersion) {
+      FileSystem fs, ShaCalculator shaCalculator, int maxSupportedSchemaVersion) {
     this.fs = Objects.requireNonNull(fs, "fs");
     this.shaCalculator = Objects.requireNonNull(shaCalculator, "shaCalculator");
-    this.pinnedSchemaVersion = pinnedSchemaVersion;
+    if (maxSupportedSchemaVersion < MIN_SUPPORTED_SCHEMA_VERSION) {
+      throw new IllegalArgumentException(
+          "maxSupportedSchemaVersion < " + MIN_SUPPORTED_SCHEMA_VERSION);
+    }
+    this.maxSupportedSchemaVersion = maxSupportedSchemaVersion;
   }
 
   // ----------------------------------------------------------------------
@@ -117,7 +132,7 @@ public final class AddressBundleImporter {
 
       // Write imported.manifest.txt
       ImportedManifest imported =
-          new ImportedManifest(Instant.now(), fileSha, rtreeBuilt, pinnedSchemaVersion);
+          new ImportedManifest(Instant.now(), fileSha, rtreeBuilt, maxSupportedSchemaVersion);
       try {
         writeImportedManifest(staging.resolve(MANIFEST_FILE_NAME), imported);
       } catch (IOException e) {
@@ -330,10 +345,16 @@ public final class AddressBundleImporter {
             ImportResult.Reason.MISSING_REQUIRED_METADATA_KEY,
             "one of [" + String.join(", ", REQUIRED_METADATA_KEYS) + "] is missing");
       }
-      if (metadata.schemaVersion() != pinnedSchemaVersion) {
+      if (metadata.schemaVersion() < MIN_SUPPORTED_SCHEMA_VERSION
+          || metadata.schemaVersion() > maxSupportedSchemaVersion) {
         return ValidationOutcome.failure(
             ImportResult.Reason.UNSUPPORTED_SCHEMA_VERSION,
-            "expected " + pinnedSchemaVersion + ", got " + metadata.schemaVersion());
+            "supported "
+                + MIN_SUPPORTED_SCHEMA_VERSION
+                + ".."
+                + maxSupportedSchemaVersion
+                + ", got "
+                + metadata.schemaVersion());
       }
       if (!tableExists(db, "places")) {
         return ValidationOutcome.failure(

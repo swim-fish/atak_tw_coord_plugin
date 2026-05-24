@@ -75,9 +75,12 @@ but do not affect import validation (forward-compat).
 > means a generator-side addition of further columns (without bumping `schema_version`) does
 > not break the plugin's import path.
 
-### 1.5 R*Tree (plugin-built at import — see research.md R3)
+### 1.5 R*Tree
 
-The plugin adds the following at import time, into the same `.sqlite` file:
+As of the generator's `data-contract.md` **v2 (2026-05-24 evening)** the `places_rtree`
+virtual table ships pre-built inside every `places-*.sqlite` (`schema_version='2'`). For
+operators still holding **v1** files (no R*Tree), the plugin builds it at import time, into
+the same `.sqlite` file:
 
 ```sql
 CREATE VIRTUAL TABLE IF NOT EXISTS places_rtree USING rtree(
@@ -93,6 +96,11 @@ ANALYZE places_rtree;
 
 The two range columns per axis collapse to `lat = lat` / `lon = lon` because every row is a
 point — R*Tree degenerates to a point index. SQLite handles this efficiently.
+
+The `CREATE … IF NOT EXISTS` + `WHERE NOT EXISTS` pair makes the build idempotent: v2 imports
+no-op (`imported.manifest.rtreeBuilt = false`); v1 imports take ~30–45 s on Taichung
+(`rtreeBuilt = true`). See `research.md` R3 for the rationale; the version-detection lives
+implicitly in those SQL guards rather than as an explicit branch on `metadata.schema_version`.
 
 ## 2. Plugin-side `imported.manifest.txt`
 
