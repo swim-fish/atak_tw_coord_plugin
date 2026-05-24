@@ -105,53 +105,68 @@
     <string name="goto_btn_atak_picker">ATAK アイコンメニューを開く</string>
 
     <!-- ============================================================
-         Feature 004 — Offline Address placeholders (T005). Empty values
-         pending T055 proofread translation.
+         Feature 004 — Offline Address（ツールメニュー + 設定 + ウィジェット行）
          ============================================================ -->
-    <string name="tool_offline_address_label"></string>
-    <string name="tool_offline_address_desc"></string>
-    <string name="offline_address_page_title"></string>
-    <string name="offline_address_empty_state"></string>
-    <string name="offline_address_button_import"></string>
-    <string name="offline_address_button_replace"></string>
-    <string name="offline_address_button_remove"></string>
-    <string name="offline_address_confirm_replace"></string>
-    <string name="offline_address_confirm_remove"></string>
-    <string name="offline_address_progress_copying"></string>
-    <string name="offline_address_progress_verifying"></string>
-    <string name="offline_address_progress_building_index"></string>
-    <string name="offline_address_progress_activating"></string>
-    <string name="offline_address_field_county"></string>
-    <string name="offline_address_field_data_date"></string>
-    <string name="offline_address_field_source"></string>
-    <string name="offline_address_field_rows"></string>
-    <string name="offline_address_field_csv_sha"></string>
-    <string name="offline_address_field_imported_at"></string>
-    <string name="offline_address_field_file_sha"></string>
-    <string name="offline_address_field_rtree_built"></string>
-    <string name="offline_address_error_not_openable"></string>
-    <string name="offline_address_error_is_zip"></string>
-    <string name="offline_address_error_missing_metadata"></string>
-    <string name="offline_address_error_missing_required_key"></string>
-    <string name="offline_address_error_unsupported_schema"></string>
-    <string name="offline_address_error_missing_places"></string>
-    <string name="offline_address_error_unexpected_columns"></string>
-    <string name="offline_address_error_rtree_failed"></string>
-    <string name="offline_address_error_disk_full"></string>
-    <string name="offline_address_error_activation_failed"></string>
-    <string name="offline_address_error_io"></string>
-    <string name="pref_address_header"></string>
-    <string name="pref_address_row_me_title"></string>
-    <string name="pref_address_row_me_summary"></string>
-    <string name="pref_address_row_target_title"></string>
-    <string name="pref_address_row_target_summary"></string>
-    <string name="pref_address_row_map_title"></string>
-    <string name="pref_address_row_map_summary"></string>
-    <string name="pref_address_dataset_status_title"></string>
-    <string name="pref_address_dataset_status_summary_none"></string>
-    <string name="pref_address_dataset_status_summary_hint"></string>
-    <string name="pref_address_dataset_status_summary_active_format"></string>
-    <string name="widget_address_loading"></string>
-    <string name="widget_address_empty_state"></string>
+
+    <!-- Tools-menu icon identity. -->
+    <string name="tool_offline_address_label">オフライン住所</string>
+    <string name="tool_offline_address_desc">オフライン住所データセット（places-&lt;county&gt;.sqlite）を取り込み、座標表示の下に住所テキストを表示します。</string>
+
+    <!-- Offline Address page (DropDownReceiver). -->
+    <string name="offline_address_page_title">オフライン住所</string>
+    <string name="offline_address_empty_state">住所データセットがインストールされていません。atak-tw-address-generator プロジェクトが生成した .sqlite ファイルをご利用ください。</string>
+
+    <!-- Action buttons + confirmations. -->
+    <string name="offline_address_button_import">インポート…</string>
+    <string name="offline_address_button_replace">差し替え…</string>
+    <string name="offline_address_button_remove">削除</string>
+    <string name="offline_address_confirm_replace">使用中の %1$s データセットを差し替えますか？</string>
+    <string name="offline_address_confirm_remove">使用中の %1$s データセットを削除しますか？</string>
+
+    <!-- Import progress chip. -->
+    <string name="offline_address_progress_copying">コピー中… %1$d%%</string>
+    <string name="offline_address_progress_verifying">メタデータ検証中…</string>
+    <string name="offline_address_progress_building_index">インデックス構築中… %1$d%%</string>
+    <string name="offline_address_progress_activating">有効化中…</string>
+
+    <!-- State B — field labels. -->
+    <string name="offline_address_field_county">県・市</string>
+    <string name="offline_address_field_data_date">データ日付</string>
+    <string name="offline_address_field_source">データソース</string>
+    <string name="offline_address_field_rows">件数</string>
+    <string name="offline_address_field_csv_sha">CSV SHA-256</string>
+    <string name="offline_address_field_imported_at">インポート時刻</string>
+    <string name="offline_address_field_file_sha">ファイル SHA-256</string>
+    <string name="offline_address_field_rtree_built">R*Tree 構築済み</string>
+
+    <!-- Import failure messages. -->
+    <string name="offline_address_error_not_openable">データベースを読み込めません。</string>
+    <string name="offline_address_error_is_zip">これは .zip 形式です。先に PC 側で .sqlite ファイルを展開してください。本バージョンでは zip の自動展開には対応していません。</string>
+    <string name="offline_address_error_missing_metadata">metadata テーブルが見つかりません。</string>
+    <string name="offline_address_error_missing_required_key">必須メタデータキーがありません：%1$s。</string>
+    <string name="offline_address_error_unsupported_schema">対応していないスキーマバージョン：%1$s。</string>
+    <string name="offline_address_error_missing_places">places テーブルが見つかりません。</string>
+    <string name="offline_address_error_unexpected_columns">places テーブルに必要なカラムが不足しています：%1$s。</string>
+    <string name="offline_address_error_rtree_failed">空間インデックスの構築に失敗しました。</string>
+    <string name="offline_address_error_disk_full">ストレージ容量が不足しています。</string>
+    <string name="offline_address_error_activation_failed">有効化に失敗しました。前回のデータセットは保持されています。</string>
+    <string name="offline_address_error_io">インポート失敗：%1$s。</string>
+
+    <!-- Settings — Offline Address preference category. -->
+    <string name="pref_address_header">オフライン住所</string>
+    <string name="pref_address_row_me_title">自分の位置（ME）の住所を表示</string>
+    <string name="pref_address_row_me_summary">ME 座標行の下に住所行を追加します。</string>
+    <string name="pref_address_row_target_title">ターゲット（TGT）の住所を表示</string>
+    <string name="pref_address_row_target_summary">TGT 座標行の下に住所行を追加します。</string>
+    <string name="pref_address_row_map_title">地図中央（MAP）の住所を表示</string>
+    <string name="pref_address_row_map_summary">MAP 座標行の下に住所行を追加します。</string>
+    <string name="pref_address_dataset_status_title">データセット状態</string>
+    <string name="pref_address_dataset_status_summary_none">データセットがインストールされていません。</string>
+    <string name="pref_address_dataset_status_summary_hint">データセットがインストールされていません — タップでオフライン住所ページを開きます。</string>
+    <string name="pref_address_dataset_status_summary_active_format">使用中：%1$s · %2$s</string>
+
+    <!-- Widget address-row states. -->
+    <string name="widget_address_loading">住所検索中…</string>
+    <string name="widget_address_empty_state">近くに住所がありません</string>
 
 </resources>

@@ -7,12 +7,19 @@ later polish pass.
 
 ## What goes here
 
-- `readout-widget.md` — the on-map readout overlay (anchor, layout,
-  colour palette, state variants OK / OUT_OF_RANGE / NO_FIX /
-  NO_PERMISSION), with screenshots in each of the three UI languages.
+- `readout-widget.md` — the on-map readout overlay: three coordinate
+  rows (MAP / ME / TGT) plus an optional address row per anchor
+  (feature 004 / US2), with state variants and screenshots in each of
+  the three UI languages.
 - `settings-fragment.md` — the preference fragment surfaced under
-  ATAK's Tool Preferences, with screenshots in each of the three UI
-  languages.
+  ATAK's Tool Preferences. Covers the base coordinate-unit + UI-
+  language rows (feature 001) plus the feature 004 "Offline Address"
+  section (3 per-row toggles + dataset-status row).
+- `input-page.md` — the TW Coord GoTo input page (feature 002 + the
+  feature 003 ATAK-picker delegation button).
+- `offline-address-page.md` — the Offline Address `DropDownReceiver`
+  (feature 004): State A (empty) / State B (active dataset), the
+  Import / Replace / Remove flows, and the inline-error matrix.
 
 ## Contribution rules
 

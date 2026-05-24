@@ -131,7 +131,14 @@ public final class PreferenceStore {
   private void fireAll() {
     UserPreference snap = snapshot();
     for (Listener l : listeners) {
-      l.onPreferenceChanged(snap);
+      // Constitution VI: a listener throwing in onPreferenceChanged would escape into ATAK's
+      // SharedPreferences listener-dispatch frame and crash the host process. Per-listener wrap
+      // contains the damage and keeps the remaining listeners running.
+      try {
+        l.onPreferenceChanged(snap);
+      } catch (Throwable t) {
+        Log.w(TAG, "preference listener " + l.getClass().getName() + " threw", t);
+      }
     }
   }
 

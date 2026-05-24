@@ -227,23 +227,23 @@ description: "Task list for feature 004-offline-address"
 
 ### ADRs (Constitution V)
 
-- [ ] T049 [P] Author `docs/adr/0014-offline-address-reconnaissance.md` capturing the Phase 0 SDK + OS reconnaissance: every `javap -public` output that the research.md decisions cite, the upstream `github.com/TAK-Product-Center/atak-civ` permalinks pinned at first reference, and the cross-verification against the bundled `../ATAK-CIV-5.7.0.3-SDK/main.jar`. Template: same shape as `docs/adr/0010-custom-marker-icon-picker.md`
+- [X] T049 [P] Author `docs/adr/0014-offline-address-reconnaissance.md` capturing the Phase 0 SDK + OS reconnaissance: every `javap -public` output that the research.md decisions cite, the upstream `github.com/TAK-Product-Center/atak-civ` permalinks pinned at first reference, and the cross-verification against the bundled `../ATAK-CIV-5.7.0.3-SDK/main.jar`. Template: same shape as `docs/adr/0010-custom-marker-icon-picker.md`
 - [ ] T050 Author `docs/adr/0015-offline-address-implementation.md` (after T031 / T044 / T048 all pass) capturing the actual implementation decisions, anything that diverged from research.md, the measured SC numbers from T053, and the Constitution VI audit result from T056. Template: same shape as `docs/adr/0011-custom-marker-icon-implementation.md`
 
 ### UI docs (Constitution III)
 
-- [ ] T051 [P] Author `docs/ui/offline-address-page.md` documenting both visual states (A + B), the Import / Replace / Remove flows, and the localised string keys. Include placeholder screenshots; final screenshots captured after T044
-- [ ] T052 [P] Update `docs/ui/readout-widget.md` with a new "Address row" section: per-row gating, "Loading address…" / "No address nearby" empty states, visual weight (muted neutral colour `@color/address_row_text`), and per-row examples for ME / TGT / MAP
-- [ ] T053 [P] Update `docs/ui/settings-fragment.md` with a new "Offline Address" section covering the three SwitchPreferences and the dataset-presence status row
+- [X] T051 [P] Author `docs/ui/offline-address-page.md` documenting both visual states (A + B), the Import / Replace / Remove flows, and the localised string keys. Include placeholder screenshots; final screenshots captured after T044
+- [X] T052 [P] Update `docs/ui/readout-widget.md` with a new "Address row" section: per-row gating, "Loading address…" / "No address nearby" empty states, visual weight (muted neutral colour `@color/address_row_text`), and per-row examples for ME / TGT / MAP
+- [X] T053 [P] Update `docs/ui/settings-fragment.md` with a new "Offline Address" section covering the three SwitchPreferences and the dataset-presence status row
 
 ### Localisation (Constitution III FR-018)
 
-- [ ] T054 [P] Replace the empty zh-rTW placeholders from T005 with proofread Traditional Chinese (Taiwan) translations for all ~43 new keys in `app/src/main/res/values-zh-rTW/strings.xml`. Use the project's existing zh-rTW translations as a style reference (terminology, fullwidth punctuation in prose, halfwidth inside identifiers / paths)
-- [ ] T055 [P] Replace the empty ja placeholders from T005 with proofread Japanese translations for all ~43 new keys in `app/src/main/res/values-ja/strings.xml`. Use the project's existing ja translations as a style reference
+- [X] T054 [P] Replace the empty zh-rTW placeholders from T005 with proofread Traditional Chinese (Taiwan) translations for all ~43 new keys in `app/src/main/res/values-zh-rTW/strings.xml`. Use the project's existing zh-rTW translations as a style reference (terminology, fullwidth punctuation in prose, halfwidth inside identifiers / paths)
+- [X] T055 [P] Replace the empty ja placeholders from T005 with proofread Japanese translations for all ~43 new keys in `app/src/main/res/values-ja/strings.xml`. Use the project's existing ja translations as a style reference
 
 ### Constitution VI audit
 
-- [ ] T056 Final Constitution VI audit pass: walk through every entry point listed in [research.md R10](./research.md#r10--constitution-vi-compliance-audit) (11 entries), open the corresponding production file, confirm the outer `try/catch (Throwable)` is present and logs via `com.atakmap.coremap.log.Log.w`. Record the audit result (file path + line range per entry point) in T050's ADR. Any unguarded entry point is a CRITICAL bug — fix before continuing
+- [X] T056 Final Constitution VI audit pass: walk through every entry point listed in [research.md R10](./research.md#r10--constitution-vi-compliance-audit) (11 entries), open the corresponding production file, confirm the outer `try/catch (Throwable)` is present and logs via `com.atakmap.coremap.log.Log.w`. Record the audit result (file path + line range per entry point) in T050's ADR. Any unguarded entry point is a CRITICAL bug — fix before continuing — _audit table recorded in `research.md §R10` (the original 11-entry table now has an "Audit result" sub-section with file/line citations). One missing wrap caught and fixed: `PreferenceStore.fireAll()` now wraps each `Listener.onPreferenceChanged` call in `try/catch (Throwable)` (entry #8). T050 will reproduce the audit table in ADR-0015._
 
 ### Performance & verification
 

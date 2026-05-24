@@ -105,55 +105,70 @@
     <string name="goto_btn_atak_picker">開啟 ATAK 圖示選單</string>
 
     <!-- ============================================================
-         Feature 004 — Offline Address placeholders (T005). Empty values
-         pending T054 proofread translation. The locale-override pathway
-         still resolves these keys; empty strings make missing translations
-         visible during testing rather than silently falling back to en.
+         Feature 004 — Offline Address (Tools menu + Settings + widget rows)
+         台灣正體中文翻譯。Prose 使用全形標點；識別字 / 路徑 / SHA 雜湊維持
+         半形。Fullwidth-punctuation rule per user CLAUDE.md.
          ============================================================ -->
-    <string name="tool_offline_address_label"></string>
-    <string name="tool_offline_address_desc"></string>
-    <string name="offline_address_page_title"></string>
-    <string name="offline_address_empty_state"></string>
-    <string name="offline_address_button_import"></string>
-    <string name="offline_address_button_replace"></string>
-    <string name="offline_address_button_remove"></string>
-    <string name="offline_address_confirm_replace"></string>
-    <string name="offline_address_confirm_remove"></string>
-    <string name="offline_address_progress_copying"></string>
-    <string name="offline_address_progress_verifying"></string>
-    <string name="offline_address_progress_building_index"></string>
-    <string name="offline_address_progress_activating"></string>
-    <string name="offline_address_field_county"></string>
-    <string name="offline_address_field_data_date"></string>
-    <string name="offline_address_field_source"></string>
-    <string name="offline_address_field_rows"></string>
-    <string name="offline_address_field_csv_sha"></string>
-    <string name="offline_address_field_imported_at"></string>
-    <string name="offline_address_field_file_sha"></string>
-    <string name="offline_address_field_rtree_built"></string>
-    <string name="offline_address_error_not_openable"></string>
-    <string name="offline_address_error_is_zip"></string>
-    <string name="offline_address_error_missing_metadata"></string>
-    <string name="offline_address_error_missing_required_key"></string>
-    <string name="offline_address_error_unsupported_schema"></string>
-    <string name="offline_address_error_missing_places"></string>
-    <string name="offline_address_error_unexpected_columns"></string>
-    <string name="offline_address_error_rtree_failed"></string>
-    <string name="offline_address_error_disk_full"></string>
-    <string name="offline_address_error_activation_failed"></string>
-    <string name="offline_address_error_io"></string>
-    <string name="pref_address_header"></string>
-    <string name="pref_address_row_me_title"></string>
-    <string name="pref_address_row_me_summary"></string>
-    <string name="pref_address_row_target_title"></string>
-    <string name="pref_address_row_target_summary"></string>
-    <string name="pref_address_row_map_title"></string>
-    <string name="pref_address_row_map_summary"></string>
-    <string name="pref_address_dataset_status_title"></string>
-    <string name="pref_address_dataset_status_summary_none"></string>
-    <string name="pref_address_dataset_status_summary_hint"></string>
-    <string name="pref_address_dataset_status_summary_active_format"></string>
-    <string name="widget_address_loading"></string>
-    <string name="widget_address_empty_state"></string>
+
+    <!-- Tools-menu icon identity. -->
+    <string name="tool_offline_address_label">離線地址</string>
+    <string name="tool_offline_address_desc">匯入離線地址資料集（places-&lt;county&gt;.sqlite），在座標讀數下方顯示地址文字。</string>
+
+    <!-- Offline Address page (DropDownReceiver). -->
+    <string name="offline_address_page_title">離線地址</string>
+    <string name="offline_address_empty_state">尚未安裝任何地址資料集。請使用 atak-tw-address-generator 專案產生的 .sqlite 檔案。</string>
+
+    <!-- Action buttons + confirmations. -->
+    <string name="offline_address_button_import">匯入…</string>
+    <string name="offline_address_button_replace">取代…</string>
+    <string name="offline_address_button_remove">移除</string>
+    <string name="offline_address_confirm_replace">是否取代目前啟用中的 %1$s 資料集？</string>
+    <string name="offline_address_confirm_remove">是否移除目前啟用中的 %1$s 資料集？</string>
+
+    <!-- Import progress chip. -->
+    <string name="offline_address_progress_copying">複製中… %1$d%%</string>
+    <string name="offline_address_progress_verifying">驗證 metadata…</string>
+    <string name="offline_address_progress_building_index">建立索引中… %1$d%%</string>
+    <string name="offline_address_progress_activating">啟用中…</string>
+
+    <!-- State B — field labels. -->
+    <string name="offline_address_field_county">縣市</string>
+    <string name="offline_address_field_data_date">資料日期</string>
+    <string name="offline_address_field_source">資料來源</string>
+    <string name="offline_address_field_rows">資料筆數</string>
+    <string name="offline_address_field_csv_sha">CSV SHA-256</string>
+    <string name="offline_address_field_imported_at">匯入時間</string>
+    <string name="offline_address_field_file_sha">檔案 SHA-256</string>
+    <string name="offline_address_field_rtree_built">R*Tree 已建立</string>
+
+    <!-- Import failure messages. -->
+    <string name="offline_address_error_not_openable">無法讀取資料庫。</string>
+    <string name="offline_address_error_is_zip">這是 .zip 壓縮檔。請先在電腦端解壓縮取出 .sqlite 檔案；本版外掛尚未支援自動解壓縮。</string>
+    <string name="offline_address_error_missing_metadata">找不到 metadata 資料表。</string>
+    <string name="offline_address_error_missing_required_key">缺少必要的 metadata 鍵：%1$s。</string>
+    <string name="offline_address_error_unsupported_schema">不支援的 schema 版本：%1$s。</string>
+    <string name="offline_address_error_missing_places">找不到 places 資料表。</string>
+    <string name="offline_address_error_unexpected_columns">places 資料表缺少必要欄位：%1$s。</string>
+    <string name="offline_address_error_rtree_failed">建立空間索引失敗。</string>
+    <string name="offline_address_error_disk_full">儲存空間不足。</string>
+    <string name="offline_address_error_activation_failed">啟用失敗；保留先前的資料集。</string>
+    <string name="offline_address_error_io">匯入失敗：%1$s。</string>
+
+    <!-- Settings — Offline Address preference category. -->
+    <string name="pref_address_header">離線地址</string>
+    <string name="pref_address_row_me_title">顯示自身位置（ME）地址</string>
+    <string name="pref_address_row_me_summary">在 ME 座標列下方加上一行地址。</string>
+    <string name="pref_address_row_target_title">顯示目標（TGT）地址</string>
+    <string name="pref_address_row_target_summary">在 TGT 座標列下方加上一行地址。</string>
+    <string name="pref_address_row_map_title">顯示地圖中心（MAP）地址</string>
+    <string name="pref_address_row_map_summary">在 MAP 座標列下方加上一行地址。</string>
+    <string name="pref_address_dataset_status_title">資料集狀態</string>
+    <string name="pref_address_dataset_status_summary_none">尚未安裝資料集。</string>
+    <string name="pref_address_dataset_status_summary_hint">尚未安裝資料集 — 點此開啟「離線地址」頁面。</string>
+    <string name="pref_address_dataset_status_summary_active_format">使用中：%1$s · %2$s</string>
+
+    <!-- Widget address-row states. -->
+    <string name="widget_address_loading">查詢地址中…</string>
+    <string name="widget_address_empty_state">附近沒有可對應的地址</string>
 
 </resources>

@@ -433,6 +433,39 @@ helper is wrapped internally; the existing 3-row render path remains exactly as 
   hand-written wraps are visible at the call site (a reviewer can spot a missing one in 3
   seconds), which is the entire point of Principle VI.
 
+**Audit result (T056, recorded 2026-05-24)** — every entry point confirmed wrapped at the
+location specified above; one missing wrap was caught and fixed during the audit (entry #8).
+File-and-line citations:
+
+| # | Entry point | File | Lines | Status |
+|---|---|---|---|---|
+| 1 | `onReceive(Context, Intent)` | `OfflineAddressReceiver.java` | 124–135 | ✅ outer body wrapped → `Log.w("onReceive threw")` |
+| 2 | `onDropDownVisible(boolean)` | `OfflineAddressReceiver.java` | 137–148 | ✅ outer body wrapped → `Log.w("onDropDownVisible threw")` |
+| 3 | `onDropDownClose()` | `OfflineAddressReceiver.java` | 155–164 | ✅ outer body wrapped → `Log.w("onDropDownClose threw")` |
+| 4 | `onDropDownSizeChanged(double, double)` | `OfflineAddressReceiver.java` | 166–169 | ✅ body is intentionally empty — nothing can throw |
+| 5 | `OfflineAddressTool(Context)` ctor | `OfflineAddressTool.java` | 19–26 | ✅ super-call only; host wraps the super |
+| 6 | `dispose()` | `OfflineAddressTool.java` | 28–38 | ✅ outer body wrapped → `Log.w("dispose threw")` |
+| 7 | Status-row click lambda | `TwCoordPreferenceFragment.java` | 94–106 | ✅ lambda body wrapped → `Log.w("ACTION_SHOW_OFFLINE_ADDRESS broadcast threw")` |
+| 8 | `fireAll()` per-listener dispatch | `PreferenceStore.java` | 131–143 | ✅ **fixed during T056 audit** — per-listener `try/catch (Throwable)` added; previously the loop could escape into the SharedPreferences framework if any listener threw |
+| 9 | `AddressSubsystem.onCoord(...)` | `TwCoordMapComponent.java` | 620–627 (renderMapCentre), 672–678 (renderTargetFrom), 199–203 (selfPointListener.onFreshFix) | ✅ callers wrap |
+| 10 | SAF pick-result receiver | `OfflineAddressReceiver.java` | 215–225 (`pickResultReceiver.onReceive`), 287–306 (`startImport` `openInputStream` wrap) | ✅ outer body wrapped → `Log.w("pickResultReceiver.onReceive threw")` |
+| 11 | Import worker `Runnable.run()` | `OfflineAddressReceiver.java` | 256–272 (`startImport` worker body) | ✅ outer body wrapped → `Log.w("import worker threw")` |
+
+Additional in-feature wraps surfaced during audit (not in the 11 enumerated above):
+
+- `AddressBundleImporter.importFrom` outer-body wrap (`AddressBundleImporter.java:101–190`) — catches anything the staging / validate / R*Tree-build pipeline throws.
+- `AddressBundleImporter.removeActive` outer-body wrap (`AddressBundleImporter.java:196–204`).
+- `AddressBundleImporter.activeOrNull` outer-body wrap plus per-branch specific `Log.w` reasons (`AddressBundleImporter.java:225–263`).
+- `AddressSubsystem.openFacadeFromActive` `importer.activeOrNull()` invocation wrap (`AddressSubsystem.java:259–264`).
+- `AddressSubsystem` listener-dispatch wrap in `TwCoordMapComponent` for the per-row `renderAddresses` (`TwCoordMapComponent.java:414–426`).
+- `addressDatasetChangedReceiver.onReceive` wrap (`TwCoordMapComponent.java:437–444`).
+- `TwCoordPreferenceFragment.refreshAddressDatasetStatus` outer-body wrap (`TwCoordPreferenceFragment.java:199–217`).
+
+**Pre-existing tech debt noted but outside this audit's scope** (feature 002 / 003 entry
+points; tracked separately):
+- `TwCoordPreferenceFragment` `pref_open_goto` click lambda is **not** wrapped. Predates feature
+  004; same shape as the wrapped status-row lambda would be a trivial follow-up.
+
 ## R11 — Settings UI (3 SwitchPreferences + dataset-presence hint)
 
 **Decision**: Insert a new `PreferenceCategory` "Offline Address" into `res/xml/preferences.xml`
