@@ -17,10 +17,13 @@ import com.atakmap.android.maps.MapView;
 import com.atakmap.android.maps.Marker;
 import com.atakmap.android.maps.PointMapItem;
 import com.atakmap.android.twcoord.address.AddressBundleImporter;
+import com.atakmap.android.twcoord.address.AddressRowState;
+import com.atakmap.android.twcoord.address.AddressSubsystem;
 import com.atakmap.android.twcoord.address.AtakFileSystem;
 import com.atakmap.android.twcoord.address.MessageDigestShaCalculator;
 import com.atakmap.android.twcoord.address.OfflineAddressIntents;
 import com.atakmap.android.twcoord.address.OfflineAddressReceiver;
+import com.atakmap.android.twcoord.address.SqliteAddressDatabase;
 import com.atakmap.android.twcoord.coord.ConversionResult;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
@@ -35,9 +38,12 @@ import com.atakmap.android.twcoord.prefs.PreferenceStore;
 import com.atakmap.android.twcoord.prefs.UserPreference;
 import com.atakmap.app.preferences.ToolsPreferenceFragment;
 import com.atakmap.coremap.maps.coords.GeoPoint;
+import java.util.EnumMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Hub of all listener wiring for US1/US2/US3. Owns the widget, the preference store, and the
@@ -64,11 +70,18 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private TwCoordGotoReceiver gotoReceiver;
 
   // Feature 004 — Offline Address subsystem owns the importer (one per process), a
-  // single-thread import executor, and the page receiver. AddressSubsystem (T037+) joins
-  // these fields in US2.
+  // single-thread import executor, the page receiver, plus the runtime per-row resolver
+  // (AddressSubsystem) and a separate single-thread scheduled executor for lookup work.
   private AddressBundleImporter addressImporter;
   private ExecutorService addressImportExecutor;
   private OfflineAddressReceiver addressReceiver;
+  private AddressSubsystem addressSubsystem;
+  private ScheduledExecutorService addressLookupExecutor;
+  private BroadcastReceiver addressDatasetChangedReceiver;
+  // Per-row last-emitted state; aggregated here so the widget can be repainted with all three
+  // values on every single-row update.
+  private final Map<AddressSubsystem.Row, AddressRowState> addressRowStates =
+      new EnumMap<>(AddressSubsystem.Row.class);
 
   private final CoordinateConverter converter = new CoordinateConverter();
   private final Formatter formatter = new Formatter();
@@ -130,11 +143,33 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private final PreferenceStore.Listener prefListener =
       snap -> {
         boolean languageChanged = snap.uiLanguage() != activePrefs.uiLanguage();
+        boolean meToggleChanged = snap.addressRowMe() != activePrefs.addressRowMe();
+        boolean tgtToggleChanged = snap.addressRowTarget() != activePrefs.addressRowTarget();
+        boolean mapToggleChanged = snap.addressRowMap() != activePrefs.addressRowMap();
         activePrefs = snap;
-        if (languageChanged) rebuildLocalisedContext();
+        if (languageChanged) {
+          rebuildLocalisedContext();
+          if (widget != null && localisedPluginContext != null) {
+            widget.setAddressStrings(
+                localisedPluginContext.getString(R.string.widget_address_loading),
+                localisedPluginContext.getString(R.string.widget_address_empty_state));
+          }
+        }
         // Repaint both rows with the new unit / language.
         renderMapCentre();
         renderMeFromLastKnown();
+        // Propagate per-row toggle changes to the address subsystem.
+        if (addressSubsystem != null) {
+          if (meToggleChanged) {
+            addressSubsystem.setRowEnabled(AddressSubsystem.Row.ME, snap.addressRowMe());
+          }
+          if (tgtToggleChanged) {
+            addressSubsystem.setRowEnabled(AddressSubsystem.Row.TGT, snap.addressRowTarget());
+          }
+          if (mapToggleChanged) {
+            addressSubsystem.setRowEnabled(AddressSubsystem.Row.MAP, snap.addressRowMap());
+          }
+        }
       };
 
   private final SelfMarkerSubscriber.Listener subListener =
@@ -148,6 +183,15 @@ public class TwCoordMapComponent extends AbstractMapComponent {
                   Wgs84.Source.DEVICE_LOCATION, result, activePrefs.coordUnit(), strings);
           lastMeLine = line;
           widget.render(lastMapLine, lastMeLine, lastTargetLine);
+          // Feature 004 — feed the address subsystem so the ME address row updates.
+          if (addressSubsystem != null) {
+            try {
+              addressSubsystem.onCoord(
+                  AddressSubsystem.Row.ME, fix.latitudeDeg(), fix.longitudeDeg());
+            } catch (Throwable t) {
+              android.util.Log.w("TwCoordMapComponent", "onCoord(ME) threw", t);
+            }
+          }
         }
 
         @Override
@@ -323,6 +367,70 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     addressFilter.addAction(OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS);
     AtakBroadcast.getInstance().registerReceiver(addressReceiver, addressFilter);
 
+    // Feature 004 (US2) — runtime per-row address resolver. Dedicated single-thread
+    // ScheduledExecutorService for debounce + lookup; the importer hands the active
+    // dataset's File to SqliteFactory which opens the read-only DB.
+    addressLookupExecutor =
+        Executors.newSingleThreadScheduledExecutor(
+            r -> {
+              Thread t = new Thread(r, "twcoord-address-lookup");
+              t.setDaemon(true);
+              return t;
+            });
+    addressSubsystem =
+        new AddressSubsystem(
+            addressImporter,
+            new SqliteAddressDatabase.SqliteFactory(),
+            addressLookupExecutor,
+            250L);
+    for (AddressSubsystem.Row r : AddressSubsystem.Row.values()) {
+      addressRowStates.put(r, AddressRowState.hidden());
+    }
+    addressSubsystem.addListener(
+        (row, state) -> {
+          try {
+            addressRowStates.put(row, state);
+            if (widget != null) {
+              widget.renderAddresses(
+                  addressRowStates.get(AddressSubsystem.Row.MAP),
+                  addressRowStates.get(AddressSubsystem.Row.ME),
+                  addressRowStates.get(AddressSubsystem.Row.TGT));
+            }
+          } catch (Throwable t) {
+            // Constitution VI: listener body cannot escape into the host.
+            android.util.Log.w("TwCoordMapComponent", "address listener threw", t);
+          }
+        });
+    // Apply initial toggle state from the preference snapshot.
+    addressSubsystem.setRowEnabled(AddressSubsystem.Row.ME, activePrefs.addressRowMe());
+    addressSubsystem.setRowEnabled(AddressSubsystem.Row.TGT, activePrefs.addressRowTarget());
+    addressSubsystem.setRowEnabled(AddressSubsystem.Row.MAP, activePrefs.addressRowMap());
+
+    // Re-open the facade when the operator imports / removes a dataset on the
+    // Offline Address page.
+    addressDatasetChangedReceiver =
+        new BroadcastReceiver() {
+          @Override
+          public void onReceive(Context ctx, Intent intent) {
+            try {
+              if (addressSubsystem != null) addressSubsystem.onActiveDatasetChanged();
+            } catch (Throwable t) {
+              android.util.Log.w("TwCoordMapComponent", "ACTION_DATASET_CHANGED threw", t);
+            }
+          }
+        };
+    AtakBroadcast.DocumentedIntentFilter dsChangedFilter =
+        new AtakBroadcast.DocumentedIntentFilter();
+    dsChangedFilter.addAction(OfflineAddressIntents.ACTION_DATASET_CHANGED);
+    AtakBroadcast.getInstance().registerReceiver(addressDatasetChangedReceiver, dsChangedFilter);
+
+    // Seed the widget's address row strings from the localised context.
+    if (localisedPluginContext != null) {
+      widget.setAddressStrings(
+          localisedPluginContext.getString(R.string.widget_address_loading),
+          localisedPluginContext.getString(R.string.widget_address_empty_state));
+    }
+
     // Initial paint so the widget is not blank.
     renderMapCentre();
     // Seed the me-row from the current self-marker position so the user sees something even
@@ -382,6 +490,25 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       }
       addressImportExecutor = null;
     }
+    if (addressDatasetChangedReceiver != null) {
+      try {
+        AtakBroadcast.getInstance().unregisterReceiver(addressDatasetChangedReceiver);
+      } catch (IllegalArgumentException ignored) {
+        // never registered
+      }
+      addressDatasetChangedReceiver = null;
+    }
+    if (addressSubsystem != null) {
+      try {
+        addressSubsystem.close();
+      } catch (Exception ignored) {
+        // best-effort
+      }
+      addressSubsystem = null;
+    }
+    // addressLookupExecutor is shut down by addressSubsystem.close(); set to null so we don't
+    // double-shut.
+    addressLookupExecutor = null;
     addressImporter = null;
     ToolsPreferenceFragment.unregister(PREF_KEY);
     if (ui != null) ui.removeCallbacks(selfTick);
@@ -464,6 +591,15 @@ public class TwCoordMapComponent extends AbstractMapComponent {
         formatter.format(Wgs84.Source.MAP_CENTRE, result, activePrefs.coordUnit(), strings);
     lastMapLine = line;
     widget.render(lastMapLine, lastMeLine, lastTargetLine);
+    // Feature 004 — feed the address subsystem so the MAP address row updates.
+    if (addressSubsystem != null) {
+      try {
+        addressSubsystem.onCoord(
+            AddressSubsystem.Row.MAP, centre.getLatitude(), centre.getLongitude());
+      } catch (Throwable t) {
+        android.util.Log.w("TwCoordMapComponent", "onCoord(MAP) threw", t);
+      }
+    }
   }
 
   /**
@@ -507,6 +643,14 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     lastTargetLine =
         formatter.format(Wgs84.Source.COT_TARGET, result, activePrefs.coordUnit(), strings);
     widget.render(null, null, lastTargetLine);
+    // Feature 004 — feed the address subsystem so the TGT address row updates.
+    if (addressSubsystem != null) {
+      try {
+        addressSubsystem.onCoord(AddressSubsystem.Row.TGT, p.getLatitude(), p.getLongitude());
+      } catch (Throwable t) {
+        android.util.Log.w("TwCoordMapComponent", "onCoord(TGT) threw", t);
+      }
+    }
   }
 
   private String unitTagFor(CoordinateUnit u) {
