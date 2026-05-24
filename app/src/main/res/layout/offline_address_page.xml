@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Stub layout for OfflineAddressReceiver (T003). T029 replaces this with
-    the final two-state layout per contracts/offline-address-page.md
-    (State A = empty-state, State B = active-dataset metadata). The root
-    + two state containers are present here so the receiver compiles and
-    binds without crashing while T024–T028 land in between.
-
+    Final layout for OfflineAddressReceiver (T029). Two-state container:
+      - State A: "No address dataset installed" + Import button.
+      - State B: dataset metadata (county, data_date, source, rows, CSV
+        SHA, file SHA, imported_at, R*Tree built) + Replace + Remove.
     Plain-Android widgets only per ADR-0009 D6 (no AppCompat, no Material).
+    The receiver toggles visibility between the two state groups; the
+    progress chip at the top is visible only during an import.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/offline_address_root"
@@ -15,20 +15,124 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- State A — "No address dataset installed". Expanded in T029. -->
+    <!-- Page header. -->
+    <TextView
+        android:id="@+id/offline_address_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/offline_address_page_title"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:paddingBottom="8dp"/>
+
+    <!-- Inline progress chip; receiver toggles visibility during import. -->
+    <TextView
+        android:id="@+id/offline_address_progress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:paddingBottom="8dp"
+        android:textStyle="italic"/>
+
+    <!-- Inline error row; receiver toggles visibility on Failure result. -->
+    <TextView
+        android:id="@+id/offline_address_error"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:paddingBottom="8dp"
+        android:textColor="#FFFF5555"/>
+
+    <!-- State A — no dataset installed. -->
     <LinearLayout
         android:id="@+id/offline_address_state_a"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:visibility="gone"/>
+        android:visibility="gone">
 
-    <!-- State B — active dataset metadata + Replace/Remove. Expanded in T029. -->
+        <TextView
+            android:id="@+id/offline_address_state_a_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/offline_address_empty_state"
+            android:paddingBottom="12dp"/>
+
+        <Button
+            android:id="@+id/offline_address_state_a_import"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/offline_address_button_import"/>
+    </LinearLayout>
+
+    <!-- State B — active dataset. -->
     <LinearLayout
         android:id="@+id/offline_address_state_b"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:visibility="gone"/>
+        android:visibility="gone">
+
+        <!-- Metadata table (label + value pairs). -->
+        <TableLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stretchColumns="1">
+
+            <TableRow>
+                <TextView android:text="@string/offline_address_field_county" android:paddingRight="12dp"/>
+                <TextView android:id="@+id/offline_address_value_county"/>
+            </TableRow>
+            <TableRow>
+                <TextView android:text="@string/offline_address_field_data_date" android:paddingRight="12dp"/>
+                <TextView android:id="@+id/offline_address_value_data_date"/>
+            </TableRow>
+            <TableRow>
+                <TextView android:text="@string/offline_address_field_source" android:paddingRight="12dp"/>
+                <TextView android:id="@+id/offline_address_value_source"/>
+            </TableRow>
+            <TableRow>
+                <TextView android:text="@string/offline_address_field_rows" android:paddingRight="12dp"/>
+                <TextView android:id="@+id/offline_address_value_rows"/>
+            </TableRow>
+            <TableRow>
+                <TextView android:text="@string/offline_address_field_csv_sha" android:paddingRight="12dp"/>
+                <TextView android:id="@+id/offline_address_value_csv_sha" android:singleLine="false" android:ellipsize="middle"/>
+            </TableRow>
+            <TableRow>
+                <TextView android:text="@string/offline_address_field_imported_at" android:paddingRight="12dp"/>
+                <TextView android:id="@+id/offline_address_value_imported_at"/>
+            </TableRow>
+            <TableRow>
+                <TextView android:text="@string/offline_address_field_file_sha" android:paddingRight="12dp"/>
+                <TextView android:id="@+id/offline_address_value_file_sha" android:singleLine="false" android:ellipsize="middle"/>
+            </TableRow>
+            <TableRow>
+                <TextView android:text="@string/offline_address_field_rtree_built" android:paddingRight="12dp"/>
+                <TextView android:id="@+id/offline_address_value_rtree_built"/>
+            </TableRow>
+        </TableLayout>
+
+        <!-- Replace + Remove action row. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="16dp">
+
+            <Button
+                android:id="@+id/offline_address_state_b_replace"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/offline_address_button_replace"
+                android:layout_marginEnd="12dp"/>
+
+            <Button
+                android:id="@+id/offline_address_state_b_remove"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/offline_address_button_remove"/>
+        </LinearLayout>
+    </LinearLayout>
 
 </LinearLayout>

@@ -16,6 +16,11 @@ import com.atakmap.android.maps.MapItem;
 import com.atakmap.android.maps.MapView;
 import com.atakmap.android.maps.Marker;
 import com.atakmap.android.maps.PointMapItem;
+import com.atakmap.android.twcoord.address.AddressBundleImporter;
+import com.atakmap.android.twcoord.address.AtakFileSystem;
+import com.atakmap.android.twcoord.address.MessageDigestShaCalculator;
+import com.atakmap.android.twcoord.address.OfflineAddressIntents;
+import com.atakmap.android.twcoord.address.OfflineAddressReceiver;
 import com.atakmap.android.twcoord.coord.ConversionResult;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
@@ -31,6 +36,8 @@ import com.atakmap.android.twcoord.prefs.UserPreference;
 import com.atakmap.app.preferences.ToolsPreferenceFragment;
 import com.atakmap.coremap.maps.coords.GeoPoint;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Hub of all listener wiring for US1/US2/US3. Owns the widget, the preference store, and the
@@ -55,6 +62,13 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private SelfMarkerSubscriber selfSub;
   private Handler ui;
   private TwCoordGotoReceiver gotoReceiver;
+
+  // Feature 004 — Offline Address subsystem owns the importer (one per process), a
+  // single-thread import executor, and the page receiver. AddressSubsystem (T037+) joins
+  // these fields in US2.
+  private AddressBundleImporter addressImporter;
+  private ExecutorService addressImportExecutor;
+  private OfflineAddressReceiver addressReceiver;
 
   private final CoordinateConverter converter = new CoordinateConverter();
   private final Formatter formatter = new Formatter();
@@ -290,6 +304,25 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     gotoFilter.addAction(TwCoordGotoIntents.ACTION_SHOW_GOTO);
     AtakBroadcast.getInstance().registerReceiver(gotoReceiver, gotoFilter);
 
+    // Feature 004 — Offline Address page. Third Tools-menu icon (OfflineAddressTool) fires
+    // SHOW_OFFLINE_ADDRESS which this receiver consumes. The importer + executor are owned
+    // here so they outlive any single drop-down open/close cycle and so US2's AddressSubsystem
+    // can reuse the same importer to read activeOrNull() without re-opening files.
+    addressImporter =
+        new AddressBundleImporter(new AtakFileSystem(), new MessageDigestShaCalculator(), 1);
+    addressImportExecutor =
+        Executors.newSingleThreadExecutor(
+            r -> {
+              Thread t = new Thread(r, "twcoord-address-import");
+              t.setDaemon(true);
+              return t;
+            });
+    addressReceiver =
+        new OfflineAddressReceiver(view, pluginContext, addressImporter, addressImportExecutor);
+    AtakBroadcast.DocumentedIntentFilter addressFilter = new AtakBroadcast.DocumentedIntentFilter();
+    addressFilter.addAction(OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS);
+    AtakBroadcast.getInstance().registerReceiver(addressReceiver, addressFilter);
+
     // Initial paint so the widget is not blank.
     renderMapCentre();
     // Seed the me-row from the current self-marker position so the user sees something even
@@ -328,6 +361,28 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       }
       gotoReceiver = null;
     }
+    if (addressReceiver != null) {
+      try {
+        AtakBroadcast.getInstance().unregisterReceiver(addressReceiver);
+      } catch (IllegalArgumentException ignored) {
+        // never registered
+      }
+      try {
+        addressReceiver.dispose();
+      } catch (Exception ignored) {
+        // best-effort
+      }
+      addressReceiver = null;
+    }
+    if (addressImportExecutor != null) {
+      try {
+        addressImportExecutor.shutdownNow();
+      } catch (Exception ignored) {
+        // best-effort
+      }
+      addressImportExecutor = null;
+    }
+    addressImporter = null;
     ToolsPreferenceFragment.unregister(PREF_KEY);
     if (ui != null) ui.removeCallbacks(selfTick);
     if (view != null) {

@@ -1,34 +1,48 @@
 package com.atakmap.android.twcoord.address;
 
+import java.io.Closeable;
 import java.io.OutputStream;
 
 /**
- * JVM-mockable seam over SHA-256 digest calculation. {@link AddressBundleImporter} wraps the
- * staging-file {@link OutputStream} with {@link #tapping(OutputStream)} so the digest is computed
- * incrementally as bytes pass through during the SAF stream copy (per {@code research.md §R9} — no
- * second-pass read of the staged file). After the copy completes, {@link #finalDigestHex()} returns
- * the lowercase hex digest for storage in the plugin-side {@code imported.manifest.txt}.
+ * JVM-mockable seam over SHA-256 digest calculation. {@link AddressBundleImporter} obtains a fresh
+ * {@link Tap} per import via {@link #tap(OutputStream)}; the tap wraps the underlying sink so bytes
+ * are tee'd through both the on-disk write AND the digest accumulator (per {@code research.md §R9}
+ * — no second-pass read of the staged file). After the tap is closed, {@link Tap#hex()} returns the
+ * lowercase hex digest.
  *
  * <p>Production implementation ({@code MessageDigestShaCalculator}) wraps {@code
  * java.security.MessageDigest.getInstance("SHA-256")} (hardware-accelerated on the reference device
- * via ARMv8 crypto extensions). Tests can inject a deterministic stub.
- *
- * <p>One {@link ShaCalculator} instance is single-use: after {@link #finalDigestHex()} returns, the
- * implementation MAY reject further reads / writes.
+ * via ARMv8 crypto extensions). The same {@link ShaCalculator} instance can be reused across
+ * imports — each {@link #tap(OutputStream)} call allocates an independent digest state.
  */
 public interface ShaCalculator {
 
   /**
-   * Return an {@link OutputStream} that writes through to {@code sink} while incrementally updating
-   * the digest. Closing the returned stream closes {@code sink}.
+   * Begin a new digest computation. Returns a {@link Tap} that the caller writes to in place of the
+   * original {@code sink}; bytes flow through to {@code sink} AND through the digest. Caller is
+   * responsible for closing the tap (the tap's {@link Tap#close()} also closes {@code sink}).
    */
-  OutputStream tapping(OutputStream sink);
+  Tap tap(OutputStream sink);
 
   /**
-   * Return the 64-character lowercase hex digest of all bytes that passed through the wrapper
-   * returned by {@link #tapping(OutputStream)}. Calling this before any bytes were written returns
-   * the SHA-256 of the empty input ({@code
-   * e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}).
+   * A single in-flight digest. Hand-off pattern: write to {@link #stream()} until done, then {@link
+   * #close()}; afterwards {@link #hex()} returns the lowercase hex digest.
    */
-  String finalDigestHex();
+  interface Tap extends Closeable {
+    /**
+     * The {@link OutputStream} the caller writes to. Bytes are forwarded to the underlying sink AND
+     * fed into the digest. Closing this stream is equivalent to closing the {@link Tap}.
+     */
+    OutputStream stream();
+
+    /**
+     * The 64-character lowercase hex digest. Safe to call after {@link #close()}. Calling before
+     * close is implementation-defined — production implementations return the digest-so-far; tests
+     * may or may not.
+     */
+    String hex();
+
+    @Override
+    void close();
+  }
 }

@@ -253,6 +253,13 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.27.3'
     testImplementation 'org.mockito:mockito-core:5.16.1'
 
+    // Feature 004 — Robolectric shadows Android SQLiteDatabase / DropDownReceiver /
+    // layout inflation on the JVM so the importer + receiver tests do not require an
+    // emulator. xerial sqlite-jdbc is the underlying SQLite engine used by Robolectric
+    // and is also handy for assembling test fixtures directly.
+    testImplementation 'org.robolectric:robolectric:4.14.1'
+    testImplementation 'org.xerial:sqlite-jdbc:3.46.1.0'
+
     // Instrumented tests (Android device / emulator required).
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
