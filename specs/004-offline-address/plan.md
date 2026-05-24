@@ -60,8 +60,9 @@ All SDK claims in this plan and its companion docs (`research.md`, `data-model.m
 - AndroidX `core 1.17.0`, `fragment 1.8.9`, `lifecycle 2.9.4` (existing resolutionStrategy; no
   new pins).
 - Android platform SQLite (`android.database.sqlite.SQLiteDatabase`) — used in
-  `OPEN_READONLY | NO_LOCALIZED_COLLATORS` mode. R*Tree extension is bundled in the Android
-  platform SQLite from API 26+ ([R3](./research.md#r3--sqlite-rtree-availability-on-android-api-26)).
+  `OPEN_READONLY | NO_LOCALIZED_COLLATORS` mode. R*Tree extension is bundled in Android
+  platform SQLite from API 21+ (well below this project's `minSdk 26` floor)
+  ([R3](./research.md#r3--reverse-lookup-spatial-index-rtree-built-at-plugin-import)).
 - `java.security.MessageDigest` (`SHA-256`) — JDK stdlib; no new dependency.
 - Spotless 6.25 + google-java-format 1.22 (formatter is a build dependency per Constitution
   Principle I).
@@ -78,7 +79,9 @@ All SDK claims in this plan and its companion docs (`research.md`, `data-model.m
   - `pref_address_row_target` (boolean, default **false**).
   - `pref_address_row_map` (boolean, default **false**).
 - Filesystem (ATAK-managed plugin data directory) — bundle staging and active dataset:
-  - Working / staging: `<atak-root>/tools/twcoord/offline-address/.staging/`
+  - Working / staging: `<atak-root>/tools/twcoord/offline-address/.staging-<UUID>/`
+    (per-import suffix; concurrent imports get distinct dirs; `AtakFileSystem` sweeps
+    orphan `.staging-*` dirs on construction)
   - Active dataset: `<atak-root>/tools/twcoord/offline-address/active/`
   - The exact path is resolved at runtime via the ATAK `FileSystemUtils.getItem("tools/twcoord/offline-address/...")`
     pathway ([R2](./research.md#r2--atak-managed-plugin-data-directory)); no hard-coded
@@ -110,8 +113,10 @@ existing module — no new Gradle subproject.
 - "Coordinate stabilises → address row updates" median **≤ 1 s**, p95 **≤ 2 s**, measured over
   100 consecutive map movements on the reference device (Galaxy Tab S10+, consistent with
   features 001–003) — SC-002.
-- Bundle import end-to-end **≤ 60 s** for a Taichung-scale single-county file (~1.3 M rows,
-  ~150–250 MB after R*Tree build), progress visible (no blank UI > 500 ms) — SC-003.
+- Bundle import end-to-end **≤ 180 s** (placeholder) for a Taichung-scale single-county file
+  (~1.3 M rows, ~500–600 MB generator output plus ~150–250 MB R*Tree build, total ~650–850 MB
+  on-disk after activation), progress visible (no blank UI > 500 ms) — SC-003. Tighten the SC
+  if T057 measurement comes in comfortably under the placeholder.
 - Dataset-files-missing → graceful recovery **≤ 2 s** on next refresh — SC-005.
 - All three toggles **off** → background CPU / memory footprint indistinguishable from this
   plugin build with the feature absent — SC-004.
@@ -135,9 +140,10 @@ existing module — no new Gradle subproject.
 
 **Scale/Scope**:
 
-- Two new SDK / OS seam classes (`AddressBundleImporter`, `AddressDatabaseFacade`).
-- One new value-object family (`AddressBundle`, `AddressBundleManifest`, `AddressRecord`,
-  `AddressLookupResult`, `AddressRowState`).
+- Three JVM-mockable seams (`FileSystem`, `ShaCalculator`, `AddressDatabaseFacade` plus its
+  nested `Factory`) consumed by the new `AddressBundleImporter` and `AddressSubsystem`.
+- One new value-object family (`AddressDataset`, `GeneratorMetadata`, `ImportedManifest`,
+  `AddressRecord`, `AddressLookupResult`, `AddressRowState`).
 - One new resolver (`AddressResolver`), one new lifecycle owner (`AddressSubsystem` —
   owns the executor, the active dataset handle, the per-row coalescer).
 - One new tool / receiver pair (`OfflineAddressTool`, `OfflineAddressReceiver` —
@@ -159,7 +165,7 @@ existing module — no new Gradle subproject.
 | I | **Code Quality & Formatting** (NON-NEGOTIABLE) | **PASS** | Spotless + google-java-format already enforced in `app/build.gradle`; build fails on unformatted code. No new format / lint surface introduced. |
 | II | **TDD** (NON-NEGOTIABLE) | **PASS** | Three explicit JVM-mockable seams (`AddressBundleImporter` injects a `FileSystem` + `ShaCalculator`; `AddressDatabaseFacade` is the SDK seam; `AddressResolver` composes the two) ensure every component is unit-testable on the JVM without Android or ATAK. Contracts under `contracts/` enumerate the test list per class. Tests authored before production code per the existing pattern (features 001–003). |
 | III | **UX Consistency** | **PASS** | The address rows match the existing `TwCoordWidget` styling exactly (same `TextWidget(initial, 2)` constructor, same margins) — see [R6](./research.md#r6--widget-address-row-integration). The Offline Address page is a `DropDownReceiver` consistent with feature 002's `TwCoordGotoReceiver`. The Settings toggles use `SwitchPreference` consistent with the prior `PanListPreference` rows. A new entry will be authored under `docs/ui/offline-address-page.md`; the existing `docs/ui/readout-widget.md` and `docs/ui/settings-fragment.md` will get an "Address row" section. |
-| IV | **Performance** | **PASS with measurement obligation** | Spec SC-002 (1 s median address refresh), SC-003 (60 s import for Taichung-scale file including R*Tree build), SC-004 (zero footprint when off), SC-005 (2 s recovery) are explicit. [Research R3](./research.md#r3--reverse-lookup-spatial-index-rtree-built-at-plugin-import) defends the lookup budget via R*Tree bbox-then-haversine built once at import; [R7](./research.md#r7--threading-model-debounce--executor) defends the runtime debounce + coalescing; [R8](./research.md#r8--atomic-dataset-activation) defends recovery via the staging→rename atomicity. [Quickstart §6](./quickstart.md#6-performance-smoke-tests) lays out the measurement procedure on the reference device. |
+| IV | **Performance** | **PASS with measurement obligation** | Spec SC-002 (1 s median address refresh), SC-003 (≤ 180 s placeholder for Taichung-scale ~500–600 MB file plus ~150–250 MB R*Tree build; tighten after T057 measurement), SC-004 (zero footprint when off), SC-005 (2 s recovery), SC-006 (≥ 95 % non-empty resolves over 1000 scripted lookups) are explicit. [Research R3](./research.md#r3--reverse-lookup-spatial-index-rtree-built-at-plugin-import) defends the lookup budget via R*Tree bbox-then-haversine built once at import; [R7](./research.md#r7--threading-model-debounce--executor) defends the runtime debounce + coalescing; [R8](./research.md#r8--atomic-dataset-activation) defends recovery via the staging→rename atomicity. [Quickstart §6](./quickstart.md#6-performance-smoke-tests) lays out the measurement procedure on the reference device. |
 | V | **Documentation & Knowledge Preservation** | **PASS** | English-only artefacts (spec / plan / research / data-model / contracts / quickstart / future ADRs). Per Constitution V's post-implement ADR cadence, `docs/adr/0015-offline-address-implementation.md` will be authored after `/speckit-implement` completes. A pre-implementation reconnaissance ADR (`docs/adr/0014-offline-address-reconnaissance.md`) will be authored alongside Phase 0 research. `docs/ui/offline-address-page.md` (new), plus updates to `docs/ui/readout-widget.md` and `docs/ui/settings-fragment.md`, will land alongside the implementation. |
 | VI | **Host-Process Isolation** (NON-NEGOTIABLE) | **PASS with mandatory audit** | [Research R10](./research.md#r10--constitution-vi-compliance-audit) enumerates the 11 new entry points: `OfflineAddressReceiver.onReceive` / `onDropDownVisible` / `onDropDownClose` / `onDropDownSizeChanged`, `OfflineAddressTool` constructor / dispose, 3 new `SwitchPreference` change listeners, `AddressSubsystem.onCoordRefresh`, `AddressBundleImporter`'s SAF-result-handler callback. `tasks.md` will include an explicit "Constitution VI guard pass" step in the Polish phase. Existing `TwCoordWidget` rendering path is untouched (the new `renderAddresses(...)` helper is wrapped internally). `/speckit-analyze` is configured to flag any unguarded entry point as CRITICAL. |
 
@@ -243,6 +249,13 @@ app/src/main/java/com/atakmap/android/twcoord/
 │   ├── AddressResolver.java            # NEW — composes facade + haversine refine
 │   ├── AddressSubsystem.java           # NEW — lifecycle owner: executor, debouncer, listener fan-out
 │   ├── OfflineAddressReceiver.java     # NEW — DropDownReceiver; Import / Remove / metadata page
+│   ├── OfflineAddressFilePickerActivity.java  # NEW — transparent SAF shim Activity hosting
+│   │                                   #   ActivityResultLauncher for ACTION_OPEN_DOCUMENT
+│   ├── AtakFileSystem.java             # NEW — production FileSystem impl wrapping
+│   │                                   #   FileSystemUtils.getItem(...) + java.nio.file.Files
+│   │                                   #   (sweeps orphan .staging-<UUID>/ dirs on construction)
+│   ├── MessageDigestShaCalculator.java # NEW — production ShaCalculator impl wrapping
+│   │                                   #   MessageDigest.getInstance("SHA-256")
 │   └── OfflineAddressIntents.java      # NEW — action constants (parallel to TwCoordGotoIntents)
 ├── SelfMarkerSubscriber.java           # existing — untouched
 ├── TwCoordMapComponent.java            # MODIFIED — registers OfflineAddressReceiver, owns
@@ -268,7 +281,11 @@ app/src/main/res/
 
 app/src/main/AndroidManifest.xml        # MODIFIED — no new permissions; OfflineAddressReceiver
                                         #   is registered programmatically via AtakBroadcast
-                                        #   (same pattern as TwCoordGotoReceiver)
+                                        #   (same pattern as TwCoordGotoReceiver); adds one
+                                        #   <activity android:name=".address.OfflineAddressFilePickerActivity"
+                                        #   android:exported="false"
+                                        #   android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+                                        #   for the SAF picker shim
 
 app/src/test/java/com/atakmap/android/twcoord/address/
 ├── AddressBundleImporterTest.java      # NEW — 10 tests per contracts/address-bundle-importer.md

@@ -83,7 +83,7 @@ description: "Task list for feature 004-offline-address"
 ### Plugin tool registration
 
 - [ ] T019 Create `OfflineAddressTool extends AbstractPluginTool implements Disposable` at `app/src/main/java/com/atakmap/android/twcoord/plugin/OfflineAddressTool.java` mirroring `TwCoordTool` / `TwCoordGotoTool` exactly — constructor takes `Context`, calls `super(context, R.string.tool_offline_address_label, R.string.tool_offline_address_desc, R.drawable.ic_offline_address, OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS)`; `dispose()` empty body wrapped in `try/catch (Throwable)` per Constitution VI
-- [ ] T020 Modify `app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordLifecycle.java` `onStart()` (or its tool-registration equivalent — verify against the existing two registrations) to also register an `OfflineAddressTool` instance alongside the existing `TwCoordTool` and `TwCoordGotoTool`. Confirm the 3rd Tools-menu entry appears after rebuilding (smoke-tested in T030)
+- [ ] T020 Modify `app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordLifecycle.java` constructor (the `super(...)` call at lines 15-23 in the current file) to add a third `OfflineAddressTool(...)` entry to the `IToolbarItem[]` literal alongside the existing `TwCoordTool` and `TwCoordGotoTool` entries. Use the same `serviceController.getService(PluginContextProvider.class).getPluginContext()` pattern as the other two. Confirm the 3rd Tools-menu entry appears after rebuilding (smoke-tested in T031)
 
 **Checkpoint**: Foundation ready — every user-story phase can now begin.
 
@@ -113,7 +113,7 @@ description: "Task list for feature 004-offline-address"
 
 ### SAF result trampoline
 
-- [ ] T026 [US1] Create `OfflineAddressFilePickerActivity` at `app/src/main/java/com/atakmap/android/twcoord/address/OfflineAddressFilePickerActivity.java` — a transparent shim Activity registered in `AndroidManifest.xml` (no exported intent filter; launched explicitly from `OfflineAddressReceiver`). It hosts the SAF `ActivityResultLauncher` for `ACTION_OPEN_DOCUMENT`, receives the picked `content://` URI, broadcasts `OfflineAddressIntents.ACTION_PICK_FILE_RESULT` with `EXTRA_PICKED_URI` via `AtakBroadcast`, then `finish()`. Lifecycle methods wrapped in `try/catch (Throwable)` per Constitution VI
+- [ ] T026 [US1] Create `OfflineAddressFilePickerActivity` at `app/src/main/java/com/atakmap/android/twcoord/address/OfflineAddressFilePickerActivity.java` — a transparent shim Activity that hosts the SAF `ActivityResultLauncher` for `ACTION_OPEN_DOCUMENT`, receives the picked `content://` URI, broadcasts `OfflineAddressIntents.ACTION_PICK_FILE_RESULT` with `EXTRA_PICKED_URI` via `AtakBroadcast`, then `finish()`. Lifecycle methods wrapped in `try/catch (Throwable)` per Constitution VI. **Also** register the Activity in `app/src/main/AndroidManifest.xml` inside the existing `<application>` element: `<activity android:name=".address.OfflineAddressFilePickerActivity" android:exported="false" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>` (non-exported; no intent filter; transparent theme so the host's drop-down stays visible behind the SAF picker)
 
 ### Receiver + page
 
@@ -126,7 +126,7 @@ description: "Task list for feature 004-offline-address"
 
 ### Wiring
 
-- [ ] T030 [US1] Modify `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java` `onCreate` to construct the importer (`new AddressBundleImporter(new AtakFileSystem(), new MessageDigestShaCalculator(), 1)`), a dedicated import `ExecutorService` (single-thread, named `"twcoord-address-import"`), and the `OfflineAddressReceiver`; register the receiver for `ACTION_SHOW_OFFLINE_ADDRESS`. Symmetric `onDestroyImpl` cleanup (unregister, executor shutdown, receiver dispose). Add the production `FileSystem` and `ShaCalculator` impls (`AtakFileSystem.java`, `MessageDigestShaCalculator.java`) in the `address/` package
+- [ ] T030 [US1] Add two new production seam impls in the `address/` package: (i) `AtakFileSystem.java` (wraps `com.atakmap.coremap.filesystem.FileSystemUtils.getItem("tools/twcoord/offline-address/...")` + `java.nio.file.Files` to satisfy `FileSystem`; staging dirs use the `.staging-<UUID>/` per-import convention per [research.md R8](./research.md#r8--atomic-dataset-activation); on construction, sweeps orphan `.staging-*/` directories left over from interrupted prior imports) and (ii) `MessageDigestShaCalculator.java` (wraps `java.security.MessageDigest.getInstance("SHA-256")` to satisfy `ShaCalculator`; produces lowercase hex). Then modify `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java` `onCreate` to construct the importer (`new AddressBundleImporter(new AtakFileSystem(), new MessageDigestShaCalculator(), 1)`), a dedicated import `ExecutorService` (single-thread, named `"twcoord-address-import"`), and the `OfflineAddressReceiver`; register the receiver for `ACTION_SHOW_OFFLINE_ADDRESS`. Symmetric `onDestroyImpl` cleanup (unregister, executor shutdown, receiver dispose)
 - [ ] T031 [US1] Run T023 (Espresso Flow A) against the reference device or emulator. MUST pass within the SC-003 budget (≤ 60 s total for a Taichung-scale fixture; if no full-scale fixture is available locally, use a 10-county-subset fixture and document the scaling)
 
 **Checkpoint**: US1 complete — operator can install / replace / remove a dataset and see its metadata. Address row on the map is still hidden (US2 + US3 pending).
@@ -137,9 +137,9 @@ description: "Task list for feature 004-offline-address"
 
 **Goal**: With at least one per-row toggle on (gated by US3) and a dataset active (US1), the existing `TwCoordWidget` renders an address row immediately under the corresponding coordinate row, updating within 1 s of the underlying coordinate stabilising (SC-002).
 
-**Note on independence**: this story's implementation can complete and be unit-tested before US3 ships the UI toggles — the gating is via `PreferenceStore.getAddressRowMe()`/`...Target()`/`...Map()` getters that already exist after Phase 2. Tests in this phase set the preferences programmatically. The user-visible verification waits for US3's Espresso Flow B (T053).
+**Note on independence**: this story's implementation can complete and be unit-tested before US3 ships the UI toggles — the gating is via `PreferenceStore.getAddressRowMe()`/`...Target()`/`...Map()` getters that already exist after Phase 2. Tests in this phase set the preferences programmatically. The user-visible verification waits for US3's Espresso Flow B (T041 authored, executed in T044).
 
-**Independent Test**: with prefs set programmatically to `addressRowMe = true` and a fixture dataset active, panning into a Taichung urban area causes the ME row's address line to populate within 1 s (verified by `AddressSubsystemTest` + `TwCoordWidgetAddressRowTest`; Espresso Flow B in T053 is the end-to-end verification).
+**Independent Test**: with prefs set programmatically to `addressRowMe = true` and a fixture dataset active, panning into a Taichung urban area causes the ME row's address line to populate within 1 s (verified by `AddressSubsystemTest` + `TwCoordWidgetAddressRowTest`; Espresso Flow B in T041 / T044 is the end-to-end verification).
 
 ### Tests for User Story 2
 
@@ -156,7 +156,7 @@ description: "Task list for feature 004-offline-address"
 
 ### Resolver + subsystem
 
-- [ ] T037 [US2] Implement `AddressResolver` (pure compute) and `AddressSubsystem` (lifecycle owner, executor, debounce, per-row coalescing) at `app/src/main/java/com/atakmap/android/twcoord/address/AddressResolver.java` and `app/src/main/java/com/atakmap/android/twcoord/address/AddressSubsystem.java` per [contracts/address-resolver.md](./contracts/address-resolver.md). The subsystem subscribes to `PreferenceStore` for the three new keys, listens for `ACTION_DATASET_CHANGED`, opens / closes the facade via the `Factory`, and fans out `AddressRowState` transitions to registered listeners. Every callback (scheduled task body, preference-change reaction, dataset-change reaction) wrapped in `try/catch (Throwable)` per Constitution VI. Re-run T033 + T034 — all 14 tests MUST pass
+- [ ] T037 [US2] Implement `AddressResolver` (pure compute) and `AddressSubsystem` (lifecycle owner, executor, debounce, per-row coalescing) at `app/src/main/java/com/atakmap/android/twcoord/address/AddressResolver.java` and `app/src/main/java/com/atakmap/android/twcoord/address/AddressSubsystem.java` per [contracts/address-resolver.md](./contracts/address-resolver.md). The subsystem subscribes to `PreferenceStore` for the three new keys, listens for `ACTION_DATASET_CHANGED`, opens / closes the facade via the `Factory`, and fans out `AddressRowState` transitions to registered listeners. Every callback (scheduled task body, preference-change reaction, dataset-change reaction) wrapped in `try/catch (Throwable)` per Constitution VI. **FR-012 enforcement**: the subsystem's worker thread installs a `StrictMode.ThreadPolicy.Builder().detectNetwork().penaltyLog().penaltyDeath().build()` so any accidental network call from the address subsystem instantly fails (in production: app-process death — caught by the outer Constitution VI guards; in JVM tests: the test fails). Re-run T033 + T034 — all 14 tests MUST pass
 
 ### Widget extension
 
@@ -247,7 +247,7 @@ description: "Task list for feature 004-offline-address"
 
 ### Performance & verification
 
-- [ ] T057 Run [quickstart.md § 6 Performance smoke tests](./quickstart.md#6-performance-smoke-tests) on the reference device (Galaxy Tab S10+): SC-002 (1 s median address refresh × 100 pans), SC-003 (60 s import for Taichung-scale), SC-004 (zero footprint when all toggles off vs v1.0.4 baseline), SC-005 (2 s recovery from missing files). Record the numbers in T050's ADR; any miss is a regression — investigate and fix before declaring done
+- [ ] T057 Run [quickstart.md § 6 Performance smoke tests](./quickstart.md#6-performance-smoke-tests) on the reference device (Galaxy Tab S10+): SC-002 (1 s median address refresh × 100 pans), SC-003 (≤ 180 s import for Taichung-scale ~500–600 MB file + ~150–250 MB R*Tree build), SC-004 (zero footprint when all toggles off vs v1.0.4 baseline), SC-005 (2 s recovery from missing files), SC-006 (≥ 95 % non-empty resolves across 1000 scripted lookups — procedure in [quickstart §6.5](./quickstart.md#65-sc-006--non-empty-resolve-rate-across-1000-scripted-lookups)). Record the numbers in T050's ADR; any miss is a regression — investigate and fix before declaring done. If SC-003 measured comfortably under 180 s, tighten the spec SC at the same time
 
 ### Final polish
 

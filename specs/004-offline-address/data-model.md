@@ -30,7 +30,9 @@ following on every imported file (FR-004 validation):
 | `county` | TEXT NOT NULL | e.g. `台中市`. |
 | `township` | TEXT NOT NULL | e.g. `中區`. |
 | `village` | TEXT | e.g. `大誠里`; may be NULL. |
+| `neighbor` | TEXT | 鄰 (numeric in TGOS); may be NULL. Added in generator commit dated 2026-05-24. |
 | `street` | TEXT | e.g. `大誠街`; may be NULL (orphan addresses fall back to `area`). |
+| `area` | TEXT | 地區; may be NULL. Used by coastal townships (e.g. `大城鄉`) when `street` is empty. Added in generator commit dated 2026-05-24. |
 | `lane` | TEXT | e.g. `39巷`; may be NULL. |
 | `alley` | TEXT | e.g. `5弄`; may be NULL. |
 | `number` | TEXT | e.g. `2-3-2號`; may be NULL only if generator's `skipped_no_number` counter is greater than zero (such rows are skipped by the generator, so the plugin should never see them in practice). |
@@ -62,8 +64,16 @@ but do not affect import validation (forward-compat).
 ### 1.4 Indexes (generator-built)
 
 - `idx_places_district` on `places(district_code)` — not used by the plugin.
-- `idx_places_lookup` on `places(district_code, village, street, lane, alley, number)` — not
+- `idx_places_lookup` on `places(district_code, village, neighbor, street, area, lane, alley, number)` — not
   used by the plugin (this is a forward-search lookup index for exact addresses).
+
+> **Plugin validation note** (per FR-004 / `contracts/address-bundle-importer.md` test #6):
+> the importer checks **presence** of the columns it actually reads (`id`, `lat`, `lon`,
+> `display_name`, `display_name_halfwidth`) plus the mandatory `metadata` keys. Additional
+> columns the generator emits (`neighbor`, `area`, `osm_id`, etc.) are tolerated — the
+> schema is forward-compatible as long as the plugin's read columns remain present. This
+> means a generator-side addition of further columns (without bumping `schema_version`) does
+> not break the plugin's import path.
 
 ### 1.5 R*Tree (plugin-built at import — see research.md R3)
 

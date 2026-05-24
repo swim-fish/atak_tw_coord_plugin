@@ -114,9 +114,11 @@ WHERE NOT EXISTS (SELECT 1 FROM places_rtree WHERE id = places.id);
 ANALYZE places_rtree;
 ```
 
-For 1.3 M Taichung rows on a Galaxy Tab S10+ this takes ~30–45 seconds and roughly doubles the
-on-disk size (R*Tree node pages plus the rowid mapping). The staging dir gives us a clean
-write-then-rename window. Subsequent imports (re-importing the same file) skip the build via the
+For 1.3 M Taichung rows on a Galaxy Tab S10+ this takes ~30–45 seconds and adds ~150–250 MB on
+top of the generator's bare output (which is ~500–600 MB for Taichung after VACUUM, ~170 MB
+for Changhua — TGOS is house-number-granular). Total active-dataset size after import:
+~650–850 MB for Taichung. The staging dir gives us a clean write-then-rename window.
+Subsequent imports (re-importing the same file) skip the build via the
 `CREATE VIRTUAL TABLE IF NOT EXISTS` guard and the `WHERE NOT EXISTS` insert filter.
 
 **Future generator enhancement** (recommended, not blocking): if a future generator version adds

@@ -171,6 +171,51 @@ Total must be ≤ 60 000 ms for Taichung-scale (SC-003).
 
 Recovery on (4) MUST happen within 2 s of opening the map (SC-005).
 
+### 6.5 SC-006 — non-empty resolve rate across 1000 scripted lookups
+
+With Taichung dataset active and at least the MAP toggle on:
+
+1. Generate 1000 random `(lat, lon)` points inside the Taichung bounding box
+   (south=24.0°N, north=24.4°N, west=120.5°E, east=121.1°E) and save to
+   `test-data/sc006-points.csv` as a header-less `lat,lon` file. A pseudo-random seed
+   pinned in the file's commit message keeps runs comparable across rebuilds.
+2. Push the file to the device:
+
+   ```powershell
+   adb push test-data\sc006-points.csv /sdcard/Download/
+   ```
+
+3. Trigger the debug-only feeder (gated behind the same `debug.twcoord.crash_test`-style
+   property used by §7) that reads the CSV line-by-line and calls
+   `AddressSubsystem.onCoord(Row.MAP, lat, lon)` directly, one fire per second:
+
+   ```powershell
+   adb shell setprop debug.twcoord.sc006_feed /sdcard/Download/sc006-points.csv
+   ```
+
+   The subsystem logs each outcome at `Log.d(TAG, "sc006 outcome=found")` or
+   `outcome=empty`.
+4. After all 1000 firings complete (~17 minutes), parse logcat:
+
+   ```powershell
+   adb logcat -d -s TwCoordAddress | findstr 'sc006 outcome' |
+     Group-Object { ($_ -split 'outcome=')[1] } |
+     ForEach-Object { '{0,-10} {1}' -f $_.Name, $_.Count }
+   ```
+
+5. Compute the ratio `found / (found + empty)`. MUST be ≥ 0.95 per SC-006. Zero crashes,
+   zero "stale value" defects across the run (also visible in logcat via the absence of
+   stack traces under the `TwCoordAddress` tag).
+6. Unset the property when done:
+
+   ```powershell
+   adb shell setprop debug.twcoord.sc006_feed ''
+   ```
+
+Note: SC-006 is necessarily a Taichung-only check until additional counties or a
+consolidated multi-county bundle exist. Document the actual measured ratio in T050
+(ADR-0015) regardless of pass / fail.
+
 ## 7. Crash isolation drill (Constitution VI)
 
 For every new entry point listed in [research.md R10](./research.md#r10--constitution-vi-compliance-audit),
@@ -194,7 +239,7 @@ adb shell setprop debug.twcoord.crash_test ''
 - [ ] All JVM unit tests pass (`./gradlew :app:testCivDebugUnitTest`).
 - [ ] All 2–3 Espresso end-to-end tests pass (`./gradlew :app:connectedCivDebugAndroidTest`).
 - [ ] Acceptance Flows A–C above hand-verified on the reference device.
-- [ ] Performance smokes §6.1–§6.4 measured and within budget.
+- [ ] Performance smokes §6.1–§6.5 measured and within budget (SC-002, SC-003, SC-004, SC-005, SC-006).
 - [ ] Crash isolation drill §7 verified for every new entry point.
 - [ ] `docs/ui/offline-address-page.md` (new), `docs/ui/readout-widget.md` (modified),
       `docs/ui/settings-fragment.md` (modified) updated with screenshots.
