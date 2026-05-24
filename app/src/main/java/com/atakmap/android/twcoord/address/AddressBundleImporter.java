@@ -203,20 +203,59 @@ public final class AddressBundleImporter {
     }
   }
 
+  /**
+   * Returns the currently-active {@link AddressDataset} or {@code null} if no usable dataset is
+   * installed. The latter covers every documented graceful-fallback path for US4 (see {@code
+   * specs/004-offline-address/quickstart.md §6.4 SC-005}):
+   *
+   * <ul>
+   *   <li>active dir doesn't exist (clean install, or operator removed via the Offline Address
+   *       page).
+   *   <li>active dir exists but {@code places.sqlite} is missing (operator deleted via ADB).
+   *   <li>active dir exists but {@code imported.manifest.txt} is missing or unparseable.
+   *   <li>{@code places.sqlite} present but unopenable / missing metadata table / missing required
+   *       metadata keys.
+   * </ul>
+   *
+   * <p>Each branch logs at {@link Log#w} with a specific reason so a future operator can correlate
+   * a hidden address row with the on-disk state. The active dir itself is left in place; the next
+   * successful import overwrites it.
+   *
+   * <p>NEVER throws — Constitution VI entry point.
+   */
   public AddressDataset activeOrNull() {
     try {
       Path active = fs.getActiveDir();
-      if (!fs.exists(active)) return null;
+      if (!fs.exists(active)) {
+        // No log — this is the clean-install / removed state; not a fault.
+        return null;
+      }
       Path dbPath = active.resolve(DB_FILE_NAME);
       Path manifestPath = active.resolve(MANIFEST_FILE_NAME);
-      if (!fs.exists(dbPath) || !fs.exists(manifestPath)) return null;
+      if (!fs.exists(dbPath)) {
+        Log.w(TAG, "activeOrNull: places.sqlite missing under " + active);
+        return null;
+      }
+      if (!fs.exists(manifestPath)) {
+        Log.w(TAG, "activeOrNull: imported.manifest.txt missing under " + active);
+        return null;
+      }
       GeneratorMetadata metadata;
       try (SQLiteDatabase db = openReadOnly(dbPath.toFile())) {
         metadata = readMetadata(db);
-        if (metadata == null) return null;
+        if (metadata == null) {
+          Log.w(TAG, "activeOrNull: metadata table empty or missing required keys at " + dbPath);
+          return null;
+        }
+      } catch (Throwable t) {
+        Log.w(TAG, "activeOrNull: failed to open " + dbPath, t);
+        return null;
       }
       ImportedManifest imported = readImportedManifest(manifestPath);
-      if (imported == null) return null;
+      if (imported == null) {
+        Log.w(TAG, "activeOrNull: imported.manifest.txt unparseable at " + manifestPath);
+        return null;
+      }
       return new AddressDataset(active.toFile(), dbPath.toFile(), metadata, imported);
     } catch (Throwable t) {
       Log.w(TAG, "activeOrNull threw", t);

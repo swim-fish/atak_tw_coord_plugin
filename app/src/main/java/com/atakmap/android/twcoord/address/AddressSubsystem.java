@@ -141,16 +141,20 @@ public final class AddressSubsystem implements AutoCloseable {
   /** Re-open the facade after a successful import / remove. Idempotent. */
   public void onActiveDatasetChanged() {
     openFacadeFromActive();
-    // Drop stale per-row state — operator sees Loading again on next coord refresh.
+    boolean hasDataset = facade != null;
+    // Drop stale per-row state. If a dataset is active, the operator sees Loading until the next
+    // coord refresh resolves a fresh address. If no dataset is active (removal, or files vanished
+    // — see US4 / SC-005), every row goes straight to Hidden so the address line disappears
+    // without a misleading "Loading…" flash that would never resolve.
     for (Row r : Row.values()) {
       cancelInflight(r);
-      if (Boolean.TRUE.equals(enabled.get(r))) {
-        AddressRowState prev = lastState.get(r);
-        if (prev != null && !prev.isHidden()) {
-          emit(r, AddressRowState.loading());
-        }
-      } else {
+      if (!Boolean.TRUE.equals(enabled.get(r)) || !hasDataset) {
         emit(r, AddressRowState.hidden());
+        continue;
+      }
+      AddressRowState prev = lastState.get(r);
+      if (prev != null && !prev.isHidden()) {
+        emit(r, AddressRowState.loading());
       }
     }
   }

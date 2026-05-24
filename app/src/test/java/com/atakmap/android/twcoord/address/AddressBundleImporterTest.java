@@ -340,6 +340,75 @@ public final class AddressBundleImporterTest {
   }
 
   // ----------------------------------------------------------------------
+  // Test 11 — US4 graceful fallback: places.sqlite deleted underneath us
+  // ----------------------------------------------------------------------
+
+  /**
+   * Operator deletes the active dir's {@code places.sqlite} via ADB while the plugin is running.
+   * {@link AddressBundleImporter#activeOrNull()} MUST return null cleanly (no throw, no half-open
+   * state) so the caller can fall back to State A / hidden address row per US4 / SC-005.
+   */
+  @Test
+  public void activeOrNull_returnsNullWhenPlacesSqliteMissing() throws Exception {
+    AddressBundleImporter.ImportResult r =
+        importer.importFrom(new ByteArrayInputStream(buildValidFixture()), null);
+    assertThat(r.isSuccess()).isTrue();
+    AddressDataset originallyActive = importer.activeOrNull();
+    assertThat(originallyActive).isNotNull();
+
+    Files.delete(originallyActive.dbFile().toPath());
+
+    assertThat(importer.activeOrNull()).isNull();
+    // The active dir is left in place — only the file is gone. The next successful import
+    // overwrites it.
+    assertThat(originallyActive.rootDir()).exists();
+  }
+
+  // ----------------------------------------------------------------------
+  // Test 12 — US4 graceful fallback: imported.manifest.txt deleted
+  // ----------------------------------------------------------------------
+
+  @Test
+  public void activeOrNull_returnsNullWhenManifestMissing() throws Exception {
+    AddressBundleImporter.ImportResult r =
+        importer.importFrom(new ByteArrayInputStream(buildValidFixture()), null);
+    assertThat(r.isSuccess()).isTrue();
+    AddressDataset originallyActive = importer.activeOrNull();
+    assertThat(originallyActive).isNotNull();
+
+    Path manifest =
+        originallyActive.rootDir().toPath().resolve(AddressBundleImporter.MANIFEST_FILE_NAME);
+    Files.delete(manifest);
+
+    assertThat(importer.activeOrNull()).isNull();
+    assertThat(originallyActive.rootDir()).exists();
+  }
+
+  // ----------------------------------------------------------------------
+  // Test 13 — US4 graceful fallback: imported.manifest.txt corrupted
+  // ----------------------------------------------------------------------
+
+  /**
+   * Operator (or filesystem corruption) leaves a file in place but with garbage content. {@link
+   * AddressBundleImporter#activeOrNull()} returns null without throwing.
+   */
+  @Test
+  public void activeOrNull_returnsNullWhenManifestUnparseable() throws Exception {
+    AddressBundleImporter.ImportResult r =
+        importer.importFrom(new ByteArrayInputStream(buildValidFixture()), null);
+    assertThat(r.isSuccess()).isTrue();
+    AddressDataset originallyActive = importer.activeOrNull();
+    assertThat(originallyActive).isNotNull();
+
+    Path manifest =
+        originallyActive.rootDir().toPath().resolve(AddressBundleImporter.MANIFEST_FILE_NAME);
+    Files.write(manifest, "garbage-not-a-manifest".getBytes());
+
+    assertThat(importer.activeOrNull()).isNull();
+    assertThat(originallyActive.rootDir()).exists();
+  }
+
+  // ----------------------------------------------------------------------
   // Helpers
   // ----------------------------------------------------------------------
 

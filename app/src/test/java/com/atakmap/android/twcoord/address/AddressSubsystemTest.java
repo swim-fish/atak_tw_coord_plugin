@@ -189,6 +189,49 @@ public final class AddressSubsystemTest {
   }
 
   // ----------------------------------------------------------------------
+  // Test 6a — US4 / SC-005: onActiveDatasetChanged with no dataset emits Hidden
+  //                          (no Loading flash) for every enabled row
+  // ----------------------------------------------------------------------
+
+  /**
+   * After a Remove (or after files vanish underneath the plugin), {@link
+   * AddressSubsystem#onActiveDatasetChanged()} runs. The cached facade is dropped; the next coord
+   * refresh will see {@code facade == null} and emit Hidden. But we must NOT flash "Loading…" in
+   * the meantime — that would be a visible glitch with no resolution because no background lookup
+   * will ever fire. Verify every enabled row transitions directly to Hidden on the change broadcast
+   * itself, regardless of the row's previous state.
+   */
+  @Test
+  public void onActiveDatasetChanged_noDataset_emitsHiddenDirectlyNotLoading() {
+    when(facade.nearestWithin(anyDouble(), anyDouble(), anyDouble()))
+        .thenReturn(new AddressRecord(0, 0, "before-removal", "before-removal"));
+    AddressSubsystem s = makeSubsystem();
+    s.setRowEnabled(AddressSubsystem.Row.ME, true);
+    s.setRowEnabled(AddressSubsystem.Row.MAP, true);
+    s.onCoord(AddressSubsystem.Row.ME, 1, 1);
+    s.onCoord(AddressSubsystem.Row.MAP, 2, 2);
+    exec.advanceBy(DEBOUNCE);
+    // Both rows show a Text address.
+    assertThat(lastEmissionFor(AddressSubsystem.Row.ME).isText()).isTrue();
+    assertThat(lastEmissionFor(AddressSubsystem.Row.MAP).isText()).isTrue();
+
+    // Operator removes the dataset (or files vanish). Importer now returns null.
+    when(importer.activeOrNull()).thenReturn(null);
+    int emissionsBefore = emissions.size();
+    s.onActiveDatasetChanged();
+
+    // Every enabled row goes straight to Hidden — no Loading in between.
+    for (int i = emissionsBefore; i < emissions.size(); i++) {
+      assertThat(emissions.get(i).state.isLoading())
+          .as("emission #" + i + " should NOT be Loading when dataset is null")
+          .isFalse();
+    }
+    assertThat(lastEmissionFor(AddressSubsystem.Row.ME).isHidden()).isTrue();
+    assertThat(lastEmissionFor(AddressSubsystem.Row.MAP).isHidden()).isTrue();
+    s.close();
+  }
+
+  // ----------------------------------------------------------------------
   // Test 6 — close cancels all + closes facade
   // ----------------------------------------------------------------------
 
