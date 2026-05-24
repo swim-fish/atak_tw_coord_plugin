@@ -11,10 +11,21 @@ acceptance flows from [spec.md](./spec.md) pass on the reference device.
 - ATAK-CIV 5.7.0.3 installed.
 - Plugin APK from `app/build/outputs/apk/civ/debug/app-civ-debug.apk` (built via
   `./gradlew :app:assembleCivDebug`).
-- Sample dataset: `places-taichung.sqlite` from the local generator project
-  (`C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator\output\places-taichung.sqlite`).
-  Alternatively, build a smaller fixture using the generator's Changhua subcommand
-  (`./run.sh county changhua`) — ~80 MB, faster smoke.
+- Sample dataset — pick one of:
+  - `places-changhua.sqlite` (~178 MB; ~467K rows) — recommended for everyday smoke;
+    `Building index…` finishes in ~10–15 s on the reference device.
+  - `places-taichung.sqlite` (~526 MB; ~1.3 M rows) — required for SC-003 measurement (T057);
+    R*Tree build is ~30–45 s on the reference device.
+  Both live under `C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator\output\`.
+- **v1 only accepts bare `.sqlite`.** If you only have the generator's `.zip` bundle
+  (`places-<county>.zip`, `base.zip`, or `tw-central-full.zip`), extract on the host first:
+  ```powershell
+  Expand-Archive places-taichung.zip -DestinationPath .   # → places-taichung.sqlite
+  ```
+  Picking the `.zip` directly in the file picker returns an `IS_A_ZIP` failure with a
+  one-line "extract the .sqlite first" hint inline on the Offline Address page.
+  Zip-bundle import + sidecar-manifest parsing + multi-source lookup ship in a follow-up
+  feature spec (per Session 2026-05-24 evening Clarifications).
 
 ## 2. Build & install
 
@@ -35,11 +46,16 @@ Launch ATAK and confirm:
 ## 3. Acceptance Flow A — US1 import a bundle
 
 1. ADB-push the sample dataset to a directory the system file picker can see, e.g.
-   `/sdcard/Download/places-taichung.sqlite`:
+   `/sdcard/Download/places-<county>.sqlite`:
 
    ```powershell
-   adb push '<path>\places-taichung.sqlite' /sdcard/Download/
+   adb push '...\atak-tw-address-generator\output\places-changhua.sqlite' /sdcard/Download/
+   # or for full SC-003 budget:
+   adb push '...\atak-tw-address-generator\output\places-taichung.sqlite' /sdcard/Download/
    ```
+
+   Reminder: push the bare `.sqlite`, not the `.zip`. If you only have the zip, see
+   §1's `Expand-Archive` recipe.
 
 2. In ATAK: Tools → **Offline Address**.
 3. Expect: State A page ("No address dataset installed", **Import…** button visible).

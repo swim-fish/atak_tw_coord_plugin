@@ -19,6 +19,7 @@ public final class AddressBundleImporter {
         record Failure(Reason reason, String details) implements ImportResult {}
         enum Reason {
             NOT_OPENABLE,                  // SQLite open failed
+            IS_A_ZIP,                      // operator picked a .zip bundle — v1 expects bare .sqlite
             MISSING_METADATA_TABLE,
             MISSING_REQUIRED_METADATA_KEY, // e.g. schema_version absent
             UNSUPPORTED_SCHEMA_VERSION,    // schema_version != plugin-pinned

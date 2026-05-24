@@ -132,6 +132,7 @@
     <string name="offline_address_field_file_sha"></string>
     <string name="offline_address_field_rtree_built"></string>
     <string name="offline_address_error_not_openable"></string>
+    <string name="offline_address_error_is_zip"></string>
     <string name="offline_address_error_missing_metadata"></string>
     <string name="offline_address_error_missing_required_key"></string>
     <string name="offline_address_error_unsupported_schema"></string>

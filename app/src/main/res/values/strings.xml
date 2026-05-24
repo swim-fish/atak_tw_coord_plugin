@@ -175,6 +175,7 @@
 
     <!-- Import failure messages (one per AddressBundleImporter.ImportResult.Failure.Reason). -->
     <string name="offline_address_error_not_openable">Database not readable.</string>
+    <string name="offline_address_error_is_zip">This is a .zip bundle. Extract the .sqlite file on your host first; v1 of this plugin does not unzip.</string>
     <string name="offline_address_error_missing_metadata">Metadata table missing.</string>
     <string name="offline_address_error_missing_required_key">Required metadata key missing: %1$s.</string>
     <!-- %1$s is the importer's details string (e.g. "expected 1, got 2"). -->

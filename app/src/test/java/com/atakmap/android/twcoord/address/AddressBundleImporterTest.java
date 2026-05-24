@@ -106,6 +106,32 @@ public final class AddressBundleImporterTest {
     assertThat(importer.activeOrNull()).isNull();
   }
 
+  /**
+   * A .zip header should produce a distinct {@code IS_A_ZIP} failure so the receiver can show an
+   * "extract the .sqlite first" hint instead of the generic "database not readable" text. Operators
+   * who try to feed the generator's {@code places-<county>.zip} directly hit this path; see spec
+   * Clarifications Session 2026-05-24 evening.
+   */
+  @Test
+  public void import_rejectsZipBundleWithFriendlyError() {
+    byte[] zipBytes = new byte[64];
+    // ZIP local-file-header magic: PK\003\004
+    zipBytes[0] = 0x50;
+    zipBytes[1] = 0x4B;
+    zipBytes[2] = 0x03;
+    zipBytes[3] = 0x04;
+
+    AddressBundleImporter.ImportResult r =
+        importer.importFrom(new ByteArrayInputStream(zipBytes), null);
+
+    assertThat(r.isFailure()).isTrue();
+    AddressBundleImporter.ImportResult.Failure fail =
+        (AddressBundleImporter.ImportResult.Failure) r;
+    assertThat(fail.reason()).isEqualTo(AddressBundleImporter.ImportResult.Reason.IS_A_ZIP);
+    assertThat(fail.details()).contains(".zip");
+    assertThat(importer.activeOrNull()).isNull();
+  }
+
   // ----------------------------------------------------------------------
   // Test 4 — missing required metadata key
   // ----------------------------------------------------------------------

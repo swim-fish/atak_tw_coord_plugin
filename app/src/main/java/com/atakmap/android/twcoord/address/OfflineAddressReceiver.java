@@ -344,6 +344,9 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       case NOT_OPENABLE:
         resId = R.string.offline_address_error_not_openable;
         break;
+      case IS_A_ZIP:
+        resId = R.string.offline_address_error_is_zip;
+        break;
       case MISSING_METADATA_TABLE:
         resId = R.string.offline_address_error_missing_metadata;
         break;

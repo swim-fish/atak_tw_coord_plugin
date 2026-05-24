@@ -217,6 +217,9 @@ public final class AddressBundleImporter {
   private static final byte[] SQLITE_MAGIC =
       "SQLite format 3\0".getBytes(StandardCharsets.US_ASCII);
 
+  /** First 4 bytes of a ZIP local-file header ({@code PK\003\004}). */
+  private static final byte[] ZIP_MAGIC = new byte[] {0x50, 0x4B, 0x03, 0x04};
+
   private static SQLiteDatabase openReadOnly(File dbFile) {
     return SQLiteDatabase.openDatabase(
         dbFile.getAbsolutePath(),
@@ -232,10 +235,27 @@ public final class AddressBundleImporter {
    * clearer rejection reason than the downstream "metadata table missing" path.
    */
   private static boolean looksLikeSqlite(File dbFile) {
-    if (dbFile == null || !dbFile.isFile() || dbFile.length() < SQLITE_MAGIC.length) {
+    return headerMatches(dbFile, SQLITE_MAGIC);
+  }
+
+  /**
+   * Returns {@code true} iff {@code dbFile} starts with the ZIP local-file header ({@code
+   * PK\003\004}). Used after {@link #looksLikeSqlite} returns false so the importer can return a
+   * distinct {@link ImportResult.Reason#IS_A_ZIP} failure with an "extract the .sqlite first" hint
+   * — operators tend to grab the generator's {@code .zip} bundle and try to feed it whole; v1 of
+   * the plugin only consumes bare {@code .sqlite} files (per {@code spec.md} Clarifications Session
+   * 2026-05-24 evening).
+   */
+  private static boolean looksLikeZip(File dbFile) {
+    return headerMatches(dbFile, ZIP_MAGIC);
+  }
+
+  /** Shared pre-flight header-bytes check. */
+  private static boolean headerMatches(File dbFile, byte[] magic) {
+    if (dbFile == null || !dbFile.isFile() || dbFile.length() < magic.length) {
       return false;
     }
-    byte[] header = new byte[SQLITE_MAGIC.length];
+    byte[] header = new byte[magic.length];
     try (java.io.InputStream in = new java.io.FileInputStream(dbFile)) {
       int total = 0;
       while (total < header.length) {
@@ -246,8 +266,8 @@ public final class AddressBundleImporter {
     } catch (IOException e) {
       return false;
     }
-    for (int i = 0; i < SQLITE_MAGIC.length; i++) {
-      if (header[i] != SQLITE_MAGIC[i]) return false;
+    for (int i = 0; i < magic.length; i++) {
+      if (header[i] != magic[i]) return false;
     }
     return true;
   }
@@ -283,6 +303,11 @@ public final class AddressBundleImporter {
   private ValidationOutcome validateStagedDb(Path stagedDb) {
     File dbFile = stagedDb.toFile();
     if (!looksLikeSqlite(dbFile)) {
+      if (looksLikeZip(dbFile)) {
+        return ValidationOutcome.failure(
+            ImportResult.Reason.IS_A_ZIP,
+            "extract the .sqlite from the .zip first (v1 does not unzip)");
+      }
       return ValidationOutcome.failure(
           ImportResult.Reason.NOT_OPENABLE, "file is not a valid SQLite database");
     }
@@ -561,6 +586,12 @@ public final class AddressBundleImporter {
 
     public enum Reason {
       NOT_OPENABLE,
+      /**
+       * Operator picked a {@code .zip} bundle by mistake. v1 of the plugin expects a bare {@code
+       * .sqlite} per {@code spec.md} Clarifications Session 2026-05-24 evening; full zip-bundle
+       * unpacking is deferred to a follow-up feature.
+       */
+      IS_A_ZIP,
       MISSING_METADATA_TABLE,
       MISSING_REQUIRED_METADATA_KEY,
       UNSUPPORTED_SCHEMA_VERSION,
