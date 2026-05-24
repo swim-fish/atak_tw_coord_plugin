@@ -9,6 +9,9 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import com.atakmap.android.ipc.AtakBroadcast;
 import com.atakmap.android.preference.PluginPreferenceFragment;
+import com.atakmap.android.twcoord.address.AddressBundleImporter;
+import com.atakmap.android.twcoord.address.AddressDataset;
+import com.atakmap.android.twcoord.address.OfflineAddressIntents;
 import com.atakmap.android.twcoord.coord.ConversionResult;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
@@ -19,6 +22,7 @@ import com.atakmap.android.twcoord.gotopage.TwCoordGotoIntents;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
 import com.atakmap.android.twcoord.i18n.LocaleOverride;
 import com.atakmap.android.twcoord.plugin.R;
+import com.atakmap.coremap.log.Log;
 import java.util.Locale;
 
 /**
@@ -29,8 +33,18 @@ import java.util.Locale;
 public class TwCoordPreferenceFragment extends PluginPreferenceFragment
     implements SharedPreferences.OnSharedPreferenceChangeListener {
 
+  private static final String TAG = "TwCoordPreferenceFragment";
+
   @SuppressLint("StaticFieldLeak")
   private static Context pluginContext;
+
+  /** Suffix that distinguishes the three new address-row keys. */
+  private static final String[] ADDRESS_ROW_KEYS = {
+    "pref_address_row_me", "pref_address_row_target", "pref_address_row_map"
+  };
+
+  /** Settable in tests so Robolectric can inject a stub importer without spinning up the map. */
+  private AddressImporterProvider addressImporterProvider = TwCoordMapComponent::getAddressImporter;
 
   // Taipei 101 — the canonical reference point. Cheap to convert, easy to spot-check.
   private static final double SAMPLE_LAT = 25.033611;
@@ -70,6 +84,22 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
           p -> {
             Intent i = new Intent(TwCoordGotoIntents.ACTION_SHOW_GOTO);
             AtakBroadcast.getInstance().sendBroadcast(i);
+            return true;
+          });
+    }
+
+    // Feature 004 / US3 — clicking the status row opens the Offline Address page so the operator
+    // can import / replace / remove the dataset without leaving Settings.
+    Preference status = findPreference("pref_address_dataset_status");
+    if (status != null) {
+      status.setOnPreferenceClickListener(
+          p -> {
+            try {
+              Intent i = new Intent(OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS);
+              AtakBroadcast.getInstance().sendBroadcast(i);
+            } catch (Throwable t) {
+              Log.w(TAG, "ACTION_SHOW_OFFLINE_ADDRESS broadcast threw", t);
+            }
             return true;
           });
     }
@@ -126,6 +156,150 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
 
     refreshCoordUnitSummary(wrapped);
     refreshLanguageSummary(wrapped);
+
+    // Feature 004 / US3 — re-title the Offline Address category + 3 SwitchPreferences and refresh
+    // the dataset-presence status row's summary + clickability per the three states in
+    // contracts/address-preferences.md.
+    refreshAddressSection(wrapped);
+  }
+
+  private void refreshAddressSection(Context wrapped) {
+    setPreferenceTitle("pref_address_header_key", wrapped.getString(R.string.pref_address_header));
+    setPreferenceTitle(
+        "pref_address_row_me", wrapped.getString(R.string.pref_address_row_me_title));
+    setPreferenceTitle(
+        "pref_address_row_target", wrapped.getString(R.string.pref_address_row_target_title));
+    setPreferenceTitle(
+        "pref_address_row_map", wrapped.getString(R.string.pref_address_row_map_title));
+    Preference me = findPreference("pref_address_row_me");
+    if (me != null) me.setSummary(wrapped.getString(R.string.pref_address_row_me_summary));
+    Preference tgt = findPreference("pref_address_row_target");
+    if (tgt != null) tgt.setSummary(wrapped.getString(R.string.pref_address_row_target_summary));
+    Preference map = findPreference("pref_address_row_map");
+    if (map != null) map.setSummary(wrapped.getString(R.string.pref_address_row_map_summary));
+
+    refreshAddressDatasetStatus(wrapped);
+  }
+
+  /**
+   * Reads {@link AddressBundleImporter#activeOrNull()} lazily and updates the status row's summary
+   * + clickability per the three states in {@code contracts/address-preferences.md § Dataset
+   * presence summary table}:
+   *
+   * <ul>
+   *   <li>all three switches off → hide the row (disabled + non-selectable)
+   *   <li>at least one switch on, no dataset → "No dataset installed — tap to open Offline Address"
+   *   <li>at least one switch on, dataset active → "Active: &lt;county&gt; · &lt;data_date&gt;"
+   * </ul>
+   *
+   * <p>Wrapped per Constitution VI: any exception (e.g. importer not yet built because the map
+   * component hasn't run {@code onCreate}) is logged at {@code Log.w} and treated as "no dataset"
+   * (the more conservative summary).
+   */
+  private void refreshAddressDatasetStatus(Context wrapped) {
+    Preference status = findPreference("pref_address_dataset_status");
+    if (status == null) return;
+    try {
+      status.setTitle(wrapped.getString(R.string.pref_address_dataset_status_title));
+
+      boolean anyToggleOn = anyAddressToggleOn();
+      AddressBundleImporter importer = addressImporterProvider.get();
+      AddressDataset active = importer != null ? importer.activeOrNull() : null;
+      DatasetStatusPresentation p =
+          resolveDatasetStatus(new ResourceStatusStrings(wrapped), anyToggleOn, active);
+      status.setEnabled(p.enabled());
+      status.setSelectable(p.selectable());
+      status.setSummary(p.summary());
+    } catch (Throwable t) {
+      Log.w(TAG, "refreshAddressDatasetStatus threw", t);
+      try {
+        status.setSummary(wrapped.getString(R.string.pref_address_dataset_status_summary_none));
+      } catch (Throwable ignored) {
+        // best-effort
+      }
+    }
+  }
+
+  /**
+   * Pure-logic helper extracted for JVM testability. Decides the status row's summary text +
+   * enabled/selectable flags from the three inputs in {@code contracts/address-preferences.md §
+   * Dataset presence summary table}:
+   *
+   * <ul>
+   *   <li>all three switches off → hide the row (disabled + non-selectable)
+   *   <li>at least one switch on, no dataset → "No dataset installed — tap to open Offline Address"
+   *   <li>at least one switch on, dataset active → "Active: &lt;county&gt; · &lt;data_date&gt;"
+   * </ul>
+   */
+  static DatasetStatusPresentation resolveDatasetStatus(
+      StatusStrings strings, boolean anyToggleOn, AddressDataset active) {
+    if (!anyToggleOn) {
+      return new DatasetStatusPresentation(strings.datasetStatusNone(), false, false);
+    }
+    if (active == null) {
+      return new DatasetStatusPresentation(strings.datasetStatusHint(), true, true);
+    }
+    String summary =
+        strings.datasetStatusActive(active.generator().county(), active.generator().dataDate());
+    return new DatasetStatusPresentation(summary, true, true);
+  }
+
+  private boolean anyAddressToggleOn() {
+    SharedPreferences sp = getPreferenceManager().getSharedPreferences();
+    if (sp == null) return false;
+    for (String key : ADDRESS_ROW_KEYS) {
+      if (sp.getBoolean(key, false)) return true;
+    }
+    return false;
+  }
+
+  /** Immutable presentation result for the dataset-status row. */
+  record DatasetStatusPresentation(String summary, boolean enabled, boolean selectable) {}
+
+  /** Resource-backed strings used by {@link #resolveDatasetStatus} (test seam). */
+  interface StatusStrings {
+    String datasetStatusNone();
+
+    String datasetStatusHint();
+
+    String datasetStatusActive(String county, String dataDate);
+  }
+
+  /** Production {@link StatusStrings} impl reading from the wrapped {@link Context}'s resources. */
+  private static final class ResourceStatusStrings implements StatusStrings {
+    private final Context ctx;
+
+    ResourceStatusStrings(Context ctx) {
+      this.ctx = ctx;
+    }
+
+    @Override
+    public String datasetStatusNone() {
+      return ctx.getString(R.string.pref_address_dataset_status_summary_none);
+    }
+
+    @Override
+    public String datasetStatusHint() {
+      return ctx.getString(R.string.pref_address_dataset_status_summary_hint);
+    }
+
+    @Override
+    public String datasetStatusActive(String county, String dataDate) {
+      return ctx.getString(
+          R.string.pref_address_dataset_status_summary_active_format, county, dataDate);
+    }
+  }
+
+  /**
+   * Test seam — production wires this to {@link TwCoordMapComponent#getAddressImporter()}.
+   * Robolectric tests inject a stub returning a pre-built dataset / {@code null}.
+   */
+  interface AddressImporterProvider {
+    AddressBundleImporter get();
+  }
+
+  void setAddressImporterProvider(AddressImporterProvider provider) {
+    this.addressImporterProvider = provider != null ? provider : () -> null;
   }
 
   private void setPreferenceTitle(String key, CharSequence title) {

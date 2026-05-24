@@ -45,4 +45,38 @@
         android:title="@string/pref_open_goto_title"
         android:summary="@string/pref_open_goto_summary"/>
 
+    <!-- Feature 004 — three independent per-row Settings toggles + dataset-presence status row.
+         All toggles default to false so the upgrade is visually zero-change until opt-in. -->
+    <PreferenceCategory
+        android:layout="@layout/pref_category"
+        android:key="pref_address_header_key"
+        android:title="@string/pref_address_header"/>
+
+    <SwitchPreference
+        android:layout="@layout/pref_item"
+        android:key="pref_address_row_me"
+        android:title="@string/pref_address_row_me_title"
+        android:summary="@string/pref_address_row_me_summary"
+        android:defaultValue="false"/>
+
+    <SwitchPreference
+        android:layout="@layout/pref_item"
+        android:key="pref_address_row_target"
+        android:title="@string/pref_address_row_target_title"
+        android:summary="@string/pref_address_row_target_summary"
+        android:defaultValue="false"/>
+
+    <SwitchPreference
+        android:layout="@layout/pref_item"
+        android:key="pref_address_row_map"
+        android:title="@string/pref_address_row_map_title"
+        android:summary="@string/pref_address_row_map_summary"
+        android:defaultValue="false"/>
+
+    <Preference
+        android:layout="@layout/pref_item"
+        android:key="pref_address_dataset_status"
+        android:title="@string/pref_address_dataset_status_title"
+        android:summary="@string/pref_address_dataset_status_summary_none"/>
+
 </PreferenceScreen>

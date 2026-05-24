@@ -73,6 +73,25 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   // single-thread import executor, the page receiver, plus the runtime per-row resolver
   // (AddressSubsystem) and a separate single-thread scheduled executor for lookup work.
   private AddressBundleImporter addressImporter;
+
+  /**
+   * Static holder so {@link TwCoordPreferenceFragment} (which is constructed by the host preference
+   * framework, not by this component) can reach the live importer to render the dataset-presence
+   * status row. Same pattern the project already uses for {@code pluginContext} in {@link
+   * TwCoordPreferenceFragment}. Set in {@link #onCreate} after the importer is built and cleared in
+   * {@link #onDestroyImpl}.
+   */
+  @android.annotation.SuppressLint("StaticFieldLeak")
+  private static AddressBundleImporter staticAddressImporter;
+
+  /**
+   * @return the live address-bundle importer if the component is running, otherwise {@code null}.
+   *     The fragment treats null as "no dataset" (the more conservative state).
+   */
+  public static AddressBundleImporter getAddressImporter() {
+    return staticAddressImporter;
+  }
+
   private ExecutorService addressImportExecutor;
   private OfflineAddressReceiver addressReceiver;
   private AddressSubsystem addressSubsystem;
@@ -358,6 +377,7 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     // plugin skips the build).
     addressImporter =
         new AddressBundleImporter(new AtakFileSystem(), new MessageDigestShaCalculator(), 2);
+    staticAddressImporter = addressImporter;
     addressImportExecutor =
         Executors.newSingleThreadExecutor(
             r -> {
@@ -514,6 +534,7 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     // double-shut.
     addressLookupExecutor = null;
     addressImporter = null;
+    staticAddressImporter = null;
     ToolsPreferenceFragment.unregister(PREF_KEY);
     if (ui != null) ui.removeCallbacks(selfTick);
     if (view != null) {
