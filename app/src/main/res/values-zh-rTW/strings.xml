@@ -104,4 +104,55 @@
 
     <string name="goto_btn_atak_picker">開啟 ATAK 圖示選單</string>
 
+    <!-- ============================================================
+         Feature 004 — Offline Address placeholders (T005). Empty values
+         pending T054 proofread translation. The locale-override pathway
+         still resolves these keys; empty strings make missing translations
+         visible during testing rather than silently falling back to en.
+         ============================================================ -->
+    <string name="tool_offline_address_label"></string>
+    <string name="tool_offline_address_desc"></string>
+    <string name="offline_address_page_title"></string>
+    <string name="offline_address_empty_state"></string>
+    <string name="offline_address_button_import"></string>
+    <string name="offline_address_button_replace"></string>
+    <string name="offline_address_button_remove"></string>
+    <string name="offline_address_confirm_replace"></string>
+    <string name="offline_address_confirm_remove"></string>
+    <string name="offline_address_progress_copying"></string>
+    <string name="offline_address_progress_verifying"></string>
+    <string name="offline_address_progress_building_index"></string>
+    <string name="offline_address_progress_activating"></string>
+    <string name="offline_address_field_county"></string>
+    <string name="offline_address_field_data_date"></string>
+    <string name="offline_address_field_source"></string>
+    <string name="offline_address_field_rows"></string>
+    <string name="offline_address_field_csv_sha"></string>
+    <string name="offline_address_field_imported_at"></string>
+    <string name="offline_address_field_file_sha"></string>
+    <string name="offline_address_field_rtree_built"></string>
+    <string name="offline_address_error_not_openable"></string>
+    <string name="offline_address_error_missing_metadata"></string>
+    <string name="offline_address_error_missing_required_key"></string>
+    <string name="offline_address_error_unsupported_schema"></string>
+    <string name="offline_address_error_missing_places"></string>
+    <string name="offline_address_error_unexpected_columns"></string>
+    <string name="offline_address_error_rtree_failed"></string>
+    <string name="offline_address_error_disk_full"></string>
+    <string name="offline_address_error_activation_failed"></string>
+    <string name="offline_address_error_io"></string>
+    <string name="pref_address_header"></string>
+    <string name="pref_address_row_me_title"></string>
+    <string name="pref_address_row_me_summary"></string>
+    <string name="pref_address_row_target_title"></string>
+    <string name="pref_address_row_target_summary"></string>
+    <string name="pref_address_row_map_title"></string>
+    <string name="pref_address_row_map_summary"></string>
+    <string name="pref_address_dataset_status_title"></string>
+    <string name="pref_address_dataset_status_summary_none"></string>
+    <string name="pref_address_dataset_status_summary_hint"></string>
+    <string name="pref_address_dataset_status_summary_active_format"></string>
+    <string name="widget_address_loading"></string>
+    <string name="widget_address_empty_state"></string>
+
 </resources>

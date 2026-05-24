@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Stub layout for OfflineAddressReceiver (T003). T029 replaces this with
+    the final two-state layout per contracts/offline-address-page.md
+    (State A = empty-state, State B = active-dataset metadata). The root
+    + two state containers are present here so the receiver compiles and
+    binds without crashing while T024–T028 land in between.
+
+    Plain-Android widgets only per ADR-0009 D6 (no AppCompat, no Material).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/offline_address_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- State A — "No address dataset installed". Expanded in T029. -->
+    <LinearLayout
+        android:id="@+id/offline_address_state_a"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"/>
+
+    <!-- State B — active dataset metadata + Replace/Remove. Expanded in T029. -->
+    <LinearLayout
+        android:id="@+id/offline_address_state_b"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"/>
+
+</LinearLayout>

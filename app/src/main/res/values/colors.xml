@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Feature 004 — address-row text colour.
+         Muted neutral (lighter than the coord rows' white #FFFFFFFF) so the
+         address line reads as a secondary annotation under the coordinate
+         it describes, per contracts/widget-address-rows.md. -->
+    <color name="address_row_text">#FFBBBBBB</color>
+
+</resources>

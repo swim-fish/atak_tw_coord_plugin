@@ -137,4 +137,70 @@
     <!-- Label on the "Drop via ATAK picker" button (sibling of Submit). -->
     <string name="goto_btn_atak_picker">Open ATAK icon menu</string>
 
+    <!-- ============================================================
+         Feature 004 — Offline Address (Tools menu + Settings + widget rows)
+         ============================================================ -->
+
+    <!-- Third Tools-menu icon identity. -->
+    <string name="tool_offline_address_label">Offline Address</string>
+    <string name="tool_offline_address_desc">Import an offline address dataset (places-&lt;county&gt;.sqlite) and show address text under the coordinate readout.</string>
+
+    <!-- Offline Address page (DropDownReceiver). -->
+    <string name="offline_address_page_title">Offline Address</string>
+    <string name="offline_address_empty_state">No address dataset installed. Use the .sqlite file produced by the atak-tw-address-generator project.</string>
+
+    <!-- Action buttons + confirmations. -->
+    <string name="offline_address_button_import">Import…</string>
+    <string name="offline_address_button_replace">Replace…</string>
+    <string name="offline_address_button_remove">Remove</string>
+    <!-- %1$s = active dataset's county label. -->
+    <string name="offline_address_confirm_replace">Replace the active %1$s dataset?</string>
+    <string name="offline_address_confirm_remove">Remove the active %1$s dataset?</string>
+
+    <!-- Import progress chip. %1$d is the percentage 0–100. -->
+    <string name="offline_address_progress_copying">Copying… %1$d%%</string>
+    <string name="offline_address_progress_verifying">Verifying metadata…</string>
+    <string name="offline_address_progress_building_index">Building index… %1$d%%</string>
+    <string name="offline_address_progress_activating">Activating…</string>
+
+    <!-- State B — field labels. -->
+    <string name="offline_address_field_county">County</string>
+    <string name="offline_address_field_data_date">Data date</string>
+    <string name="offline_address_field_source">Source</string>
+    <string name="offline_address_field_rows">Rows</string>
+    <string name="offline_address_field_csv_sha">CSV SHA-256</string>
+    <string name="offline_address_field_imported_at">Imported</string>
+    <string name="offline_address_field_file_sha">File SHA-256</string>
+    <string name="offline_address_field_rtree_built">R*Tree built</string>
+
+    <!-- Import failure messages (one per AddressBundleImporter.ImportResult.Failure.Reason). -->
+    <string name="offline_address_error_not_openable">Database not readable.</string>
+    <string name="offline_address_error_missing_metadata">Metadata table missing.</string>
+    <string name="offline_address_error_missing_required_key">Required metadata key missing: %1$s.</string>
+    <string name="offline_address_error_unsupported_schema">Unsupported schema version: expected %1$d, got %2$s.</string>
+    <string name="offline_address_error_missing_places">Places table missing.</string>
+    <string name="offline_address_error_unexpected_columns">Places table is missing required columns: %1$s.</string>
+    <string name="offline_address_error_rtree_failed">Building the spatial index failed.</string>
+    <string name="offline_address_error_disk_full">Not enough disk space.</string>
+    <string name="offline_address_error_activation_failed">Activation failed; previous dataset preserved.</string>
+    <string name="offline_address_error_io">Import failed: %1$s.</string>
+
+    <!-- Settings — Offline Address preference category. -->
+    <string name="pref_address_header">Offline Address</string>
+    <string name="pref_address_row_me_title">Show address for self-location (ME)</string>
+    <string name="pref_address_row_me_summary">Adds an address line under the ME coordinate row.</string>
+    <string name="pref_address_row_target_title">Show address for target (TGT)</string>
+    <string name="pref_address_row_target_summary">Adds an address line under the TGT coordinate row.</string>
+    <string name="pref_address_row_map_title">Show address for map-centre (MAP)</string>
+    <string name="pref_address_row_map_summary">Adds an address line under the MAP coordinate row.</string>
+    <string name="pref_address_dataset_status_title">Dataset status</string>
+    <string name="pref_address_dataset_status_summary_none">No dataset installed.</string>
+    <string name="pref_address_dataset_status_summary_hint">No dataset installed — tap to open Offline Address.</string>
+    <!-- %1$s = county label, %2$s = data_date. -->
+    <string name="pref_address_dataset_status_summary_active_format">Active: %1$s · %2$s</string>
+
+    <!-- Widget address-row states. -->
+    <string name="widget_address_loading">Loading address…</string>
+    <string name="widget_address_empty_state">No address nearby</string>
+
 </resources>

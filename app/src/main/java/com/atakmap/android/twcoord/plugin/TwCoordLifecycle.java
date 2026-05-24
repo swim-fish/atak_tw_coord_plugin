@@ -11,13 +11,16 @@ public class TwCoordLifecycle extends AbstractPlugin {
   public TwCoordLifecycle(IServiceController serviceController) {
     // Multi-tool constructor (AbstractPlugin(IServiceController, IToolbarItem[], MapComponent)).
     // Feature 001 ships the unit-cycle icon (TwCoordTool); feature 002 adds the GoTo input page
-    // icon (TwCoordGotoTool). Both icons appear in the ATAK Tools menu.
+    // icon (TwCoordGotoTool); feature 004 adds the Offline Address page icon
+    // (OfflineAddressTool). All three icons appear in the ATAK Tools menu.
     super(
         serviceController,
         new IToolbarItem[] {
           new TwCoordTool(
               serviceController.getService(PluginContextProvider.class).getPluginContext()),
           new TwCoordGotoTool(
+              serviceController.getService(PluginContextProvider.class).getPluginContext()),
+          new OfflineAddressTool(
               serviceController.getService(PluginContextProvider.class).getPluginContext())
         },
         new TwCoordMapComponent());
