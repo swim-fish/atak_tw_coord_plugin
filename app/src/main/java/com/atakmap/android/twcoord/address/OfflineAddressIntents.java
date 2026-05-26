@@ -13,8 +13,8 @@ package com.atakmap.android.twcoord.address;
  * </ul>
  *
  * <p>File selection is done via ATAK SDK's {@code com.atakmap.android.gui.ImportFileBrowserDialog}
- * (synchronous callback inside the ATAK process), not via a broadcast handoff. See
- * {@code OfflineAddressReceiver#launchPicker} for the call site.
+ * (synchronous callback inside the ATAK process), not via a broadcast handoff. See {@code
+ * OfflineAddressReceiver#launchPicker} for the call site.
  */
 public final class OfflineAddressIntents {
 

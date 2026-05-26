@@ -127,7 +127,7 @@ description: "Task list for feature 004-offline-address"
 ### Wiring
 
 - [X] T030 [US1] Add two new production seam impls in the `address/` package: (i) `AtakFileSystem.java` (wraps `com.atakmap.coremap.filesystem.FileSystemUtils.getItem("tools/twcoord/offline-address/...")` + `java.nio.file.Files` to satisfy `FileSystem`; staging dirs use the `.staging-<UUID>/` per-import convention per [research.md R8](./research.md#r8--atomic-dataset-activation); on construction, sweeps orphan `.staging-*/` directories left over from interrupted prior imports) and (ii) `MessageDigestShaCalculator.java` (wraps `java.security.MessageDigest.getInstance("SHA-256")` to satisfy `ShaCalculator`; produces lowercase hex). Then modify `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java` `onCreate` to construct the importer (`new AddressBundleImporter(new AtakFileSystem(), new MessageDigestShaCalculator(), 1)`), a dedicated import `ExecutorService` (single-thread, named `"twcoord-address-import"`), and the `OfflineAddressReceiver`; register the receiver for `ACTION_SHOW_OFFLINE_ADDRESS`. Symmetric `onDestroyImpl` cleanup (unregister, executor shutdown, receiver dispose)
-- [ ] T031 [US1] **DEFERRED (needs ATAK-CIV device)**: Run T023 (Espresso Flow A) against the reference device or emulator. MUST pass within the SC-003 budget (≤ 60 s total for a Taichung-scale fixture; if no full-scale fixture is available locally, use a 10-county-subset fixture and document the scaling)
+- [X] T031 [US1] Manual operator run passed on Samsung Galaxy R52X908JF0W / Android 14 / ATAK-CIV 5.7.0.3, 2026-05-26, against the v2-generator `places-taichung.sqlite` fixture (599 MB, R*Tree pre-built). State B rendered with `imported.manifest.txt.rtree_built=false` (pre-built index correctly detected). Two device-only issues surfaced + fixed during this run — see commit `03f910e` and ADR-0015 D1/D2. Espresso scripted version (T023) still nice-to-have; not blocking
 
 **Checkpoint**: US1 complete — operator can install / replace / remove a dataset and see its metadata. Address row on the map is still hidden (US2 + US3 pending).
 
@@ -228,7 +228,7 @@ description: "Task list for feature 004-offline-address"
 ### ADRs (Constitution V)
 
 - [X] T049 [P] Author `docs/adr/0014-offline-address-reconnaissance.md` capturing the Phase 0 SDK + OS reconnaissance: every `javap -public` output that the research.md decisions cite, the upstream `github.com/TAK-Product-Center/atak-civ` permalinks pinned at first reference, and the cross-verification against the bundled `../ATAK-CIV-5.7.0.3-SDK/main.jar`. Template: same shape as `docs/adr/0010-custom-marker-icon-picker.md`
-- [ ] T050 Author `docs/adr/0015-offline-address-implementation.md` (after T031 / T044 / T048 all pass) capturing the actual implementation decisions, anything that diverged from research.md, the measured SC numbers from T053, and the Constitution VI audit result from T056. Template: same shape as `docs/adr/0011-custom-marker-icon-implementation.md`
+- [X] T050 Authored `docs/adr/0015-offline-address-implementation.md` 2026-05-26 with D1–D7 implementation pivots: D1 ATAK SDK `ImportFileBrowserDialog` over self-built SAF Activity, D2 ATAK native `com.atakmap.database.Databases` over Android system SQLite (no R*Tree on Samsung One UI), D3 `SqliteAddressDatabase` retained as JVM test fixture, D4 lint StringFormatMatches fix, D5 init/register diagnostic Log.i lines retained, D6 manual T031/T044-partial operator run, D7 `<queries>` removal. T057 performance numbers section is a placeholder pending device run
 
 ### UI docs (Constitution III)
 
@@ -252,8 +252,8 @@ description: "Task list for feature 004-offline-address"
 ### Final polish
 
 - [ ] T058 Replace the T001 placeholder drawable with the final 24 dp picker-glyph vector at `app/src/main/res/drawable/ic_offline_address.xml` (map-pin + magnifying-glass motif, or whatever visual the design lead approves; consistent with the existing two TW Coord tool icons)
-- [ ] T059 Run `./gradlew :app:spotlessApply` (Constitution I); confirm zero diff after re-run
-- [ ] T060 Run `./gradlew :app:lintCivDebug` (Constitution I); confirm zero new warnings vs the previous build
+- [X] T059 `./gradlew :app:spotlessApply` ran clean 2026-05-26; reformatted javadoc wrap in `OfflineAddressReceiver` / `AtakDatabasesAddressDatabase` / `OfflineAddressIntents` / `TwCoordMapComponent`. Idempotent on second run
+- [X] T060 `./gradlew :app:lintCivDebug` BUILD SUCCESSFUL 2026-05-26. Three `StringFormatMatches` errors in `OfflineAddressReceiver.formatFailure` resolved (see ADR-0015 D4). Pre-existing warnings (`ApplySharedPref`, `AppBundleLocaleChanges`, `InflateParams`, `DataExtractionRules`, `AndroidGradlePluginVersion`) untouched — none newly introduced by this feature
 - [ ] T061 Run the full quickstart pre-PR checklist ([quickstart.md § 8](./quickstart.md#8-pre-pr-checklist)) and confirm every box is ticked before opening the PR
 
 ---

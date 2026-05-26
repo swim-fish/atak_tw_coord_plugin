@@ -30,22 +30,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *   <li><b>State B</b> — active dataset → metadata fields + Replace / Remove buttons.
  * </ul>
  *
- * <p>The Import button opens ATAK SDK's {@link ImportFileBrowserDialog}; the dialog runs in
- * ATAK's process so there is no cross-UID handoff. When the user picks a file, the dialog
- * invokes {@link ImportFileBrowserDialog.DialogDismissed#onFileSelected(File)} synchronously
- * on the UI thread; this receiver submits the import job to the injected executor and binds
- * Success / Failure into the page on the UI thread.
+ * <p>The Import button opens ATAK SDK's {@link ImportFileBrowserDialog}; the dialog runs in ATAK's
+ * process so there is no cross-UID handoff. When the user picks a file, the dialog invokes {@link
+ * ImportFileBrowserDialog.DialogDismissed#onFileSelected(File)} synchronously on the UI thread;
+ * this receiver submits the import job to the injected executor and binds Success / Failure into
+ * the page on the UI thread.
  *
- * <p>Every lifecycle / callback wraps in {@code try/catch (Throwable)} per Constitution VI —
- * the plugin lives inside the ATAK process; an escaping exception kills the host.
+ * <p>Every lifecycle / callback wraps in {@code try/catch (Throwable)} per Constitution VI — the
+ * plugin lives inside the ATAK process; an escaping exception kills the host.
  *
- * <p><b>History</b>: An earlier design (commits 2ca5643 → d80d8bc) used a plugin-owned SAF
- * picker Activity that broadcast the picked {@code content://} URI back to ATAK. That handoff
- * never worked reliably across UIDs (plugin Activity UID 10544 vs ATAK uid 10515) on Android
- * 14 + Samsung One UI: ActivityManager dropped the broadcast even with explicit
- * {@code setPackage} + {@code <queries>} + {@code FLAG_GRANT_READ_URI_PERMISSION}. Switched to
- * the ATAK-blessed in-process dialog after finding the pattern in helloworld sample
- * {@code HelloWorldDropDownReceiver.sampleFileBrowser}.
+ * <p><b>History</b>: An earlier design (commits 2ca5643 → d80d8bc) used a plugin-owned SAF picker
+ * Activity that broadcast the picked {@code content://} URI back to ATAK. That handoff never worked
+ * reliably across UIDs (plugin Activity UID 10544 vs ATAK uid 10515) on Android 14 + Samsung One
+ * UI: ActivityManager dropped the broadcast even with explicit {@code setPackage} + {@code
+ * <queries>} + {@code FLAG_GRANT_READ_URI_PERMISSION}. Switched to the ATAK-blessed in-process
+ * dialog after finding the pattern in helloworld sample {@code
+ * HelloWorldDropDownReceiver.sampleFileBrowser}.
  */
 public final class OfflineAddressReceiver extends DropDownReceiver implements OnStateListener {
 
@@ -240,9 +240,9 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   }
 
   /**
-   * Run import on a picked {@link File}. Opens the {@link FileInputStream} on the calling
-   * thread, then hands the already-open stream to the worker (mirrors the worker contract
-   * the SAF-broadcast era used; the worker closes the stream via try-with-resources).
+   * Run import on a picked {@link File}. Opens the {@link FileInputStream} on the calling thread,
+   * then hands the already-open stream to the worker (mirrors the worker contract the SAF-broadcast
+   * era used; the worker closes the stream via try-with-resources).
    */
   private void startImport(File file) {
     if (!importInFlight.compareAndSet(false, true)) {
@@ -333,8 +333,14 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   }
 
   private String formatFailure(AddressBundleImporter.ImportResult.Failure fail) {
+    // `details` is always supplied as arg 0; resource strings that don't reference %1$s simply
+    // ignore the extra arg (Android Resources.getString → String.format tolerates trailing args).
+    // Initialising args this way keeps every switch path satisfying lint's StringFormatMatches
+    // requirement that the io / required-key / unsupported-schema / unexpected-columns strings
+    // get a non-empty arg list.
+    String details = fail.details() == null ? "" : fail.details();
+    Object[] args = new Object[] {details};
     int resId;
-    Object[] args = new Object[0];
     switch (fail.reason()) {
       case NOT_OPENABLE:
         resId = R.string.offline_address_error_not_openable;
@@ -347,18 +353,15 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
         break;
       case MISSING_REQUIRED_METADATA_KEY:
         resId = R.string.offline_address_error_missing_required_key;
-        args = new Object[] {fail.details()};
         break;
       case UNSUPPORTED_SCHEMA_VERSION:
         resId = R.string.offline_address_error_unsupported_schema;
-        args = new Object[] {fail.details()};
         break;
       case MISSING_PLACES_TABLE:
         resId = R.string.offline_address_error_missing_places;
         break;
       case UNEXPECTED_PLACES_COLUMNS:
         resId = R.string.offline_address_error_unexpected_columns;
-        args = new Object[] {fail.details()};
         break;
       case RTREE_BUILD_FAILED:
         resId = R.string.offline_address_error_rtree_failed;
@@ -373,7 +376,6 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       case IO_ERROR:
       default:
         resId = R.string.offline_address_error_io;
-        args = new Object[] {fail.details()};
         break;
     }
     return pluginContext.getString(resId, args);

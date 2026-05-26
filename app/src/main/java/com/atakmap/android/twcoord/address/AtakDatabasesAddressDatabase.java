@@ -16,10 +16,10 @@ import java.util.Map;
  * android.database.sqlite.SQLiteDatabase} ships SQLite without the R*Tree extension on at least
  * Samsung One UI builds (verified on Galaxy R52X908JF0W / Android 14, 2026-05-26): the runtime
  * query {@code SELECT … FROM places_rtree …} fails with {@code no such module: rtree}. ATAK's
- * native SQLite ({@link Databases#openDatabase}) bundles a full-featured build with R*Tree
- * because ATAK itself relies on R*Tree for its own spatial-index queries, so we reuse that
- * runtime here. {@link SqliteAddressDatabase} stays alive only for JVM/Robolectric unit tests
- * which run against {@code xerial sqlite-jdbc} (also R*Tree-enabled).
+ * native SQLite ({@link Databases#openDatabase}) bundles a full-featured build with R*Tree because
+ * ATAK itself relies on R*Tree for its own spatial-index queries, so we reuse that runtime here.
+ * {@link SqliteAddressDatabase} stays alive only for JVM/Robolectric unit tests which run against
+ * {@code xerial sqlite-jdbc} (also R*Tree-enabled).
  */
 public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade {
 
