@@ -395,7 +395,10 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     String msg =
         pluginContext.getString(
             R.string.offline_address_confirm_replace, nonNull(active.generator().county()));
-    new AlertDialog.Builder(pluginContext)
+    // Dialog needs an Activity context (window token) — the plugin's ApplicationContext has
+    // token=null and Android throws BadTokenException. Same reason ImportFileBrowserDialog uses
+    // getMapView().getContext() in launchPicker().
+    new AlertDialog.Builder(getMapView().getContext())
         .setTitle(R.string.offline_address_button_replace)
         .setMessage(msg)
         .setPositiveButton(
@@ -414,7 +417,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     String msg =
         pluginContext.getString(
             R.string.offline_address_confirm_remove, nonNull(active.generator().county()));
-    new AlertDialog.Builder(pluginContext)
+    new AlertDialog.Builder(getMapView().getContext())
         .setTitle(R.string.offline_address_button_remove)
         .setMessage(msg)
         .setPositiveButton(android.R.string.ok, (d, w) -> safeRun(this::performRemove))
