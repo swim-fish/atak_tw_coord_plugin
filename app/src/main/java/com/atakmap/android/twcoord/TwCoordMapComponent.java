@@ -23,7 +23,7 @@ import com.atakmap.android.twcoord.address.AtakFileSystem;
 import com.atakmap.android.twcoord.address.MessageDigestShaCalculator;
 import com.atakmap.android.twcoord.address.OfflineAddressIntents;
 import com.atakmap.android.twcoord.address.OfflineAddressReceiver;
-import com.atakmap.android.twcoord.address.SqliteAddressDatabase;
+import com.atakmap.android.twcoord.address.AtakDatabasesAddressDatabase;
 import com.atakmap.android.twcoord.coord.ConversionResult;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
@@ -375,6 +375,12 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     // docs/data-contract.md (v2, 2026-05-24 evening) v2 adds `places_rtree`. The importer
     // accepts both v1 (plugin builds R*Tree at import) and v2 (generator already shipped it,
     // plugin skips the build).
+    com.atakmap.coremap.log.Log.i(
+        "TwCoordMapComponent",
+        "Feature 004 init: building AddressBundleImporter + OfflineAddressReceiver in pid="
+            + android.os.Process.myPid()
+            + " uid="
+            + android.os.Process.myUid());
     addressImporter =
         new AddressBundleImporter(new AtakFileSystem(), new MessageDigestShaCalculator(), 2);
     staticAddressImporter = addressImporter;
@@ -404,7 +410,7 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     addressSubsystem =
         new AddressSubsystem(
             addressImporter,
-            new SqliteAddressDatabase.SqliteFactory(),
+            new AtakDatabasesAddressDatabase.Factory(),
             addressLookupExecutor,
             250L);
     for (AddressSubsystem.Row r : AddressSubsystem.Row.values()) {

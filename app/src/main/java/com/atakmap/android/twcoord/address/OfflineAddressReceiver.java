@@ -1,11 +1,8 @@
 package com.atakmap.android.twcoord.address;
 
 import android.app.AlertDialog;
-import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
@@ -14,10 +11,13 @@ import android.widget.Button;
 import android.widget.TextView;
 import com.atakmap.android.dropdown.DropDown.OnStateListener;
 import com.atakmap.android.dropdown.DropDownReceiver;
+import com.atakmap.android.gui.ImportFileBrowserDialog;
 import com.atakmap.android.ipc.AtakBroadcast;
 import com.atakmap.android.maps.MapView;
 import com.atakmap.android.twcoord.plugin.R;
 import com.atakmap.coremap.log.Log;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,13 +30,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *   <li><b>State B</b> — active dataset → metadata fields + Replace / Remove buttons.
  * </ul>
  *
- * <p>The Import button launches {@link OfflineAddressFilePickerActivity} (transparent SAF shim);
- * the shim broadcasts {@link OfflineAddressIntents#ACTION_PICK_FILE_RESULT} carrying the picked
- * URI; this receiver consumes the URI, submits the import job to the injected executor, and binds
+ * <p>The Import button opens ATAK SDK's {@link ImportFileBrowserDialog}; the dialog runs in
+ * ATAK's process so there is no cross-UID handoff. When the user picks a file, the dialog
+ * invokes {@link ImportFileBrowserDialog.DialogDismissed#onFileSelected(File)} synchronously
+ * on the UI thread; this receiver submits the import job to the injected executor and binds
  * Success / Failure into the page on the UI thread.
  *
- * <p>Every lifecycle / broadcast callback wraps in {@code try/catch (Throwable)} per Constitution
- * VI — the plugin lives inside the ATAK process; an escaping exception kills the host.
+ * <p>Every lifecycle / callback wraps in {@code try/catch (Throwable)} per Constitution VI —
+ * the plugin lives inside the ATAK process; an escaping exception kills the host.
+ *
+ * <p><b>History</b>: An earlier design (commits 2ca5643 → d80d8bc) used a plugin-owned SAF
+ * picker Activity that broadcast the picked {@code content://} URI back to ATAK. That handoff
+ * never worked reliably across UIDs (plugin Activity UID 10544 vs ATAK uid 10515) on Android
+ * 14 + Samsung One UI: ActivityManager dropped the broadcast even with explicit
+ * {@code setPackage} + {@code <queries>} + {@code FLAG_GRANT_READ_URI_PERMISSION}. Switched to
+ * the ATAK-blessed in-process dialog after finding the pattern in helloworld sample
+ * {@code HelloWorldDropDownReceiver.sampleFileBrowser}.
  */
 public final class OfflineAddressReceiver extends DropDownReceiver implements OnStateListener {
 
@@ -47,10 +56,6 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   private final ExecutorService importExecutor;
   private final Handler ui;
   private final View view;
-
-  // Lifecycle: registered in onDropDownVisible(true), unregistered in onDropDownClose. Hold a
-  // reference so we can unregister even if the receiver instance outlives the visible state.
-  private BroadcastReceiver pickResultReceiver;
 
   // Re-entrancy guard for the buttons (Constitution VI §AtomicBoolean rule).
   private final AtomicBoolean importInFlight = new AtomicBoolean(false);
@@ -118,7 +123,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
 
   @Override
   public void disposeImpl() {
-    unregisterPickReceiver();
+    /* no-op — no resources to release */
   }
 
   @Override
@@ -136,15 +141,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
 
   @Override
   public void onDropDownVisible(boolean visible) {
-    try {
-      if (visible) {
-        registerPickReceiver();
-      } else {
-        unregisterPickReceiver();
-      }
-    } catch (Throwable t) {
-      Log.w(TAG, "onDropDownVisible threw", t);
-    }
+    /* no-op */
   }
 
   @Override
@@ -155,7 +152,6 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   @Override
   public void onDropDownClose() {
     try {
-      unregisterPickReceiver();
       clearError();
       hideProgress();
     } catch (Throwable t) {
@@ -204,68 +200,77 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   }
 
   // ----------------------------------------------------------------------
-  // SAF picker + import worker
+  // File picker (ATAK SDK in-process dialog) + import worker
   // ----------------------------------------------------------------------
 
-  private void registerPickReceiver() {
-    if (pickResultReceiver != null) return;
-    pickResultReceiver =
-        new BroadcastReceiver() {
+  private void launchPicker() {
+    if (importInFlight.get()) {
+      Log.d(TAG, "import already in flight; ignoring Import button");
+      return;
+    }
+    // Run on ATAK's host context — ImportFileBrowserDialog needs a UI-thread Activity context;
+    // the plugin context lacks the Activity token. Using getMapView().getContext() matches the
+    // helloworld sample (HelloWorldDropDownReceiver.sampleFileBrowser, line 3657).
+    Context atakCtx = getMapView().getContext();
+    ImportFileBrowserDialog dialog = new ImportFileBrowserDialog(atakCtx);
+    dialog.setExtensionTypes("sqlite", "db");
+    dialog.setTitle(pluginContext.getString(R.string.offline_address_button_import));
+    dialog.setOnDismissListener(
+        new ImportFileBrowserDialog.DialogDismissed() {
           @Override
-          public void onReceive(Context ctx, Intent intent) {
+          public void onFileSelected(File file) {
             try {
-              if (intent == null) return;
-              if (!OfflineAddressIntents.ACTION_PICK_FILE_RESULT.equals(intent.getAction())) return;
-              String uriStr = intent.getStringExtra(OfflineAddressIntents.EXTRA_PICKED_URI);
-              if (uriStr == null || uriStr.isEmpty()) return;
-              startImport(Uri.parse(uriStr));
+              if (file == null) {
+                Log.w(TAG, "picker returned null file");
+                return;
+              }
+              Log.i(TAG, "picker returned file=" + file.getAbsolutePath());
+              startImport(file);
             } catch (Throwable t) {
-              Log.w(TAG, "pickResultReceiver.onReceive threw", t);
+              Log.w(TAG, "onFileSelected threw", t);
             }
           }
-        };
-    AtakBroadcast.DocumentedIntentFilter f = new AtakBroadcast.DocumentedIntentFilter();
-    f.addAction(OfflineAddressIntents.ACTION_PICK_FILE_RESULT);
-    AtakBroadcast.getInstance().registerReceiver(pickResultReceiver, f);
+
+          @Override
+          public void onDialogClosed() {
+            /* user cancelled — no action */
+          }
+        });
+    dialog.show();
   }
 
-  private void unregisterPickReceiver() {
-    if (pickResultReceiver == null) return;
-    try {
-      AtakBroadcast.getInstance().unregisterReceiver(pickResultReceiver);
-    } catch (IllegalArgumentException ignored) {
-      // Receiver was never registered or already unregistered.
-    } finally {
-      pickResultReceiver = null;
-    }
-  }
-
-  private void launchPicker() {
-    if (!importInFlight.get()) {
-      Intent i = new Intent(pluginContext, OfflineAddressFilePickerActivity.class);
-      i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-      pluginContext.startActivity(i);
-    }
-  }
-
-  private void startImport(Uri picked) {
+  /**
+   * Run import on a picked {@link File}. Opens the {@link FileInputStream} on the calling
+   * thread, then hands the already-open stream to the worker (mirrors the worker contract
+   * the SAF-broadcast era used; the worker closes the stream via try-with-resources).
+   */
+  private void startImport(File file) {
     if (!importInFlight.compareAndSet(false, true)) {
-      Log.d(TAG, "import already in flight; ignoring second SAF result");
+      Log.d(TAG, "import already in flight; ignoring second pick");
       return;
     }
     clearError();
     showProgress(pluginContext.getString(R.string.offline_address_progress_copying, 0));
+    final InputStream stream;
+    try {
+      stream = new FileInputStream(file);
+    } catch (Throwable t) {
+      Log.w(TAG, "FileInputStream(" + file + ") threw", t);
+      importInFlight.set(false);
+      hideProgress();
+      showError(
+          formatFailure(
+              AddressBundleImporter.ImportResult.failure(
+                  AddressBundleImporter.ImportResult.Reason.IO_ERROR,
+                  t.getMessage() == null ? "open failed" : t.getMessage())));
+      return;
+    }
+    Log.i(TAG, "opened FileInputStream; scheduling import worker");
     importExecutor.execute(
         () -> {
           AddressBundleImporter.ImportResult result;
-          try (InputStream stream = openUri(picked)) {
-            if (stream == null) {
-              result =
-                  AddressBundleImporter.ImportResult.failure(
-                      AddressBundleImporter.ImportResult.Reason.IO_ERROR, "cannot open URI");
-            } else {
-              result = importer.importFrom(stream, this::postProgress);
-            }
+          try (InputStream s = stream) {
+            result = importer.importFrom(s, this::postProgress);
           } catch (Throwable t) {
             Log.w(TAG, "import worker threw", t);
             result =
@@ -295,16 +300,6 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
                 }
               });
         });
-  }
-
-  private InputStream openUri(Uri uri) {
-    try {
-      ContentResolver cr = pluginContext.getContentResolver();
-      return cr.openInputStream(uri);
-    } catch (Throwable t) {
-      Log.w(TAG, "openInputStream(" + uri + ") threw", t);
-      return null;
-    }
   }
 
   private void postProgress(

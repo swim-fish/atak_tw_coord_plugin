@@ -29,16 +29,5 @@
             </intent-filter>
         </activity>
 
-        <!--
-            Feature 004 — SAF picker shim. Hosts the system file picker for
-            the OfflineAddressReceiver; not exported (no intent filter) so
-            only this plugin can launch it. Transparent theme keeps the
-            DropDown visible behind the picker.
-        -->
-        <activity
-            android:name="com.atakmap.android.twcoord.address.OfflineAddressFilePickerActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
-
     </application>
 </manifest>
