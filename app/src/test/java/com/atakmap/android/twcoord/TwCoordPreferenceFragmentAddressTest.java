@@ -14,66 +14,24 @@ import java.util.Map;
 import org.junit.Test;
 
 /**
- * Feature 004 / US3 — covers the four cases in {@code
- * specs/004-offline-address/contracts/address-preferences.md § Test plan}:
+ * Feature 004 / US3 + Phase 7 T042 — covers the four-state truth table in {@code
+ * specs/004-offline-address/contracts/address-preferences.md § Dataset presence summary table},
+ * extended for feature 005 multi-county.
+ *
+ * <p>The truth table:
  *
  * <ul>
- *   <li>(a) status summary = hint when at least one toggle is on but no dataset is active
- *   <li>(b) status summary = "Active: county · data_date" when a dataset is active
- *   <li>(c) clicking the status row sends {@code ACTION_SHOW_OFFLINE_ADDRESS} — exercised by
- *       Espresso {@code OfflineAddressFlowBCEspressoTest} (T041) because {@code AtakBroadcast} +
- *       the host preference framework can't be reasonably Robolectric-shimmed without a live ATAK
- *       process; the production wiring is a 4-line {@code OnPreferenceClickListener} in {@link
- *       TwCoordPreferenceFragment#onResume()} that mirrors the existing {@code pref_open_goto}
- *       click-broadcast wiring (which similarly has no JVM test).
- *   <li>(d) toggling any one of the three SwitchPreferences writes to {@code PreferenceStore} —
- *       covered by the existing {@code AddressPreferencesTest} (which exercises the {@code
- *       KEY_ADDRESS_ROW_*} accessors directly).
+ *   <li>all toggles off → hide the row (disabled + non-selectable)
+ *   <li>any toggle on + registry has N ≥ 1 counties → "N counties active — tap to open"
+ *   <li>any toggle on + registry empty + legacy active dataset → "Active: county · data_date" (the
+ *       auto-migrate intermediate state and v1.0.5 fallback)
+ *   <li>any toggle on + nothing active anywhere → "No dataset — tap to open"
  * </ul>
- *
- * <p>The non-trivial logic is the dataset-status presentation rule (the three-state table in the
- * contract). That's extracted as the static helper {@link
- * TwCoordPreferenceFragment#resolveDatasetStatus} and tested here on plain JVM — no Robolectric or
- * ATAK SDK shim required.
  */
 public final class TwCoordPreferenceFragmentAddressTest {
 
   // ---------------------------------------------------------------------
-  // Case (a) — at least one toggle on, no dataset → hint summary, clickable
-  // ---------------------------------------------------------------------
-  @Test
-  public void resolveDatasetStatus_anyToggleOnNoDataset_returnsHintClickable() {
-    StatusStrings strings = new StubStatusStrings();
-
-    DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, /* anyToggleOn= */ true, null);
-
-    assertThat(result.summary()).isEqualTo("hint");
-    assertThat(result.enabled()).isTrue();
-    assertThat(result.selectable()).isTrue();
-  }
-
-  // ---------------------------------------------------------------------
-  // Case (b) — at least one toggle on, dataset active → Active summary, clickable
-  // ---------------------------------------------------------------------
-  @Test
-  public void resolveDatasetStatus_anyToggleOnWithDataset_returnsActiveSummary() {
-    StatusStrings strings = new StubStatusStrings();
-    AddressDataset active = newDataset("Taichung", "2025-12-01");
-
-    DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, /* anyToggleOn= */ true, active);
-
-    // The stub formats Active: <county> · <data_date> so we can assert the substitution exactly.
-    assertThat(result.summary()).isEqualTo("Active: Taichung · 2025-12-01");
-    assertThat(result.enabled()).isTrue();
-    assertThat(result.selectable()).isTrue();
-  }
-
-  // ---------------------------------------------------------------------
-  // Case — all toggles off → hidden (disabled + non-selectable), summary "none"
-  // (Not explicitly in T040 (a)/(b)/(c)/(d) but the third row of the contract's
-  // truth table — exercised to lock the rule in place.)
+  // All toggles off → hidden (disabled + non-selectable), regardless of dataset state
   // ---------------------------------------------------------------------
   @Test
   public void resolveDatasetStatus_allTogglesOff_returnsHiddenStatus() {
@@ -81,7 +39,32 @@ public final class TwCoordPreferenceFragmentAddressTest {
     AddressDataset active = newDataset("Taipei", "2025-11-15");
 
     DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, /* anyToggleOn= */ false, active);
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, false, 0, active);
+
+    assertThat(result.summary()).isEqualTo("none");
+    assertThat(result.enabled()).isFalse();
+    assertThat(result.selectable()).isFalse();
+  }
+
+  @Test
+  public void resolveDatasetStatus_allTogglesOffNoDataset_returnsHiddenStatus() {
+    StatusStrings strings = new StubStatusStrings();
+
+    DatasetStatusPresentation result =
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, false, 0, null);
+
+    assertThat(result.summary()).isEqualTo("none");
+    assertThat(result.enabled()).isFalse();
+    assertThat(result.selectable()).isFalse();
+  }
+
+  // Even with N > 0 counties, toggles off → still hidden. (Multi-county shouldn't override toggle.)
+  @Test
+  public void resolveDatasetStatus_allTogglesOffMultiCountyActive_stillHidden() {
+    StatusStrings strings = new StubStatusStrings();
+
+    DatasetStatusPresentation result =
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, false, 3, null);
 
     assertThat(result.summary()).isEqualTo("none");
     assertThat(result.enabled()).isFalse();
@@ -89,18 +72,81 @@ public final class TwCoordPreferenceFragmentAddressTest {
   }
 
   // ---------------------------------------------------------------------
-  // Case — all toggles off + no dataset → still hidden, summary "none"
+  // Any toggle on, no datasets anywhere → hint summary, clickable
   // ---------------------------------------------------------------------
   @Test
-  public void resolveDatasetStatus_allTogglesOffNoDataset_returnsHiddenStatus() {
+  public void resolveDatasetStatus_anyToggleOnNoDataset_returnsHintClickable() {
     StatusStrings strings = new StubStatusStrings();
 
     DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, /* anyToggleOn= */ false, null);
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, true, 0, null);
 
-    assertThat(result.summary()).isEqualTo("none");
-    assertThat(result.enabled()).isFalse();
-    assertThat(result.selectable()).isFalse();
+    assertThat(result.summary()).isEqualTo("hint");
+    assertThat(result.enabled()).isTrue();
+    assertThat(result.selectable()).isTrue();
+  }
+
+  // ---------------------------------------------------------------------
+  // Any toggle on, registry empty + legacy active (auto-migrate intermediate state)
+  // → "Active: county · data_date" summary
+  // ---------------------------------------------------------------------
+  @Test
+  public void resolveDatasetStatus_legacyActiveOnly_returnsActiveSummary() {
+    StatusStrings strings = new StubStatusStrings();
+    AddressDataset legacy = newDataset("Taichung", "2025-12-01");
+
+    DatasetStatusPresentation result =
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, true, 0, legacy);
+
+    assertThat(result.summary()).isEqualTo("Active: Taichung · 2025-12-01");
+    assertThat(result.enabled()).isTrue();
+    assertThat(result.selectable()).isTrue();
+  }
+
+  // ---------------------------------------------------------------------
+  // T042 — Any toggle on, registry has 1 county → multi-county summary (singular)
+  // ---------------------------------------------------------------------
+  @Test
+  public void resolveDatasetStatus_singleCountyActive_returnsMultiSummary() {
+    StatusStrings strings = new StubStatusStrings();
+
+    DatasetStatusPresentation result =
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, true, 1, null);
+
+    assertThat(result.summary()).isEqualTo("Multi: 1");
+    assertThat(result.enabled()).isTrue();
+    assertThat(result.selectable()).isTrue();
+  }
+
+  // ---------------------------------------------------------------------
+  // T042 — Any toggle on, registry has N > 1 counties → multi-county summary
+  // ---------------------------------------------------------------------
+  @Test
+  public void resolveDatasetStatus_multiCountyActive_returnsMultiSummary() {
+    StatusStrings strings = new StubStatusStrings();
+
+    DatasetStatusPresentation result =
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, true, 5, null);
+
+    assertThat(result.summary()).isEqualTo("Multi: 5");
+    assertThat(result.enabled()).isTrue();
+    assertThat(result.selectable()).isTrue();
+  }
+
+  // ---------------------------------------------------------------------
+  // T042 — Multi-county wins over legacy active (registry is the source of truth post-005)
+  // ---------------------------------------------------------------------
+  @Test
+  public void resolveDatasetStatus_multiCountyBeatsLegacyActive() {
+    StatusStrings strings = new StubStatusStrings();
+    AddressDataset legacy = newDataset("Taipei", "2025-11-15");
+
+    DatasetStatusPresentation result =
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, true, 2, legacy);
+
+    assertThat(result.summary()).isEqualTo("Multi: 2");
+    assertThat(result.enabled()).isTrue();
+    assertThat(result.selectable()).isTrue();
   }
 
   // ---------------------------------------------------------------------
@@ -124,7 +170,6 @@ public final class TwCoordPreferenceFragmentAddressTest {
             /* crs= */ null,
             /* insertedRows= */ -1L,
             raw);
-    // 64-char lowercase-hex placeholder — ImportedManifest validates the length.
     String sha = "deadbeef".repeat(8);
     ImportedManifest imported =
         new ImportedManifest(
@@ -152,6 +197,11 @@ public final class TwCoordPreferenceFragmentAddressTest {
     @Override
     public String datasetStatusActive(String county, String dataDate) {
       return "Active: " + county + " · " + dataDate;
+    }
+
+    @Override
+    public String datasetStatusActiveMulti(int countyCount) {
+      return "Multi: " + countyCount;
     }
   }
 }

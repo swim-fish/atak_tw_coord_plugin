@@ -3,6 +3,7 @@ package com.atakmap.android.twcoord.prefs;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import com.atakmap.android.twcoord.address.ConfidenceThresholds;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.gotopage.MarkerMode;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
@@ -54,6 +55,11 @@ public final class PreferenceStore {
   public static final String KEY_ADDRESS_ROW_TARGET = "pref_address_row_target";
   public static final String KEY_ADDRESS_ROW_MAP = "pref_address_row_map";
 
+  // Feature 005 (Phase 7 polish): operator-selectable preset for the tilde confidence indicator
+  // applied to address text. Stored as the enum name; fallback to TIGHT on missing/corrupt
+  // values keeps the 2026-05-27 device-verified default for upgrading installs.
+  public static final String KEY_ADDRESS_CONFIDENCE_PRESET = "pref_address_confidence_preset";
+
   private static final String TAG = "TwCoordPrefs";
 
   private final SharedPreferences sp;
@@ -80,7 +86,8 @@ public final class PreferenceStore {
                 || KEY_STALE_THRESHOLD.equals(key)
                 || KEY_ADDRESS_ROW_ME.equals(key)
                 || KEY_ADDRESS_ROW_TARGET.equals(key)
-                || KEY_ADDRESS_ROW_MAP.equals(key)) {
+                || KEY_ADDRESS_ROW_MAP.equals(key)
+                || KEY_ADDRESS_CONFIDENCE_PRESET.equals(key)) {
               fireAll();
             }
           }
@@ -100,7 +107,8 @@ public final class PreferenceStore {
         readStale(),
         getAddressRowMe(),
         getAddressRowTarget(),
-        getAddressRowMap());
+        getAddressRowMap(),
+        getConfidenceThresholds());
   }
 
   public void setCoordinateUnit(CoordinateUnit unit) {
@@ -310,5 +318,22 @@ public final class PreferenceStore {
 
   public void setAddressRowMap(boolean enabled) {
     sp.edit().putBoolean(KEY_ADDRESS_ROW_MAP, enabled).apply();
+  }
+
+  // ============================================================
+  // Feature 005 (Phase 7 polish) — confidence-indicator preset.
+  //
+  // Stored as the enum name (e.g. "TIGHT"). Missing or corrupt values fall back to TIGHT, which
+  // matches the 2026-05-27 device-verified 20 m / 100 m behaviour so upgrades see zero change.
+  // ============================================================
+
+  public ConfidenceThresholds getConfidenceThresholds() {
+    String s = sp.getString(KEY_ADDRESS_CONFIDENCE_PRESET, ConfidenceThresholds.TIGHT.name());
+    return ConfidenceThresholds.fromPrefValue(s);
+  }
+
+  public void setConfidenceThresholds(ConfidenceThresholds preset) {
+    Objects.requireNonNull(preset, "preset");
+    sp.edit().putString(KEY_ADDRESS_CONFIDENCE_PRESET, preset.name()).apply();
   }
 }

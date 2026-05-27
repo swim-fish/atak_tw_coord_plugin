@@ -76,6 +76,23 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   private final TextView valueRtreeBuilt;
   private final Button stateBReplaceBtn;
   private final Button stateBRemoveBtn;
+  // Feature 005 — State B "Import…" button so the operator can add more counties without
+  // having to Remove first. Same target as the State A Import button.
+  private final Button stateBImportBtn;
+  // Legacy single-active container views (hidden in the multi-county production path).
+  private final View legacyTable;
+  private final View legacyActions;
+
+  /**
+   * Feature 005 hook: bound after ctor via {@link #setBatchCoordinator(BatchImportCoordinator)}.
+   * When non-null, the Import button routes through {@link BatchImportCoordinator#enqueue} instead
+   * of the legacy single-file {@code importer.importFrom} path. The legacy path stays available as
+   * a fallback if the coordinator is null (e.g. JVM tests).
+   */
+  private BatchImportCoordinator batchCoordinator;
+
+  /** Last-seen batch session report (rebuilt on every {@code onBatchComplete} listener fire). */
+  private BatchImportReport lastBatchReport;
 
   public OfflineAddressReceiver(
       MapView mapView,
@@ -105,9 +122,15 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     this.valueRtreeBuilt = view.findViewById(R.id.offline_address_value_rtree_built);
     this.stateBReplaceBtn = view.findViewById(R.id.offline_address_state_b_replace);
     this.stateBRemoveBtn = view.findViewById(R.id.offline_address_state_b_remove);
+    this.stateBImportBtn = view.findViewById(R.id.offline_address_state_b_import);
+    this.legacyTable = view.findViewById(R.id.offline_address_state_b_legacy_table);
+    this.legacyActions = view.findViewById(R.id.offline_address_state_b_legacy_actions);
 
     if (stateAImportBtn != null) {
       stateAImportBtn.setOnClickListener(v -> safeRun(this::launchPicker));
+    }
+    if (stateBImportBtn != null) {
+      stateBImportBtn.setOnClickListener(v -> safeRun(this::launchPicker));
     }
     if (stateBReplaceBtn != null) {
       stateBReplaceBtn.setOnClickListener(v -> safeRun(this::confirmReplace));
@@ -168,12 +191,84 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   // Binding (State A vs State B)
   // ----------------------------------------------------------------------
 
+  /** Feature 005: bound after ctor — when non-null the page renders the multi-county list. */
+  private ActiveDatasetRegistry registry;
+
+  public void setRegistry(ActiveDatasetRegistry registry) {
+    this.registry = registry;
+  }
+
+  /**
+   * Container for the dynamic per-county row list. Resolved lazily on first bind so the receiver
+   * still works against the legacy offline_address_page.xml that doesn't have the container.
+   */
+  private android.widget.LinearLayout countyList;
+
   private void bindFromActiveDataset() {
+    if (registry != null) {
+      java.util.Map<String, CountyActiveDataset> snap = registry.snapshot();
+      if (snap.isEmpty()) {
+        bindStateA();
+      } else {
+        bindStateBMultiCounty(snap);
+      }
+      return;
+    }
+    // Legacy single-active fallback (no registry bound — e.g. JVM tests).
     AddressDataset active = importer.activeOrNull();
     if (active == null) {
       bindStateA();
     } else {
       bindStateB(active);
+    }
+  }
+
+  private void bindStateBMultiCounty(java.util.Map<String, CountyActiveDataset> snap) {
+    if (stateAGroup != null) stateAGroup.setVisibility(View.GONE);
+    if (stateBGroup != null) stateBGroup.setVisibility(View.VISIBLE);
+    // Defensive: ensure the legacy single-active block is hidden when rendering the per-county
+    // list (an earlier bindStateB call before the registry was bound can leave it visible).
+    if (legacyTable != null) legacyTable.setVisibility(View.GONE);
+    if (legacyActions != null) legacyActions.setVisibility(View.GONE);
+    if (countyList == null) {
+      countyList = view.findViewById(R.id.offline_address_state_b_list);
+    }
+    if (countyList == null) {
+      // Layout doesn't have the new container (very-old layout cache); fall back to single-active
+      // rendering of the first entry so the user still sees something useful.
+      java.util.Iterator<CountyActiveDataset> it = snap.values().iterator();
+      if (it.hasNext()) bindStateB(it.next().dataset());
+      return;
+    }
+    countyList.removeAllViews();
+    LayoutInflater inflater = LayoutInflater.from(pluginContext);
+    for (CountyActiveDataset entry : snap.values()) {
+      try {
+        View row = inflater.inflate(R.layout.offline_address_county_row, countyList, false);
+        TextView nameView = row.findViewById(R.id.offline_address_county_name);
+        TextView summaryView = row.findViewById(R.id.offline_address_county_summary);
+        Button replaceBtn = row.findViewById(R.id.offline_address_county_replace);
+        Button removeBtn = row.findViewById(R.id.offline_address_county_remove);
+        GeneratorMetadata gm = entry.dataset().generator();
+        if (nameView != null) nameView.setText(nonNull(gm.county()));
+        if (summaryView != null) {
+          summaryView.setText(
+              pluginContext.getString(
+                  R.string.pref_address_active_dataset_row_format,
+                  nonNull(gm.dataDate()),
+                  gm.insertedRows() >= 0 ? gm.insertedRows() : 0L));
+        }
+        final String county = entry.county();
+        if (replaceBtn != null) {
+          replaceBtn.setOnClickListener(v -> safeRun(() -> confirmReplaceCounty(county)));
+        }
+        if (removeBtn != null) {
+          removeBtn.setOnClickListener(v -> safeRun(() -> confirmRemoveCounty(county)));
+        }
+        countyList.addView(row);
+      } catch (Throwable t) {
+        Log.w(TAG, "inflate county row " + entry.county() + " threw", t);
+      }
     }
   }
 
@@ -185,6 +280,9 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   private void bindStateB(AddressDataset active) {
     if (stateAGroup != null) stateAGroup.setVisibility(View.GONE);
     if (stateBGroup != null) stateBGroup.setVisibility(View.VISIBLE);
+    // Legacy single-active path — flip the gone-by-default metadata table + button row visible.
+    if (legacyTable != null) legacyTable.setVisibility(View.VISIBLE);
+    if (legacyActions != null) legacyActions.setVisibility(View.VISIBLE);
     GeneratorMetadata gm = active.generator();
     ImportedManifest im = active.imported();
     if (valueCounty != null) valueCounty.setText(nonNull(gm.county()));
@@ -203,6 +301,14 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   // File picker (ATAK SDK in-process dialog) + import worker
   // ----------------------------------------------------------------------
 
+  /** Feature 005: bind the batch coordinator after ctor (called from TwCoordMapComponent). */
+  public void setBatchCoordinator(BatchImportCoordinator coordinator) {
+    this.batchCoordinator = coordinator;
+    if (coordinator != null) {
+      coordinator.addListener(batchListener);
+    }
+  }
+
   private void launchPicker() {
     if (importInFlight.get()) {
       Log.d(TAG, "import already in flight; ignoring Import button");
@@ -213,7 +319,9 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     // helloworld sample (HelloWorldDropDownReceiver.sampleFileBrowser, line 3657).
     Context atakCtx = getMapView().getContext();
     ImportFileBrowserDialog dialog = new ImportFileBrowserDialog(atakCtx);
-    dialog.setExtensionTypes("sqlite", "db");
+    // Feature 005: accept .zip in addition to .sqlite / .db. The BatchImportCoordinator
+    // dispatches each picked file based on its extension.
+    dialog.setExtensionTypes("sqlite", "db", "zip");
     dialog.setTitle(pluginContext.getString(R.string.offline_address_button_import));
     dialog.setOnDismissListener(
         new ImportFileBrowserDialog.DialogDismissed() {
@@ -239,6 +347,95 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     dialog.show();
   }
 
+  /** Listener that fans batch-progress events back to the page UI thread. */
+  private final BatchImportCoordinator.Listener batchListener =
+      new BatchImportCoordinator.Listener() {
+        @Override
+        public void onEntryStarted(BatchImportReport.Entry entry) {
+          ui.post(() -> renderInflight(entry));
+        }
+
+        @Override
+        public void onEntryFinished(BatchImportReport.Entry entry) {
+          ui.post(() -> renderEntryFinished(entry));
+        }
+
+        @Override
+        public void onBatchComplete(BatchImportReport report) {
+          ui.post(
+              () -> {
+                lastBatchReport = report;
+                importInFlight.set(false);
+                renderBatchSummary(report);
+                bindFromActiveDataset();
+                // Auto-hide the progress chip after the summary has been visible briefly,
+                // BUT only when the batch fully succeeded. Failures stay visible so the
+                // operator notices them. 3 s is roughly the time it takes to read the
+                // summary line.
+                if (report.failedCount() == 0) {
+                  ui.postDelayed(this::hideProgressFromBatchComplete, 3000L);
+                }
+              });
+        }
+
+        private void hideProgressFromBatchComplete() {
+          try {
+            hideProgress();
+          } catch (Throwable t) {
+            Log.w(TAG, "hideProgress (delayed) threw", t);
+          }
+        }
+      };
+
+  private void renderInflight(BatchImportReport.Entry entry) {
+    if (progressView == null) return;
+    String county = entry.county() != null ? entry.county() : entry.filename();
+    progressView.setText(
+        pluginContext.getString(R.string.offline_address_entry_status_extracting) + " — " + county);
+    progressView.setVisibility(View.VISIBLE);
+  }
+
+  private void renderEntryFinished(BatchImportReport.Entry entry) {
+    if (progressView == null) return;
+    String county = entry.county() != null ? entry.county() : entry.filename();
+    int strId;
+    switch (entry.status()) {
+      case ACTIVATED:
+        strId = R.string.offline_address_entry_status_activated;
+        break;
+      case REPLACED:
+        strId = R.string.offline_address_entry_status_activated;
+        break;
+      case SKIPPED_SUPPLEMENTARY:
+        strId = R.string.offline_address_entry_status_skipped_supplementary;
+        break;
+      case SKIPPED_DUPLICATE:
+        strId = R.string.offline_address_entry_status_skipped_duplicate;
+        break;
+      case SKIPPED_COUNTY_MISMATCH:
+      case FAILED:
+      default:
+        strId = R.string.offline_address_entry_status_failed;
+        break;
+    }
+    progressView.setText(pluginContext.getString(strId) + " — " + county);
+  }
+
+  private void renderBatchSummary(BatchImportReport report) {
+    if (progressView == null) return;
+    String summary =
+        pluginContext.getString(
+            R.string.offline_address_batch_done,
+            report.activatedCount(),
+            report.replacedCount(),
+            report.skippedCount(),
+            report.failedCount());
+    progressView.setText(summary);
+    if (report.failedCount() > 0) {
+      progressView.setVisibility(View.VISIBLE);
+    }
+  }
+
   /**
    * Run import on a picked {@link File}. Opens the {@link FileInputStream} on the calling thread,
    * then hands the already-open stream to the worker (mirrors the worker contract the SAF-broadcast
@@ -250,6 +447,20 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       return;
     }
     clearError();
+    // Feature 005: prefer the batch coordinator (handles .zip + multi-county + bare .sqlite).
+    if (batchCoordinator != null) {
+      showProgress(pluginContext.getString(R.string.offline_address_entry_status_extracting));
+      try {
+        batchCoordinator.enqueue(file);
+        batchCoordinator.finishBatch();
+      } catch (Throwable t) {
+        Log.w(TAG, "batchCoordinator.enqueue threw", t);
+        importInFlight.set(false);
+        hideProgress();
+        showError(t.getMessage() == null ? "enqueue failed" : t.getMessage());
+      }
+      return;
+    }
     showProgress(pluginContext.getString(R.string.offline_address_progress_copying, 0));
     final InputStream stream;
     try {
@@ -384,6 +595,65 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   // ----------------------------------------------------------------------
   // Replace + Remove flows
   // ----------------------------------------------------------------------
+
+  /**
+   * Feature 005 US2 per-county Replace. Opens the picker; on success the BatchImportCoordinator
+   * imports the file with strict county-match against {@code countyExpected}; on mismatch the
+   * coordinator's BatchImportReport surfaces SKIPPED_COUNTY_MISMATCH which the listener renders as
+   * an inline error.
+   */
+  private void confirmReplaceCounty(String countyExpected) {
+    if (countyExpected == null) return;
+    String msg = pluginContext.getString(R.string.offline_address_confirm_replace, countyExpected);
+    new AlertDialog.Builder(getMapView().getContext())
+        .setTitle(R.string.offline_address_button_replace)
+        .setMessage(msg)
+        .setPositiveButton(
+            android.R.string.ok,
+            (d, w) -> safeRun(this::launchPicker)) // picker → coordinator → strict county-match
+        .setNegativeButton(android.R.string.cancel, null)
+        .show();
+  }
+
+  /** Feature 005 US2 per-county Remove. */
+  private void confirmRemoveCounty(String county) {
+    if (county == null) return;
+    String msg = pluginContext.getString(R.string.offline_address_confirm_remove, county);
+    new AlertDialog.Builder(getMapView().getContext())
+        .setTitle(R.string.offline_address_button_remove)
+        .setMessage(msg)
+        .setPositiveButton(
+            android.R.string.ok,
+            (d, w) ->
+                safeRun(
+                    () -> {
+                      importExecutor.execute(
+                          () -> {
+                            try {
+                              importer.removeActive(county);
+                              if (registry != null) {
+                                registry.remove(county);
+                              }
+                            } catch (Throwable t) {
+                              Log.w(TAG, "removeActive(" + county + ") threw", t);
+                            }
+                            ui.post(
+                                () -> {
+                                  try {
+                                    bindFromActiveDataset();
+                                    AtakBroadcast.getInstance()
+                                        .sendBroadcast(
+                                            new Intent(
+                                                OfflineAddressIntents.ACTION_DATASET_CHANGED));
+                                  } catch (Throwable t) {
+                                    Log.w(TAG, "post-remove UI bind threw", t);
+                                  }
+                                });
+                          });
+                    }))
+        .setNegativeButton(android.R.string.cancel, null)
+        .show();
+  }
 
   private void confirmReplace() {
     AddressDataset active = importer.activeOrNull();

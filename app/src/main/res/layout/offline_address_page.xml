@@ -65,7 +65,7 @@
             android:text="@string/offline_address_button_import"/>
     </LinearLayout>
 
-    <!-- State B — active dataset. -->
+    <!-- State B — one or more active datasets (Feature 005). -->
     <LinearLayout
         android:id="@+id/offline_address_state_b"
         android:layout_width="match_parent"
@@ -73,11 +73,40 @@
         android:orientation="vertical"
         android:visibility="gone">
 
-        <!-- Metadata table (label + value pairs). -->
-        <TableLayout
+        <!-- Feature 005: multi-county dynamic list. The receiver inflates one
+             R.layout.offline_address_county_row per active county into this container. -->
+        <ScrollView
+            android:id="@+id/offline_address_state_b_scroll"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:stretchColumns="1">
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:id="@+id/offline_address_state_b_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"/>
+        </ScrollView>
+
+        <!-- Feature 005 — Import button stays available in State B so the operator can add more
+             counties / ZIPs without going through Remove first. Same target as the State A Import
+             button (launchPicker → BatchImportCoordinator); the coordinator enqueues mid-flight
+             picks per the Clarifications Q1 + Q3 chained-picker UX. -->
+        <Button
+            android:id="@+id/offline_address_state_b_import"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/offline_address_button_import"/>
+
+        <!-- Legacy single-active metadata table — only shown by the receiver when no registry
+             is bound (e.g. JVM tests). Hidden by default; bindStateB(active) flips visible. -->
+        <TableLayout
+            android:id="@+id/offline_address_state_b_legacy_table"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stretchColumns="1"
+            android:visibility="gone">
 
             <TableRow>
                 <TextView android:text="@string/offline_address_field_county" android:paddingRight="12dp"/>
@@ -113,12 +142,15 @@
             </TableRow>
         </TableLayout>
 
-        <!-- Replace + Remove action row. -->
+        <!-- Legacy single-active Replace + Remove action row — twin of the legacy TableLayout
+             above; hidden in production where the per-county rows have their own buttons. -->
         <LinearLayout
+            android:id="@+id/offline_address_state_b_legacy_actions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingTop="16dp">
+            android:paddingTop="16dp"
+            android:visibility="gone">
 
             <Button
                 android:id="@+id/offline_address_state_b_replace"

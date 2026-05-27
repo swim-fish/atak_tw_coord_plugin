@@ -2,7 +2,10 @@ package com.atakmap.android.twcoord.address;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * JVM-mockable seam over the subset of filesystem operations {@link AddressBundleImporter} uses.
@@ -54,4 +57,33 @@ public interface FileSystem {
 
   /** True if {@code path} exists (file or directory). */
   boolean exists(Path path);
+
+  // ----------------------------------------------------------------------
+  // Feature 005: per-county helpers. Default impls derive from getActiveDir() so existing
+  // implementations (e.g. TempFileSystem in AddressBundleImporterTest) don't need to be
+  // touched. AtakFileSystem may override createCountyStagingDir to embed the county in the
+  // directory name (`.staging-<county>-<uuid>/`) for readable log/debug output.
+  // ----------------------------------------------------------------------
+
+  /** {@code active/<county>/} — the per-county sub-directory under the active root. */
+  default Path activeCountyDir(String county) {
+    Objects.requireNonNull(county, "county");
+    return getActiveDir().resolve(county);
+  }
+
+  /**
+   * Create a fresh, empty per-county staging directory. The implementation embeds the county name
+   * (sanitised) and a random UUID in the directory name so a partially-completed import is
+   * identifiable on disk during debugging and gets swept by {@code sweepOrphanStagingDirs} on next
+   * plugin start.
+   */
+  default Path createCountyStagingDir(String county) throws IOException {
+    Objects.requireNonNull(county, "county");
+    Path parent = getActiveDir().getParent();
+    if (parent == null) parent = getActiveDir();
+    String safe = county.replaceAll("[^\\p{L}\\p{N}_-]", "_");
+    Path p = parent.resolve(".staging-" + safe + "-" + UUID.randomUUID());
+    Files.createDirectories(p);
+    return p;
+  }
 }

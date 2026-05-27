@@ -171,4 +171,33 @@
     <string name="widget_address_loading">查詢地址中…</string>
     <string name="widget_address_empty_state">附近沒有可對應的地址</string>
 
+    <!-- Feature 005: 多縣市 + ZIP 批次匯入。 -->
+    <string name="offline_address_button_continue_adding">繼續加入</string>
+    <string name="offline_address_button_done">完成</string>
+    <string name="offline_address_button_cancel_batch">取消本批</string>
+    <string name="offline_address_batch_in_flight_format">待處理 %1$d 個</string>
+    <string name="offline_address_batch_done">已啟用 %1$d · 已替換 %2$d · 略過 %3$d · 失敗 %4$d</string>
+    <string name="offline_address_entry_status_extracting">解壓中…</string>
+    <string name="offline_address_entry_status_validating">驗證中…</string>
+    <string name="offline_address_entry_status_activated">已啟用</string>
+    <string name="offline_address_entry_status_skipped_supplementary">略過：補充檔</string>
+    <string name="offline_address_entry_status_skipped_duplicate">略過：重複</string>
+    <string name="offline_address_entry_status_failed">失敗</string>
+    <string name="offline_address_error_zip_no_valid_datasets">此 ZIP 不含任何 places-&lt;county&gt;.sqlite。v1.0.6 僅支援逐縣市的地址資料集；townships / roads / OSM 屬於 feature 006+。</string>
+    <string name="offline_address_error_county_mismatch_format">選擇的檔案是 %1$s，無法替換 %2$s。請改用「移除」與「匯入」來切換縣市。</string>
+    <string name="offline_address_total_disk_usage_format">共佔用 %1$s</string>
+    <string name="pref_address_active_dataset_row_format">%1$s · %2$d 筆</string>
+
+    <!-- Phase 7 T042 — 動態 per-county 列表。 -->
+    <string name="pref_address_active_datasets_header">使用中的資料集</string>
+    <string name="pref_address_dataset_status_summary_multi_format">已啟用 %1$d 個縣市 — 點此開啟離線地址</string>
+
+    <!-- Feature 005 polish — 信心指示器預設。 -->
+    <string name="pref_address_confidence_preset_title">信心指示器</string>
+    <string name="pref_address_confidence_preset_summary">當最近的紀錄距離查詢點較遠時，在地址前加上 ~ / ~~ 提示。</string>
+    <string name="opt_confidence_off">關閉（不加前綴）</string>
+    <string name="opt_confidence_tight">嚴格（~ 20 公尺 / ~~ 100 公尺）</string>
+    <string name="opt_confidence_standard">標準（~ 50 公尺 / ~~ 200 公尺）</string>
+    <string name="opt_confidence_loose">寬鬆（~ 100 公尺 / ~~ 500 公尺）</string>
+
 </resources>

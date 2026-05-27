@@ -205,4 +205,59 @@
     <string name="widget_address_loading">Loading address…</string>
     <string name="widget_address_empty_state">No address nearby</string>
 
+    <!-- Feature 005: multi-county + ZIP bundle import. -->
+
+    <!-- Chained-picker batch session UX (Clarifications Q1 + Q3). -->
+    <string name="offline_address_button_continue_adding">Add more</string>
+    <string name="offline_address_button_done">Done</string>
+    <string name="offline_address_button_cancel_batch">Cancel batch</string>
+    <!-- %1$d = queued item count -->
+    <string name="offline_address_batch_in_flight_format">%1$d queued</string>
+    <!-- %1$d activated, %2$d replaced, %3$d skipped, %4$d failed -->
+    <string name="offline_address_batch_done">Activated %1$d · Replaced %2$d · Skipped %3$d · Failed %4$d</string>
+
+    <!-- Per-entry status labels (BatchImportReport.Entry.Status). -->
+    <string name="offline_address_entry_status_extracting">Extracting…</string>
+    <string name="offline_address_entry_status_validating">Validating…</string>
+    <string name="offline_address_entry_status_activated">Activated</string>
+    <string name="offline_address_entry_status_skipped_supplementary">Skipped (supplementary)</string>
+    <string name="offline_address_entry_status_skipped_duplicate">Skipped (duplicate)</string>
+    <string name="offline_address_entry_status_failed">Failed</string>
+
+    <!-- New error reasons for the ZIP / per-county Replace paths. -->
+    <string name="offline_address_error_zip_no_valid_datasets">This ZIP contains no places-&lt;county&gt;.sqlite. v1.0.6 only consumes per-county place datasets; townships / roads / OSM landmarks are feature 006+.</string>
+    <!-- %1$s = picked file's county, %2$s = row's expected county -->
+    <string name="offline_address_error_county_mismatch_format">Picked file is %1$s; cannot Replace %2$s. Use Remove + Import to swap counties.</string>
+
+    <!-- Page footer: total disk usage across all active counties. -->
+    <!-- %1$s = formatted total size (e.g. "789 MB") -->
+    <string name="offline_address_total_disk_usage_format">Total: %1$s on disk</string>
+
+    <!-- Settings: per-county status row format. -->
+    <!-- %1$s = data_date, %2$d = inserted row count -->
+    <string name="pref_address_active_dataset_row_format">%1$s · %2$d rows</string>
+
+    <!-- Phase 7 T042 — header for the dynamically-populated per-county dataset list. -->
+    <string name="pref_address_active_datasets_header">Active datasets</string>
+    <!-- Status row summary when one or more counties are active. %1$d = county count.
+         Used in the multi-county world (v1.0.6+); the legacy single-active summary
+         (pref_address_dataset_status_summary_active_format) remains for the auto-migrate
+         intermediate state and v1.0.5 fallback. -->
+    <string name="pref_address_dataset_status_summary_multi_format">%1$d counties active — tap to open Offline Address</string>
+
+    <!-- Feature 005 polish — confidence-indicator preset.
+         Summary is overridden at runtime by TwCoordPreferenceFragment with a live preview
+         (preset label + the m / m threshold pair). The default below is only seen on first
+         render before refreshAllSummaries() lands. -->
+    <string name="pref_address_confidence_preset_title">Confidence indicator</string>
+    <string name="pref_address_confidence_preset_summary">Prefix the address with ~ / ~~ when the nearest record is far from the query point.</string>
+
+    <!-- Option labels. The "(~ <m> / ~~ <m>)" suffixes mirror the actual thresholds so the
+         operator can pick without opening Help; TwCoordPreferenceFragment uses the selected
+         entry directly as the collapsed-view summary. -->
+    <string name="opt_confidence_off">Off (no prefix)</string>
+    <string name="opt_confidence_tight">Tight (~ 20 m / ~~ 100 m)</string>
+    <string name="opt_confidence_standard">Standard (~ 50 m / ~~ 200 m)</string>
+    <string name="opt_confidence_loose">Loose (~ 100 m / ~~ 500 m)</string>
+
 </resources>

@@ -1,5 +1,6 @@
 package com.atakmap.android.twcoord.prefs;
 
+import com.atakmap.android.twcoord.address.ConfidenceThresholds;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
 import java.util.Objects;
@@ -11,6 +12,7 @@ public final class UserPreference {
   private final boolean addressRowMe;
   private final boolean addressRowTarget;
   private final boolean addressRowMap;
+  private final ConfidenceThresholds confidenceThresholds;
 
   public UserPreference(
       CoordinateUnit coordUnit,
@@ -18,7 +20,8 @@ public final class UserPreference {
       long staleFixThresholdMs,
       boolean addressRowMe,
       boolean addressRowTarget,
-      boolean addressRowMap) {
+      boolean addressRowMap,
+      ConfidenceThresholds confidenceThresholds) {
     this.coordUnit = Objects.requireNonNull(coordUnit, "coordUnit");
     this.uiLanguage = Objects.requireNonNull(uiLanguage, "uiLanguage");
     if (staleFixThresholdMs <= 0) {
@@ -28,6 +31,8 @@ public final class UserPreference {
     this.addressRowMe = addressRowMe;
     this.addressRowTarget = addressRowTarget;
     this.addressRowMap = addressRowMap;
+    this.confidenceThresholds =
+        Objects.requireNonNull(confidenceThresholds, "confidenceThresholds");
   }
 
   public CoordinateUnit coordUnit() {
@@ -54,6 +59,10 @@ public final class UserPreference {
     return addressRowMap;
   }
 
+  public ConfidenceThresholds confidenceThresholds() {
+    return confidenceThresholds;
+  }
+
   public static UserPreference defaults() {
     return new UserPreference(
         CoordinateUnit.TWD97,
@@ -61,6 +70,7 @@ public final class UserPreference {
         10_000L,
         /* addressRowMe= */ false,
         /* addressRowTarget= */ false,
-        /* addressRowMap= */ false);
+        /* addressRowMap= */ false,
+        ConfidenceThresholds.TIGHT);
   }
 }

@@ -7,10 +7,14 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
+import android.preference.PreferenceCategory;
 import com.atakmap.android.ipc.AtakBroadcast;
 import com.atakmap.android.preference.PluginPreferenceFragment;
+import com.atakmap.android.twcoord.address.ActiveDatasetRegistry;
 import com.atakmap.android.twcoord.address.AddressBundleImporter;
 import com.atakmap.android.twcoord.address.AddressDataset;
+import com.atakmap.android.twcoord.address.ConfidenceThresholds;
+import com.atakmap.android.twcoord.address.CountyActiveDataset;
 import com.atakmap.android.twcoord.address.OfflineAddressIntents;
 import com.atakmap.android.twcoord.coord.ConversionResult;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
@@ -45,6 +49,9 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
 
   /** Settable in tests so Robolectric can inject a stub importer without spinning up the map. */
   private AddressImporterProvider addressImporterProvider = TwCoordMapComponent::getAddressImporter;
+
+  /** Settable in tests so the per-county list can be JVM-tested without the map component. */
+  private RegistryProvider addressRegistryProvider = TwCoordMapComponent::getAddressRegistry;
 
   // Taipei 101 — the canonical reference point. Cheap to convert, easy to spot-check.
   private static final double SAMPLE_LAT = 25.033611;
@@ -178,23 +185,69 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
     Preference map = findPreference("pref_address_row_map");
     if (map != null) map.setSummary(wrapped.getString(R.string.pref_address_row_map_summary));
 
+    refreshConfidencePresetSummary(wrapped);
     refreshAddressDatasetStatus(wrapped);
+    refreshActiveDatasetsCategory(wrapped);
   }
 
   /**
-   * Reads {@link AddressBundleImporter#activeOrNull()} lazily and updates the status row's summary
-   * + clickability per the three states in {@code contracts/address-preferences.md § Dataset
-   * presence summary table}:
+   * Feature 005 polish — keep the confidence-preset row's title + entries + summary aligned with
+   * the current UI-language override. The summary echoes the selected entry label (which itself
+   * encodes the threshold pair like "嚴格（~ 20 公尺 / ~~ 100 公尺）"), so the operator sees the active
+   * thresholds at a glance without opening the dialog.
+   */
+  private void refreshConfidencePresetSummary(Context wrapped) {
+    setPreferenceTitle(
+        "pref_address_confidence_preset",
+        wrapped.getString(R.string.pref_address_confidence_preset_title));
+    ListPreference pref = (ListPreference) findPreference("pref_address_confidence_preset");
+    if (pref == null) return;
+    // Re-set entries from the wrapped context so the dialog list rows also translate.
+    pref.setEntries(wrapped.getResources().getStringArray(R.array.confidence_preset_entries));
+    String value = pref.getValue();
+    if (value == null) value = ConfidenceThresholds.TIGHT.name();
+    ConfidenceThresholds preset = ConfidenceThresholds.fromPrefValue(value);
+    CharSequence entry = pref.getEntry();
+    if (entry == null) {
+      // No entries bound yet (first paint) — derive a sane fallback from the preset.
+      int fallbackId;
+      switch (preset) {
+        case OFF:
+          fallbackId = R.string.opt_confidence_off;
+          break;
+        case STANDARD:
+          fallbackId = R.string.opt_confidence_standard;
+          break;
+        case LOOSE:
+          fallbackId = R.string.opt_confidence_loose;
+          break;
+        case TIGHT:
+        default:
+          fallbackId = R.string.opt_confidence_tight;
+          break;
+      }
+      entry = wrapped.getString(fallbackId);
+    }
+    pref.setSummary(entry);
+  }
+
+  /**
+   * Reads the {@link ActiveDatasetRegistry} snapshot (multi-county; Feature 005) with a {@link
+   * AddressBundleImporter#activeOrNull()} fallback for the v1.0.5 intermediate state and updates
+   * the status row's summary + clickability per the four-state truth table in {@code
+   * contracts/address-preferences.md § Dataset presence summary table} (extended in 005):
    *
    * <ul>
    *   <li>all three switches off → hide the row (disabled + non-selectable)
-   *   <li>at least one switch on, no dataset → "No dataset installed — tap to open Offline Address"
-   *   <li>at least one switch on, dataset active → "Active: &lt;county&gt; · &lt;data_date&gt;"
+   *   <li>at least one switch on, registry has N ≥ 1 counties → "N counties active — tap to open"
+   *   <li>at least one switch on, registry empty, legacy active dataset → "Active: &lt;county&gt; ·
+   *       &lt;data_date&gt;" (auto-migrate intermediate state)
+   *   <li>at least one switch on, nothing active anywhere → "No dataset — tap to open"
    * </ul>
    *
-   * <p>Wrapped per Constitution VI: any exception (e.g. importer not yet built because the map
-   * component hasn't run {@code onCreate}) is logged at {@code Log.w} and treated as "no dataset"
-   * (the more conservative summary).
+   * <p>Wrapped per Constitution VI: any exception (e.g. importer/registry not yet built because the
+   * map component hasn't run {@code onCreate}) is logged at {@code Log.w} and treated as "no
+   * dataset" (the most conservative summary).
    */
   private void refreshAddressDatasetStatus(Context wrapped) {
     Preference status = findPreference("pref_address_dataset_status");
@@ -203,10 +256,21 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
       status.setTitle(wrapped.getString(R.string.pref_address_dataset_status_title));
 
       boolean anyToggleOn = anyAddressToggleOn();
-      AddressBundleImporter importer = addressImporterProvider.get();
-      AddressDataset active = importer != null ? importer.activeOrNull() : null;
+      int activeCountyCount = 0;
+      try {
+        ActiveDatasetRegistry registry = addressRegistryProvider.get();
+        if (registry != null) activeCountyCount = registry.snapshot().size();
+      } catch (Throwable t) {
+        Log.w(TAG, "registry snapshot threw", t);
+      }
+      AddressDataset legacyActive = null;
+      if (activeCountyCount == 0) {
+        AddressBundleImporter importer = addressImporterProvider.get();
+        legacyActive = importer != null ? importer.activeOrNull() : null;
+      }
       DatasetStatusPresentation p =
-          resolveDatasetStatus(new ResourceStatusStrings(wrapped), anyToggleOn, active);
+          resolveDatasetStatus(
+              new ResourceStatusStrings(wrapped), anyToggleOn, activeCountyCount, legacyActive);
       status.setEnabled(p.enabled());
       status.setSelectable(p.selectable());
       status.setSummary(p.summary());
@@ -221,27 +285,66 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
   }
 
   /**
-   * Pure-logic helper extracted for JVM testability. Decides the status row's summary text +
-   * enabled/selectable flags from the three inputs in {@code contracts/address-preferences.md §
-   * Dataset presence summary table}:
+   * Pure-logic helper extracted for JVM testability. See {@link #refreshAddressDatasetStatus} for
+   * the four-state truth table.
    *
-   * <ul>
-   *   <li>all three switches off → hide the row (disabled + non-selectable)
-   *   <li>at least one switch on, no dataset → "No dataset installed — tap to open Offline Address"
-   *   <li>at least one switch on, dataset active → "Active: &lt;county&gt; · &lt;data_date&gt;"
-   * </ul>
+   * <p>The multi-county path wins over the legacy single-active path: once {@code activeCountyCount
+   * > 0}, {@code legacyActive} is ignored. This matches the AddressSubsystem's preference for the
+   * registry once it has been bound.
    */
   static DatasetStatusPresentation resolveDatasetStatus(
-      StatusStrings strings, boolean anyToggleOn, AddressDataset active) {
+      StatusStrings strings,
+      boolean anyToggleOn,
+      int activeCountyCount,
+      AddressDataset legacyActive) {
     if (!anyToggleOn) {
       return new DatasetStatusPresentation(strings.datasetStatusNone(), false, false);
     }
-    if (active == null) {
-      return new DatasetStatusPresentation(strings.datasetStatusHint(), true, true);
+    if (activeCountyCount > 0) {
+      return new DatasetStatusPresentation(
+          strings.datasetStatusActiveMulti(activeCountyCount), true, true);
     }
-    String summary =
-        strings.datasetStatusActive(active.generator().county(), active.generator().dataDate());
-    return new DatasetStatusPresentation(summary, true, true);
+    if (legacyActive != null) {
+      return new DatasetStatusPresentation(
+          strings.datasetStatusActive(
+              legacyActive.generator().county(), legacyActive.generator().dataDate()),
+          true,
+          true);
+    }
+    return new DatasetStatusPresentation(strings.datasetStatusHint(), true, true);
+  }
+
+  /**
+   * Phase 7 T042 — populate the per-county list under the {@code pref_address_active_datasets}
+   * category from {@link ActiveDatasetRegistry#snapshot()}. Each row is non-selectable
+   * (informational); the operator manages datasets via the Offline Address page reachable from the
+   * status row above. Wrapped per Constitution VI: registry failures degrade to an empty category
+   * rather than crashing the preferences fragment.
+   */
+  private void refreshActiveDatasetsCategory(Context wrapped) {
+    Preference catRef = findPreference("pref_address_active_datasets");
+    if (!(catRef instanceof PreferenceCategory)) return;
+    PreferenceCategory category = (PreferenceCategory) catRef;
+    category.setTitle(wrapped.getString(R.string.pref_address_active_datasets_header));
+    category.removeAll();
+    try {
+      ActiveDatasetRegistry registry = addressRegistryProvider.get();
+      if (registry == null) return;
+      for (CountyActiveDataset entry : registry.snapshot().values()) {
+        Preference row = new Preference(pluginContext);
+        row.setLayoutResource(R.layout.pref_item);
+        row.setTitle(entry.county());
+        row.setSummary(
+            wrapped.getString(
+                R.string.pref_address_active_dataset_row_format,
+                entry.dataset().generator().dataDate(),
+                entry.dataset().generator().insertedRows()));
+        row.setSelectable(false);
+        category.addPreference(row);
+      }
+    } catch (Throwable t) {
+      Log.w(TAG, "refreshActiveDatasetsCategory threw", t);
+    }
   }
 
   private boolean anyAddressToggleOn() {
@@ -263,6 +366,9 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
     String datasetStatusHint();
 
     String datasetStatusActive(String county, String dataDate);
+
+    /** Phase 7 T042 — used when the multi-county registry has one or more active counties. */
+    String datasetStatusActiveMulti(int countyCount);
   }
 
   /** Production {@link StatusStrings} impl reading from the wrapped {@link Context}'s resources. */
@@ -288,6 +394,11 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
       return ctx.getString(
           R.string.pref_address_dataset_status_summary_active_format, county, dataDate);
     }
+
+    @Override
+    public String datasetStatusActiveMulti(int countyCount) {
+      return ctx.getString(R.string.pref_address_dataset_status_summary_multi_format, countyCount);
+    }
   }
 
   /**
@@ -300,6 +411,15 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
 
   void setAddressImporterProvider(AddressImporterProvider provider) {
     this.addressImporterProvider = provider != null ? provider : () -> null;
+  }
+
+  /** Phase 7 T042 test seam — mirrors {@link AddressImporterProvider} for the registry. */
+  interface RegistryProvider {
+    ActiveDatasetRegistry get();
+  }
+
+  void setAddressRegistryProvider(RegistryProvider provider) {
+    this.addressRegistryProvider = provider != null ? provider : () -> null;
   }
 
   private void setPreferenceTitle(String key, CharSequence title) {

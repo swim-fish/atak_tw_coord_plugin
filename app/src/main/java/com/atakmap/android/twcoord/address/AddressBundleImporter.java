@@ -96,11 +96,32 @@ public final class AddressBundleImporter {
   // ----------------------------------------------------------------------
 
   public ImportResult importFrom(InputStream picked, ProgressListener rawListener) {
+    return importCore(picked, /* county= */ null, rawListener);
+  }
+
+  /**
+   * Feature 005 per-county overload. Stages the import into {@code .staging-<county>-<uuid>/} and
+   * activates into {@code active/<county>/} instead of the single-active layout. Called by {@code
+   * BatchImportCoordinator} after {@code ZipExtractor} has identified the county from the ZIP entry
+   * name; or by the per-county Replace flow when the operator picks a bare {@code
+   * places-<county>.sqlite} for an existing row.
+   *
+   * <p>County-string match (FR-007 — picked file's {@code metadata.county} MUST equal {@code
+   * county}) is the caller's responsibility — this method just lays bytes into the target dir.
+   * Caller compares {@code result.dataset().generator().county()} against expected after success.
+   */
+  public ImportResult importFromInto(
+      InputStream picked, String county, ProgressListener rawListener) {
+    Objects.requireNonNull(county, "county");
+    return importCore(picked, county, rawListener);
+  }
+
+  private ImportResult importCore(InputStream picked, String county, ProgressListener rawListener) {
     ProgressListener listener = rawListener != null ? rawListener : NULL_LISTENER;
     Path staging = null;
     try {
       // Phase 1 — copy with SHA.
-      staging = fs.createStagingDir();
+      staging = (county == null) ? fs.createStagingDir() : fs.createCountyStagingDir(county);
       Path stagedDb = staging.resolve(DB_FILE_NAME);
       String fileSha;
       try (OutputStream sink = fs.openWrite(stagedDb);
@@ -143,7 +164,7 @@ public final class AddressBundleImporter {
 
       // Phase 3 — atomic activation.
       listener.onProgress(ProgressListener.Stage.ACTIVATING, 1, 1);
-      Path active = fs.getActiveDir();
+      Path active = (county == null) ? fs.getActiveDir() : fs.activeCountyDir(county);
       Path oldActive = null;
       if (fs.exists(active)) {
         oldActive = active.resolveSibling("active-old-" + System.currentTimeMillis());
@@ -204,6 +225,26 @@ public final class AddressBundleImporter {
   }
 
   /**
+   * Feature 005 per-county Remove. Deletes only the per-county active directory ({@code
+   * active/<county>/}); other counties remain untouched. Idempotent — safe to call on a county
+   * that's already absent. NEVER throws.
+   */
+  public void removeActive(String county) {
+    if (county == null) {
+      Log.w(TAG, "removeActive(null) ignored");
+      return;
+    }
+    try {
+      Path active = fs.activeCountyDir(county);
+      if (fs.exists(active)) {
+        fs.deleteRecursively(active);
+      }
+    } catch (Throwable t) {
+      Log.w(TAG, "removeActive(" + county + ") threw", t);
+    }
+  }
+
+  /**
    * Returns the currently-active {@link AddressDataset} or {@code null} if no usable dataset is
    * installed. The latter covers every documented graceful-fallback path for US4 (see {@code
    * specs/004-offline-address/quickstart.md §6.4 SC-005}):
@@ -224,8 +265,21 @@ public final class AddressBundleImporter {
    * <p>NEVER throws — Constitution VI entry point.
    */
   public AddressDataset activeOrNull() {
+    return activeAt(fs.getActiveDir());
+  }
+
+  /**
+   * Feature 005 per-county read-back. Returns the {@link AddressDataset} for the given county's
+   * {@code active/<county>/} directory, or {@code null} if it's missing / corrupt. Used by {@code
+   * ActiveDatasetRegistry.initFromDisk()} to enumerate counties on plugin start. NEVER throws.
+   */
+  public AddressDataset activeForCounty(String county) {
+    if (county == null || county.isEmpty()) return null;
+    return activeAt(fs.activeCountyDir(county));
+  }
+
+  private AddressDataset activeAt(Path active) {
     try {
-      Path active = fs.getActiveDir();
       if (!fs.exists(active)) {
         // No log — this is the clean-install / removed state; not a fault.
         return null;

@@ -17,7 +17,17 @@ public abstract class AddressLookupResult {
   private AddressLookupResult() {}
 
   public static Found found(AddressRecord record) {
-    return new Found(record);
+    return new Found(record, -1.0);
+  }
+
+  /**
+   * Feature 005 confidence indicator: the actual haversine distance (metres) from the query point
+   * to the returned record. Lets the UI decorate the address row with a confidence marker when the
+   * nearest record is more than a few tens of metres away. Pass {@code -1} (or use {@link
+   * #found(AddressRecord)}) when distance is unknown.
+   */
+  public static Found found(AddressRecord record, double distanceMeters) {
+    return new Found(record, distanceMeters);
   }
 
   public static Empty empty() {
@@ -42,25 +52,35 @@ public abstract class AddressLookupResult {
 
   public static final class Found extends AddressLookupResult {
     private final AddressRecord record;
+    private final double distanceMeters;
 
-    private Found(AddressRecord record) {
+    private Found(AddressRecord record, double distanceMeters) {
       this.record = Objects.requireNonNull(record, "record");
+      this.distanceMeters = distanceMeters;
     }
 
     public AddressRecord record() {
       return record;
     }
 
+    /**
+     * Haversine distance from the query point to {@link #record()} in metres; {@code -1} = unknown.
+     */
+    public double distanceMeters() {
+      return distanceMeters;
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (!(o instanceof Found)) return false;
-      return record.equals(((Found) o).record);
+      Found f = (Found) o;
+      return record.equals(f.record) && Double.compare(distanceMeters, f.distanceMeters) == 0;
     }
 
     @Override
     public int hashCode() {
-      return record.hashCode();
+      return Objects.hash(record, distanceMeters);
     }
   }
 

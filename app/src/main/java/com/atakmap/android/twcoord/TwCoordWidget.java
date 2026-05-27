@@ -103,6 +103,12 @@ public final class TwCoordWidget {
     mapAddrRow.setColor(COLOR_ADDRESS);
     meAddrRow.setColor(COLOR_ADDRESS);
     targetAddrRow.setColor(COLOR_ADDRESS);
+    // Match parent coord rows' dark background — visual consistency required (see UX feedback
+    // 2026-05-27). The race between bg width and text length on fast pans is mitigated in
+    // paintAddressRow via explicit onSizeChanged() + visibility toggle.
+    mapAddrRow.setBackground(TextWidget.TRANSLUCENT_BLACK);
+    meAddrRow.setBackground(TextWidget.TRANSLUCENT_BLACK);
+    targetAddrRow.setBackground(TextWidget.TRANSLUCENT_BLACK);
     mapAddrRow.setVisible(false);
     meAddrRow.setVisible(false);
     targetAddrRow.setVisible(false);
@@ -281,10 +287,54 @@ public final class TwCoordWidget {
 
   private void paintAddressRow(TextWidget row, AddressRowState state) {
     String text = addressTextFor(state, addressLoadingText, addressEmptyText);
+    boolean nextVisible = addressVisibleFor(state);
     if (!state.isHidden()) {
       row.setText(text);
     }
-    row.setVisible(addressVisibleFor(state));
+    // Feature 005 fix: TextWidget.setText alone sometimes leaves the widget's dark
+    // background visible without the new text rendered, until the next MapEvent
+    // (click / pan) wakes the renderer. Symptom on the reference device: "black box with
+    // no text; tap screen → text appears at the same size as the box". The fix forces
+    // two widget-property listener events to fire so the framework schedules a render
+    // pass even when setText alone doesn't:
+    //   (a) explicitly hide first, even when already hidden (forces listener fire on
+    //       the false→false case in some framework builds);
+    //   (b) re-set the background (fires OnHasBackgroundChangedListener);
+    //   (c) set visibility to the final state (fires OnVisibleChangedListener).
+    // Then (d) poke the renderer via mapView.postOnActive in case the widget framework
+    // queued the redraw on a thread that is currently idle.
+    row.setVisible(false);
+    if (nextVisible) {
+      // Re-set background (TRANSLUCENT_BLACK to match the parent coord rows per UX
+      // feedback 2026-05-27) so OnHasBackgroundChangedListener fires alongside
+      // setText / setVisible — gives the framework three render-relevant property
+      // changes per paint, reducing the odds of the renderer painting bg with
+      // stale (old text's) width before the new measure-pass completes.
+      row.setBackground(TextWidget.TRANSLUCENT_BLACK);
+      row.setVisible(true);
+      // Explicit size recalculation: TextWidget caches its bounding box across
+      // setText calls. On fast map pans the cached bg width can render before the
+      // new text's measure-pass completes, surfacing as a "partial black box"
+      // where bg width > text width. Calling onSizeChanged() forces the widget
+      // framework to invalidate the cache and re-measure before the next frame
+      // (MapWidget2.OnWidgetSizeChangedListener subscribers — the root layout
+      // included — re-fit on this signal).
+      try {
+        row.onSizeChanged();
+      } catch (Throwable t) {
+        Log.w(TAG, "row.onSizeChanged threw", t);
+      }
+    }
+    if (mapView != null) {
+      try {
+        mapView.postOnActive(
+            () -> {
+              /* wake renderer */
+            });
+      } catch (Throwable t) {
+        Log.w(TAG, "mapView.postOnActive threw", t);
+      }
+    }
   }
 
   // ----------------------------------------------------------------------

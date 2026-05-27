@@ -248,6 +248,15 @@ dependencies {
     // Coordinate math (TWD97 / EPSG:3826). proj4j is pure-Java, zero Android transitives.
     implementation 'org.locationtech.proj4j:proj4j:1.3.0'
 
+    // Feature 005 FR-017 fallback SQLite runtime (research R5). The host SQLite (Samsung
+    // One UI build) ships without the R*Tree module on the reference device; the primary
+    // path (ATAK native via com.atakmap.database.Databases) covers that today, but this
+    // is the opt-in B-side fallback for any future host whose SQLite also lacks R*Tree.
+    // Per Assumption §11 the library MUST not be loaded unless the primary path fails —
+    // FallbackSqliteFactory lazy-loads the .so on first failed county-open. APK budget
+    // is ≤ 2 MiB per ABI.
+    implementation 'com.github.requery:sqlite-android:3.45.0'
+
     // JVM unit tests (TDD inner loop, pure Java; no Android runtime needed).
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.assertj:assertj-core:3.27.3'

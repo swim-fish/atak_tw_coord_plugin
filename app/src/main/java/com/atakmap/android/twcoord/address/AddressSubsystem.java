@@ -5,6 +5,7 @@ import android.os.Looper;
 import android.os.StrictMode;
 import com.atakmap.coremap.log.Log;
 import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
@@ -58,6 +59,27 @@ public final class AddressSubsystem implements AutoCloseable {
   private boolean strictModeInstalled;
 
   /**
+   * Feature 005: optional multi-county registry. When non-null, {@link #runLookup} fans out across
+   * every active county and returns the geodetically-nearest record (data-model.md §4). When null,
+   * the legacy single-active path (via {@link #facade} + {@link #resolver}) is used.
+   */
+  private ActiveDatasetRegistry registry;
+
+  /**
+   * Feature 005 polish: operator-selectable preset for the tilde confidence indicator. Default
+   * {@link ConfidenceThresholds#TIGHT} preserves the 2026-05-27 device-verified 20 m / 100 m
+   * behaviour when no preference has been written yet. {@code volatile} because {@link #runLookup}
+   * reads from the worker thread while {@link #setConfidenceThresholds} writes from the UI thread.
+   */
+  private volatile ConfidenceThresholds confidenceThresholds = ConfidenceThresholds.TIGHT;
+
+  /** Production lookup radius (research.md §R4). */
+  private static final double LOOKUP_RADIUS_M = 500.0;
+
+  /** Earth mean radius for haversine (matches AtakDatabasesAddressDatabase). */
+  private static final double EARTH_R_M = 6_371_000.0;
+
+  /**
    * Production constructor — uses an inline {@link Handler} on the main looper to fan results out
    * to the UI thread.
    */
@@ -94,6 +116,27 @@ public final class AddressSubsystem implements AutoCloseable {
   // Public API (UI-thread only)
   // ----------------------------------------------------------------------
 
+  /**
+   * Feature 005 hook: bind the multi-county registry. After this is set, the subsystem stops
+   * relying on the legacy single-active {@code AddressBundleImporter.activeOrNull} path; the
+   * registry's snapshot drives every lookup. Idempotent — calling with the same registry is a
+   * no-op. Pass {@code null} to detach (used by {@link #close()} indirectly via the host).
+   *
+   * <p>Wired in {@code TwCoordMapComponent.onCreate} after {@code Registry.initFromDisk}.
+   */
+  public void setRegistry(ActiveDatasetRegistry registry) {
+    this.registry = registry;
+  }
+
+  /**
+   * Feature 005 polish: change the confidence-indicator preset. Idempotent; safe to call from the
+   * UI thread while lookups are in flight (the field is volatile, the worker reads it on each
+   * {@link #runLookup} entry).
+   */
+  public void setConfidenceThresholds(ConfidenceThresholds thresholds) {
+    this.confidenceThresholds = thresholds != null ? thresholds : ConfidenceThresholds.TIGHT;
+  }
+
   public void setRowEnabled(Row row, boolean en) {
     Objects.requireNonNull(row, "row");
     enabled.put(row, en);
@@ -109,7 +152,7 @@ public final class AddressSubsystem implements AutoCloseable {
       // Disabled rows stay Hidden; no work to do.
       return;
     }
-    if (facade == null || resolver == null) {
+    if (!hasAnyActiveDataset()) {
       // No dataset → Hidden (contract §State derivation).
       emit(row, AddressRowState.hidden());
       return;
@@ -138,10 +181,18 @@ public final class AddressSubsystem implements AutoCloseable {
     listeners.remove(l);
   }
 
-  /** Re-open the facade after a successful import / remove. Idempotent. */
+  /**
+   * Re-open the facade after a successful import / remove. Idempotent.
+   *
+   * <p>Feature 005: when a {@link #registry} is bound, this method does NOT re-open the legacy
+   * single facade — the registry owns per-county lifecycle. The method still resets per-row state
+   * (cancel inflight, flip to Loading) so the UI doesn't show a stale resolved address.
+   */
   public void onActiveDatasetChanged() {
-    openFacadeFromActive();
-    boolean hasDataset = facade != null;
+    if (registry == null) {
+      openFacadeFromActive();
+    }
+    boolean hasDataset = hasAnyActiveDataset();
     // Drop stale per-row state. If a dataset is active, the operator sees Loading until the next
     // coord refresh resolves a fresh address. If no dataset is active (removal, or files vanished
     // — see US4 / SC-005), every row goes straight to Hidden so the address line disappears
@@ -190,8 +241,12 @@ public final class AddressSubsystem implements AutoCloseable {
     installStrictModeIfFirstRun();
     AddressRowState state;
     try {
-      AddressLookupResult result =
-          resolver != null ? resolver.lookup(lat, lon) : AddressLookupResult.noDataset();
+      AddressLookupResult result;
+      if (registry != null) {
+        result = lookupAcrossAllCounties(lat, lon);
+      } else {
+        result = resolver != null ? resolver.lookup(lat, lon) : AddressLookupResult.noDataset();
+      }
       state = mapResultToState(result);
     } catch (Throwable t) {
       Log.w(TAG, "lookup task threw", t);
@@ -199,6 +254,59 @@ public final class AddressSubsystem implements AutoCloseable {
     }
     final AddressRowState toEmit = state;
     uiPoster.accept(() -> emit(row, toEmit));
+  }
+
+  /**
+   * Feature 005 multi-county fan-out. For each active county, query its facade for the nearest
+   * record within {@link #LOOKUP_RADIUS_M}; pick the globally-nearest result by haversine distance.
+   * Per-county exceptions are caught (Constitution VI listener short-circuit) so a corrupt county
+   * can't break the resolver for the rest. See data-model.md §4.1.
+   */
+  /** Package-private for {@code AddressSubsystemMultiCountyTest}. */
+  AddressLookupResult lookupAcrossAllCounties(double lat, double lon) {
+    Map<String, CountyActiveDataset> snap = registry.snapshot();
+    if (snap.isEmpty()) return AddressLookupResult.noDataset();
+    AddressRecord best = null;
+    double bestDist = LOOKUP_RADIUS_M;
+    for (CountyActiveDataset entry : snap.values()) {
+      try {
+        AddressDatabaseFacade f = entry.facade();
+        if (f == null) continue;
+        // Pass the running best-distance as the bbox radius — each subsequent county only
+        // looks within the area where it could beat the current winner. Monotonically
+        // shrinking radius per research R5 / data-model §4.1.
+        AddressRecord candidate = f.nearestWithin(lat, lon, bestDist);
+        if (candidate == null) continue;
+        double d = haversineMeters(lat, lon, candidate.lat(), candidate.lon());
+        if (d < bestDist) {
+          bestDist = d;
+          best = candidate;
+        }
+      } catch (Throwable t) {
+        Log.w(TAG, "lookup in " + entry.county() + " threw", t);
+      }
+    }
+    if (best == null) return AddressLookupResult.empty();
+    return AddressLookupResult.found(best, bestDist);
+  }
+
+  /** True iff the resolver currently has at least one dataset (registry or legacy) to query. */
+  private boolean hasAnyActiveDataset() {
+    if (registry != null) {
+      return !registry.snapshot().isEmpty();
+    }
+    return facade != null && resolver != null;
+  }
+
+  static double haversineMeters(double lat1, double lon1, double lat2, double lon2) {
+    double p1 = Math.toRadians(lat1);
+    double p2 = Math.toRadians(lat2);
+    double dPhi = Math.toRadians(lat2 - lat1);
+    double dLambda = Math.toRadians(lon2 - lon1);
+    double a =
+        Math.sin(dPhi / 2) * Math.sin(dPhi / 2)
+            + Math.cos(p1) * Math.cos(p2) * Math.sin(dLambda / 2) * Math.sin(dLambda / 2);
+    return 2 * EARTH_R_M * Math.asin(Math.sqrt(a));
   }
 
   /**
@@ -237,7 +345,9 @@ public final class AddressSubsystem implements AutoCloseable {
 
   private AddressRowState mapResultToState(AddressLookupResult r) {
     if (r instanceof AddressLookupResult.Found) {
-      return AddressRowState.text(((AddressLookupResult.Found) r).record().displayName());
+      AddressLookupResult.Found f = (AddressLookupResult.Found) r;
+      return AddressRowState.text(
+          confidenceThresholds.decorate(f.record().displayName(), f.distanceMeters()));
     }
     // Empty or NoDataset → empty-state ("No address nearby"). NoDataset's "Hidden" handling
     // happens upstream in onCoord before scheduling.
