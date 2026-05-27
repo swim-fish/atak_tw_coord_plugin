@@ -103,13 +103,111 @@ Key groups (verbatim names):
 - State B fields — `offline_address_field_county / _data_date / _source / _rows / _csv_sha / _imported_at / _file_sha / _rtree_built`.
 - Failures — `offline_address_error_*` (see table above).
 
-## Out of scope for v1
+## Feature 005 additions (v1.0.6)
 
-- `.zip` bundle / sidecar manifest import (deferred to feature 005).
-- Multi-source consumption (TGOS + OSM `places-osm.sqlite`; township polygons; roads nearest-road) — feature 005.
-- Multi-county active datasets — Spec Assumption §4 commits to single-county.
-- Forward search ("type a place name → show on map") — `places_fts` index is shipped by the generator but not surfaced by this feature.
-- Drag to reposition the side-pane (`DropDownReceiver` opens at its host-determined location).
+v1.0.6 lifts the single-active assumption: the page now holds N
+independently-managed county datasets and accepts both bare `.sqlite`
+files and ZIP bundles produced by
+[`atak-tw-address-generator`](https://github.com/swim-fish/atak-tw-address-generator)
+v2 (`places-<county>.sqlite` per-county zip, or the bundled
+`tw-central-full.zip`).
+
+### State B layout (multi-county)
+
+Each active county is rendered as a row in a vertical `ScrollView`
++ `LinearLayout` container (`offline_address_county_row.xml`), with
+its own Replace + Remove buttons:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Offline Address                                              │
+│ ──────────────────────────────────────────────────────────── │
+│                                                              │
+│  ── 台中市 ────────────────────────────                       │
+│  County        台中市                                         │
+│  Data date     2026-05-15                                    │
+│  Rows          1,316,674                                     │
+│  [   Replace…   ]   [   Remove   ]                           │
+│                                                              │
+│  ── 彰化縣 ────────────────────────────                       │
+│  County        彰化縣                                         │
+│  Data date     2026-05-15                                    │
+│  Rows          678,392                                       │
+│  [   Replace…   ]   [   Remove   ]                           │
+│                                                              │
+│  [   Add more…   ]   [   Done   ]   (queued: 0)              │
+│  Total: 789 MB on disk                                       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Per-county Replace dialogs use ADR-0015 D8's `AlertDialog(getMapView().
+getContext())` pattern so the dialog inherits the ATAK Activity's
+window token rather than the plugin context (which throws
+`BadTokenException`).
+
+### ZIP bundle import (`tw-central-full.zip` etc.)
+
+The Import button now accepts both `.sqlite` and `.zip` files. ZIP
+input is routed through `ZipExtractor` (streaming + per-entry
+isolation) → `ZipEntryClassifier` (sorts entries into per-county
+`places-<county>.sqlite` vs supplementary files) →
+`BatchImportCoordinator` (enqueues each classified entry on the
+single-thread executor for activation).
+
+Supplementary content shipped in v2 bundles (townships, OSM
+landmarks, roads) is **skipped, not failed** in v1.0.6 — those are
+feature 006 work. The progress chip and per-entry status surfaces
+report `offline_address_entry_status_skipped_supplementary` for
+clarity.
+
+### Chained-picker batch session (Clarifications Q1 + Q3)
+
+The operator may keep adding files / ZIPs to the same batch session
+mid-import. Each pick enqueues onto the coordinator's single-thread
+executor (preserving FIFO ordering); the page's queue badge
+(`offline_address_batch_in_flight_format` — `N queued`) updates
+live and the bottom summary (`offline_address_batch_done` —
+`Activated %d · Replaced %d · Skipped %d · Failed %d`) refreshes
+on every batch boundary.
+
+`onBatchComplete` schedules a 3-second auto-hide of the progress
+chip when `report.failedCount() == 0`; failure-bearing batches stay
+visible so the operator can read the inline error.
+
+### v1.0.5 → v1.0.6 auto-migrate (US4)
+
+On plugin `onCreate`, `AutoMigrator` detects a legacy
+`active/places.sqlite` layout and moves it under
+`active/<county>/places.sqlite` based on the metadata.county value.
+`ATOMIC_MOVE` is the happy path; on a cross-mount failure the
+migrator falls back to copy + verify + delete, with full rollback
+on a partial move. Idempotent — `Result.AlreadyMigrated` returned
+on subsequent runs. Reference: `AutoMigrator.tryMigrate()` +
+ADR-0017.
+
+### New per-county string keys
+
+- `offline_address_button_continue_adding` — "Add more"
+- `offline_address_button_done` — "Done"
+- `offline_address_button_cancel_batch` — "Cancel batch"
+- `offline_address_batch_in_flight_format` — queue badge
+- `offline_address_batch_done` — bottom summary
+- `offline_address_entry_status_{extracting,validating,activated,
+  skipped_supplementary,skipped_duplicate,failed}` — per-entry
+  status labels
+- `offline_address_error_zip_no_valid_datasets`,
+  `offline_address_error_county_mismatch_format` — new failure
+  reasons specific to the ZIP / per-county Replace paths
+- `offline_address_total_disk_usage_format` — page footer total
+
+## Out of scope for v1.0.6
+
+- Multi-source consumption beyond TGOS places (townships, OSM
+  landmarks, OSM roads nearest-road) — deferred to feature 006.
+- Forward search ("type a place name → show on map") — `places_fts`
+  index is shipped by the generator but not surfaced by this feature.
+- Drag to reposition the side-pane (`DropDownReceiver` opens at its
+  host-determined location).
 
 ## Screenshots
 

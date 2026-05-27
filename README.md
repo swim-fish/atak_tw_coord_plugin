@@ -52,6 +52,8 @@ captured under `docs/ui/` (`readout-widget.md`, `settings-fragment.md`).
 | **Recent list** | Up to 10 prior successful submissions, deduped on (unit, value), persisted across ATAK restarts; tap any row to re-fill, per-row delete |
 | **In-page marker-mode picker** | 9 radios under Submit (Move only + 7 affiliation/spot-map types + **Custom Icon**). Selecting non-Move-only drops a marker of that type at the resolved coord; selection persists across plugin restarts |
 | **Custom Icon picker** | Two-step modal (iconset list → icon grid) reading exclusively from ATAK's existing iconset library (5 bundled iconsets out of the box + any operator-loaded). Picked icon is applied via `MarkerCreator.setIconPath`; marker behaves identically to host-placed ones. Graceful one-shot fallback when the picked iconset is removed |
+| **Offline reverse address** | Imports county-scoped address SQLite produced by the [sibling generator](https://github.com/swim-fish/atak-tw-address-generator); decorates each coordinate row with the nearest record. v1.0.6 adds multi-county import (one active dataset per county, all queried in parallel) and ZIP-bundle import (`tw-central-full.zip` etc.), with auto-migration from v1.0.5's single-active layout |
+| **Confidence indicator** | Per-row tilde marker (`~` / `~~`) prefix on the address text reflecting haversine distance to the nearest record. 4 presets (Off / Tight 20-100 m / Standard 50-200 m / Loose 100-500 m) selectable in Settings |
 
 ## Coverage and accuracy
 
@@ -72,7 +74,7 @@ Test coverage:
 - **9 golden vectors** in `GoldenVectors`: 4 pwa_map landmarks (Taipei 101 / Kaohsiung 85 / Taichung CH / Hualien Stn) + 5 cell-centroid regression vectors covering the L / E / D / O / T regions (added in v1.0.4 alongside the Taipower letter-table correction — see ADR-0001 follow-up note)
 - **Hualien Stn 11-char** (`H7509 DB4016`) pinned as the canonical 1-m precision regression
 - **3 real-world out-of-range points** (Naha Airport, Hong Kong IFC, Tokyo Tower)
-- **88 JVM unit tests** total; all green
+- **215 JVM unit tests** total; all green (2 ignored — JDK `ZipOutputStream` edge cases deferred to a device fixture)
 
 ## Installation
 
@@ -199,7 +201,7 @@ version we have tested, 5.4 through 5.7.0.3).
 ### Common commands
 
 ```
-./gradlew :app:testCivDebugUnitTest      # 88 JVM unit tests
+./gradlew :app:testCivDebugUnitTest      # 215 JVM unit tests
 ./gradlew :app:assembleCivDebug          # signed civ-debug APK
 ./gradlew :app:spotlessApply             # google-java-format the codebase
 ./gradlew :app:lint                      # Android lint
