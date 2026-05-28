@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.atakmap.android.twcoord.TwCoordPreferenceFragment.DatasetStatusPresentation;
 import com.atakmap.android.twcoord.TwCoordPreferenceFragment.StatusStrings;
+import com.atakmap.android.twcoord.address.AddressDatabaseFacade;
 import com.atakmap.android.twcoord.address.AddressDataset;
+import com.atakmap.android.twcoord.address.AddressRecord;
+import com.atakmap.android.twcoord.address.CountyActiveDataset;
 import com.atakmap.android.twcoord.address.GeneratorMetadata;
 import com.atakmap.android.twcoord.address.ImportedManifest;
 import java.io.File;
@@ -150,6 +153,68 @@ public final class TwCoordPreferenceFragmentAddressTest {
   }
 
   // ---------------------------------------------------------------------
+  // Review 2026-05-28 finding #6 — active-datasets refresh signature. The Settings fragment skips
+  // rebuilding the per-county rows when the signature is unchanged, so the signature MUST stay
+  // stable for identical content and MUST change for any content / language difference that would
+  // alter the rendered rows.
+  // ---------------------------------------------------------------------
+
+  @Test
+  public void activeDatasetsSignature_identicalContent_isStable() {
+    Map<String, CountyActiveDataset> a = snapshot(county("台中市", "115-01", 1000));
+    Map<String, CountyActiveDataset> b = snapshot(county("台中市", "115-01", 1000));
+
+    assertThat(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", a))
+        .isEqualTo(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", b));
+  }
+
+  @Test
+  public void activeDatasetsSignature_addingCounty_changes() {
+    Map<String, CountyActiveDataset> one = snapshot(county("台中市", "115-01", 1000));
+    Map<String, CountyActiveDataset> two =
+        snapshot(county("台中市", "115-01", 1000), county("彰化縣", "114-05", 500));
+
+    assertThat(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", one))
+        .isNotEqualTo(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", two));
+  }
+
+  @Test
+  public void activeDatasetsSignature_dataDateChange_changes() {
+    Map<String, CountyActiveDataset> before = snapshot(county("台中市", "115-01", 1000));
+    Map<String, CountyActiveDataset> after = snapshot(county("台中市", "115-02", 1000));
+
+    assertThat(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", before))
+        .isNotEqualTo(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", after));
+  }
+
+  @Test
+  public void activeDatasetsSignature_insertedRowsChange_changes() {
+    Map<String, CountyActiveDataset> before = snapshot(county("台中市", "115-01", 1000));
+    Map<String, CountyActiveDataset> after = snapshot(county("台中市", "115-01", 2000));
+
+    assertThat(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", before))
+        .isNotEqualTo(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", after));
+  }
+
+  @Test
+  public void activeDatasetsSignature_languageChange_changes() {
+    Map<String, CountyActiveDataset> same = snapshot(county("台中市", "115-01", 1000));
+
+    assertThat(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", same))
+        .isNotEqualTo(TwCoordPreferenceFragment.activeDatasetsSignature("JA", same));
+  }
+
+  @Test
+  public void activeDatasetsSignature_emptySnapshot_isStablePerLanguage() {
+    Map<String, CountyActiveDataset> empty = snapshot();
+
+    assertThat(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", empty))
+        .isEqualTo(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", empty));
+    assertThat(TwCoordPreferenceFragment.activeDatasetsSignature("ZH_TW", empty))
+        .isNotEqualTo(TwCoordPreferenceFragment.activeDatasetsSignature("EN", empty));
+  }
+
+  // ---------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------
 
@@ -180,6 +245,50 @@ public final class TwCoordPreferenceFragmentAddressTest {
     File rootDir = new File("/tmp/places");
     File dbFile = new File("/tmp/places/places.sqlite");
     return new AddressDataset(rootDir, dbFile, metadata, imported);
+  }
+
+  /**
+   * A per-county snapshot entry with a controllable inserted-rows count (part of the signature).
+   */
+  private static CountyActiveDataset county(String county, String dataDate, long insertedRows) {
+    Map<String, String> raw = new LinkedHashMap<>();
+    raw.put("schema_version", "2");
+    raw.put("source", "TGOS");
+    raw.put("county", county);
+    raw.put("data_date", dataDate);
+    GeneratorMetadata metadata =
+        new GeneratorMetadata(2, "TGOS", county, dataDate, null, null, null, insertedRows, raw);
+    ImportedManifest imported =
+        new ImportedManifest(Instant.parse("2026-05-24T12:00:00Z"), "deadbeef".repeat(8), true, 1);
+    AddressDataset dataset =
+        new AddressDataset(
+            new File("/tmp/places/" + county),
+            new File("/tmp/places/" + county + "/places.sqlite"),
+            metadata,
+            imported);
+    return new CountyActiveDataset(county, dataset, new StubFacade());
+  }
+
+  private static Map<String, CountyActiveDataset> snapshot(CountyActiveDataset... entries) {
+    Map<String, CountyActiveDataset> m = new LinkedHashMap<>();
+    for (CountyActiveDataset e : entries) m.put(e.county(), e);
+    return m;
+  }
+
+  /** Minimal facade — the signature only reads dataset metadata, never the facade. */
+  private static final class StubFacade implements AddressDatabaseFacade {
+    @Override
+    public GeneratorMetadata readMetadata() {
+      return null;
+    }
+
+    @Override
+    public AddressRecord nearestWithin(double lat, double lon, double radiusMeters) {
+      return null;
+    }
+
+    @Override
+    public void close() {}
   }
 
   /** Stub strings whose values are easy to assert against. */

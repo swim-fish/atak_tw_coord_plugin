@@ -95,6 +95,32 @@ public class ZipExtractorTest {
   @Test
   public void crcMismatchOnCloseEntryReportedAsFailure() {}
 
+  // 3b. A places-<county>.sqlite entry whose stored payload no longer matches its declared CRC must
+  //     NOT be committed to counties(): it is reported as a failure and its staging dir is removed.
+  //     We build a valid STORED entry then flip one payload byte; the desktop JDK's ZipInputStream
+  //     raises the CRC mismatch while extract() is reading the entry. The Android runtime raises it
+  //     at closeEntry() instead — the extractor's commit-after-closeEntry logic keeps the invariant
+  //     ("a CRC-corrupt entry is never activated") on both runtimes.
+  @Test
+  public void crcCorruptCountyEntryIsNotActivated() throws IOException {
+    byte[] sqliteBytes = synthSqliteBytes(2048);
+    byte[] zipBytes = buildStoredZipWithCorruptData("places-taichung.sqlite", sqliteBytes);
+
+    ExtractResult result = extractor.extract(new ByteArrayInputStream(zipBytes), null);
+
+    assertThat(result.counties()).isEmpty();
+    assertThat(result.failures()).hasSize(1);
+    assertThat(result.failures().get(0).county()).isEqualTo("taichung");
+    assertThat(result.failures().get(0).reason()).containsIgnoringCase("crc");
+    // No staging dir survives for the rejected county.
+    long stagingDirs =
+        Files.walk(fs.getActiveDir().getParent())
+            .filter(p -> p.getFileName().toString().contains("taichung"))
+            .filter(Files::isDirectory)
+            .count();
+    assertThat(stagingDirs).isZero();
+  }
+
   // 4. ZIP with zip-slip ../places-evil.sqlite → classified UNRECOGNIZED; not extracted
   @Test
   public void zipSlipEntryRejected() throws IOException {
@@ -266,6 +292,45 @@ public class ZipExtractorTest {
     java.util.zip.CRC32 c = new java.util.zip.CRC32();
     c.update(data);
     return c.getValue();
+  }
+
+  /**
+   * Build a valid single-entry STORED ZIP, then flip one byte of the stored payload so the bytes no
+   * longer match the CRC recorded in the local file header. {@code ZipInputStream} rejects the
+   * entry on read/close. Unlike {@link #buildZipWithBrokenCrc}, the fixture is constructed with a
+   * correct CRC (so {@code ZipOutputStream} accepts it) and corrupted afterwards.
+   */
+  private static byte[] buildStoredZipWithCorruptData(String name, byte[] data) throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ZipOutputStream zout = new ZipOutputStream(baos)) {
+      ZipEntry e = new ZipEntry(name);
+      e.setMethod(ZipEntry.STORED);
+      e.setSize(data.length);
+      e.setCompressedSize(data.length);
+      e.setCrc(crc(data));
+      zout.putNextEntry(e);
+      zout.write(data);
+      zout.closeEntry();
+    }
+    byte[] zip = baos.toByteArray();
+    // STORED payload is written verbatim; locate the SQLite header that synthSqliteBytes() places
+    // at the start of the data region and corrupt a byte a little past it.
+    int dataStart = indexOf(zip, "SQLite format 3\0".getBytes());
+    if (dataStart < 0) throw new IllegalStateException("payload marker not found in fixture");
+    int corruptAt = dataStart + 20;
+    zip[corruptAt] = (byte) (zip[corruptAt] ^ 0xFF);
+    return zip;
+  }
+
+  private static int indexOf(byte[] haystack, byte[] needle) {
+    outer:
+    for (int i = 0; i <= haystack.length - needle.length; i++) {
+      for (int j = 0; j < needle.length; j++) {
+        if (haystack[i + j] != needle[j]) continue outer;
+      }
+      return i;
+    }
+    return -1;
   }
 
   /** Generate "SQLite format 3\0" + random-ish bytes so the file has a recognisable header. */

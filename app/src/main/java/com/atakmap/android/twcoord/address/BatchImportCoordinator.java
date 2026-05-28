@@ -46,7 +46,18 @@ public final class BatchImportCoordinator {
   private final ExecutorService executor;
   private final FileSystem fs;
 
-  private final Deque<File> pending = new ArrayDeque<>();
+  /** A queued pick paired with the county the operator expects it to replace, if any. */
+  private static final class PendingItem {
+    final File file;
+    final String expectedCounty; // nullable: null for a plain Import (no county constraint)
+
+    PendingItem(File file, String expectedCounty) {
+      this.file = file;
+      this.expectedCounty = expectedCounty;
+    }
+  }
+
+  private final Deque<PendingItem> pending = new ArrayDeque<>();
   private final List<BatchImportReport.Entry> reports = new ArrayList<>();
   private final List<Listener> listeners = new CopyOnWriteArrayList<>();
   private final AtomicBoolean draining = new AtomicBoolean(false);
@@ -76,8 +87,18 @@ public final class BatchImportCoordinator {
 
   /** Add a picked file (.zip or .sqlite) to the active session; start worker if idle. */
   public synchronized int enqueue(File pickedFile) {
+    return enqueue(pickedFile, null);
+  }
+
+  /**
+   * Add a picked file constrained to {@code expectedCounty} (the per-county Replace flow). Any
+   * dataset whose {@code metadata.county} does not equal {@code expectedCounty} is rejected with
+   * {@link BatchImportReport.Status#SKIPPED_COUNTY_MISMATCH} instead of being activated. Pass
+   * {@code null} for an unconstrained Import.
+   */
+  public synchronized int enqueue(File pickedFile, String expectedCounty) {
     Objects.requireNonNull(pickedFile, "pickedFile");
-    pending.addLast(pickedFile);
+    pending.addLast(new PendingItem(pickedFile, expectedCounty));
     int idx = pending.size() + reports.size();
     if (draining.compareAndSet(false, true)) {
       finishRequested.set(false);
@@ -119,7 +140,7 @@ public final class BatchImportCoordinator {
   private void drain() {
     try {
       while (!cancelled.get()) {
-        File next;
+        PendingItem next;
         synchronized (this) {
           next = pending.pollFirst();
           if (next == null) {
@@ -148,17 +169,18 @@ public final class BatchImportCoordinator {
     }
   }
 
-  private void processOne(File file) {
+  private void processOne(PendingItem item) {
+    File file = item.file;
     String name = file.getName();
     long startMs = System.currentTimeMillis();
     if (name.toLowerCase().endsWith(".zip")) {
-      processZip(file, startMs);
+      processZip(file, startMs, item.expectedCounty);
     } else {
-      processBareSqlite(file, startMs);
+      processBareSqlite(file, startMs, item.expectedCounty);
     }
   }
 
-  private void processZip(File zipFile, long startMs) {
+  private void processZip(File zipFile, long startMs, String expectedCounty) {
     BatchImportReport.Entry started =
         new BatchImportReport.Entry(
             zipFile.getName(), null, BatchImportReport.Status.ACTIVATED, null, 0);
@@ -189,7 +211,7 @@ public final class BatchImportCoordinator {
       // Activate each extracted county.
       for (ZipExtractor.ExtractedCounty ec : result.counties()) {
         long countyStart = System.currentTimeMillis();
-        activateExtractedCounty(ec, zipFile.getName(), countyStart);
+        activateExtractedCounty(ec, zipFile.getName(), countyStart, expectedCounty);
       }
     } catch (ZipException e) {
       addAndFire(
@@ -214,7 +236,7 @@ public final class BatchImportCoordinator {
    * hand the staging-dir file's stream back to the importer to validate metadata + activate.
    */
   private void activateExtractedCounty(
-      ZipExtractor.ExtractedCounty ec, String parentZipName, long startMs) {
+      ZipExtractor.ExtractedCounty ec, String parentZipName, long startMs, String expectedCounty) {
     // Peek the actual county from the extracted file's metadata.county BEFORE handing the
     // bytes to the importer. The classifier extracts the county from the ZIP entry name
     // ("places-<county>.sqlite") which is the romanised generator-side filename (e.g.
@@ -245,6 +267,23 @@ public final class BatchImportCoordinator {
       return;
     }
     String county = realCounty;
+    if (expectedCounty != null && !expectedCounty.equals(county)) {
+      // Per-county Replace target's metadata.county didn't match the row the operator tapped.
+      // Reject without activating, and clean up the extractor's staging dir (the activation
+      // try/finally below — which normally does this — is skipped by this early return).
+      try {
+        fs.deleteRecursively(ec.stagingDir());
+      } catch (Throwable t) {
+        Log.w(TAG, "cleanup of mismatched staging " + ec.stagingDir() + " threw", t);
+      }
+      addAndFire(
+          parentZipName + "/places-" + countyFromFilename + ".sqlite",
+          county,
+          BatchImportReport.Status.SKIPPED_COUNTY_MISMATCH,
+          "expected " + expectedCounty + " but file is " + county,
+          System.currentTimeMillis() - startMs);
+      return;
+    }
     BatchImportReport.Entry started =
         new BatchImportReport.Entry(
             parentZipName + "/places-" + countyFromFilename + ".sqlite",
@@ -322,7 +361,7 @@ public final class BatchImportCoordinator {
    * Bare {@code .sqlite} path. Peeks the file's metadata.county via a one-shot SQLite open (through
    * the same primary factory the registry uses), then hands the file to the importer.
    */
-  private void processBareSqlite(File sqliteFile, long startMs) {
+  private void processBareSqlite(File sqliteFile, long startMs, String expectedCounty) {
     BatchImportReport.Entry started =
         new BatchImportReport.Entry(
             sqliteFile.getName(), null, BatchImportReport.Status.ACTIVATED, null, 0);
@@ -346,6 +385,16 @@ public final class BatchImportCoordinator {
           null,
           BatchImportReport.Status.FAILED,
           "metadata.county missing or empty",
+          System.currentTimeMillis() - startMs);
+      return;
+    }
+    if (expectedCounty != null && !expectedCounty.equals(county)) {
+      // Per-county Replace target's metadata.county didn't match the row the operator tapped.
+      addAndFire(
+          sqliteFile.getName(),
+          county,
+          BatchImportReport.Status.SKIPPED_COUNTY_MISMATCH,
+          "expected " + expectedCounty + " but file is " + county,
           System.currentTimeMillis() - startMs);
       return;
     }

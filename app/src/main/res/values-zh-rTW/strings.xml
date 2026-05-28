@@ -182,6 +182,7 @@
     <string name="offline_address_entry_status_activated">已啟用</string>
     <string name="offline_address_entry_status_skipped_supplementary">略過：補充檔</string>
     <string name="offline_address_entry_status_skipped_duplicate">略過：重複</string>
+    <string name="offline_address_entry_status_county_mismatch">略過：縣市不符</string>
     <string name="offline_address_entry_status_failed">失敗</string>
     <string name="offline_address_error_zip_no_valid_datasets">此 ZIP 不含任何 places-&lt;county&gt;.sqlite。v1.0.6 僅支援逐縣市的地址資料集；townships / roads / OSM 屬於 feature 006+。</string>
     <string name="offline_address_error_county_mismatch_format">選擇的檔案是 %1$s，無法替換 %2$s。請改用「移除」與「匯入」來切換縣市。</string>

@@ -222,6 +222,7 @@
     <string name="offline_address_entry_status_activated">Activated</string>
     <string name="offline_address_entry_status_skipped_supplementary">Skipped (supplementary)</string>
     <string name="offline_address_entry_status_skipped_duplicate">Skipped (duplicate)</string>
+    <string name="offline_address_entry_status_county_mismatch">Skipped (county mismatch)</string>
     <string name="offline_address_entry_status_failed">Failed</string>
 
     <!-- New error reasons for the ZIP / per-county Replace paths. -->

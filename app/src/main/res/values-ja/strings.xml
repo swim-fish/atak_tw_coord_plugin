@@ -180,6 +180,7 @@
     <string name="offline_address_entry_status_activated">有効</string>
     <string name="offline_address_entry_status_skipped_supplementary">スキップ：補助ファイル</string>
     <string name="offline_address_entry_status_skipped_duplicate">スキップ：重複</string>
+    <string name="offline_address_entry_status_county_mismatch">スキップ：地域不一致</string>
     <string name="offline_address_entry_status_failed">失敗</string>
     <string name="offline_address_error_zip_no_valid_datasets">この ZIP には places-&lt;county&gt;.sqlite が含まれていません。v1.0.6 は県別の住所データセットのみ対応；townships / roads / OSM は feature 006+ で対応予定。</string>
     <string name="offline_address_error_county_mismatch_format">選択されたファイルは %1$s です。%2$s を置換できません。「削除」+「インポート」で切り替えてください。</string>

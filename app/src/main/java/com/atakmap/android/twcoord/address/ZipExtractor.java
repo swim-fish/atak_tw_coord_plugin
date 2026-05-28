@@ -194,6 +194,11 @@ public final class ZipExtractor {
         }
       }
       ZipEntryClassifier.Classification cls = ZipEntryClassifier.Classification.UNRECOGNIZED;
+      // A county whose bytes have streamed out but whose CRC has not yet been verified. It is only
+      // committed to `counties` after closeEntry() (where ZipInputStream verifies the CRC on some
+      // runtimes, notably Android) succeeds; on closeEntry() failure it is discarded so a corrupt
+      // entry can never be activated.
+      ExtractedCounty pendingCounty = null;
       try {
         if (entry.isDirectory()) {
           unrecognisedCount++;
@@ -217,10 +222,12 @@ public final class ZipExtractor {
                 break;
               }
               try {
-                ExtractedCounty ec = extractCountyEntry(zin, county);
-                counties.add(ec);
+                // Stream the bytes now, but defer committing to `counties` until closeEntry()
+                // confirms the CRC below.
+                pendingCounty = extractCountyEntry(zin, county);
               } catch (IOException e) {
                 Log.w(TAG, "extract failed for entry " + name + " (county=" + county + ")", e);
+                // extractCountyEntry rolled back its own staging dir on this path.
                 failures.add(new FailedEntry(name, county, describe(e)));
               }
               break;
@@ -235,14 +242,31 @@ public final class ZipExtractor {
           }
         }
       } finally {
+        boolean closeOk = true;
         try {
           zin.closeEntry();
         } catch (IOException e) {
-          // CRC mismatch at closeEntry is treated as a per-entry failure if it was a county entry.
+          closeOk = false;
+          // CRC mismatch surfaces here on runtimes that verify the CRC at closeEntry() rather than
+          // during read(). Discard the staged county so a corrupt entry is never activated.
           Log.w(TAG, "closeEntry on " + name + " threw", e);
-          if (cls == ZipEntryClassifier.Classification.PLACES_COUNTY) {
-            failures.add(new FailedEntry(name, null, "CRC_MISMATCH: " + describe(e)));
+          if (pendingCounty != null) {
+            try {
+              fs.deleteRecursively(pendingCounty.stagingDir());
+            } catch (Throwable t) {
+              Log.w(
+                  TAG, "rollback of " + pendingCounty.stagingDir() + " after CRC failure threw", t);
+            }
+            failures.add(
+                new FailedEntry(name, pendingCounty.county(), "CRC_MISMATCH: " + describe(e)));
+            pendingCounty = null;
           }
+          // If pendingCounty is null the failure was already recorded during read(); avoid
+          // double-counting the same entry.
+        }
+        // Commit only when the bytes streamed AND the CRC verified.
+        if (closeOk && pendingCounty != null) {
+          counties.add(pendingCounty);
         }
         if (progress != null) {
           try {

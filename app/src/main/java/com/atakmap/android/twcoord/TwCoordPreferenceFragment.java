@@ -325,12 +325,25 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
     Preference catRef = findPreference("pref_address_active_datasets");
     if (!(catRef instanceof PreferenceCategory)) return;
     PreferenceCategory category = (PreferenceCategory) catRef;
+    // Title is cheap and language-dependent — always refresh it.
     category.setTitle(wrapped.getString(R.string.pref_address_active_datasets_header));
-    category.removeAll();
     try {
       ActiveDatasetRegistry registry = addressRegistryProvider.get();
-      if (registry == null) return;
-      for (CountyActiveDataset entry : registry.snapshot().values()) {
+      java.util.Map<String, CountyActiveDataset> snapshot =
+          registry == null ? java.util.Collections.emptyMap() : registry.snapshot();
+      // onSharedPreferenceChanged fires for ANY preference (coord unit, a single row toggle,
+      // confidence preset, …). Rebuilding N county rows + layout passes on every such change is
+      // wasteful at 22 counties. Skip the rebuild unless the rendered content would actually
+      // differ. The language is part of the signature because the row summary format string is
+      // language-dependent.
+      String signature =
+          activeDatasetsSignature(String.valueOf(currentLanguageOverride()), snapshot);
+      if (signature.equals(lastActiveDatasetsSignature)) {
+        return;
+      }
+      lastActiveDatasetsSignature = signature;
+      category.removeAll();
+      for (CountyActiveDataset entry : snapshot.values()) {
         Preference row = new Preference(pluginContext);
         row.setLayoutResource(R.layout.pref_item);
         row.setTitle(entry.county());
@@ -344,7 +357,35 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
       }
     } catch (Throwable t) {
       Log.w(TAG, "refreshActiveDatasetsCategory threw", t);
+      // Invalidate so the next refresh attempts a clean rebuild rather than trusting a partial one.
+      lastActiveDatasetsSignature = null;
     }
+  }
+
+  /** Last-rendered active-datasets signature; see {@link #activeDatasetsSignature}. */
+  private String lastActiveDatasetsSignature;
+
+  /**
+   * Content signature for the active-datasets category: the UI language tag (the row summary format
+   * is language-dependent) plus each county's {@code (county, dataDate, insertedRows)} tuple. Equal
+   * signatures mean the rendered rows would be identical, so the rebuild can be skipped.
+   *
+   * <p>Package-private + static for unit testing (mirrors {@link #resolveDatasetStatus}); the
+   * language tag is passed in so the method needs no live fragment / preference state.
+   */
+  static String activeDatasetsSignature(
+      String languageTag, java.util.Map<String, CountyActiveDataset> snapshot) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(languageTag).append('|');
+    for (CountyActiveDataset entry : snapshot.values()) {
+      sb.append(entry.county())
+          .append(':')
+          .append(entry.dataset().generator().dataDate())
+          .append(':')
+          .append(entry.dataset().generator().insertedRows())
+          .append(';');
+    }
+    return sb.toString();
   }
 
   private boolean anyAddressToggleOn() {

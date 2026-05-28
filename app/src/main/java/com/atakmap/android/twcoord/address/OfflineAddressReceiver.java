@@ -94,6 +94,20 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   /** Last-seen batch session report (rebuilt on every {@code onBatchComplete} listener fire). */
   private BatchImportReport lastBatchReport;
 
+  /**
+   * Set when any entry in the current batch was rejected for a county mismatch (per-county Replace
+   * picked the wrong county). Keeps the progress chip visible so the operator notices, since a
+   * mismatch counts as "skipped" rather than "failed" in the batch summary.
+   */
+  private boolean sawCountyMismatch;
+
+  /**
+   * County the operator is replacing in the current per-county Replace flow, captured when the
+   * picker is launched so the mismatch error can name both the expected and the picked county. Null
+   * for a plain Import.
+   */
+  private String pendingReplaceCounty;
+
   public OfflineAddressReceiver(
       MapView mapView,
       Context pluginContext,
@@ -146,7 +160,21 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
 
   @Override
   public void disposeImpl() {
-    /* no-op — no resources to release */
+    // Detach the batch listener so an in-flight import can't keep posting UI work into a disposed
+    // receiver, and drop any pending delayed callbacks (e.g. the auto-hide-progress runnable).
+    if (batchCoordinator != null) {
+      try {
+        batchCoordinator.removeListener(batchListener);
+      } catch (Throwable t) {
+        Log.w(TAG, "removeListener on dispose threw", t);
+      }
+      batchCoordinator = null;
+    }
+    try {
+      ui.removeCallbacksAndMessages(null);
+    } catch (Throwable t) {
+      Log.w(TAG, "ui.removeCallbacksAndMessages on dispose threw", t);
+    }
   }
 
   @Override
@@ -301,8 +329,21 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   // File picker (ATAK SDK in-process dialog) + import worker
   // ----------------------------------------------------------------------
 
-  /** Feature 005: bind the batch coordinator after ctor (called from TwCoordMapComponent). */
+  /**
+   * Feature 005: bind the batch coordinator after ctor (called from TwCoordMapComponent).
+   * Idempotent — re-binding (tests, hot-reload, future rewiring) first detaches {@link
+   * #batchListener} from the previous coordinator so a stale coordinator can't keep posting UI work
+   * through this receiver.
+   */
   public void setBatchCoordinator(BatchImportCoordinator coordinator) {
+    if (this.batchCoordinator == coordinator) return;
+    if (this.batchCoordinator != null) {
+      try {
+        this.batchCoordinator.removeListener(batchListener);
+      } catch (Throwable t) {
+        Log.w(TAG, "removeListener on previous coordinator threw", t);
+      }
+    }
     this.batchCoordinator = coordinator;
     if (coordinator != null) {
       coordinator.addListener(batchListener);
@@ -310,10 +351,21 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   }
 
   private void launchPicker() {
+    launchPicker(null);
+  }
+
+  /**
+   * Open the file picker. When {@code expectedCounty} is non-null (per-county Replace), the picked
+   * file is enqueued with that constraint so a county-mismatched dataset is rejected rather than
+   * silently replacing the wrong county.
+   */
+  private void launchPicker(String expectedCounty) {
     if (importInFlight.get()) {
       Log.d(TAG, "import already in flight; ignoring Import button");
       return;
     }
+    // Remember the expected county (null for a plain Import) so a mismatch error can name it.
+    this.pendingReplaceCounty = expectedCounty;
     // Run on ATAK's host context — ImportFileBrowserDialog needs a UI-thread Activity context;
     // the plugin context lacks the Activity token. Using getMapView().getContext() matches the
     // helloworld sample (HelloWorldDropDownReceiver.sampleFileBrowser, line 3657).
@@ -333,7 +385,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
                 return;
               }
               Log.i(TAG, "picker returned file=" + file.getAbsolutePath());
-              startImport(file);
+              startImport(file, expectedCounty);
             } catch (Throwable t) {
               Log.w(TAG, "onFileSelected threw", t);
             }
@@ -369,10 +421,10 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
                 renderBatchSummary(report);
                 bindFromActiveDataset();
                 // Auto-hide the progress chip after the summary has been visible briefly,
-                // BUT only when the batch fully succeeded. Failures stay visible so the
-                // operator notices them. 3 s is roughly the time it takes to read the
-                // summary line.
-                if (report.failedCount() == 0) {
+                // BUT only when the batch fully succeeded. Failures and county mismatches stay
+                // visible so the operator notices them. 3 s is roughly the time it takes to read
+                // the summary line.
+                if (report.failedCount() == 0 && !sawCountyMismatch) {
                   ui.postDelayed(this::hideProgressFromBatchComplete, 3000L);
                 }
               });
@@ -413,6 +465,16 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
         strId = R.string.offline_address_entry_status_skipped_duplicate;
         break;
       case SKIPPED_COUNTY_MISMATCH:
+        sawCountyMismatch = true;
+        strId = R.string.offline_address_entry_status_county_mismatch;
+        // Surface as an inline error too — a mismatch is an operator mistake worth flagging.
+        // %1$s = picked file's county, %2$s = the row's expected county.
+        showError(
+            pluginContext.getString(
+                R.string.offline_address_error_county_mismatch_format,
+                county,
+                pendingReplaceCounty != null ? pendingReplaceCounty : county));
+        break;
       case FAILED:
       default:
         strId = R.string.offline_address_entry_status_failed;
@@ -441,17 +503,18 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
    * then hands the already-open stream to the worker (mirrors the worker contract the SAF-broadcast
    * era used; the worker closes the stream via try-with-resources).
    */
-  private void startImport(File file) {
+  private void startImport(File file, String expectedCounty) {
     if (!importInFlight.compareAndSet(false, true)) {
       Log.d(TAG, "import already in flight; ignoring second pick");
       return;
     }
     clearError();
+    sawCountyMismatch = false;
     // Feature 005: prefer the batch coordinator (handles .zip + multi-county + bare .sqlite).
     if (batchCoordinator != null) {
       showProgress(pluginContext.getString(R.string.offline_address_entry_status_extracting));
       try {
-        batchCoordinator.enqueue(file);
+        batchCoordinator.enqueue(file, expectedCounty);
         batchCoordinator.finishBatch();
       } catch (Throwable t) {
         Log.w(TAG, "batchCoordinator.enqueue threw", t);
@@ -610,7 +673,8 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
         .setMessage(msg)
         .setPositiveButton(
             android.R.string.ok,
-            (d, w) -> safeRun(this::launchPicker)) // picker → coordinator → strict county-match
+            // picker → coordinator with expectedCounty → SKIPPED_COUNTY_MISMATCH on mismatch.
+            (d, w) -> safeRun(() -> launchPicker(countyExpected)))
         .setNegativeButton(android.R.string.cancel, null)
         .show();
   }
