@@ -31,7 +31,8 @@ public final class AtakDatabasesTownshipBoundary implements TownshipBoundaryFaca
     return BoundaryResolver.resolve(this::rowsInBbox, lat, lon, snapMeters);
   }
 
-  private List<BoundaryResolver.Row> rowsInBbox(int adminLevel, double lat, double lon, double pad) {
+  private List<BoundaryResolver.Row> rowsInBbox(
+      int adminLevel, double lat, double lon, double pad) {
     List<BoundaryResolver.Row> out = new ArrayList<>();
     try (CursorIface c =
         db.query(

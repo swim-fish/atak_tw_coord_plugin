@@ -122,6 +122,8 @@
     <string name="offline_address_button_remove">削除</string>
     <string name="offline_address_confirm_replace">使用中の %1$s データセットを差し替えますか？</string>
     <string name="offline_address_confirm_remove">使用中の %1$s データセットを削除しますか？</string>
+    <string name="offline_address_boundary_row_format">_boundary (townships.sqlite)：%1$s</string>
+    <string name="offline_address_not_installed">未インストール</string>
 
     <!-- Import progress chip. -->
     <string name="offline_address_progress_copying">コピー中… %1$d%%</string>

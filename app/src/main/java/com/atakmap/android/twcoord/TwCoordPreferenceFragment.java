@@ -163,11 +163,36 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
 
     refreshCoordUnitSummary(wrapped);
     refreshLanguageSummary(wrapped);
+    refreshFeature007(wrapped);
 
     // Feature 004 / US3 — re-title the Offline Address category + 3 SwitchPreferences and refresh
     // the dataset-presence status row's summary + clickability per the three states in
     // contracts/address-preferences.md.
     refreshAddressSection(wrapped);
+  }
+
+  /**
+   * Feature 007 — keep the readout-visibility checkbox + result-ordering list aligned with the UI
+   * language. The ordering summary echoes the selected entry label so the operator sees the active
+   * choice at a glance.
+   */
+  private void refreshFeature007(Context wrapped) {
+    setPreferenceTitle(
+        "pref_readout_visible", wrapped.getString(R.string.pref_readout_visible_title));
+    Preference readout = findPreference("pref_readout_visible");
+    if (readout != null) {
+      readout.setSummary(wrapped.getString(R.string.pref_readout_visible_summary));
+    }
+    setPreferenceTitle(
+        "pref_search_result_ordering",
+        wrapped.getString(R.string.pref_search_result_ordering_title));
+    ListPreference ordering = (ListPreference) findPreference("pref_search_result_ordering");
+    if (ordering == null) return;
+    ordering.setEntries(
+        wrapped.getResources().getStringArray(R.array.search_result_ordering_entries));
+    CharSequence entry = ordering.getEntry();
+    ordering.setSummary(
+        entry != null ? entry : wrapped.getString(R.string.pref_search_result_ordering_summary));
   }
 
   private void refreshAddressSection(Context wrapped) {

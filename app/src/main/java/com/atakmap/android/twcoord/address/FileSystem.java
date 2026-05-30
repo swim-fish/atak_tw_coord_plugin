@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * JVM-mockable seam over the subset of filesystem operations {@link AddressBundleImporter} uses.
@@ -83,6 +84,50 @@ public interface FileSystem {
   /** {@code active/_boundary/townships.sqlite} — the mounted boundary database file. */
   default Path boundaryDbFile() {
     return boundaryDir().resolve("townships.sqlite");
+  }
+
+  /**
+   * Feature 007 US3: total on-disk bytes of a single regular file, or {@code 0} when the path is
+   * null/absent/a directory. Best-effort — never throws.
+   */
+  default long sizeOf(Path path) {
+    if (path == null) return 0L;
+    try {
+      if (!Files.exists(path) || Files.isDirectory(path)) return 0L;
+      return Files.size(path);
+    } catch (RuntimeException | IOException e) {
+      // Best-effort, never throws (Constitution VI). Catch RuntimeException too (e.g.
+      // SecurityException on a restrictive filesystem) so nothing escapes this seam.
+      return 0L;
+    }
+  }
+
+  /**
+   * Feature 007 US3: total on-disk bytes of every regular file under {@code dir} (recursively),
+   * including SQLite sidecars (-wal/-shm/-journal/R*Tree). Returns {@code 0} when {@code dir} is
+   * null/absent. Best-effort — never throws.
+   */
+  default long sizeOfDirectory(Path dir) {
+    if (dir == null) return 0L;
+    try {
+      if (!Files.exists(dir)) return 0L;
+      try (Stream<Path> walk = Files.walk(dir)) {
+        return walk.filter(Files::isRegularFile)
+            .mapToLong(
+                p -> {
+                  try {
+                    return Files.size(p);
+                  } catch (RuntimeException | IOException e) {
+                    return 0L;
+                  }
+                })
+            .sum();
+      }
+    } catch (RuntimeException | IOException e) {
+      // Best-effort, never throws (Constitution VI). RuntimeException (e.g. SecurityException from
+      // Files.walk / Files.exists) is treated as 0 rather than escaping this seam.
+      return 0L;
+    }
   }
 
   /**

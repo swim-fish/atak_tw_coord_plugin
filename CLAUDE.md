@@ -1,8 +1,7 @@
 <!-- SPECKIT START -->
-<!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at `specs/006-county-forward-search/plan.md` along with its companion
+at `specs/007-settings-ux-tweaks/plan.md` along with its companion
 docs (`research.md`, `data-model.md`, `contracts/*.md`, `quickstart.md`).
 <!-- SPECKIT END -->
 

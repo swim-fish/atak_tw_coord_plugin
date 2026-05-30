@@ -122,11 +122,7 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
   @Override
   public java.util.List<com.atakmap.android.twcoord.address.forward.AddressCandidate>
       streetCandidates(
-          String district,
-          String foldedFragment,
-          double anchorLat,
-          double anchorLon,
-          int limit) {
+          String district, String foldedFragment, double anchorLat, double anchorLon, int limit) {
     java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw> raw =
         new java.util.ArrayList<>();
     if (district == null || district.isEmpty()) {
@@ -134,7 +130,8 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
     }
     try {
       String frag = foldedFragment == null ? "" : foldedFragment;
-      String tai = com.atakmap.android.twcoord.address.forward.StreetTextNormaliser.taiVariant(frag);
+      String tai =
+          com.atakmap.android.twcoord.address.forward.StreetTextNormaliser.taiVariant(frag);
       // Prefix match on both glyph variants (FR-009 substring incl. 段, never `=`); the app-side
       // re-fold in StreetCandidateRanker confirms the 臺↔台 equivalence (FR-010).
       raw = queryRows(district, frag + "%", tai + "%");
@@ -159,7 +156,8 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
     try {
       String frag = foldedFragment == null ? "" : foldedFragment;
       if (frag.isEmpty()) return java.util.Collections.emptyList();
-      String tai = com.atakmap.android.twcoord.address.forward.StreetTextNormaliser.taiVariant(frag);
+      String tai =
+          com.atakmap.android.twcoord.address.forward.StreetTextNormaliser.taiVariant(frag);
       raw = queryRowsCountyWide(frag + "%", tai + "%");
       if (raw.isEmpty()) {
         raw = queryRowsCountyWide("%" + frag + "%", "%" + tai + "%");
@@ -187,7 +185,8 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
                 + "  FROM places p"
                 + " WHERE COALESCE(NULLIF(p.street, ''), p.area) LIKE ?"
                 + "    OR COALESCE(NULLIF(p.street, ''), p.area) LIKE ?"
-                + " LIMIT " + COUNTY_WIDE_SQL_LIMIT,
+                + " LIMIT "
+                + COUNTY_WIDE_SQL_LIMIT,
             new String[] {like1, like2})) {
       while (c.moveToNext()) {
         out.add(

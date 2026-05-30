@@ -167,4 +167,15 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Feature 007 US3 (FR-013) — page-level _boundary (townships.sqlite) storage row. Lives
+         OUTSIDE the State A/B groups so the boundary size stays visible whether or not any county
+         datasets are installed (the boundary exists independently of counties). The receiver sets
+         its text + visibility in renderBoundaryRow(). -->
+    <TextView
+        android:id="@+id/offline_address_boundary_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="12dp"
+        android:visibility="gone"/>
+
 </LinearLayout>

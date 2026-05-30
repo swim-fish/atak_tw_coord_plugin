@@ -144,8 +144,7 @@ public class WkbMultiPolygonParserTest {
       return;
     }
     Class.forName("org.sqlite.JDBC");
-    try (Connection conn =
-        DriverManager.getConnection("jdbc:sqlite:" + fixture.toAbsolutePath())) {
+    try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + fixture.toAbsolutePath())) {
       // 台中市西區 contains 台中車站 (24.1417, 120.6736).
       byte[] wkb = null;
       try (PreparedStatement ps =

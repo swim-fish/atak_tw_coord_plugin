@@ -57,9 +57,10 @@ final class BoundaryResolver {
           BoundaryGeometry g = WkbMultiPolygonParser.parseOrNull(r.wkb);
           if (g == null) continue; // corrupt geometry — skip, never throw (Constitution VI)
           if (g.covers(lat, lon)) {
-            String county = r.countyZh != null && !r.countyZh.isEmpty()
-                ? r.countyZh
-                : countyFromLevel4(src, lat, lon);
+            String county =
+                r.countyZh != null && !r.countyZh.isEmpty()
+                    ? r.countyZh
+                    : countyFromLevel4(src, lat, lon);
             if (county == null) {
               // District covered but county_zh null and no level-4 cover — return district-less
               // county-unknown as None rather than a half-answer.
@@ -87,9 +88,10 @@ final class BoundaryResolver {
           }
         }
         if (best != null && bestD <= snapMeters) {
-          String county = best.countyZh != null && !best.countyZh.isEmpty()
-              ? best.countyZh
-              : countyFromLevel4(src, lat, lon);
+          String county =
+              best.countyZh != null && !best.countyZh.isEmpty()
+                  ? best.countyZh
+                  : countyFromLevel4(src, lat, lon);
           if (county != null) {
             return LocalityResult.snapped(county, best.nameZh);
           }

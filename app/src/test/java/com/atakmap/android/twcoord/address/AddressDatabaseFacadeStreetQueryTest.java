@@ -71,8 +71,7 @@ public final class AddressDatabaseFacadeStreetQueryTest {
     // 向上路 exists only as 一段…九段 — a bare `=` would return zero. (向上路 lives in 西區 in the
     // fixture, so query that district.)
     List<AddressCandidate> results =
-        facade.streetCandidates(
-            "西區", StreetTextNormaliser.fold("向上路"), 24.146, 120.671, 50);
+        facade.streetCandidates("西區", StreetTextNormaliser.fold("向上路"), 24.146, 120.671, 50);
     assertThat(results).isNotEmpty();
     assertThat(results).allMatch(c -> StreetTextNormaliser.fold(c.street()).startsWith("向上路"));
   }
@@ -81,8 +80,7 @@ public final class AddressDatabaseFacadeStreetQueryTest {
   public void taiwanBoulevardGlyphFoldMatchesGazettedTai() {
     // Operator types 台灣大道; stored rows are 臺灣大道… — app re-fold must match (西區).
     List<AddressCandidate> results =
-        facade.streetCandidates(
-            "西區", StreetTextNormaliser.fold("台灣大道"), 24.146, 120.671, 50);
+        facade.streetCandidates("西區", StreetTextNormaliser.fold("台灣大道"), 24.146, 120.671, 50);
     assertThat(results).isNotEmpty();
     assertThat(results).allMatch(c -> StreetTextNormaliser.fold(c.street()).startsWith("台灣大道"));
   }
@@ -96,8 +94,7 @@ public final class AddressDatabaseFacadeStreetQueryTest {
 
   @Test
   public void resultsRankedByDistanceAndCapped() {
-    List<AddressCandidate> results =
-        facade.streetCandidates("大甲區", "中山路", DAJIA_LAT, DAJIA_LON, 5);
+    List<AddressCandidate> results = facade.streetCandidates("大甲區", "中山路", DAJIA_LAT, DAJIA_LON, 5);
     assertThat(results.size()).isLessThanOrEqualTo(5);
     for (int i = 1; i < results.size(); i++) {
       assertThat(results.get(i).distanceMeters())

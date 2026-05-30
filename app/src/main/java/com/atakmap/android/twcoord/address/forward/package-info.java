@@ -8,7 +8,7 @@
  *
  * <p>Pure logic — the {@code ForwardSearchReceiver} DropDownReceiver is a thin view over the
  * controller. County selection defaults to the map centre; street matching is substring (incl. the
- * {@code 段} suffix) with 臺↔台 + fullwidth/halfwidth folding; results rank by distance to the
- * anchor. No place DB is opened until the street stage (FR-008 / SC-007).
+ * {@code 段} suffix) with 臺↔台 + fullwidth/halfwidth folding; results rank by distance to the anchor.
+ * No place DB is opened until the street stage (FR-008 / SC-007).
  */
 package com.atakmap.android.twcoord.address.forward;

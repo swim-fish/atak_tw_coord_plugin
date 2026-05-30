@@ -9,14 +9,14 @@ import java.io.File;
 /**
  * Production {@link TownshipBoundaryFacade.Factory}: opens {@code townships.sqlite} via ATAK's
  * native SQLite ({@link Databases#openDatabase}) — R*Tree-enabled, same primary path as {@link
- * com.atakmap.android.twcoord.address.AtakDatabasesAddressDatabase}. After opening it probes
- * {@code townships_rtree}; if the probe fails (a host whose SQLite lacks the rtree module), it
- * escalates to the Requery fallback (research R3 / 005 R5), wrapping that database's {@code
+ * com.atakmap.android.twcoord.address.AtakDatabasesAddressDatabase}. After opening it probes {@code
+ * townships_rtree}; if the probe fails (a host whose SQLite lacks the rtree module), it escalates
+ * to the Requery fallback (research R3 / 005 R5), wrapping that database's {@code
  * android.database.Cursor} via {@link SqliteTownshipBoundaryFacade}.
  *
  * <p>Returns {@code null} if the file is missing or neither backend can open + probe it (boundary
- * data effectively absent → forward search shows the "import base data" state, FR-017). Never throws
- * (Constitution VI).
+ * data effectively absent → forward search shows the "import base data" state, FR-017). Never
+ * throws (Constitution VI).
  */
 public final class TownshipBoundaryFactory implements TownshipBoundaryFacade.Factory {
 

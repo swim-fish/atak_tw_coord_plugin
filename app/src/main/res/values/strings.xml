@@ -29,6 +29,11 @@
     <!-- Settings (Tool Preferences entry). -->
     <string name="pref_screen_title">TW Coordinates</string>
     <string name="pref_coord_unit_title">Display unit</string>
+    <!-- Feature 007 US2/US1 — settings entries for readout visibility + search ordering. -->
+    <string name="pref_readout_visible_title">Show on-map readout</string>
+    <string name="pref_readout_visible_summary">Show or hide the on-map coordinate readout.</string>
+    <string name="pref_search_result_ordering_title">Address search result order</string>
+    <string name="pref_search_result_ordering_summary">Order forward-search results by distance or best text match.</string>
     <!-- Summary is overridden at runtime by TwCoordPreferenceFragment with a live preview
          (entry label + sample formatted coordinate). This default is only seen on first
          render before refreshAllSummaries() lands. -->
@@ -234,6 +239,10 @@
     <!-- %1$s = formatted total size (e.g. "789 MB") -->
     <string name="offline_address_total_disk_usage_format">Total: %1$s on disk</string>
 
+    <!-- Feature 007 US3 — boundary folder size row + absent state. %1$s = size or "Not installed". -->
+    <string name="offline_address_boundary_row_format">_boundary (townships.sqlite): %1$s</string>
+    <string name="offline_address_not_installed">Not installed</string>
+
     <!-- Settings: per-county status row format. -->
     <!-- %1$s = data_date, %2$d = inserted row count -->
     <string name="pref_address_active_dataset_row_format">%1$s · %2$d rows</string>
@@ -288,5 +297,10 @@
     <string name="fs_district_all">All</string>
     <!-- %1$s = address text, %2$d = distance in metres -->
     <string name="fs_candidate_format">%1$s · %2$d m</string>
+
+    <!-- Feature 007 US1 — result ordering toggle. -->
+    <string name="fs_ordering_label">Sort by</string>
+    <string name="fs_ordering_similar">Most similar</string>
+    <string name="fs_ordering_distance">Distance</string>
 
 </resources>

@@ -67,7 +67,7 @@ adb shell am force-stop com.atakmap.app.civ
 Open ATAK's **Tools** menu (the toolbar button in the bottom-right, or edge-swipe). The plugin adds **two** entries:
 
 - <img src="images/08b-tools-icon-tw-coord-goto.png" alt="TW Coord GoTo icon" width="24"> **TW Coord GoTo** — opens a side panel where you type a Taiwan coordinate and the map jumps there (§3.1).
-- <img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates icon" width="24"> **TW Coordinates** — cycles the on-map readout widget through Taipower → TWD97 → TWD67 → Off → Taipower … (§3.2).
+- <img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates icon" width="24"> **TW Coordinates** — opens the plugin's settings page, where you choose the on-map readout's coordinate system and show or hide it (§3.2). _(Up to v1.1.0 this icon cycled Taipower → TWD97 → TWD67 → Off on each tap; from v1.2.0 it opens Settings instead — see §3.2.)_
 
 </td>
 </tr>
@@ -111,7 +111,7 @@ Once the readout is on, two lines appear on the right edge of the map:
 - **ME TPC: …** — your own position
 - **MAP TPC: …** — the current map-centre position
 
-Both lines render in whichever coordinate system you cycled to. To turn the readout off entirely, keep tapping **TW Coordinates** in the Tools menu until it reaches the *Off* state.
+Both lines render in whichever coordinate system you picked in **Settings** — Taipower / TWD97 / TWD67 (§4). Tapping **TW Coordinates** in the Tools menu now **opens that settings page**; it no longer cycles the format on each tap. To hide the readout entirely, turn off **Show on-map readout** in Settings.
 
 </td>
 </tr>
@@ -128,9 +128,11 @@ Both lines render in whichever coordinate system you cycled to. To turn the read
 
 Open: ATAK → **Settings** (gear icon) → **Tool Preferences** → **Specific Tool Preferences** → **TW Coordinates**.
 
-There are exactly **two** things you can change, plus one shortcut button:
+You can change the following, plus one shortcut button:
 
-- **Display unit** — which coordinate system the on-map readout widget uses: Taipower / TWD97 / TWD67. Same effect as cycling via the Tools menu (§3.2).
+- **Display unit** — which coordinate system the on-map readout widget uses: Taipower / TWD97 / TWD67. This is now the only place to switch format — tapping the **TW Coordinates** Tools icon opens this page rather than cycling the format (§3.2).
+- **Show on-map readout** — show or hide the on-map coordinate readout widget. This replaces the old "keep tapping the Tools icon until it reaches *Off*" behaviour.
+- **Address search result order** — orders the TW Addr Search results by *distance* or *best text match* (also toggled on the search page itself).
 - **UI language** — forces the plugin's strings to *Use system locale* / *English* / *中文（正體）* / *日本語*. Only affects this plugin — the rest of ATAK is untouched.
 - **Open Coordinate Input** *(button)* — shortcut equivalent of Tools → TW Coord GoTo.
 

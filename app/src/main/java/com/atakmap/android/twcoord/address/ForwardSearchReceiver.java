@@ -22,7 +22,11 @@ import com.atakmap.android.twcoord.address.forward.AddressCandidate;
 import com.atakmap.android.twcoord.address.forward.CompassDirection;
 import com.atakmap.android.twcoord.address.forward.CountySource;
 import com.atakmap.android.twcoord.address.forward.ForwardSearchController;
+import com.atakmap.android.twcoord.address.forward.ResultOrdering;
+import com.atakmap.android.twcoord.address.forward.StreetCandidateRanker;
+import com.atakmap.android.twcoord.address.forward.StreetTextNormaliser;
 import com.atakmap.android.twcoord.plugin.R;
+import com.atakmap.android.twcoord.prefs.PreferenceStore;
 import com.atakmap.coremap.log.Log;
 import com.atakmap.coremap.maps.coords.GeoPoint;
 import com.atakmap.coremap.maps.coords.GeoPointMetaData;
@@ -34,10 +38,10 @@ import java.util.function.Supplier;
 
 /**
  * Feature 006 — the county-scoped forward-search page (FR-016 glove UX). A thin {@link
- * DropDownReceiver} view over {@link ForwardSearchController}: it reads the map-centre / self-marker
- * anchors, drives the county → 鄉鎮市區 → street → pin funnel, and on confirm pans the map via the
- * same {@code CameraController.Programmatic.panTo} call {@code TwCoordGotoView} uses (no auto-pan —
- * GoTo only on the explicit button, FR-013).
+ * DropDownReceiver} view over {@link ForwardSearchController}: it reads the map-centre /
+ * self-marker anchors, drives the county → 鄉鎮市區 → street → pin funnel, and on confirm pans the map
+ * via the same {@code CameraController.Programmatic.panTo} call {@code TwCoordGotoView} uses (no
+ * auto-pan — GoTo only on the explicit button, FR-013).
  *
  * <p>Every host-callable callback wraps {@link Throwable} → {@code Log.w} (Constitution VI). The
  * controller never throws either, so a corrupt dataset degrades to an empty list, not a crash.
@@ -52,6 +56,8 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private final Supplier<TownshipBoundaryFacade> boundarySupplier;
   private final Supplier<ActiveDatasetRegistry> registrySupplier;
   private final Supplier<ConfidenceThresholds> confidenceSupplier;
+  // Feature 007 US1 — persisted result-ordering preference (nullable in JVM tests).
+  private final PreferenceStore prefs;
   private final View view;
 
   // ---- inflated refs ----
@@ -73,12 +79,22 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private final TextView emptyState;
   private final LinearLayout candidateList;
   private final Button btnGoto;
+  // Feature 007 US1 — ordering toggle (最相似 / 距離).
+  private final View orderingRow;
+  private final Button btnOrderSimilar;
+  private final Button btnOrderDistance;
 
   private final AtomicBoolean gotoInFlight = new AtomicBoolean(false);
 
   private ForwardSearchController controller;
   private AddressCandidate selected;
   private final StringBuilder houseNumber = new StringBuilder();
+
+  // Feature 007 US1 — the currently displayed candidate list + the folded street fragment, cached
+  // so
+  // the ordering toggle can re-sort in place WITHOUT re-querying the facade (FR-002 / contract C3).
+  private java.util.List<AddressCandidate> lastResults = new java.util.ArrayList<>();
+  private String lastFoldedFragment = "";
 
   // District cells from the last onCountyChosen() render, so a 地圖中心 / 所在地 tap can auto-select
   // the resolved district (or re-select 全部).
@@ -96,13 +112,15 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
       Context pluginContext,
       Supplier<TownshipBoundaryFacade> boundarySupplier,
       Supplier<ActiveDatasetRegistry> registrySupplier,
-      Supplier<ConfidenceThresholds> confidenceSupplier) {
+      Supplier<ConfidenceThresholds> confidenceSupplier,
+      PreferenceStore prefs) {
     super(mapView);
     this.mapView = mapView;
     this.pluginContext = pluginContext;
     this.boundarySupplier = boundarySupplier;
     this.registrySupplier = registrySupplier;
     this.confidenceSupplier = confidenceSupplier;
+    this.prefs = prefs;
     LayoutInflater inflater = LayoutInflater.from(pluginContext);
     this.view = inflater.inflate(R.layout.forward_search_page, null);
 
@@ -124,6 +142,9 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     emptyState = view.findViewById(R.id.fs_empty_state);
     candidateList = view.findViewById(R.id.fs_candidate_list);
     btnGoto = view.findViewById(R.id.fs_btn_goto);
+    orderingRow = view.findViewById(R.id.fs_ordering_row);
+    btnOrderSimilar = view.findViewById(R.id.fs_btn_order_similar);
+    btnOrderDistance = view.findViewById(R.id.fs_btn_order_distance);
 
     wireStaticButtons();
     buildKeypad();
@@ -217,22 +238,60 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   }
 
   private void wireStaticButtons() {
-    btnMapCenter.setOnClickListener(v -> safeRun(() -> {
-      double[] mc = mapCentre();
-      chooseCountyFromCoord(mc[0], mc[1], CountySource.MAP_CENTER);
-    }));
-    btnSelf.setOnClickListener(v -> safeRun(() -> {
-      double[] s = selfMarker();
-      if (s == null) return;
-      chooseCountyFromCoord(s[0], s[1], CountySource.SELF);
-    }));
+    btnMapCenter.setOnClickListener(
+        v ->
+            safeRun(
+                () -> {
+                  double[] mc = mapCentre();
+                  chooseCountyFromCoord(mc[0], mc[1], CountySource.MAP_CENTER);
+                }));
+    btnSelf.setOnClickListener(
+        v ->
+            safeRun(
+                () -> {
+                  double[] s = selfMarker();
+                  if (s == null) return;
+                  chooseCountyFromCoord(s[0], s[1], CountySource.SELF);
+                }));
     btnList.setOnClickListener(v -> safeRun(this::showCountyList));
     btnSearch.setOnClickListener(v -> safeRun(this::runSearch));
     btnGoto.setOnClickListener(v -> safeRun(() -> panTo(selected)));
     if (btnReset != null) btnReset.setOnClickListener(v -> safeRun(this::resetFunnel));
+    if (btnOrderSimilar != null) {
+      btnOrderSimilar.setOnClickListener(
+          v -> safeRun(() -> onOrderingChosen(ResultOrdering.MOST_SIMILAR)));
+    }
+    if (btnOrderDistance != null) {
+      btnOrderDistance.setOnClickListener(
+          v -> safeRun(() -> onOrderingChosen(ResultOrdering.DISTANCE)));
+    }
   }
 
-  /** Reset the whole funnel back to the map-centre default — clears district/street/house/results. */
+  /** Current ordering preference; defaults to DISTANCE when no PreferenceStore is wired (tests). */
+  private ResultOrdering currentOrdering() {
+    return prefs == null ? ResultOrdering.DISTANCE : prefs.getResultOrdering();
+  }
+
+  /**
+   * Feature 007 US1 — operator flipped the 最相似 / 距離 toggle. Persist the choice and re-sort the
+   * already-displayed candidate list in place (no new facade query — FR-002 / contract C3).
+   */
+  private void onOrderingChosen(ResultOrdering ordering) {
+    if (prefs != null) prefs.setResultOrdering(ordering);
+    reflectOrderingButtons();
+    renderCandidates(StreetCandidateRanker.reorder(lastResults, ordering, lastFoldedFragment));
+  }
+
+  /** Highlight whichever ordering button matches the persisted preference. */
+  private void reflectOrderingButtons() {
+    ResultOrdering ord = currentOrdering();
+    if (btnOrderSimilar != null) btnOrderSimilar.setSelected(ord == ResultOrdering.MOST_SIMILAR);
+    if (btnOrderDistance != null) btnOrderDistance.setSelected(ord == ResultOrdering.DISTANCE);
+  }
+
+  /**
+   * Reset the whole funnel back to the map-centre default — clears district/street/house/results.
+   */
   private void resetFunnel() {
     if (streetInput != null) streetInput.setText("");
     houseNumber.setLength(0);
@@ -245,7 +304,8 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private void chooseCountyFromCoord(double lat, double lon, CountySource source) {
     TownshipBoundaryFacade b = safeGet(boundarySupplier);
     if (b == null || controller == null) return;
-    com.atakmap.android.twcoord.address.boundary.LocalityResult loc = b.localityAt(lat, lon, 1000.0);
+    com.atakmap.android.twcoord.address.boundary.LocalityResult loc =
+        b.localityAt(lat, lon, 1000.0);
     if (loc.county() == null) return; // offshore — leave as-is
     // Re-point the distance anchor to the tapped reference (地圖中心 / 所在地) so subsequent candidate
     // distances are measured from here, not the session-start position.
@@ -308,16 +368,17 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   }
 
   /**
-   * The map settled. While the county is still map-driven (source {@code MAP_CENTER}, or none chosen
-   * yet), re-seed the funnel to the new map-centre county — but only when it actually changes, and
-   * never once the operator has manually picked a county via 清單… / 所在地 (those flip the source to
-   * LIST / SELF and opt out of map-follow).
+   * The map settled. While the county is still map-driven (source {@code MAP_CENTER}, or none
+   * chosen yet), re-seed the funnel to the new map-centre county — but only when it actually
+   * changes, and never once the operator has manually picked a county via 清單… / 所在地 (those flip the
+   * source to LIST / SELF and opt out of map-follow).
    */
   private void onMapSettled() {
     if (controller == null || !isVisible()) return;
     String currentCounty = controller.state() == null ? null : controller.state().county();
     CountySource src = controller.state() == null ? null : controller.state().countySource();
-    if (currentCounty != null && src != CountySource.MAP_CENTER) return; // manual choice — respect it
+    if (currentCounty != null && src != CountySource.MAP_CENTER)
+      return; // manual choice — respect it
     TownshipBoundaryFacade b = safeGet(boundarySupplier);
     if (b == null) return;
     double[] mc = mapCentre();
@@ -365,8 +426,7 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     String suggested = controller.suggestedDistrict();
     // "全部" — search the whole county when the operator doesn't know the 鄉鎮市區.
     if (!districts.isEmpty()) {
-      TextView allCell =
-          gridCell(pluginContext.getString(R.string.fs_district_all), null);
+      TextView allCell = gridCell(pluginContext.getString(R.string.fs_district_all), null);
       allCell.setOnClickListener(
           v ->
               safeRun(
@@ -399,6 +459,9 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     keypad.setVisibility(View.GONE);
     candidateList.removeAllViews();
     emptyState.setVisibility(View.GONE);
+    if (orderingRow != null) orderingRow.setVisibility(View.GONE);
+    lastResults.clear();
+    lastFoldedFragment = "";
     btnGoto.setVisibility(View.GONE);
   }
 
@@ -417,6 +480,9 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     streetRow.setVisibility(View.VISIBLE);
     candidateList.removeAllViews();
     emptyState.setVisibility(View.GONE);
+    if (orderingRow != null) orderingRow.setVisibility(View.GONE);
+    lastResults.clear();
+    lastFoldedFragment = "";
     btnGoto.setVisibility(View.GONE);
   }
 
@@ -425,8 +491,14 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     houseNumber.setLength(0);
     houseValue.setText("");
     String fragment = streetInput.getText() == null ? "" : streetInput.getText().toString();
+    lastFoldedFragment = StreetTextNormaliser.fold(fragment);
     List<AddressCandidate> results = controller.search(fragment, CANDIDATE_LIMIT);
-    renderCandidates(results);
+    lastResults =
+        results == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(results);
+    // Apply the persisted ordering to the fresh result set (FR-003 default applies to new
+    // searches).
+    renderCandidates(
+        StreetCandidateRanker.reorder(lastResults, currentOrdering(), lastFoldedFragment));
     // Reveal the house-number keypad once a street search has run.
     houseValue.setVisibility(View.VISIBLE);
     keypad.setVisibility(View.VISIBLE);
@@ -439,9 +511,13 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     btnGoto.setVisibility(View.GONE);
     if (results == null || results.isEmpty()) {
       emptyState.setVisibility(View.VISIBLE);
+      if (orderingRow != null) orderingRow.setVisibility(View.GONE);
       return;
     }
     emptyState.setVisibility(View.GONE);
+    // Feature 007 US1 — show the ordering toggle whenever there are candidates to sort.
+    if (orderingRow != null) orderingRow.setVisibility(View.VISIBLE);
+    reflectOrderingButtons();
     ConfidenceThresholds ct = safeGet(confidenceSupplier);
     if (ct == null) ct = ConfidenceThresholds.TIGHT;
     double anchorLat = controller.state() != null ? controller.state().anchorLat() : 0;
@@ -511,15 +587,14 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     tv.setTextColor(0xFFFFFFFF);
     int pad = (int) (8 * d);
     tv.setPadding(pad, (int) (6 * d), pad, (int) (6 * d));
-    tv.setLayoutParams(
-        new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+    tv.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
     row.addView(tv);
     return row;
   }
 
   /**
-   * Pan the map to {@code c} (no auto-close — the page stays so the operator can pick another result
-   * or Reset). Re-entrancy-guarded per Constitution VI.
+   * Pan the map to {@code c} (no auto-close — the page stays so the operator can pick another
+   * result or Reset). Re-entrancy-guarded per Constitution VI.
    */
   private void panTo(AddressCandidate c) {
     if (c == null) return;
@@ -542,9 +617,7 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     // 3-column grid. Digits + 之 (the - separator) plus 巷/弄/號 so a glove operator can narrow an
     // address tail like "30巷5弄7號" without summoning the system IME (the filter matches these
     // against the full display name, see ForwardSearchController.withHouseNumber).
-    String[] keys = {
-      "1", "2", "3", "4", "5", "6", "7", "8", "9", "巷", "0", "弄", "號", "之", "⌫"
-    };
+    String[] keys = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "巷", "0", "弄", "號", "之", "⌫"};
     float d = pluginContext.getResources().getDisplayMetrics().density;
     for (String k : keys) {
       Button b = new Button(pluginContext);
@@ -577,7 +650,10 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     houseValue.setText(houseNumber.toString());
     List<AddressCandidate> results =
         controller.withHouseNumber(houseNumber.toString(), CANDIDATE_LIMIT);
-    renderCandidates(results);
+    lastResults =
+        results == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(results);
+    renderCandidates(
+        StreetCandidateRanker.reorder(lastResults, currentOrdering(), lastFoldedFragment));
   }
 
   // ----------------------------------------------------------------------
@@ -585,9 +661,8 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   // ----------------------------------------------------------------------
 
   private void renderCountyChip() {
-    String county = controller != null && controller.state() != null
-        ? controller.state().county()
-        : null;
+    String county =
+        controller != null && controller.state() != null ? controller.state().county() : null;
     if (county == null) {
       countyChip.setText(R.string.fs_county_none);
       return;
@@ -651,6 +726,9 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     keypad.setVisibility(View.GONE);
     candidateList.removeAllViews();
     emptyState.setVisibility(View.GONE);
+    if (orderingRow != null) orderingRow.setVisibility(View.GONE);
+    lastResults.clear();
+    lastFoldedFragment = "";
     btnGoto.setVisibility(View.GONE);
   }
 

@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Minimal, dependency-free parser for the WGS84 OGC WKB blobs the generator emits in
- * {@code townships.geometry_wkb} (little-endian, basic 2D, type 6 MultiPolygon or type 3 Polygon).
+ * Minimal, dependency-free parser for the WGS84 OGC WKB blobs the generator emits in {@code
+ * townships.geometry_wkb} (little-endian, basic 2D, type 6 MultiPolygon or type 3 Polygon).
  *
  * <p>WKB layout consumed (matches {@code shapely.geometry.MultiPolygon(...).wkb} and the proven
  * {@code scripts/verify_polygon_in.py}):
@@ -74,7 +74,9 @@ public final class WkbMultiPolygonParser {
     }
   }
 
-  /** Read one Polygon body (nRings then rings); the byte-order+type header is read by the caller. */
+  /**
+   * Read one Polygon body (nRings then rings); the byte-order+type header is read by the caller.
+   */
   private static boolean readPolygon(Cursor c, BoundaryGeometry.Builder b) {
     long nRings = c.u32();
     if (nRings < 1 || nRings > MAX_RINGS) return false;

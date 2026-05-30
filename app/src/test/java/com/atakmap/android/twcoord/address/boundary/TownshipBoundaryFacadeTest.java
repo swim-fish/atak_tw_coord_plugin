@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,9 +16,9 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 /**
- * Feature 006 T012 — boundary facade against the real {@code townships-fixture.sqlite} (台中市 /
- * 彰化縣 / 雲林縣 / 南投縣 subset). Robolectric's {@link SQLiteDatabase} shadow is xerial-backed
- * (R*Tree enabled), so the production {@link SqliteTownshipBoundaryFacade} code path runs verbatim.
+ * Feature 006 T012 — boundary facade against the real {@code townships-fixture.sqlite} (台中市 / 彰化縣 /
+ * 雲林縣 / 南投縣 subset). Robolectric's {@link SQLiteDatabase} shadow is xerial-backed (R*Tree enabled),
+ * so the production {@link SqliteTownshipBoundaryFacade} code path runs verbatim.
  *
  * <p>Reference points are a subset of {@code scripts/verify_polygon_in.py}'s 8/8 — those whose
  * county is one of the four kept in the fixture. Points outside those four counties (e.g. an

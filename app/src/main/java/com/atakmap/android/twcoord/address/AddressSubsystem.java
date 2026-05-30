@@ -315,8 +315,8 @@ public final class AddressSubsystem implements AutoCloseable {
   /**
    * Feature 006 reverse-path county scoping (FR-014). Resolves the county via the boundary facade,
    * then queries only that county's facade; falls back to {@link #lookupAcrossAllCounties} when the
-   * boundary is absent or the point is outside all boundaries (FR-017). When the detected county has
-   * no installed dataset, returns {@link AddressLookupResult#localityOnly} (FR-015).
+   * boundary is absent or the point is outside all boundaries (FR-017). When the detected county
+   * has no installed dataset, returns {@link AddressLookupResult#localityOnly} (FR-015).
    *
    * <p>For a point inside an active county the single-county result equals the old globally-nearest
    * result (the nearest record lies in the county that contains the point), so there is no

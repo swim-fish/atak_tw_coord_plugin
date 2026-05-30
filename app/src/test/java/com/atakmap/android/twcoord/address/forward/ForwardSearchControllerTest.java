@@ -285,8 +285,7 @@ public class ForwardSearchControllerTest {
         Arrays.asList(
             new AddressCandidate(
                 24.34, 120.62, "台中市東區十甲路30巷5弄7號", "台中市東區十甲路30巷5弄7號", "十甲路", "7號", 10),
-            new AddressCandidate(
-                24.35, 120.63, "台中市東區十甲路88號", "台中市東區十甲路88號", "十甲路", "88號", 50));
+            new AddressCandidate(24.35, 120.63, "台中市東區十甲路88號", "台中市東區十甲路88號", "十甲路", "88號", 50));
     ForwardSearchController c = new ForwardSearchController(b, county -> facade);
     c.chooseCounty("台中市", CountySource.LIST);
     c.chooseDistrict("東區");

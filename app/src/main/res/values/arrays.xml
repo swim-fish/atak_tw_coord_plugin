@@ -44,4 +44,16 @@
         <item>LOOSE</item>
     </string-array>
 
+    <!-- Feature 007 US1 — forward-search result ordering (entries i18n; values are
+         ResultOrdering enum names parsed by ResultOrdering.fromName, NOT translatable). -->
+    <string-array name="search_result_ordering_entries">
+        <item>@string/fs_ordering_distance</item>
+        <item>@string/fs_ordering_similar</item>
+    </string-array>
+
+    <string-array name="search_result_ordering_values" translatable="false">
+        <item>DISTANCE</item>
+        <item>MOST_SIMILAR</item>
+    </string-array>
+
 </resources>

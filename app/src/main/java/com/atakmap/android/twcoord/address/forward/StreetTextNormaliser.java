@@ -11,8 +11,8 @@ package com.atakmap.android.twcoord.address.forward;
  * </ul>
  *
  * Applied to BOTH the query fragment and the candidate {@code street} before comparison, so a typed
- * {@code 台灣大道} matches the stored {@code 臺灣大道}. Idempotent. Never throws on {@code null}
- * (returns {@code ""}).
+ * {@code 台灣大道} matches the stored {@code 臺灣大道}. Idempotent. Never throws on {@code null} (returns
+ * {@code ""}).
  */
 public final class StreetTextNormaliser {
 
@@ -37,11 +37,11 @@ public final class StreetTextNormaliser {
   }
 
   /**
-   * The gazetted {@code 臺}-variant of a folded ({@code 台}-form) fragment, for building a SQL
-   * {@code LIKE} that also matches stored gazetted road names ({@code 臺灣大道…}). SQLite {@code
-   * LIKE} cannot fold glyphs, so the facade queries both {@link #fold}'s output and this variant;
-   * {@link StreetCandidateRanker} then re-folds to confirm. Returns the input unchanged when it has
-   * no {@code 台}.
+   * The gazetted {@code 臺}-variant of a folded ({@code 台}-form) fragment, for building a SQL {@code
+   * LIKE} that also matches stored gazetted road names ({@code 臺灣大道…}). SQLite {@code LIKE} cannot
+   * fold glyphs, so the facade queries both {@link #fold}'s output and this variant; {@link
+   * StreetCandidateRanker} then re-folds to confirm. Returns the input unchanged when it has no
+   * {@code 台}.
    */
   public static String taiVariant(String foldedFragment) {
     if (foldedFragment == null || foldedFragment.indexOf('台') < 0) {

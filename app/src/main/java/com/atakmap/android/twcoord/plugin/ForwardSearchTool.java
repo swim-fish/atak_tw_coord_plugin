@@ -8,9 +8,9 @@ import gov.tak.api.util.Disposable;
 
 /**
  * Fourth Tools-menu entry (feature 006) — the county-scoped forward-search page. Mirrors {@link
- * OfflineAddressTool} / {@link TwCoordGotoTool}: a thin {@link AbstractPluginTool} that fires {@link
- * ForwardSearchIntents#ACTION_SHOW_FORWARD_SEARCH} when tapped. The receiver (registered in {@code
- * TwCoordMapComponent}) opens the drop-down.
+ * OfflineAddressTool} / {@link TwCoordGotoTool}: a thin {@link AbstractPluginTool} that fires
+ * {@link ForwardSearchIntents#ACTION_SHOW_FORWARD_SEARCH} when tapped. The receiver (registered in
+ * {@code TwCoordMapComponent}) opens the drop-down.
  */
 public class ForwardSearchTool extends AbstractPluginTool implements Disposable {
 
