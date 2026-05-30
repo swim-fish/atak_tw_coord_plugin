@@ -136,8 +136,7 @@ public final class BatchImportCoordinatorTest {
     ActiveDatasetRegistry reg =
         new ActiveDatasetRegistry(importer, nullPrimary, () -> fallbackFac, fs);
     BatchImportCoordinator c =
-        new BatchImportCoordinator(
-            importer, extractor, classifier, reg, nullPrimary, executor, fs);
+        new BatchImportCoordinator(importer, extractor, classifier, reg, nullPrimary, executor, fs);
     File picked = writeJunkSqlite("places-x.sqlite");
 
     BatchImportReport report = runBatch(c, picked, "高雄市");

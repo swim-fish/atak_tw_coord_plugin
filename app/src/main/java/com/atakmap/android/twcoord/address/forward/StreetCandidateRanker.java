@@ -79,6 +79,75 @@ public final class StreetCandidateRanker {
     return out;
   }
 
+  /**
+   * Feature 007 US1 — re-sort an already-built candidate list by {@code ordering} without changing
+   * which candidates are present (FR-002 / FR-005). Operates on the currently displayed list (the
+   * distance-bounded top-N {@code search(...)} returned); it does NOT pull in matches outside that
+   * set. Pure; never throws; returns a new list (input untouched).
+   *
+   * <ul>
+   *   <li>{@link ResultOrdering#DISTANCE} — sort by {@code distanceMeters} ascending (the order the
+   *       facade already returns; effectively identity for an already-distance-sorted input).
+   *   <li>{@link ResultOrdering#MOST_SIMILAR} — sort by textual-match band of the folded candidate
+   *       street (falling back to the display name when street is empty) against {@code
+   *       foldedFragment}: exact &gt; prefix &gt; substring (earlier match index wins) &gt; none;
+   *       within a band the shorter leftover wins; ties break by {@code distanceMeters} ascending.
+   * </ul>
+   *
+   * @param results the candidate list to re-order (not mutated)
+   * @param ordering desired ordering ({@code null} ⇒ DISTANCE)
+   * @param foldedFragment the query fragment AFTER {@link StreetTextNormaliser#fold} ({@code
+   *     null}/blank ⇒ every candidate scores band 1, so MOST_SIMILAR degrades to distance order)
+   */
+  public static List<AddressCandidate> reorder(
+      List<AddressCandidate> results, ResultOrdering ordering, String foldedFragment) {
+    List<AddressCandidate> out = new ArrayList<>();
+    if (results == null) return out;
+    out.addAll(results);
+    ResultOrdering ord = ordering == null ? ResultOrdering.DISTANCE : ordering;
+    if (ord == ResultOrdering.DISTANCE) {
+      out.sort(Comparator.comparingDouble(AddressCandidate::distanceMeters));
+      return out;
+    }
+    final String frag = foldedFragment == null ? "" : foldedFragment.trim();
+    out.sort(
+        Comparator.comparingInt((AddressCandidate c) -> -similarityBand(c, frag))
+            .thenComparingInt(c -> matchIndex(c, frag))
+            .thenComparingInt(c -> leftoverLength(c, frag))
+            .thenComparingDouble(AddressCandidate::distanceMeters));
+    return out;
+  }
+
+  /** Folded text used for similarity: the street, or the display name when street is empty. */
+  private static String similarityText(AddressCandidate c) {
+    String street = c.street();
+    String base = (street != null && !street.isEmpty()) ? street : c.displayName();
+    return StreetTextNormaliser.fold(base);
+  }
+
+  /** 4 = exact, 3 = prefix, 2 = substring, 1 = none/blank-fragment. Higher is more similar. */
+  static int similarityBand(AddressCandidate c, String foldedFragment) {
+    if (foldedFragment == null || foldedFragment.isEmpty()) return 1;
+    String t = similarityText(c);
+    if (t.equals(foldedFragment)) return 4;
+    if (t.startsWith(foldedFragment)) return 3;
+    if (t.contains(foldedFragment)) return 2;
+    return 1;
+  }
+
+  /** Match index for the substring band (earlier = better); large sentinel when no match. */
+  private static int matchIndex(AddressCandidate c, String foldedFragment) {
+    if (foldedFragment == null || foldedFragment.isEmpty()) return Integer.MAX_VALUE;
+    int i = similarityText(c).indexOf(foldedFragment);
+    return i < 0 ? Integer.MAX_VALUE : i;
+  }
+
+  /** Leftover characters after removing the fragment length (shorter = better). */
+  private static int leftoverLength(AddressCandidate c, String foldedFragment) {
+    int fragLen = foldedFragment == null ? 0 : foldedFragment.length();
+    return Math.max(0, similarityText(c).length() - fragLen);
+  }
+
   static double haversine(double lat1, double lon1, double lat2, double lon2) {
     double p1 = Math.toRadians(lat1);
     double p2 = Math.toRadians(lat2);

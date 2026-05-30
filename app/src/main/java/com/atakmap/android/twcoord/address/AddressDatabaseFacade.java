@@ -29,14 +29,15 @@ public interface AddressDatabaseFacade extends AutoCloseable {
 
   /**
    * Feature 006 (T022): district-scoped, distance-ranked street lookup for forward search. Filters
-   * {@code places} to {@code district} (matched against the {@code township} column), street-matches
-   * {@code foldedFragment} as a prefix/substring spanning the {@code 段} suffix (never exact {@code
-   * =}, FR-009), folds {@code 臺}↔{@code 台} + digit width on both sides (FR-010), ranks ascending by
-   * haversine distance to the anchor, and returns at most {@code limit} rows.
+   * {@code places} to {@code district} (matched against the {@code township} column),
+   * street-matches {@code foldedFragment} as a prefix/substring spanning the {@code 段} suffix
+   * (never exact {@code =}, FR-009), folds {@code 臺}↔{@code 台} + digit width on both sides
+   * (FR-010), ranks ascending by haversine distance to the anchor, and returns at most {@code
+   * limit} rows.
    *
    * <p>Empty-street rows ({@code places.street} NULL/blank — located by a named 巷/莊/新村 in {@code
-   * places.area}) match on and return their {@code area} as the locator, so they surface under their
-   * locality name instead of vanishing from the funnel.
+   * places.area}) match on and return their {@code area} as the locator, so they surface under
+   * their locality name instead of vanishing from the funnel.
    *
    * <p>Default implementation returns an empty list so test doubles and the legacy single-active
    * facades that don't implement forward search keep compiling. Production facades override it.
@@ -49,19 +50,15 @@ public interface AddressDatabaseFacade extends AutoCloseable {
    */
   default java.util.List<com.atakmap.android.twcoord.address.forward.AddressCandidate>
       streetCandidates(
-          String district,
-          String foldedFragment,
-          double anchorLat,
-          double anchorLon,
-          int limit) {
+          String district, String foldedFragment, double anchorLat, double anchorLon, int limit) {
     return java.util.Collections.emptyList();
   }
 
   /**
    * Feature 006 — county-wide street lookup: same fold/rank contract as {@link #streetCandidates}
    * but WITHOUT the {@code township} filter, so the operator can search the whole county when they
-   * don't know the 鄉鎮市區 ("全部" / All districts). Distance ranking keeps near matches first, which
-   * is what disambiguates same-named streets across districts. Never throws (Constitution VI).
+   * don't know the 鄉鎮市區 ("全部" / All districts). Distance ranking keeps near matches first, which is
+   * what disambiguates same-named streets across districts. Never throws (Constitution VI).
    *
    * @param foldedFragment the street fragment AFTER {@link
    *     com.atakmap.android.twcoord.address.forward.StreetTextNormaliser#fold}

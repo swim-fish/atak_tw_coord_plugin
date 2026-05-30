@@ -67,7 +67,7 @@ adb shell am force-stop com.atakmap.app.civ
 打開 ATAK 的 **Tools** 選單（右下角工具列按鈕，或從邊緣滑入）。外掛新增了 **兩個** 項目：
 
 - <img src="images/08b-tools-icon-tw-coord-goto.png" alt="TW Coord GoTo 圖示" width="24"> **TW Coord GoTo** — 從右側滑出側面板，輸入台灣座標後地圖會跳過去（§3.1）。
-- <img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates 圖示" width="24"> **TW Coordinates** — 循環切換地圖讀值小工具的顯示單位：台電 → TWD97 → TWD67 → 關閉 → 台電 …（§3.2）。
+- <img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates 圖示" width="24"> **TW Coordinates** — 開啟本外掛的設定頁，在那裡選擇地圖讀值小工具的座標系統並切換顯示／隱藏（§3.2）。_（v1.1.0 以前點此圖示會循環切換 台電 → TWD97 → TWD67 → 關閉；自 v1.2.0 起改為開啟設定頁，詳見 §3.2。）_
 
 </td>
 </tr>
@@ -111,7 +111,7 @@ adb shell am force-stop com.atakmap.app.civ
 - **ME TPC: …** — 你目前所在位置
 - **MAP TPC: …** — 目前的地圖中心位置
 
-兩行都會依你切換到的座標系統來呈現。要完全關閉讀值，只要在 Tools 選單持續點擊 **TW Coordinates** 直到進入 *Off* 狀態即可。
+兩行都會依你在 **設定** 中選的座標系統來呈現——台電 / TWD97 / TWD67（§4）。在 Tools 選單點擊 **TW Coordinates** 現在會**開啟該設定頁**，不再每點一下就循環切換格式。若要完全隱藏讀值，請到設定關閉 **Show on-map readout（顯示地圖讀值）**。
 
 </td>
 </tr>
@@ -128,9 +128,11 @@ adb shell am force-stop com.atakmap.app.civ
 
 開啟方式：ATAK → **Settings**（齒輪圖示）→ **Tool Preferences** → **Specific Tool Preferences** → **TW Coordinates**。
 
-實際上你能調整的就只有 **兩項**，再加一個捷徑按鈕：
+你可以調整以下項目，再加一個捷徑按鈕：
 
-- **Display unit** — 決定地圖讀值小工具使用的座標系統：台電 / TWD97 / TWD67。效果等同於從 Tools 選單循環切換（§3.2）。
+- **Display unit** — 決定地圖讀值小工具使用的座標系統：台電 / TWD97 / TWD67。這現在是切換格式的唯一入口——點擊 **TW Coordinates** Tools 圖示會開啟此頁，而非循環切換格式（§3.2）。
+- **Show on-map readout（顯示地圖讀值）** — 顯示或隱藏地圖上的座標讀值小工具。取代了舊版「持續點擊 Tools 圖示直到 *Off*」的做法。
+- **Address search result order（位址搜尋結果排序）** — 將 TW Addr Search 的結果依 *距離* 或 *最相似（文字比對）* 排序（也可在搜尋頁面上直接切換）。
 - **UI language** — 強制此外掛的介面字串使用 *系統語系* / *英文* / *中文（正體）* / *日文*。只影響本外掛，不會動到 ATAK 其他部分。
 - **Open Coordinate Input** *(按鈕)* — 等同於 Tools → TW Coord GoTo 的捷徑。
 

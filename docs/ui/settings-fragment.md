@@ -2,7 +2,22 @@
 
 **Surface owner**: `com.atakmap.android.twcoord.TwCoordPreferenceFragment`
 **Hosted at**: ATAK menu → `Settings` → `Tool Preferences` → `Specific Tool Preferences` → **TW Coordinates**
+**Also opened by**: the **TW Coordinates** Tools-menu icon (feature 007 US2) — see "Tool-button entry point" below
 **Phase**: US3 — shipped 2026-05-16 (T045 / T046 / T047 / T048)
+
+## Tool-button entry point (feature 007 US2)
+
+Tapping the **TW Coordinates** Tools-menu icon (`TwCoordTool` → `ACTION_SHOW_PLUGIN`)
+opens **this fragment**. Previously the same handler cycled the on-map readout's
+coordinate unit `Off → Taipower → TWD97 → TWD67`; that cycle is removed
+("取消直接切換座標"). `TwCoordMapComponent.toggleReceiver` now broadcasts
+`com.atakmap.app.ADVANCED_SETTINGS` with a `toolkey` extra of `PREF_KEY` (the
+ATAK-sanctioned jump-to-a-plugin's-Tool-Preferences pattern, mirrored from the
+meshtastic `MeshtasticDropDownReceiver.openPluginPreferences` sample). Merely
+opening the page does NOT change the active format (FR-007). The format is now
+chosen via `pref_coord_unit`, and the readout's show/hide moved to the new
+`pref_readout_visible` toggle. See `docs/user-guide.md` §3.2 + §4 for the
+operator-facing description.
 
 ## Anatomy
 
@@ -18,13 +33,21 @@
 └────────────────────────────────────────────────────┘
 ```
 
-Two `ListPreference` entries declared in
-`app/src/main/res/xml/preferences.xml`:
+Entries declared in `app/src/main/res/xml/preferences.xml`:
 
-| Key                 | Options                                           | Default  |
-|---------------------|---------------------------------------------------|----------|
-| `pref_coord_unit`   | `TAIPOWER` · `TWD97` · `TWD67`                    | `TWD97`  |
-| `pref_ui_language`  | `SYSTEM` · `EN` · `ZH_TW` · `JA`                  | `SYSTEM` |
+| Key                          | Type / Options                                       | Default    |
+|------------------------------|------------------------------------------------------|------------|
+| `pref_coord_unit`            | `ListPreference` — `TAIPOWER` · `TWD97` · `TWD67`    | `TWD97`    |
+| `pref_readout_visible`       | `CheckBoxPreference` (feature 007 US2)               | `true`     |
+| `pref_search_result_ordering`| `PanListPreference` — `DISTANCE` · `MOST_SIMILAR` (feature 007 US1) | `DISTANCE` |
+| `pref_ui_language`           | `ListPreference` — `SYSTEM` · `EN` · `ZH_TW` · `JA`  | `SYSTEM`   |
+
+`pref_readout_visible` (title `Show on-map readout`) gates the on-map readout
+widget — it replaces the show/hide that the old tool-button cycle's `Off` state
+used to provide; applied at `onCreate` and live via `prefListener`.
+`pref_search_result_ordering` (title `Address search result order`) is shared
+with the TW Addr Search page's in-page toggle (see
+`docs/ui/forward-search-page.md`); both bind the same key.
 
 Entry labels come from `strings.xml` (and `values-zh-rTW/`, `values-
 ja/`), so the dialogue text is localised to the currently-resolved

@@ -5,9 +5,9 @@ import java.util.List;
 
 /**
  * Read API over the singleton {@code townships.sqlite} boundary layer (feature 006). Answers "which
- * 縣市 + 鄉鎮市區 is this coordinate in?" via an R*Tree bbox prefilter + WKB polygon-in test,
- * WITHOUT opening any per-county address database (FR-001 / SC-002). Also serves the county /
- * district pick-lists for the forward-search funnel (FR-006 / FR-007).
+ * 縣市 + 鄉鎮市區 is this coordinate in?" via an R*Tree bbox prefilter + WKB polygon-in test, WITHOUT
+ * opening any per-county address database (FR-001 / SC-002). Also serves the county / district
+ * pick-lists for the forward-search funnel (FR-006 / FR-007).
  *
  * <p>Per {@code contracts/township-boundary-facade.md}. Implementations MUST NOT throw out of any
  * method — a malformed geometry blob or SQL error degrades to {@link LocalityResult#none()} (or an
@@ -29,7 +29,9 @@ public interface TownshipBoundaryFacade extends AutoCloseable {
    */
   LocalityResult localityAt(double lat, double lon, double snapMeters);
 
-  /** Level-4 縣市 names present in the data, for the funnel's manual list (FR-006). Sorted, stable. */
+  /**
+   * Level-4 縣市 names present in the data, for the funnel's manual list (FR-006). Sorted, stable.
+   */
   List<String> counties();
 
   /** Level-7/8 鄉鎮市區 names for a county, for stage ② (FR-007). Sorted, stable; empty if unknown. */

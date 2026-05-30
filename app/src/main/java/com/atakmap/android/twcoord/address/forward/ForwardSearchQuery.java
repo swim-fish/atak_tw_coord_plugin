@@ -53,8 +53,7 @@ public final class ForwardSearchQuery {
 
   public ForwardSearchQuery withDistrict(String district) {
     // Changing district clears the downstream street/number.
-    return new ForwardSearchQuery(
-        county, countySource, district, null, null, anchorLat, anchorLon);
+    return new ForwardSearchQuery(county, countySource, district, null, null, anchorLat, anchorLon);
   }
 
   public ForwardSearchQuery withStreetFragment(String fragment) {

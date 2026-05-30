@@ -186,6 +186,42 @@
             android:columnCount="3"
             android:visibility="gone" />
 
+        <!-- ===== Result ordering (feature 007 US1): 最相似 / 距離 ===== -->
+        <LinearLayout
+            android:id="@+id/fs_ordering_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="8dp"
+            android:visibility="gone"
+            android:weightSum="3">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="14sp"
+                android:textColor="#FFFFFF"
+                android:text="@string/fs_ordering_label" />
+
+            <Button
+                android:id="@+id/fs_btn_order_similar"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:textSize="14sp"
+                android:text="@string/fs_ordering_similar" />
+
+            <Button
+                android:id="@+id/fs_btn_order_distance"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:textSize="14sp"
+                android:text="@string/fs_ordering_distance" />
+        </LinearLayout>
+
         <!-- ===== Candidate list + GoTo ===== -->
         <TextView
             android:id="@+id/fs_empty_state"

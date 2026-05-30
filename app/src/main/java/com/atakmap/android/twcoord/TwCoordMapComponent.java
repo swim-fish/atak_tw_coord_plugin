@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
-import android.widget.Toast;
 import com.atakmap.android.ipc.AtakBroadcast;
 import com.atakmap.android.maps.AbstractMapComponent;
 import com.atakmap.android.maps.MapEvent;
@@ -44,12 +43,15 @@ import com.atakmap.android.twcoord.prefs.PreferenceStore;
 import com.atakmap.android.twcoord.prefs.UserPreference;
 import com.atakmap.app.preferences.ToolsPreferenceFragment;
 import com.atakmap.coremap.maps.coords.GeoPoint;
+import com.atakmap.map.MapRenderer2;
+import com.atakmap.map.MapRenderer3;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Hub of all listener wiring for US1/US2/US3. Owns the widget, the preference store, and the
@@ -155,6 +157,48 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       event -> renderMapCentre();
 
   /**
+   * Coalescing guard so a burst of {@link #cameraChangedListener} fires (one per render frame
+   * during an animation/drag) collapses into at most one queued UI-thread refresh.
+   */
+  private final AtomicBoolean mapRefreshPending = new AtomicBoolean(false);
+
+  /**
+   * Wakes the bottom-left MAP readout on EVERY camera change, including programmatic pans. {@code
+   * CameraController.Programmatic.panTo} (TW Coord GoTo submit + forward-search tap-to-pan) drives
+   * the renderer camera directly and does NOT dispatch {@link MapEvent#MAP_MOVED} through the
+   * {@link MapEventDispatcher}, so {@link #mapCentreListener} never sees those moves and the MAP
+   * coordinate + address line went stale (issue swim-fish/atak_tw_coord_plugin#1). This
+   * renderer-level listener catches them. It fires on the GL/render thread, so it hops to the UI
+   * thread via {@code mapView.post} and coalesces through {@link #mapRefreshPending}; {@code
+   * renderMapCentre} then reads the now-current {@code mapView.getPoint()} (also avoiding the
+   * one-frame lag of the non-animated pan). Wrapped per Constitution VI.
+   */
+  private final MapRenderer2.OnCameraChangedListener2 cameraChangedListener =
+      new MapRenderer2.OnCameraChangedListener2() {
+        @Override
+        public void onCameraChanged(MapRenderer2 renderer) {
+          if (mapView == null) return;
+          if (mapRefreshPending.compareAndSet(false, true)) {
+            mapView.post(
+                () -> {
+                  mapRefreshPending.set(false);
+                  try {
+                    renderMapCentre();
+                  } catch (Throwable t) {
+                    android.util.Log.w(
+                        "TwCoordMapComponent", "camera-changed renderMapCentre threw", t);
+                  }
+                });
+          }
+        }
+
+        @Override
+        public void onCameraChangeRequested(MapRenderer2 renderer) {
+          /* no-op — refresh on the applied change, not on the request */
+        }
+      };
+
+  /**
    * CoT target click — render the tapped item's coordinate in the top-right row. ATAK fires
    * ITEM_CLICK every time the user taps any MapItem with a position; we keep the most-recent one as
    * the "current target" until either another item is tapped or the map itself is tapped (cleared
@@ -205,6 +249,8 @@ public class TwCoordMapComponent extends AbstractMapComponent {
         boolean confidenceChanged =
             snap.confidenceThresholds() != activePrefs.confidenceThresholds();
         activePrefs = snap;
+        // Feature 007 US2 — apply on-map readout visibility (its key fires fireAll()). Idempotent.
+        if (widget != null && prefs != null) widget.setVisible(prefs.isReadoutVisible());
         if (languageChanged) {
           rebuildLocalisedContext();
           if (widget != null && localisedPluginContext != null) {
@@ -270,61 +316,31 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       };
 
   /**
-   * Tools-menu tap handler. ATAK fires {@link #ACTION_SHOW_PLUGIN} when the user taps the "TW
-   * Coordinates" icon under Tools; we cycle through four states:
+   * Tools-menu tap handler (feature 007 US2). ATAK fires {@link #ACTION_SHOW_PLUGIN} when the user
+   * taps the "TW Coordinates" icon under Tools. It now OPENS THE PLUGIN SETTINGS PAGE instead of
+   * cycling the on-map coordinate unit — the prior {@code Off → Taipower → TWD97 → TWD67} cycle is
+   * removed ("取消直接切換座標"). The coordinate format is now chosen in settings (the {@code
+   * pref_coord_unit} list), and the on-map readout's show/hide moved to the {@code
+   * pref_readout_visible} toggle.
    *
-   * <pre>
-   *   Off → Taipower → TWD97 → TWD67 → Off → Taipower → ...
-   * </pre>
-   *
-   * <p>The unit change also writes to {@link PreferenceStore} so the settings page reflects the
-   * cycle position.
+   * <p>Opens via the {@code com.atakmap.app.ADVANCED_SETTINGS} broadcast with a {@code toolkey}
+   * extra set to {@link #PREF_KEY} — the ATAK-sanctioned way to jump straight to a plugin's
+   * registered Tool Preferences screen (pattern from the meshtastic sample {@code
+   * MeshtasticDropDownReceiver.openPluginPreferences}; action listed in the SDK {@code
+   * docs/broadcastlist.txt}). Merely opening it does NOT change the active format (FR-007). Wrapped
+   * per Constitution VI.
    */
   private final BroadcastReceiver toggleReceiver =
       new BroadcastReceiver() {
         @Override
         public void onReceive(Context ctx, Intent intent) {
-          if (widget == null || prefs == null || strings == null) return;
-
-          boolean wasVisible = widget.isVisible();
-          CoordinateUnit current = activePrefs.coordUnit();
-
-          CoordinateUnit nextUnit;
-          boolean nextVisible;
-          if (!wasVisible) {
-            nextUnit = CoordinateUnit.TAIPOWER;
-            nextVisible = true;
-          } else {
-            switch (current) {
-              case TAIPOWER:
-                nextUnit = CoordinateUnit.TWD97;
-                nextVisible = true;
-                break;
-              case TWD97:
-                nextUnit = CoordinateUnit.TWD67;
-                nextVisible = true;
-                break;
-              case TWD67:
-              default:
-                nextUnit = current;
-                nextVisible = false;
-                break;
-            }
+          try {
+            Intent open = new Intent("com.atakmap.app.ADVANCED_SETTINGS");
+            open.putExtra("toolkey", PREF_KEY);
+            AtakBroadcast.getInstance().sendBroadcast(open);
+          } catch (Throwable t) {
+            android.util.Log.w("TwCoordMapComponent", "open settings from tool button threw", t);
           }
-
-          widget.setVisible(nextVisible);
-          if (nextVisible && nextUnit != current) {
-            // Triggers prefListener → renderMapCentre + renderMeFromLastKnown with new unit.
-            prefs.setCoordinateUnit(nextUnit);
-          }
-
-          String msg;
-          if (nextVisible) {
-            msg = pluginContext.getString(R.string.toast_widget_cycle, unitTagFor(nextUnit));
-          } else {
-            msg = pluginContext.getString(R.string.toast_widget_hidden);
-          }
-          Toast.makeText(pluginContext, msg, Toast.LENGTH_SHORT).show();
         }
       };
 
@@ -371,18 +387,31 @@ public class TwCoordMapComponent extends AbstractMapComponent {
 
     this.widget = new TwCoordWidget(view);
     widget.attach();
+    // Feature 007 US2 — apply the persisted on-map readout visibility (replaces the show/hide the
+    // old tool-button cycle provided). Defaults to shown.
+    widget.setVisible(prefs.isReadoutVisible());
 
     this.selfSub =
         new SelfMarkerSubscriber(
             System::currentTimeMillis, 1_000L, activePrefs.staleFixThresholdMs(), subListener);
 
     // ATAK-CIV 5.7.0.3 fires MAP_SCROLL continuously during a user drag, MAP_SETTLED once when
-    // the drag finishes, MAP_SCALE on zoom, and MAP_MOVED on programmatic recentre. Subscribe
-    // to all four so the readout follows every kind of viewport change.
+    // the drag finishes, and MAP_SCALE on zoom. These cover gesture-driven viewport changes.
+    // NOTE: programmatic recentres via CameraController.Programmatic.panTo do NOT come through the
+    // dispatcher (they drive the renderer camera directly) — the renderer camera listener below
+    // covers those; keep both so every kind of viewport change refreshes the readout.
     view.getMapEventDispatcher().addMapEventListener(MapEvent.MAP_MOVED, mapCentreListener);
     view.getMapEventDispatcher().addMapEventListener(MapEvent.MAP_SCROLL, mapCentreListener);
     view.getMapEventDispatcher().addMapEventListener(MapEvent.MAP_SETTLED, mapCentreListener);
     view.getMapEventDispatcher().addMapEventListener(MapEvent.MAP_SCALE, mapCentreListener);
+
+    // Catch programmatic pans (GoTo submit, forward-search tap-to-pan) that bypass the dispatcher.
+    try {
+      MapRenderer3 renderer = view.getRenderer3();
+      if (renderer != null) renderer.addOnCameraChangedListener(cameraChangedListener);
+    } catch (Throwable t) {
+      android.util.Log.w("TwCoordMapComponent", "addOnCameraChangedListener threw", t);
+    }
 
     view.getMapEventDispatcher().addMapEventListener(MapEvent.ITEM_CLICK, targetClickListener);
     view.getMapEventDispatcher()
@@ -532,6 +561,8 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     if (addressReceiver != null) {
       addressReceiver.setBatchCoordinator(addressCoordinator);
       addressReceiver.setRegistry(addressRegistry);
+      // Feature 007 US3 — supply the FileSystem so the page can show per-county + _boundary sizes.
+      addressReceiver.setFileSystem(addressFileSystem);
     }
 
     // Feature 006 — forward-search page (fourth Tools entry). The boundary facade + registry are
@@ -542,9 +573,9 @@ public class TwCoordMapComponent extends AbstractMapComponent {
             pluginContext,
             this::boundaryFacadeOrRemount,
             () -> addressRegistry,
-            () -> activePrefs.confidenceThresholds());
-    AtakBroadcast.DocumentedIntentFilter forwardFilter =
-        new AtakBroadcast.DocumentedIntentFilter();
+            () -> activePrefs.confidenceThresholds(),
+            prefs);
+    AtakBroadcast.DocumentedIntentFilter forwardFilter = new AtakBroadcast.DocumentedIntentFilter();
     forwardFilter.addAction(
         com.atakmap.android.twcoord.address.ForwardSearchIntents.ACTION_SHOW_FORWARD_SEARCH);
     AtakBroadcast.getInstance().registerReceiver(forwardSearchReceiver, forwardFilter);
@@ -616,11 +647,12 @@ public class TwCoordMapComponent extends AbstractMapComponent {
 
   /**
    * Feature 006 — return the mounted township-boundary facade, lazily (re)opening {@code
-   * active/_boundary/townships.sqlite} when it isn't open yet. Called once at setup and again as the
-   * forward-search boundary supplier, so a boundary imported later in the SAME session is picked up
-   * the next time forward search opens — no ATAK restart needed. Returns {@code null} when no
-   * boundary file exists yet (forward search then shows "import base data"). Synchronized because
-   * setup, the UI-thread supplier, and the import executor (which writes the file) can race.
+   * active/_boundary/townships.sqlite} when it isn't open yet. Called once at setup and again as
+   * the forward-search boundary supplier, so a boundary imported later in the SAME session is
+   * picked up the next time forward search opens — no ATAK restart needed. Returns {@code null}
+   * when no boundary file exists yet (forward search then shows "import base data"). Synchronized
+   * because setup, the UI-thread supplier, and the import executor (which writes the file) can
+   * race.
    */
   private synchronized com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade
       boundaryFacadeOrRemount() {
@@ -753,6 +785,12 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       view.getMapEventDispatcher().removeMapEventListener(MapEvent.MAP_SCROLL, mapCentreListener);
       view.getMapEventDispatcher().removeMapEventListener(MapEvent.MAP_SETTLED, mapCentreListener);
       view.getMapEventDispatcher().removeMapEventListener(MapEvent.MAP_SCALE, mapCentreListener);
+      try {
+        MapRenderer3 renderer = view.getRenderer3();
+        if (renderer != null) renderer.removeOnCameraChangedListener(cameraChangedListener);
+      } catch (Throwable t) {
+        android.util.Log.w("TwCoordMapComponent", "removeOnCameraChangedListener threw", t);
+      }
       view.getMapEventDispatcher().removeMapEventListener(MapEvent.ITEM_CLICK, targetClickListener);
       view.getMapEventDispatcher()
           .removeMapEventListener(MapEvent.ITEM_CONFIRMED_CLICK, targetClickListener);

@@ -8,8 +8,8 @@ import java.util.List;
 /**
  * {@link TownshipBoundaryFacade} over anything that yields an {@link android.database.Cursor} —
  * i.e. the Robolectric/xerial test path (android {@code SQLiteDatabase}) AND the Requery fallback
- * ({@code io.requery.android.database.sqlite.SQLiteDatabase}, whose {@code rawQuery} also returns an
- * {@code android.database.Cursor}). The ATAK-native production primary uses the sibling {@link
+ * ({@code io.requery.android.database.sqlite.SQLiteDatabase}, whose {@code rawQuery} also returns
+ * an {@code android.database.Cursor}). The ATAK-native production primary uses the sibling {@link
  * AtakDatabasesTownshipBoundary} ({@code CursorIface}).
  *
  * <p>All query results feed {@link BoundaryResolver}, which owns the (tested) covers/snap logic.
@@ -38,7 +38,8 @@ public final class SqliteTownshipBoundaryFacade implements TownshipBoundaryFacad
     return BoundaryResolver.resolve(this::rowsInBbox, lat, lon, snapMeters);
   }
 
-  private List<BoundaryResolver.Row> rowsInBbox(int adminLevel, double lat, double lon, double pad) {
+  private List<BoundaryResolver.Row> rowsInBbox(
+      int adminLevel, double lat, double lon, double pad) {
     List<BoundaryResolver.Row> out = new ArrayList<>();
     try (Cursor c =
         db.rawQuery(

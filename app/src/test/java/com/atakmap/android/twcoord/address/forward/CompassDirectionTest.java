@@ -11,8 +11,10 @@ public final class CompassDirectionTest {
   @Test
   public void dueNorthEastSouthWest() {
     // From the equator/prime-meridian origin, step a small amount each way.
-    assertThat(CompassDirection.abbrev16(CompassDirection.bearingDegrees(0, 0, 1, 0))).isEqualTo("N");
-    assertThat(CompassDirection.abbrev16(CompassDirection.bearingDegrees(0, 0, 0, 1))).isEqualTo("E");
+    assertThat(CompassDirection.abbrev16(CompassDirection.bearingDegrees(0, 0, 1, 0)))
+        .isEqualTo("N");
+    assertThat(CompassDirection.abbrev16(CompassDirection.bearingDegrees(0, 0, 0, 1)))
+        .isEqualTo("E");
     assertThat(CompassDirection.abbrev16(CompassDirection.bearingDegrees(0, 0, -1, 0)))
         .isEqualTo("S");
     assertThat(CompassDirection.abbrev16(CompassDirection.bearingDegrees(0, 0, 0, -1)))

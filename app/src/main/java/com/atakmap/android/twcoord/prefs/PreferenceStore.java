@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import com.atakmap.android.twcoord.address.ConfidenceThresholds;
+import com.atakmap.android.twcoord.address.forward.ResultOrdering;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.gotopage.MarkerMode;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
@@ -60,6 +61,17 @@ public final class PreferenceStore {
   // values keeps the 2026-05-27 device-verified default for upgrading installs.
   public static final String KEY_ADDRESS_CONFIDENCE_PRESET = "pref_address_confidence_preset";
 
+  // Feature 007 US1: forward-search result ordering (最相似 / 距離). Stored as the ResultOrdering
+  // enum name; missing/corrupt → DISTANCE (the shipped behaviour). Does NOT fire fireAll() — the
+  // on-map widget does not depend on it; the forward-search page reads it directly at open + on
+  // toggle (mirrors the GoTo keys).
+  public static final String KEY_SEARCH_RESULT_ORDERING = "pref_search_result_ordering";
+
+  // Feature 007 US2: on-map readout visibility. Replaces the show/hide the old tool-button cycle
+  // provided (the cycle ended hidden). Defaults to true (shown). DOES fire fireAll() so the widget
+  // reacts within one refresh cycle.
+  public static final String KEY_READOUT_VISIBLE = "pref_readout_visible";
+
   private static final String TAG = "TwCoordPrefs";
 
   private final SharedPreferences sp;
@@ -87,7 +99,8 @@ public final class PreferenceStore {
                 || KEY_ADDRESS_ROW_ME.equals(key)
                 || KEY_ADDRESS_ROW_TARGET.equals(key)
                 || KEY_ADDRESS_ROW_MAP.equals(key)
-                || KEY_ADDRESS_CONFIDENCE_PRESET.equals(key)) {
+                || KEY_ADDRESS_CONFIDENCE_PRESET.equals(key)
+                || KEY_READOUT_VISIBLE.equals(key)) {
               fireAll();
             }
           }
@@ -335,5 +348,32 @@ public final class PreferenceStore {
   public void setConfidenceThresholds(ConfidenceThresholds preset) {
     Objects.requireNonNull(preset, "preset");
     sp.edit().putString(KEY_ADDRESS_CONFIDENCE_PRESET, preset.name()).apply();
+  }
+
+  // ============================================================
+  // Feature 007 US1 — forward-search result ordering.
+  // ============================================================
+
+  /** Persisted result ordering; defaults to {@link ResultOrdering#DISTANCE} (shipped behaviour). */
+  public ResultOrdering getResultOrdering() {
+    return ResultOrdering.fromName(sp.getString(KEY_SEARCH_RESULT_ORDERING, null));
+  }
+
+  public void setResultOrdering(ResultOrdering ordering) {
+    Objects.requireNonNull(ordering, "ordering");
+    sp.edit().putString(KEY_SEARCH_RESULT_ORDERING, ordering.name()).apply();
+  }
+
+  // ============================================================
+  // Feature 007 US2 — on-map readout visibility (replaces the tool-button cycle's hide/show).
+  // ============================================================
+
+  /** Whether the on-map coordinate readout is shown. Defaults to true. */
+  public boolean isReadoutVisible() {
+    return sp.getBoolean(KEY_READOUT_VISIBLE, true);
+  }
+
+  public void setReadoutVisible(boolean visible) {
+    sp.edit().putBoolean(KEY_READOUT_VISIBLE, visible).apply();
   }
 }

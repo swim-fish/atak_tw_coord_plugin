@@ -11,9 +11,9 @@ import java.util.regex.Pattern;
  * <ul>
  *   <li>{@link Classification#PLACES_COUNTY} — matches {@code places-<county>.sqlite}; the
  *       extractor streams it into a per-county staging directory.
- *   <li>{@link Classification#BOUNDARY} — {@code townships.sqlite}, the MOI boundary layer.
- *       Feature 006 consumes it: the extractor stages it and {@code BatchImportCoordinator}
- *       mounts it at {@code active/_boundary/} (was SKIPPED_SUPPLEMENTARY through feature 005).
+ *   <li>{@link Classification#BOUNDARY} — {@code townships.sqlite}, the MOI boundary layer. Feature
+ *       006 consumes it: the extractor stages it and {@code BatchImportCoordinator} mounts it at
+ *       {@code active/_boundary/} (was SKIPPED_SUPPLEMENTARY through feature 005).
  *   <li>{@link Classification#SKIPPED_SUPPLEMENTARY} — {@code roads.sqlite}, {@code
  *       places-osm.sqlite}, any {@code timestamp.*} sidecar, any {@code *.manifest.txt} sidecar.
  *       Not consumed yet (Tier-2 / landmark layers reserved for a later feature).

@@ -14,6 +14,7 @@ import com.atakmap.android.dropdown.DropDownReceiver;
 import com.atakmap.android.gui.ImportFileBrowserDialog;
 import com.atakmap.android.ipc.AtakBroadcast;
 import com.atakmap.android.maps.MapView;
+import com.atakmap.android.twcoord.coord.ByteCountFormatter;
 import com.atakmap.android.twcoord.plugin.R;
 import com.atakmap.coremap.log.Log;
 import java.io.File;
@@ -227,6 +228,17 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   }
 
   /**
+   * Feature 007 US3: bound after ctor (from TwCoordMapComponent). When non-null, each county row
+   * shows its on-disk folder size and a distinct {@code _boundary} (townships.sqlite) size row is
+   * appended. Null in JVM tests / legacy paths — the size annotations are simply skipped.
+   */
+  private FileSystem fileSystem;
+
+  public void setFileSystem(FileSystem fileSystem) {
+    this.fileSystem = fileSystem;
+  }
+
+  /**
    * Container for the dynamic per-county row list. Resolved lazily on first bind so the receiver
    * still works against the legacy offline_address_page.xml that doesn't have the container.
    */
@@ -280,11 +292,17 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
         GeneratorMetadata gm = entry.dataset().generator();
         if (nameView != null) nameView.setText(nonNull(gm.county()));
         if (summaryView != null) {
-          summaryView.setText(
+          String summary =
               pluginContext.getString(
                   R.string.pref_address_active_dataset_row_format,
                   nonNull(gm.dataDate()),
-                  gm.insertedRows() >= 0 ? gm.insertedRows() : 0L));
+                  gm.insertedRows() >= 0 ? gm.insertedRows() : 0L);
+          // Feature 007 US3 — append the county folder's on-disk size (FR-012).
+          if (fileSystem != null) {
+            long bytes = fileSystem.sizeOfDirectory(fileSystem.activeCountyDir(entry.county()));
+            summary = summary + " · " + ByteCountFormatter.format(bytes);
+          }
+          summaryView.setText(summary);
         }
         final String county = entry.county();
         if (replaceBtn != null) {
@@ -297,6 +315,31 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       } catch (Throwable t) {
         Log.w(TAG, "inflate county row " + entry.county() + " threw", t);
       }
+    }
+    appendBoundaryRow();
+  }
+
+  /**
+   * Feature 007 US3 (FR-013) — append a distinct {@code _boundary} (townships.sqlite) size row
+   * after the per-county list. Shows the folder total, or "未安裝" when no boundary is installed
+   * (FR-015). Best-effort: any failure is logged and skipped rather than crashing the page.
+   */
+  private void appendBoundaryRow() {
+    if (countyList == null || fileSystem == null) return;
+    try {
+      boolean present = fileSystem.exists(fileSystem.boundaryDbFile());
+      String value =
+          present
+              ? ByteCountFormatter.format(fileSystem.sizeOfDirectory(fileSystem.boundaryDir()))
+              : pluginContext.getString(R.string.offline_address_not_installed);
+      TextView row = new TextView(pluginContext);
+      float d = pluginContext.getResources().getDisplayMetrics().density;
+      int pad = (int) (12 * d);
+      row.setPadding(0, pad, 0, pad);
+      row.setText(pluginContext.getString(R.string.offline_address_boundary_row_format, value));
+      countyList.addView(row);
+    } catch (Throwable t) {
+      Log.w(TAG, "appendBoundaryRow threw", t);
     }
   }
 
@@ -669,7 +712,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     if (countyExpected == null) return;
     String msg = pluginContext.getString(R.string.offline_address_confirm_replace, countyExpected);
     new AlertDialog.Builder(getMapView().getContext())
-        .setTitle(R.string.offline_address_button_replace)
+        .setTitle(pluginContext.getString(R.string.offline_address_button_replace))
         .setMessage(msg)
         .setPositiveButton(
             android.R.string.ok,
@@ -684,7 +727,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     if (county == null) return;
     String msg = pluginContext.getString(R.string.offline_address_confirm_remove, county);
     new AlertDialog.Builder(getMapView().getContext())
-        .setTitle(R.string.offline_address_button_remove)
+        .setTitle(pluginContext.getString(R.string.offline_address_button_remove))
         .setMessage(msg)
         .setPositiveButton(
             android.R.string.ok,
@@ -694,9 +737,19 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
                       importExecutor.execute(
                           () -> {
                             try {
-                              importer.removeActive(county);
+                              // Delete via the registry's atomic remove, which closes the open
+                              // SQLite facade BEFORE deleting active/<county>/. Calling
+                              // importer.removeActive() first (the previous behaviour) unlinks the
+                              // DB while the native connection is still open; on-device that leaves
+                              // WAL/SHM sidecars locked and the connection's checkpoint-on-close
+                              // resurrects places.sqlite, so the directory survives and the county
+                              // reappears after restart. registry.remove() does close-then-delete,
+                              // so the dir is gone for good. Fall back to the importer only when no
+                              // registry is bound (JVM tests / legacy single-active).
                               if (registry != null) {
                                 registry.remove(county);
+                              } else {
+                                importer.removeActive(county);
                               }
                             } catch (Throwable t) {
                               Log.w(TAG, "removeActive(" + county + ") threw", t);
@@ -733,7 +786,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     // token=null and Android throws BadTokenException. Same reason ImportFileBrowserDialog uses
     // getMapView().getContext() in launchPicker().
     new AlertDialog.Builder(getMapView().getContext())
-        .setTitle(R.string.offline_address_button_replace)
+        .setTitle(pluginContext.getString(R.string.offline_address_button_replace))
         .setMessage(msg)
         .setPositiveButton(
             android.R.string.ok,
@@ -752,7 +805,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
         pluginContext.getString(
             R.string.offline_address_confirm_remove, nonNull(active.generator().county()));
     new AlertDialog.Builder(getMapView().getContext())
-        .setTitle(R.string.offline_address_button_remove)
+        .setTitle(pluginContext.getString(R.string.offline_address_button_remove))
         .setMessage(msg)
         .setPositiveButton(android.R.string.ok, (d, w) -> safeRun(this::performRemove))
         .setNegativeButton(android.R.string.cancel, null)

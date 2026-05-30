@@ -56,7 +56,8 @@ public final class ForwardSearchController {
     query = ForwardSearchQuery.initial(mapLat, mapLon);
     suggestedDistrict = null;
     try {
-      LocalityResult mc = boundary != null ? boundary.localityAt(mapLat, mapLon, SEED_SNAP_M) : null;
+      LocalityResult mc =
+          boundary != null ? boundary.localityAt(mapLat, mapLon, SEED_SNAP_M) : null;
       LocalityResult sf =
           (boundary != null && selfLat != null && selfLon != null)
               ? boundary.localityAt(selfLat, selfLon, SEED_SNAP_M)
@@ -84,8 +85,7 @@ public final class ForwardSearchController {
       if (defCounty != null) {
         query = query.withCounty(defCounty, defSource);
       }
-      return new CountySeed(
-          defCounty, defSource, sfCounty, sfDistrict, mcCounty, mcDistrict);
+      return new CountySeed(defCounty, defSource, sfCounty, sfDistrict, mcCounty, mcDistrict);
     } catch (Throwable t) {
       Log.w(TAG, "seedCounty threw", t);
       return new CountySeed(null, null, null, null, null, null);
@@ -171,9 +171,9 @@ public final class ForwardSearchController {
   // ----------------------------------------------------------------------
 
   /**
-   * Street candidates for the current county+district, ranked by distance to the anchor. This is the
-   * first call that resolves the county's {@link AddressDatabaseFacade} (FR-008 / SC-007). Returns
-   * empty when county/district unset, the facade is unavailable, or the fragment is blank.
+   * Street candidates for the current county+district, ranked by distance to the anchor. This is
+   * the first call that resolves the county's {@link AddressDatabaseFacade} (FR-008 / SC-007).
+   * Returns empty when county/district unset, the facade is unavailable, or the fragment is blank.
    */
   public List<AddressCandidate> search(String streetFragment, int limit) {
     query = query.withStreetFragment(streetFragment);
@@ -190,8 +190,7 @@ public final class ForwardSearchController {
         return facade.streetCandidatesCountyWide(
             folded, query.anchorLat(), query.anchorLon(), limit);
       }
-      return facade.streetCandidates(
-          district, folded, query.anchorLat(), query.anchorLon(), limit);
+      return facade.streetCandidates(district, folded, query.anchorLat(), query.anchorLon(), limit);
     } catch (Throwable t) {
       Log.w(TAG, "search threw", t);
       return Collections.emptyList();

@@ -65,7 +65,10 @@ public final class LocalityResult {
     return district;
   }
 
-  /** {@code true} when {@link #district()} was snapped within tolerance rather than strictly covering. */
+  /**
+   * {@code true} when {@link #district()} was snapped within tolerance rather than strictly
+   * covering.
+   */
   public boolean approx() {
     return approx;
   }

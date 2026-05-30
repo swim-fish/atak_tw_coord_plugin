@@ -48,9 +48,9 @@ public final class AddressBundleImporterTest {
 
   /**
    * The plugin's pinned max supported schema version. Per data-contract.md v3 (2026-05-30) the
-   * generator emits {@code schema_version=3} (adds {@code area} to {@code places_fts}, additive over
-   * v2's {@code places_rtree}); v1/v2 stay accepted as backward-compat paths. MUST track {@code
-   * TwCoordMapComponent}'s production value.
+   * generator emits {@code schema_version=3} (adds {@code area} to {@code places_fts}, additive
+   * over v2's {@code places_rtree}); v1/v2 stay accepted as backward-compat paths. MUST track
+   * {@code TwCoordMapComponent}'s production value.
    */
   private static final int MAX_SUPPORTED_SCHEMA = 3;
 

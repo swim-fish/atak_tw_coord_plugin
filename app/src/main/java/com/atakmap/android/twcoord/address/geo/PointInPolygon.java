@@ -33,8 +33,7 @@ final class PointInPolygon {
       double xj = lonRing[j];
       double yj = latRing[j];
       // Does the horizontal ray at y=lat cross edge (j -> i)?
-      if (((yi > lat) != (yj > lat))
-          && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+      if (((yi > lat) != (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
         inside = !inside;
       }
       j = i;
