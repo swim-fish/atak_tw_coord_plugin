@@ -104,4 +104,125 @@
 
     <string name="goto_btn_atak_picker">ATAK アイコンメニューを開く</string>
 
+    <!-- ============================================================
+         Feature 004 — Offline Address（ツールメニュー + 設定 + ウィジェット行）
+         ============================================================ -->
+
+    <!-- Tools-menu icon identity. -->
+    <string name="tool_offline_address_label">TW Offline Addr</string>
+    <string name="tool_offline_address_desc">オフライン住所データセット（places-&lt;county&gt;.sqlite）を取り込み、座標表示の下に住所テキストを表示します。</string>
+
+    <!-- Offline Address page (DropDownReceiver). -->
+    <string name="offline_address_page_title">TW Offline Addr</string>
+    <string name="offline_address_empty_state">住所データセットがインストールされていません。atak-tw-address-generator プロジェクトが生成した .sqlite ファイルをご利用ください。</string>
+
+    <!-- Action buttons + confirmations. -->
+    <string name="offline_address_button_import">インポート…</string>
+    <string name="offline_address_button_replace">差し替え…</string>
+    <string name="offline_address_button_remove">削除</string>
+    <string name="offline_address_confirm_replace">使用中の %1$s データセットを差し替えますか？</string>
+    <string name="offline_address_confirm_remove">使用中の %1$s データセットを削除しますか？</string>
+
+    <!-- Import progress chip. -->
+    <string name="offline_address_progress_copying">コピー中… %1$d%%</string>
+    <string name="offline_address_progress_verifying">メタデータ検証中…</string>
+    <string name="offline_address_progress_building_index">インデックス構築中… %1$d%%</string>
+    <string name="offline_address_progress_activating">有効化中…</string>
+
+    <!-- State B — field labels. -->
+    <string name="offline_address_field_county">県・市</string>
+    <string name="offline_address_field_data_date">データ日付</string>
+    <string name="offline_address_field_source">データソース</string>
+    <string name="offline_address_field_rows">件数</string>
+    <string name="offline_address_field_csv_sha">CSV SHA-256</string>
+    <string name="offline_address_field_imported_at">インポート時刻</string>
+    <string name="offline_address_field_file_sha">ファイル SHA-256</string>
+    <string name="offline_address_field_rtree_built">R*Tree 構築済み</string>
+
+    <!-- Import failure messages. -->
+    <string name="offline_address_error_not_openable">データベースを読み込めません。</string>
+    <string name="offline_address_error_is_zip">これは .zip 形式です。先に PC 側で .sqlite ファイルを展開してください。本バージョンでは zip の自動展開には対応していません。</string>
+    <string name="offline_address_error_missing_metadata">metadata テーブルが見つかりません。</string>
+    <string name="offline_address_error_missing_required_key">必須メタデータキーがありません：%1$s。</string>
+    <string name="offline_address_error_unsupported_schema">対応していないスキーマバージョン：%1$s。</string>
+    <string name="offline_address_error_missing_places">places テーブルが見つかりません。</string>
+    <string name="offline_address_error_unexpected_columns">places テーブルに必要なカラムが不足しています：%1$s。</string>
+    <string name="offline_address_error_rtree_failed">空間インデックスの構築に失敗しました。</string>
+    <string name="offline_address_error_disk_full">ストレージ容量が不足しています。</string>
+    <string name="offline_address_error_activation_failed">有効化に失敗しました。前回のデータセットは保持されています。</string>
+    <string name="offline_address_error_io">インポート失敗：%1$s。</string>
+
+    <!-- Settings — Offline Address preference category. -->
+    <string name="pref_address_header">TW Offline Addr</string>
+    <string name="pref_address_row_me_title">自分の位置（ME）の住所を表示</string>
+    <string name="pref_address_row_me_summary">ME 座標行の下に住所行を追加します。</string>
+    <string name="pref_address_row_target_title">ターゲット（TGT）の住所を表示</string>
+    <string name="pref_address_row_target_summary">TGT 座標行の下に住所行を追加します。</string>
+    <string name="pref_address_row_map_title">地図中央（MAP）の住所を表示</string>
+    <string name="pref_address_row_map_summary">MAP 座標行の下に住所行を追加します。</string>
+    <string name="pref_address_dataset_status_title">データセット状態</string>
+    <string name="pref_address_dataset_status_summary_none">データセットがインストールされていません。</string>
+    <string name="pref_address_dataset_status_summary_hint">データセットがインストールされていません — タップで TW Offline Addr ページを開きます。</string>
+    <string name="pref_address_dataset_status_summary_active_format">使用中：%1$s · %2$s</string>
+
+    <!-- Widget address-row states. -->
+    <string name="widget_address_loading">住所検索中…</string>
+    <string name="widget_address_empty_state">近くに住所がありません</string>
+
+    <!-- Feature 005: 複数県 + ZIP バッチインポート（初訳；T050 で校正予定）。 -->
+    <string name="offline_address_button_continue_adding">追加</string>
+    <string name="offline_address_button_done">完了</string>
+    <string name="offline_address_button_cancel_batch">バッチをキャンセル</string>
+    <string name="offline_address_batch_in_flight_format">待機中 %1$d 件</string>
+    <string name="offline_address_batch_done">有効 %1$d · 置換 %2$d · スキップ %3$d · 失敗 %4$d</string>
+    <string name="offline_address_entry_status_extracting">展開中…</string>
+    <string name="offline_address_entry_status_validating">検証中…</string>
+    <string name="offline_address_entry_status_activated">有効</string>
+    <string name="offline_address_entry_status_skipped_supplementary">スキップ：補助ファイル</string>
+    <string name="offline_address_entry_status_skipped_duplicate">スキップ：重複</string>
+    <string name="offline_address_entry_status_county_mismatch">スキップ：地域不一致</string>
+    <string name="offline_address_entry_status_failed">失敗</string>
+    <string name="offline_address_error_zip_no_valid_datasets">この ZIP には places-&lt;county&gt;.sqlite が含まれていません。v1.0.6 は県別の住所データセットのみ対応；townships / roads / OSM は feature 006+ で対応予定。</string>
+    <string name="offline_address_error_county_mismatch_format">選択されたファイルは %1$s です。%2$s を置換できません。「削除」+「インポート」で切り替えてください。</string>
+    <string name="offline_address_total_disk_usage_format">合計: %1$s</string>
+    <string name="pref_address_active_dataset_row_format">%1$s · %2$d 件</string>
+
+    <!-- Phase 7 T042 — 動的な県別データセット一覧（初訳；T050 で校正予定）。 -->
+    <string name="pref_address_active_datasets_header">使用中のデータセット</string>
+    <string name="pref_address_dataset_status_summary_multi_format">%1$d 件のデータセットを使用中 — タップで TW Offline Addr を開く</string>
+
+    <!-- Feature 005 polish — 信頼度インジケーターのプリセット（初訳；T050 で校正予定）。 -->
+    <string name="pref_address_confidence_preset_title">信頼度インジケーター</string>
+    <string name="pref_address_confidence_preset_summary">最寄りの住所レコードがクエリ点から遠い場合に ~ / ~~ を住所の前に付けます。</string>
+    <string name="opt_confidence_off">オフ（接頭辞なし）</string>
+    <string name="opt_confidence_tight">タイト（~ 20 m / ~~ 100 m）</string>
+    <string name="opt_confidence_standard">標準（~ 50 m / ~~ 200 m）</string>
+    <string name="opt_confidence_loose">ルーズ（~ 100 m / ~~ 500 m）</string>
+
+    <!-- ===== Feature 006: county-scoped forward search ===== -->
+    <string name="tool_forward_search_label">TW Addr Search</string>
+    <string name="tool_forward_search_desc">県市 → 郷鎮市区 → 街路で住所を検索して移動（オフライン）。</string>
+
+    <string name="fs_boundary_missing">前方検索を有効にするには base データ（townships.sqlite）を取り込んでください。</string>
+
+    <string name="fs_stage_county">1. 県市</string>
+    <string name="fs_county_none">県市が未選択</string>
+    <string name="fs_county_confirm_format">%1$s %2$s</string>
+    <string name="fs_source_self">現在地</string>
+    <string name="fs_source_mapcenter">地図中心</string>
+    <string name="fs_source_list">一覧…</string>
+
+    <string name="fs_stage_district">2. 郷鎮市区</string>
+    <string name="fs_stage_street">3. 街路</string>
+    <string name="fs_street_hint">街路（例：中山路）</string>
+    <string name="fs_search">検索</string>
+
+    <string name="fs_house_hint">番地（任意）</string>
+    <string name="fs_no_match">この郷鎮市区に一致する街路がありません。</string>
+    <string name="fs_county_dataset_missing">この県市の住所データは未インストールです。</string>
+    <string name="fs_goto">移動</string>
+    <string name="fs_reset">リセット</string>
+    <string name="fs_district_all">すべて</string>
+    <string name="fs_candidate_format">%1$s · %2$d m</string>
+
 </resources>

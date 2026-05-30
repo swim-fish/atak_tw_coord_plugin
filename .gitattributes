@@ -1,0 +1,13 @@
+# Git LFS — large binary assets are stored via LFS so the packfile stays small.
+# Run `git lfs install` once per clone; `git lfs pull` fetches the real bytes.
+#
+# Already migrated into LFS: the committed test-fixture SQLite databases.
+# Pre-emptive rules below cover dataset/package binaries that may be added later.
+# (The pre-existing docs/images/*.jpg screenshots stay as regular blobs in the
+#  already-pushed history; only NEW or modified screenshots become LFS objects.)
+
+*.sqlite          filter=lfs diff=lfs merge=lfs -text
+*.zip             filter=lfs diff=lfs merge=lfs -text
+*.apk             filter=lfs diff=lfs merge=lfs -text
+docs/images/*.jpg filter=lfs diff=lfs merge=lfs -text
+docs/images/*.png filter=lfs diff=lfs merge=lfs -text

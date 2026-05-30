@@ -27,4 +27,21 @@
         <item>JA</item>
     </string-array>
 
+    <!-- Feature 005 polish — confidence-indicator preset (entries are i18n string refs,
+         values are enum names parsed by ConfidenceThresholds.fromPrefValue and MUST NOT
+         be translated). -->
+    <string-array name="confidence_preset_entries">
+        <item>@string/opt_confidence_off</item>
+        <item>@string/opt_confidence_tight</item>
+        <item>@string/opt_confidence_standard</item>
+        <item>@string/opt_confidence_loose</item>
+    </string-array>
+
+    <string-array name="confidence_preset_values" translatable="false">
+        <item>OFF</item>
+        <item>TIGHT</item>
+        <item>STANDARD</item>
+        <item>LOOSE</item>
+    </string-array>
+
 </resources>

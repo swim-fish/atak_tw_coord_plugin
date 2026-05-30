@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Feature 006 forward-search page (glove + ATAK side-panel UX, FR-016):
+  single column, large tap targets (≥48dp; primary 56dp+), tap-only county/district,
+  numeric keypad for house numbers, confirm-before-GoTo.
+  District chips and the candidate list are populated programmatically by ForwardSearchReceiver.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Empty-state: boundary data absent (FR-017). -->
+        <TextView
+            android:id="@+id/fs_boundary_missing"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:visibility="gone"
+            android:text="@string/fs_boundary_missing" />
+
+        <!-- ===== Stage 1: county (label + Reset) ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:textStyle="bold"
+                android:textSize="15sp"
+                android:textColor="#FFFFFF"
+                android:text="@string/fs_stage_county" />
+
+            <Button
+                android:id="@+id/fs_btn_reset"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:textSize="14sp"
+                android:text="@string/fs_reset" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/fs_county_chip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:background="?android:attr/selectableItemBackground"
+            android:text="@string/fs_county_none" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3">
+
+            <Button
+                android:id="@+id/fs_btn_self"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                android:text="@string/fs_source_self" />
+
+            <Button
+                android:id="@+id/fs_btn_mapcenter"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                android:text="@string/fs_source_mapcenter" />
+
+            <Button
+                android:id="@+id/fs_btn_list"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                android:text="@string/fs_source_list" />
+        </LinearLayout>
+
+        <!-- County list (shown when 清單 tapped); cells added programmatically, 3 per row. -->
+        <GridLayout
+            android:id="@+id/fs_county_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="3"
+            android:visibility="gone" />
+
+        <!-- ===== Stage 2: district ===== -->
+        <TextView
+            android:id="@+id/fs_stage_district_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="12dp"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:textColor="#FFFFFF"
+            android:visibility="gone"
+            android:text="@string/fs_stage_district" />
+
+        <GridLayout
+            android:id="@+id/fs_district_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="3"
+            android:visibility="gone" />
+
+        <!-- ===== Stage 3: street ===== -->
+        <TextView
+            android:id="@+id/fs_stage_street_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="12dp"
+            android:paddingBottom="4dp"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:textColor="#FFFFFF"
+            android:visibility="gone"
+            android:text="@string/fs_stage_street" />
+
+        <LinearLayout
+            android:id="@+id/fs_street_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <EditText
+                android:id="@+id/fs_street_input"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:inputType="text"
+                android:textSize="18sp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#7C7C7C"
+                android:hint="@string/fs_street_hint"
+                android:importantForAutofill="no" />
+
+            <Button
+                android:id="@+id/fs_btn_search"
+                android:layout_width="wrap_content"
+                android:layout_height="56dp"
+                android:textSize="15sp"
+                android:text="@string/fs_search" />
+        </LinearLayout>
+
+        <!-- ===== Stage 4: house number (numeric keypad) ===== -->
+        <TextView
+            android:id="@+id/fs_house_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:minHeight="44dp"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#7C7C7C"
+            android:hint="@string/fs_house_hint" />
+
+        <GridLayout
+            android:id="@+id/fs_keypad"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="3"
+            android:visibility="gone" />
+
+        <!-- ===== Candidate list + GoTo ===== -->
+        <TextView
+            android:id="@+id/fs_empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:textSize="15sp"
+            android:textColor="#FFFFFF"
+            android:visibility="gone"
+            android:text="@string/fs_no_match" />
+
+        <LinearLayout
+            android:id="@+id/fs_candidate_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <Button
+            android:id="@+id/fs_btn_goto"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="8dp"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:enabled="false"
+            android:visibility="gone"
+            android:text="@string/fs_goto" />
+    </LinearLayout>
+</ScrollView>

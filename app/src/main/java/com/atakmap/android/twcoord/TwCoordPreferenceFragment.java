@@ -7,8 +7,15 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
+import android.preference.PreferenceCategory;
 import com.atakmap.android.ipc.AtakBroadcast;
 import com.atakmap.android.preference.PluginPreferenceFragment;
+import com.atakmap.android.twcoord.address.ActiveDatasetRegistry;
+import com.atakmap.android.twcoord.address.AddressBundleImporter;
+import com.atakmap.android.twcoord.address.AddressDataset;
+import com.atakmap.android.twcoord.address.ConfidenceThresholds;
+import com.atakmap.android.twcoord.address.CountyActiveDataset;
+import com.atakmap.android.twcoord.address.OfflineAddressIntents;
 import com.atakmap.android.twcoord.coord.ConversionResult;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
@@ -19,6 +26,7 @@ import com.atakmap.android.twcoord.gotopage.TwCoordGotoIntents;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
 import com.atakmap.android.twcoord.i18n.LocaleOverride;
 import com.atakmap.android.twcoord.plugin.R;
+import com.atakmap.coremap.log.Log;
 import java.util.Locale;
 
 /**
@@ -29,8 +37,21 @@ import java.util.Locale;
 public class TwCoordPreferenceFragment extends PluginPreferenceFragment
     implements SharedPreferences.OnSharedPreferenceChangeListener {
 
+  private static final String TAG = "TwCoordPreferenceFragment";
+
   @SuppressLint("StaticFieldLeak")
   private static Context pluginContext;
+
+  /** Suffix that distinguishes the three new address-row keys. */
+  private static final String[] ADDRESS_ROW_KEYS = {
+    "pref_address_row_me", "pref_address_row_target", "pref_address_row_map"
+  };
+
+  /** Settable in tests so Robolectric can inject a stub importer without spinning up the map. */
+  private AddressImporterProvider addressImporterProvider = TwCoordMapComponent::getAddressImporter;
+
+  /** Settable in tests so the per-county list can be JVM-tested without the map component. */
+  private RegistryProvider addressRegistryProvider = TwCoordMapComponent::getAddressRegistry;
 
   // Taipei 101 — the canonical reference point. Cheap to convert, easy to spot-check.
   private static final double SAMPLE_LAT = 25.033611;
@@ -70,6 +91,22 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
           p -> {
             Intent i = new Intent(TwCoordGotoIntents.ACTION_SHOW_GOTO);
             AtakBroadcast.getInstance().sendBroadcast(i);
+            return true;
+          });
+    }
+
+    // Feature 004 / US3 — clicking the status row opens the Offline Address page so the operator
+    // can import / replace / remove the dataset without leaving Settings.
+    Preference status = findPreference("pref_address_dataset_status");
+    if (status != null) {
+      status.setOnPreferenceClickListener(
+          p -> {
+            try {
+              Intent i = new Intent(OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS);
+              AtakBroadcast.getInstance().sendBroadcast(i);
+            } catch (Throwable t) {
+              Log.w(TAG, "ACTION_SHOW_OFFLINE_ADDRESS broadcast threw", t);
+            }
             return true;
           });
     }
@@ -126,6 +163,304 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
 
     refreshCoordUnitSummary(wrapped);
     refreshLanguageSummary(wrapped);
+
+    // Feature 004 / US3 — re-title the Offline Address category + 3 SwitchPreferences and refresh
+    // the dataset-presence status row's summary + clickability per the three states in
+    // contracts/address-preferences.md.
+    refreshAddressSection(wrapped);
+  }
+
+  private void refreshAddressSection(Context wrapped) {
+    setPreferenceTitle("pref_address_header_key", wrapped.getString(R.string.pref_address_header));
+    setPreferenceTitle(
+        "pref_address_row_me", wrapped.getString(R.string.pref_address_row_me_title));
+    setPreferenceTitle(
+        "pref_address_row_target", wrapped.getString(R.string.pref_address_row_target_title));
+    setPreferenceTitle(
+        "pref_address_row_map", wrapped.getString(R.string.pref_address_row_map_title));
+    Preference me = findPreference("pref_address_row_me");
+    if (me != null) me.setSummary(wrapped.getString(R.string.pref_address_row_me_summary));
+    Preference tgt = findPreference("pref_address_row_target");
+    if (tgt != null) tgt.setSummary(wrapped.getString(R.string.pref_address_row_target_summary));
+    Preference map = findPreference("pref_address_row_map");
+    if (map != null) map.setSummary(wrapped.getString(R.string.pref_address_row_map_summary));
+
+    refreshConfidencePresetSummary(wrapped);
+    refreshAddressDatasetStatus(wrapped);
+    refreshActiveDatasetsCategory(wrapped);
+  }
+
+  /**
+   * Feature 005 polish — keep the confidence-preset row's title + entries + summary aligned with
+   * the current UI-language override. The summary echoes the selected entry label (which itself
+   * encodes the threshold pair like "嚴格（~ 20 公尺 / ~~ 100 公尺）"), so the operator sees the active
+   * thresholds at a glance without opening the dialog.
+   */
+  private void refreshConfidencePresetSummary(Context wrapped) {
+    setPreferenceTitle(
+        "pref_address_confidence_preset",
+        wrapped.getString(R.string.pref_address_confidence_preset_title));
+    ListPreference pref = (ListPreference) findPreference("pref_address_confidence_preset");
+    if (pref == null) return;
+    // Re-set entries from the wrapped context so the dialog list rows also translate.
+    pref.setEntries(wrapped.getResources().getStringArray(R.array.confidence_preset_entries));
+    String value = pref.getValue();
+    if (value == null) value = ConfidenceThresholds.TIGHT.name();
+    ConfidenceThresholds preset = ConfidenceThresholds.fromPrefValue(value);
+    CharSequence entry = pref.getEntry();
+    if (entry == null) {
+      // No entries bound yet (first paint) — derive a sane fallback from the preset.
+      int fallbackId;
+      switch (preset) {
+        case OFF:
+          fallbackId = R.string.opt_confidence_off;
+          break;
+        case STANDARD:
+          fallbackId = R.string.opt_confidence_standard;
+          break;
+        case LOOSE:
+          fallbackId = R.string.opt_confidence_loose;
+          break;
+        case TIGHT:
+        default:
+          fallbackId = R.string.opt_confidence_tight;
+          break;
+      }
+      entry = wrapped.getString(fallbackId);
+    }
+    pref.setSummary(entry);
+  }
+
+  /**
+   * Reads the {@link ActiveDatasetRegistry} snapshot (multi-county; Feature 005) with a {@link
+   * AddressBundleImporter#activeOrNull()} fallback for the v1.0.5 intermediate state and updates
+   * the status row's summary + clickability per the four-state truth table in {@code
+   * contracts/address-preferences.md § Dataset presence summary table} (extended in 005):
+   *
+   * <ul>
+   *   <li>all three switches off → hide the row (disabled + non-selectable)
+   *   <li>at least one switch on, registry has N ≥ 1 counties → "N counties active — tap to open"
+   *   <li>at least one switch on, registry empty, legacy active dataset → "Active: &lt;county&gt; ·
+   *       &lt;data_date&gt;" (auto-migrate intermediate state)
+   *   <li>at least one switch on, nothing active anywhere → "No dataset — tap to open"
+   * </ul>
+   *
+   * <p>Wrapped per Constitution VI: any exception (e.g. importer/registry not yet built because the
+   * map component hasn't run {@code onCreate}) is logged at {@code Log.w} and treated as "no
+   * dataset" (the most conservative summary).
+   */
+  private void refreshAddressDatasetStatus(Context wrapped) {
+    Preference status = findPreference("pref_address_dataset_status");
+    if (status == null) return;
+    try {
+      status.setTitle(wrapped.getString(R.string.pref_address_dataset_status_title));
+
+      boolean anyToggleOn = anyAddressToggleOn();
+      int activeCountyCount = 0;
+      try {
+        ActiveDatasetRegistry registry = addressRegistryProvider.get();
+        if (registry != null) activeCountyCount = registry.snapshot().size();
+      } catch (Throwable t) {
+        Log.w(TAG, "registry snapshot threw", t);
+      }
+      AddressDataset legacyActive = null;
+      if (activeCountyCount == 0) {
+        AddressBundleImporter importer = addressImporterProvider.get();
+        legacyActive = importer != null ? importer.activeOrNull() : null;
+      }
+      DatasetStatusPresentation p =
+          resolveDatasetStatus(
+              new ResourceStatusStrings(wrapped), anyToggleOn, activeCountyCount, legacyActive);
+      status.setEnabled(p.enabled());
+      status.setSelectable(p.selectable());
+      status.setSummary(p.summary());
+    } catch (Throwable t) {
+      Log.w(TAG, "refreshAddressDatasetStatus threw", t);
+      try {
+        status.setSummary(wrapped.getString(R.string.pref_address_dataset_status_summary_none));
+      } catch (Throwable ignored) {
+        // best-effort
+      }
+    }
+  }
+
+  /**
+   * Pure-logic helper extracted for JVM testability. See {@link #refreshAddressDatasetStatus} for
+   * the four-state truth table.
+   *
+   * <p>The multi-county path wins over the legacy single-active path: once {@code activeCountyCount
+   * > 0}, {@code legacyActive} is ignored. This matches the AddressSubsystem's preference for the
+   * registry once it has been bound.
+   */
+  static DatasetStatusPresentation resolveDatasetStatus(
+      StatusStrings strings,
+      boolean anyToggleOn,
+      int activeCountyCount,
+      AddressDataset legacyActive) {
+    if (!anyToggleOn) {
+      return new DatasetStatusPresentation(strings.datasetStatusNone(), false, false);
+    }
+    if (activeCountyCount > 0) {
+      return new DatasetStatusPresentation(
+          strings.datasetStatusActiveMulti(activeCountyCount), true, true);
+    }
+    if (legacyActive != null) {
+      return new DatasetStatusPresentation(
+          strings.datasetStatusActive(
+              legacyActive.generator().county(), legacyActive.generator().dataDate()),
+          true,
+          true);
+    }
+    return new DatasetStatusPresentation(strings.datasetStatusHint(), true, true);
+  }
+
+  /**
+   * Phase 7 T042 — populate the per-county list under the {@code pref_address_active_datasets}
+   * category from {@link ActiveDatasetRegistry#snapshot()}. Each row is non-selectable
+   * (informational); the operator manages datasets via the Offline Address page reachable from the
+   * status row above. Wrapped per Constitution VI: registry failures degrade to an empty category
+   * rather than crashing the preferences fragment.
+   */
+  private void refreshActiveDatasetsCategory(Context wrapped) {
+    Preference catRef = findPreference("pref_address_active_datasets");
+    if (!(catRef instanceof PreferenceCategory)) return;
+    PreferenceCategory category = (PreferenceCategory) catRef;
+    // Title is cheap and language-dependent — always refresh it.
+    category.setTitle(wrapped.getString(R.string.pref_address_active_datasets_header));
+    try {
+      ActiveDatasetRegistry registry = addressRegistryProvider.get();
+      java.util.Map<String, CountyActiveDataset> snapshot =
+          registry == null ? java.util.Collections.emptyMap() : registry.snapshot();
+      // onSharedPreferenceChanged fires for ANY preference (coord unit, a single row toggle,
+      // confidence preset, …). Rebuilding N county rows + layout passes on every such change is
+      // wasteful at 22 counties. Skip the rebuild unless the rendered content would actually
+      // differ. The language is part of the signature because the row summary format string is
+      // language-dependent.
+      String signature =
+          activeDatasetsSignature(String.valueOf(currentLanguageOverride()), snapshot);
+      if (signature.equals(lastActiveDatasetsSignature)) {
+        return;
+      }
+      lastActiveDatasetsSignature = signature;
+      category.removeAll();
+      for (CountyActiveDataset entry : snapshot.values()) {
+        Preference row = new Preference(pluginContext);
+        row.setLayoutResource(R.layout.pref_item);
+        row.setTitle(entry.county());
+        row.setSummary(
+            wrapped.getString(
+                R.string.pref_address_active_dataset_row_format,
+                entry.dataset().generator().dataDate(),
+                entry.dataset().generator().insertedRows()));
+        row.setSelectable(false);
+        category.addPreference(row);
+      }
+    } catch (Throwable t) {
+      Log.w(TAG, "refreshActiveDatasetsCategory threw", t);
+      // Invalidate so the next refresh attempts a clean rebuild rather than trusting a partial one.
+      lastActiveDatasetsSignature = null;
+    }
+  }
+
+  /** Last-rendered active-datasets signature; see {@link #activeDatasetsSignature}. */
+  private String lastActiveDatasetsSignature;
+
+  /**
+   * Content signature for the active-datasets category: the UI language tag (the row summary format
+   * is language-dependent) plus each county's {@code (county, dataDate, insertedRows)} tuple. Equal
+   * signatures mean the rendered rows would be identical, so the rebuild can be skipped.
+   *
+   * <p>Package-private + static for unit testing (mirrors {@link #resolveDatasetStatus}); the
+   * language tag is passed in so the method needs no live fragment / preference state.
+   */
+  static String activeDatasetsSignature(
+      String languageTag, java.util.Map<String, CountyActiveDataset> snapshot) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(languageTag).append('|');
+    for (CountyActiveDataset entry : snapshot.values()) {
+      sb.append(entry.county())
+          .append(':')
+          .append(entry.dataset().generator().dataDate())
+          .append(':')
+          .append(entry.dataset().generator().insertedRows())
+          .append(';');
+    }
+    return sb.toString();
+  }
+
+  private boolean anyAddressToggleOn() {
+    SharedPreferences sp = getPreferenceManager().getSharedPreferences();
+    if (sp == null) return false;
+    for (String key : ADDRESS_ROW_KEYS) {
+      if (sp.getBoolean(key, false)) return true;
+    }
+    return false;
+  }
+
+  /** Immutable presentation result for the dataset-status row. */
+  record DatasetStatusPresentation(String summary, boolean enabled, boolean selectable) {}
+
+  /** Resource-backed strings used by {@link #resolveDatasetStatus} (test seam). */
+  interface StatusStrings {
+    String datasetStatusNone();
+
+    String datasetStatusHint();
+
+    String datasetStatusActive(String county, String dataDate);
+
+    /** Phase 7 T042 — used when the multi-county registry has one or more active counties. */
+    String datasetStatusActiveMulti(int countyCount);
+  }
+
+  /** Production {@link StatusStrings} impl reading from the wrapped {@link Context}'s resources. */
+  private static final class ResourceStatusStrings implements StatusStrings {
+    private final Context ctx;
+
+    ResourceStatusStrings(Context ctx) {
+      this.ctx = ctx;
+    }
+
+    @Override
+    public String datasetStatusNone() {
+      return ctx.getString(R.string.pref_address_dataset_status_summary_none);
+    }
+
+    @Override
+    public String datasetStatusHint() {
+      return ctx.getString(R.string.pref_address_dataset_status_summary_hint);
+    }
+
+    @Override
+    public String datasetStatusActive(String county, String dataDate) {
+      return ctx.getString(
+          R.string.pref_address_dataset_status_summary_active_format, county, dataDate);
+    }
+
+    @Override
+    public String datasetStatusActiveMulti(int countyCount) {
+      return ctx.getString(R.string.pref_address_dataset_status_summary_multi_format, countyCount);
+    }
+  }
+
+  /**
+   * Test seam — production wires this to {@link TwCoordMapComponent#getAddressImporter()}.
+   * Robolectric tests inject a stub returning a pre-built dataset / {@code null}.
+   */
+  interface AddressImporterProvider {
+    AddressBundleImporter get();
+  }
+
+  void setAddressImporterProvider(AddressImporterProvider provider) {
+    this.addressImporterProvider = provider != null ? provider : () -> null;
+  }
+
+  /** Phase 7 T042 test seam — mirrors {@link AddressImporterProvider} for the registry. */
+  interface RegistryProvider {
+    ActiveDatasetRegistry get();
+  }
+
+  void setAddressRegistryProvider(RegistryProvider provider) {
+    this.addressRegistryProvider = provider != null ? provider : () -> null;
   }
 
   private void setPreferenceTitle(String key, CharSequence title) {

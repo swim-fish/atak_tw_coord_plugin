@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Tools-menu silhouette icon for TW Addr Search (feature 006).
+    Pure white stroke + fill on a transparent canvas, matching the sibling
+    ic_tw_coord.xml / ic_tw_coord_goto.xml / ic_offline_address.xml conventions
+    (see docs/adr/0012-tw-icon-asset-pipeline.md).
+
+    Composition:
+      - Lowercase "tw" label in the top-left corner (same path as the siblings)
+      - Magnifier lens (stroked circle), centred-left
+      - Two short address text bars inside the lens (the address being searched)
+      - Thick magnifier handle to the lower-right
+
+    Viewport 192×192.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="192"
+    android:viewportHeight="192">
+
+    <!-- Lowercase "tw" label in the top-left (identical to the sibling tools). -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M 18,8 L 18,28 M 10,16 L 26,16 M 30,16 L 35,28 L 40,18 L 45,28 L 50,16"/>
+
+    <!-- Magnifier lens (stroked circle), centre (84,84) radius 48. -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="8"
+        android:fillColor="#00000000"
+        android:pathData="M 36,84 a 48,48 0 1,0 96,0 a 48,48 0 1,0 -96,0 Z"/>
+
+    <!-- Address text bars inside the lens (the address being searched). -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 60,74 L 110,74 L 110,81 L 60,81 Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 60,90 L 98,90 L 98,97 L 60,97 Z"/>
+
+    <!-- Magnifier handle — thick rounded stroke from the lens edge to lower-right. -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="16"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M 120,120 L 162,162"/>
+</vector>

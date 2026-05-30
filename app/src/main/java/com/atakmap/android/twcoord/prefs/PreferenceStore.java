@@ -3,6 +3,7 @@ package com.atakmap.android.twcoord.prefs;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import com.atakmap.android.twcoord.address.ConfidenceThresholds;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.gotopage.MarkerMode;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
@@ -46,6 +47,19 @@ public final class PreferenceStore {
   // scrapped in favour of EnterLocationDropDownReceiver delegation.
   public static final String KEY_GOTO_MARKER_MODE = "pref_goto_marker_mode";
 
+  // Feature 004: three independent per-row address-display toggles (ME / TGT / MAP). All default
+  // false on a fresh install, so upgrades from v1.0.4 see zero visual change until the operator
+  // explicitly enables at least one. fireAll() is called when any of the three flips so the
+  // widget refreshes within one refresh cycle.
+  public static final String KEY_ADDRESS_ROW_ME = "pref_address_row_me";
+  public static final String KEY_ADDRESS_ROW_TARGET = "pref_address_row_target";
+  public static final String KEY_ADDRESS_ROW_MAP = "pref_address_row_map";
+
+  // Feature 005 (Phase 7 polish): operator-selectable preset for the tilde confidence indicator
+  // applied to address text. Stored as the enum name; fallback to TIGHT on missing/corrupt
+  // values keeps the 2026-05-27 device-verified default for upgrading installs.
+  public static final String KEY_ADDRESS_CONFIDENCE_PRESET = "pref_address_confidence_preset";
+
   private static final String TAG = "TwCoordPrefs";
 
   private final SharedPreferences sp;
@@ -69,7 +83,11 @@ public final class PreferenceStore {
           public void onSharedPreferenceChanged(SharedPreferences shared, String key) {
             if (KEY_COORD_UNIT.equals(key)
                 || KEY_UI_LANGUAGE.equals(key)
-                || KEY_STALE_THRESHOLD.equals(key)) {
+                || KEY_STALE_THRESHOLD.equals(key)
+                || KEY_ADDRESS_ROW_ME.equals(key)
+                || KEY_ADDRESS_ROW_TARGET.equals(key)
+                || KEY_ADDRESS_ROW_MAP.equals(key)
+                || KEY_ADDRESS_CONFIDENCE_PRESET.equals(key)) {
               fireAll();
             }
           }
@@ -83,7 +101,14 @@ public final class PreferenceStore {
   }
 
   public UserPreference snapshot() {
-    return new UserPreference(readUnit(), readLanguage(), readStale());
+    return new UserPreference(
+        readUnit(),
+        readLanguage(),
+        readStale(),
+        getAddressRowMe(),
+        getAddressRowTarget(),
+        getAddressRowMap(),
+        getConfidenceThresholds());
   }
 
   public void setCoordinateUnit(CoordinateUnit unit) {
@@ -114,7 +139,14 @@ public final class PreferenceStore {
   private void fireAll() {
     UserPreference snap = snapshot();
     for (Listener l : listeners) {
-      l.onPreferenceChanged(snap);
+      // Constitution VI: a listener throwing in onPreferenceChanged would escape into ATAK's
+      // SharedPreferences listener-dispatch frame and crash the host process. Per-listener wrap
+      // contains the damage and keeps the remaining listeners running.
+      try {
+        l.onPreferenceChanged(snap);
+      } catch (Throwable t) {
+        Log.w(TAG, "preference listener " + l.getClass().getName() + " threw", t);
+      }
     }
   }
 
@@ -254,5 +286,54 @@ public final class PreferenceStore {
   public void setGotoMarkerMode(MarkerMode mode) {
     Objects.requireNonNull(mode, "mode");
     sp.edit().putString(KEY_GOTO_MARKER_MODE, mode.name()).apply();
+  }
+
+  // ============================================================
+  // Feature 004 (Offline Address) — per-row display toggles.
+  //
+  // These DO fire fireAll() (via spListener) so the widget + AddressSubsystem react within one
+  // refresh cycle. All three default to false on a fresh install (no key present), so
+  // upgrades from v1.0.4 see zero visual change until the operator opts in.
+  // ============================================================
+
+  public boolean getAddressRowMe() {
+    return sp.getBoolean(KEY_ADDRESS_ROW_ME, false);
+  }
+
+  public boolean getAddressRowTarget() {
+    return sp.getBoolean(KEY_ADDRESS_ROW_TARGET, false);
+  }
+
+  public boolean getAddressRowMap() {
+    return sp.getBoolean(KEY_ADDRESS_ROW_MAP, false);
+  }
+
+  public void setAddressRowMe(boolean enabled) {
+    sp.edit().putBoolean(KEY_ADDRESS_ROW_ME, enabled).apply();
+  }
+
+  public void setAddressRowTarget(boolean enabled) {
+    sp.edit().putBoolean(KEY_ADDRESS_ROW_TARGET, enabled).apply();
+  }
+
+  public void setAddressRowMap(boolean enabled) {
+    sp.edit().putBoolean(KEY_ADDRESS_ROW_MAP, enabled).apply();
+  }
+
+  // ============================================================
+  // Feature 005 (Phase 7 polish) — confidence-indicator preset.
+  //
+  // Stored as the enum name (e.g. "TIGHT"). Missing or corrupt values fall back to TIGHT, which
+  // matches the 2026-05-27 device-verified 20 m / 100 m behaviour so upgrades see zero change.
+  // ============================================================
+
+  public ConfidenceThresholds getConfidenceThresholds() {
+    String s = sp.getString(KEY_ADDRESS_CONFIDENCE_PRESET, ConfidenceThresholds.TIGHT.name());
+    return ConfidenceThresholds.fromPrefValue(s);
+  }
+
+  public void setConfidenceThresholds(ConfidenceThresholds preset) {
+    Objects.requireNonNull(preset, "preset");
+    sp.edit().putString(KEY_ADDRESS_CONFIDENCE_PRESET, preset.name()).apply();
   }
 }

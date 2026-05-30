@@ -1,10 +1,12 @@
 package com.atakmap.android.twcoord;
 
 import com.atakmap.android.maps.MapView;
+import com.atakmap.android.twcoord.address.AddressRowState;
 import com.atakmap.android.twcoord.coord.DisplayLine;
 import com.atakmap.android.widgets.LinearLayoutWidget;
 import com.atakmap.android.widgets.RootLayoutWidget;
 import com.atakmap.android.widgets.TextWidget;
+import com.atakmap.coremap.log.Log;
 
 /**
  * Three on-map readouts sitting alongside ATAK's native widgets:
@@ -23,6 +25,8 @@ import com.atakmap.android.widgets.TextWidget;
  */
 public final class TwCoordWidget {
 
+  private static final String TAG = "TwCoordWidget";
+
   /**
    * Mirror EyeAlt construction (NavWidgetsMapComponent decompile, ADR-0007): {@code new
    * TextWidget("", 2)} = text + size-offset 2 above default, default font, default background. By
@@ -39,6 +43,9 @@ public final class TwCoordWidget {
   private static final int COLOR_NO_FIX = 0xFFFF5555;
   private static final int COLOR_NO_PERMISSION = 0xFFFF5555;
 
+  /** Muted neutral so the address row reads as secondary to the coord row above. */
+  private static final int COLOR_ADDRESS = 0xFFBBBBBB;
+
   private static final float EDGE = 16f;
 
   private final MapView mapView;
@@ -49,6 +56,19 @@ public final class TwCoordWidget {
   private TextWidget mapRow;
   private TextWidget meRow;
   private TextWidget targetRow;
+
+  // Feature 004 — sibling address row per coord row.
+  private TextWidget mapAddrRow;
+  private TextWidget meAddrRow;
+  private TextWidget targetAddrRow;
+  private AddressRowState lastMapAddr = AddressRowState.hidden();
+  private AddressRowState lastMeAddr = AddressRowState.hidden();
+  private AddressRowState lastTargetAddr = AddressRowState.hidden();
+  // Localised "Loading address…" / "No address nearby" texts; set by TwCoordMapComponent via
+  // setAddressStrings(...) so language changes propagate without coupling the widget to a
+  // Context.
+  private String addressLoadingText = "Loading address…";
+  private String addressEmptyText = "No address nearby";
 
   private DisplayLine lastMap;
   private DisplayLine lastMe;
@@ -73,6 +93,47 @@ public final class TwCoordWidget {
     mapAnchor.addWidget(mapRow);
     meAnchor.addWidget(meRow);
     targetAnchor.addWidget(targetRow);
+
+    // Feature 004 — sibling address rows, hidden until the operator opts in via Settings.
+    // Same horizontal margins as the parent coord row; smaller bottom margin so the address
+    // text sits close to the coord row it annotates.
+    mapAddrRow = newStyledTextWidget("", EDGE, 0f, 0f, EDGE);
+    meAddrRow = newStyledTextWidget("", 0f, 0f, EDGE, EDGE);
+    targetAddrRow = newStyledTextWidget("", 0f, 0f, EDGE, EDGE);
+    mapAddrRow.setColor(COLOR_ADDRESS);
+    meAddrRow.setColor(COLOR_ADDRESS);
+    targetAddrRow.setColor(COLOR_ADDRESS);
+    // Match parent coord rows' dark background — visual consistency required (see UX feedback
+    // 2026-05-27). The race between bg width and text length on fast pans is mitigated in
+    // paintAddressRow via explicit onSizeChanged() + visibility toggle.
+    mapAddrRow.setBackground(TextWidget.TRANSLUCENT_BLACK);
+    meAddrRow.setBackground(TextWidget.TRANSLUCENT_BLACK);
+    targetAddrRow.setBackground(TextWidget.TRANSLUCENT_BLACK);
+    mapAddrRow.setVisible(false);
+    meAddrRow.setVisible(false);
+    targetAddrRow.setVisible(false);
+    mapAnchor.addWidget(mapAddrRow);
+    meAnchor.addWidget(meAddrRow);
+    targetAnchor.addWidget(targetAddrRow);
+  }
+
+  /**
+   * Replace the "Loading address…" / "No address nearby" texts used by the address rows. Called by
+   * {@link TwCoordMapComponent} at attach time and on every UI-language change.
+   */
+  public void setAddressStrings(String loading, String empty) {
+    if (loading != null) addressLoadingText = loading;
+    if (empty != null) addressEmptyText = empty;
+    // If the rows are currently showing one of the fallback strings, repaint with the new
+    // localised value.
+    if (lastMapAddr.isLoading() && mapAddrRow != null) mapAddrRow.setText(addressLoadingText);
+    if (lastMapAddr.isEmptyState() && mapAddrRow != null) mapAddrRow.setText(addressEmptyText);
+    if (lastMeAddr.isLoading() && meAddrRow != null) meAddrRow.setText(addressLoadingText);
+    if (lastMeAddr.isEmptyState() && meAddrRow != null) meAddrRow.setText(addressEmptyText);
+    if (lastTargetAddr.isLoading() && targetAddrRow != null)
+      targetAddrRow.setText(addressLoadingText);
+    if (lastTargetAddr.isEmptyState() && targetAddrRow != null)
+      targetAddrRow.setText(addressEmptyText);
   }
 
   private static TextWidget newStyledTextWidget(
@@ -88,15 +149,24 @@ public final class TwCoordWidget {
     if (mapAnchor != null && mapRow != null) mapAnchor.removeWidget(mapRow);
     if (meAnchor != null && meRow != null) meAnchor.removeWidget(meRow);
     if (targetAnchor != null && targetRow != null) targetAnchor.removeWidget(targetRow);
+    if (mapAnchor != null && mapAddrRow != null) mapAnchor.removeWidget(mapAddrRow);
+    if (meAnchor != null && meAddrRow != null) meAnchor.removeWidget(meAddrRow);
+    if (targetAnchor != null && targetAddrRow != null) targetAnchor.removeWidget(targetAddrRow);
     mapAnchor = null;
     meAnchor = null;
     targetAnchor = null;
     mapRow = null;
     meRow = null;
     targetRow = null;
+    mapAddrRow = null;
+    meAddrRow = null;
+    targetAddrRow = null;
     lastMap = null;
     lastMe = null;
     lastTarget = null;
+    lastMapAddr = AddressRowState.hidden();
+    lastMeAddr = AddressRowState.hidden();
+    lastTargetAddr = AddressRowState.hidden();
   }
 
   /** Toggle all three rows on/off. Returns the new visibility state (true = visible). */
@@ -114,6 +184,17 @@ public final class TwCoordWidget {
     if (mapRow != null) mapRow.setVisible(visible);
     if (meRow != null) meRow.setVisible(visible);
     if (targetRow != null) targetRow.setVisible(visible);
+    if (visible) {
+      // Restore each address row's visibility from its last known state (Hidden stays
+      // hidden; Text / Loading / EmptyState become visible again).
+      if (mapAddrRow != null) mapAddrRow.setVisible(addressVisibleFor(lastMapAddr));
+      if (meAddrRow != null) meAddrRow.setVisible(addressVisibleFor(lastMeAddr));
+      if (targetAddrRow != null) targetAddrRow.setVisible(addressVisibleFor(lastTargetAddr));
+    } else {
+      if (mapAddrRow != null) mapAddrRow.setVisible(false);
+      if (meAddrRow != null) meAddrRow.setVisible(false);
+      if (targetAddrRow != null) targetAddrRow.setVisible(false);
+    }
   }
 
   public void render(DisplayLine mapCentreLine, DisplayLine selfLine, DisplayLine targetLine) {
@@ -169,5 +250,113 @@ public final class TwCoordWidget {
   private static boolean equalsNullable(DisplayLine a, DisplayLine b) {
     if (a == null) return b == null;
     return a.equals(b);
+  }
+
+  // ----------------------------------------------------------------------
+  // Feature 004 — Address row rendering
+  // ----------------------------------------------------------------------
+
+  /**
+   * Update the three per-row address states. Any {@code null} argument is treated as {@link
+   * AddressRowState.Hidden}. Skips per-row updates when the input equals the last-rendered state
+   * (coalesce-on-equal, matching {@link #render}).
+   */
+  public void renderAddresses(
+      AddressRowState mapState, AddressRowState meState, AddressRowState targetState) {
+    try {
+      AddressRowState m = mapState != null ? mapState : AddressRowState.hidden();
+      AddressRowState e = meState != null ? meState : AddressRowState.hidden();
+      AddressRowState t = targetState != null ? targetState : AddressRowState.hidden();
+      if (mapAddrRow != null && !m.equals(lastMapAddr)) {
+        paintAddressRow(mapAddrRow, m);
+        lastMapAddr = m;
+      }
+      if (meAddrRow != null && !e.equals(lastMeAddr)) {
+        paintAddressRow(meAddrRow, e);
+        lastMeAddr = e;
+      }
+      if (targetAddrRow != null && !t.equals(lastTargetAddr)) {
+        paintAddressRow(targetAddrRow, t);
+        lastTargetAddr = t;
+      }
+    } catch (Throwable thr) {
+      // Constitution VI: widget rendering must never propagate up into the host process.
+      Log.w(TAG, "renderAddresses threw", thr);
+    }
+  }
+
+  private void paintAddressRow(TextWidget row, AddressRowState state) {
+    String text = addressTextFor(state, addressLoadingText, addressEmptyText);
+    boolean nextVisible = addressVisibleFor(state);
+    if (!state.isHidden()) {
+      row.setText(text);
+    }
+    // Feature 005 fix: TextWidget.setText alone sometimes leaves the widget's dark
+    // background visible without the new text rendered, until the next MapEvent
+    // (click / pan) wakes the renderer. Symptom on the reference device: "black box with
+    // no text; tap screen → text appears at the same size as the box". The fix forces
+    // two widget-property listener events to fire so the framework schedules a render
+    // pass even when setText alone doesn't:
+    //   (a) explicitly hide first, even when already hidden (forces listener fire on
+    //       the false→false case in some framework builds);
+    //   (b) re-set the background (fires OnHasBackgroundChangedListener);
+    //   (c) set visibility to the final state (fires OnVisibleChangedListener).
+    // Then (d) poke the renderer via mapView.postOnActive in case the widget framework
+    // queued the redraw on a thread that is currently idle.
+    row.setVisible(false);
+    if (nextVisible) {
+      // Re-set background (TRANSLUCENT_BLACK to match the parent coord rows per UX
+      // feedback 2026-05-27) so OnHasBackgroundChangedListener fires alongside
+      // setText / setVisible — gives the framework three render-relevant property
+      // changes per paint, reducing the odds of the renderer painting bg with
+      // stale (old text's) width before the new measure-pass completes.
+      row.setBackground(TextWidget.TRANSLUCENT_BLACK);
+      row.setVisible(true);
+      // Explicit size recalculation: TextWidget caches its bounding box across
+      // setText calls. On fast map pans the cached bg width can render before the
+      // new text's measure-pass completes, surfacing as a "partial black box"
+      // where bg width > text width. Calling onSizeChanged() forces the widget
+      // framework to invalidate the cache and re-measure before the next frame
+      // (MapWidget2.OnWidgetSizeChangedListener subscribers — the root layout
+      // included — re-fit on this signal).
+      try {
+        row.onSizeChanged();
+      } catch (Throwable t) {
+        Log.w(TAG, "row.onSizeChanged threw", t);
+      }
+    }
+    if (mapView != null) {
+      try {
+        mapView.postOnActive(
+            () -> {
+              /* wake renderer */
+            });
+      } catch (Throwable t) {
+        Log.w(TAG, "mapView.postOnActive threw", t);
+      }
+    }
+  }
+
+  // ----------------------------------------------------------------------
+  // Pure helpers exposed for testing
+  // ----------------------------------------------------------------------
+
+  /**
+   * Return the text the row should display for {@code state}. Used internally by {@link
+   * #paintAddressRow} and exposed package-private for unit-test coverage of the state→text mapping
+   * (the integration with anchors is verified separately by Espresso).
+   */
+  static String addressTextFor(
+      AddressRowState state, String loadingFallback, String emptyFallback) {
+    if (state == null) return "";
+    if (state instanceof AddressRowState.Text) return ((AddressRowState.Text) state).value();
+    if (state.isLoading()) return loadingFallback == null ? "" : loadingFallback;
+    if (state.isEmptyState()) return emptyFallback == null ? "" : emptyFallback;
+    return ""; // Hidden — caller should not call setText.
+  }
+
+  /** Return whether the row should be visible for {@code state}. */
+  static boolean addressVisibleFor(AddressRowState state) {
+    return state != null && !state.isHidden();
   }
 }

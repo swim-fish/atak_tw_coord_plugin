@@ -1,0 +1,69 @@
+ZIP: C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator\output\tw-central-full.zip
+ZIP exists: True  size: 148.97 MB
+
+=== ZIP entries ===
+  places-changhua.sqlite  (187.10 MB uncompressed)
+  places-osm.sqlite  (161.87 MB uncompressed)
+  places-taichung.sqlite  (324.44 MB uncompressed)
+  roads.sqlite  (23.93 MB uncompressed)
+  timestamp.base  (0.00 MB uncompressed)
+  timestamp.changhua  (0.00 MB uncompressed)
+  timestamp.taichung  (0.00 MB uncompressed)
+  townships.sqlite  (10.08 MB uncompressed)
+
+=== townships.sqlite ===
+  schema_version = 1
+  source = moi-shapefile
+  boundary_release = 1140318
+  region = tw-central
+  bbox = 120.2,23.55,121.45,24.75
+  inserted_level4 = 12
+  inserted_level7 = 31
+  inserted_level8 = 105
+
+  -- level 4 (縣市) names --
+    南投縣
+    台中市
+    嘉義縣
+    宜蘭縣
+    彰化縣
+    新北市
+    新竹市
+    新竹縣
+    桃園市
+    花蓮縣
+    苗栗縣
+    雲林縣
+
+  -- township count per county (level 7/8) --
+    南投縣: 13
+    台中市: 29
+    嘉義縣: 8
+    宜蘭縣: 2
+    彰化縣: 26
+    新北市: 1
+    新竹市: 1
+    新竹縣: 9
+    桃園市: 1
+    花蓮縣: 8
+    苗栗縣: 18
+    雲林縣: 20
+
+=== places-*.sqlite ===
+  places-taichung.sqlite: county=台中市 source=tgos schema=2 inserted_meta=731005 COUNT(*)=731005
+  places-changhua.sqlite: county=彰化縣 source=tgos schema=2 inserted_meta=426690 COUNT(*)=426690
+  places-osm.sqlite: county=None source=osm-clipped schema=2 inserted_meta=None COUNT(*)=588393
+
+=== forward-search bbox candidate counts (places-taichung) ===
+  台中車站 24.1417,120.6736:  ±0.0023=664  ±0.0045=3381  ±0.009=13679
+  一中商圈 24.1505,120.6840:  ±0.0023=598  ±0.0045=3098  ±0.009=12819
+  大甲區 24.3486,120.6225:  ±0.0023=1021  ±0.0045=4164  ±0.009=10361
+
+=== 中山路 / 向上路 family (places-taichung) ===
+  street='中山路'        : 10412
+  street LIKE '中山路%'  : 23065
+  street='向上路'        : 0
+  street LIKE '向上路%'  : 1645
+  name LIKE '%中山%'     : 26413
+  distinct street        : 3752
+  street LIKE '臺%'       : 4873

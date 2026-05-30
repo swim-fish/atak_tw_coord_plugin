@@ -36,6 +36,7 @@ pure-black panel (the Tools-menu background) with a small margin.
 
 from __future__ import annotations
 
+import math
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -55,7 +56,9 @@ PANEL_BG = (0, 0, 0, 255)
 MARGIN = 14
 
 # Token pattern: one of the recognised command letters, or a signed float.
-PATH_TOKEN = re.compile(r"[MLHVZACSQTaclshvzqtsc]|-?\d+(?:\.\d+)?")
+# (lowercase 'm' — relative moveto — is required by the pin-inset circle idiom
+#  `M cx,cy m -r,0 a … a … Z`; without it the m-coords leak into the prior cmd.)
+PATH_TOKEN = re.compile(r"[MLHVZACSQTamclshvzqtsc]|-?\d+(?:\.\d+)?")
 
 
 # ---------------- XML / path parsing ----------------
@@ -150,11 +153,18 @@ def is_two_arc_ellipse(cmds: list[tuple[str, list[float]]]) -> tuple[float, floa
     or None if pattern doesn't match."""
     if len(cmds) < 3 or cmds[0][0] != "M":
         return None
-    if cmds[1][0] != "a" or cmds[2][0] != "a":
+    mx, my = cmds[0][1][0], cmds[0][1][1]   # start point
+    rest = cmds[1:]
+    # Fold a leading relative moveto (the `M cx,cy m -r,0 a … a … Z` circle idiom
+    # used by pin-inset holes) into the start point.
+    if rest and rest[0][0] == "m":
+        mx += rest[0][1][0]
+        my += rest[0][1][1]
+        rest = rest[1:]
+    if len(rest) < 2 or rest[0][0] != "a" or rest[1][0] != "a":
         return None
-    mx, my = cmds[0][1][0], cmds[0][1][1]   # start point = (cx-rx, cy)
-    a1 = cmds[1][1]                          # rx, ry, rot, laf, sf, dx, dy
-    a2 = cmds[2][1]
+    a1 = rest[0][1]                          # rx, ry, rot, laf, sf, dx, dy
+    a2 = rest[1][1]
     if len(a1) < 7 or len(a2) < 7:
         return None
     rx, ry = a1[0], a1[1]
@@ -232,9 +242,71 @@ def render_path(
             draw.polygon(pts, outline=stroke)
         return
 
+    # Mixed line/arc outline (e.g. the map-pin teardrop:
+    #   M tip L shoulder a … L tip Z). Flatten arcs to line segments and draw
+    # the whole subpath as a stroked (or filled) polyline.
+    if any(c == "a" for c, _ in cmds) and all(c in ("M", "L", "a", "Z") for c, _ in cmds):
+        pts = _flatten_to_points(cmds)
+        closed = any(c == "Z" for c, _ in cmds)
+        if fill is not None:
+            draw.polygon(pts, fill=fill)
+        elif stroke is not None:
+            line_pts = pts + [pts[0]] if closed and len(pts) > 2 else pts
+            draw.line(line_pts, fill=stroke, width=max(1, int(round(stroke_w))),
+                      joint="curve")
+        return
+
     # Unknown shape — fall through with a warning so a future drawable that
     # introduces new path commands is noticed instead of silently dropped.
     print(f"  ! skipping unrecognised path: {cmds[:3]}…", file=sys.stderr)
+
+
+def _flatten_to_points(cmds: list[tuple[str, list[float]]]) -> list[tuple[float, float]]:
+    """Walk an M/L/a/Z subpath into a flat point list, tessellating each
+    relative elliptical arc ('a') into line segments. Handles the circular
+    (rx≈ry) case used by the icon set; non-circular arcs use the mean radius."""
+    pts: list[tuple[float, float]] = []
+    cx, cy = 0.0, 0.0
+    for c, args in cmds:
+        if c == "M" or c == "L":
+            cx, cy = args[0], args[1]
+            pts.append((cx, cy))
+        elif c == "a":
+            rx, ry, _rot, laf, sf, dx, dy = args[:7]
+            arc = _arc_to_points(cx, cy, (rx + ry) / 2.0, int(laf), int(sf), dx, dy)
+            pts.extend(arc)
+            cx, cy = cx + dx, cy + dy
+        elif c == "Z":
+            pass
+    return pts
+
+
+def _arc_to_points(x0, y0, r, laf, sf, dx, dy, segments=28):
+    """Sample a relative circular arc from (x0,y0) by (dx,dy), radius r."""
+    x1, y1 = x0 + dx, y0 + dy
+    mx, my = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+    half_dx, half_dy = (x1 - x0) / 2.0, (y1 - y0) / 2.0
+    d = math.hypot(half_dx, half_dy)
+    if d == 0:
+        return [(x1, y1)]
+    r = max(r, d)  # clamp so the chord fits
+    h = math.sqrt(max(0.0, r * r - d * d))
+    ux, uy = -half_dy / d, half_dx / d  # unit perpendicular to the chord
+    if laf != sf:
+        ccx, ccy = mx + h * ux, my + h * uy
+    else:
+        ccx, ccy = mx - h * ux, my - h * uy
+    a0 = math.atan2(y0 - ccy, x0 - ccx)
+    a1 = math.atan2(y1 - ccy, x1 - ccx)
+    if sf == 0 and a1 > a0:
+        a1 -= 2 * math.pi
+    elif sf == 1 and a1 < a0:
+        a1 += 2 * math.pi
+    out = []
+    for i in range(1, segments + 1):
+        a = a0 + (a1 - a0) * (i / segments)
+        out.append((ccx + r * math.cos(a), ccy + r * math.sin(a)))
+    return out
 
 
 # ---------------- Vector XML → PNG ----------------
@@ -272,6 +344,8 @@ def main() -> int:
     targets = [
         ("ic_tw_coord.xml",      "08a-tools-icon-tw-coord.png"),
         ("ic_tw_coord_goto.xml", "08b-tools-icon-tw-coord-goto.png"),
+        ("ic_offline_address.xml", "08c-tools-icon-offline-address.png"),
+        ("ic_forward_search.xml",  "08d-tools-icon-tw-addr-search.png"),
     ]
     for src_name, out_name in targets:
         src = RES_DIR / src_name

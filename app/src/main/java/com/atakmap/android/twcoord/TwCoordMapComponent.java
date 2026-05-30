@@ -16,6 +16,20 @@ import com.atakmap.android.maps.MapItem;
 import com.atakmap.android.maps.MapView;
 import com.atakmap.android.maps.Marker;
 import com.atakmap.android.maps.PointMapItem;
+import com.atakmap.android.twcoord.address.ActiveDatasetRegistry;
+import com.atakmap.android.twcoord.address.AddressBundleImporter;
+import com.atakmap.android.twcoord.address.AddressDatabaseFacade;
+import com.atakmap.android.twcoord.address.AddressRowState;
+import com.atakmap.android.twcoord.address.AddressSubsystem;
+import com.atakmap.android.twcoord.address.AtakDatabasesAddressDatabase;
+import com.atakmap.android.twcoord.address.AtakFileSystem;
+import com.atakmap.android.twcoord.address.BatchImportCoordinator;
+import com.atakmap.android.twcoord.address.FallbackSqliteFactory;
+import com.atakmap.android.twcoord.address.MessageDigestShaCalculator;
+import com.atakmap.android.twcoord.address.OfflineAddressIntents;
+import com.atakmap.android.twcoord.address.OfflineAddressReceiver;
+import com.atakmap.android.twcoord.address.ZipEntryClassifier;
+import com.atakmap.android.twcoord.address.ZipExtractor;
 import com.atakmap.android.twcoord.coord.ConversionResult;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
@@ -30,7 +44,12 @@ import com.atakmap.android.twcoord.prefs.PreferenceStore;
 import com.atakmap.android.twcoord.prefs.UserPreference;
 import com.atakmap.app.preferences.ToolsPreferenceFragment;
 import com.atakmap.coremap.maps.coords.GeoPoint;
+import java.util.EnumMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Hub of all listener wiring for US1/US2/US3. Owns the widget, the preference store, and the
@@ -55,6 +74,70 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private SelfMarkerSubscriber selfSub;
   private Handler ui;
   private TwCoordGotoReceiver gotoReceiver;
+
+  // Feature 004 — Offline Address subsystem owns the importer (one per process), a
+  // single-thread import executor, the page receiver, plus the runtime per-row resolver
+  // (AddressSubsystem) and a separate single-thread scheduled executor for lookup work.
+  private AddressBundleImporter addressImporter;
+
+  /**
+   * Static holder so {@link TwCoordPreferenceFragment} (which is constructed by the host preference
+   * framework, not by this component) can reach the live importer to render the dataset-presence
+   * status row. Same pattern the project already uses for {@code pluginContext} in {@link
+   * TwCoordPreferenceFragment}. Set in {@link #onCreate} after the importer is built and cleared in
+   * {@link #onDestroyImpl}.
+   */
+  @android.annotation.SuppressLint("StaticFieldLeak")
+  private static AddressBundleImporter staticAddressImporter;
+
+  /**
+   * @return the live address-bundle importer if the component is running, otherwise {@code null}.
+   *     The fragment treats null as "no dataset" (the more conservative state).
+   */
+  public static AddressBundleImporter getAddressImporter() {
+    return staticAddressImporter;
+  }
+
+  private ExecutorService addressImportExecutor;
+  private OfflineAddressReceiver addressReceiver;
+  private AddressSubsystem addressSubsystem;
+  private ScheduledExecutorService addressLookupExecutor;
+  private BroadcastReceiver addressDatasetChangedReceiver;
+
+  // Feature 005 — multi-county active datasets + batch import.
+  private com.atakmap.android.twcoord.address.AtakFileSystem addressFileSystem;
+  private com.atakmap.android.twcoord.address.ActiveDatasetRegistry addressRegistry;
+  private com.atakmap.android.twcoord.address.BatchImportCoordinator addressCoordinator;
+
+  // Feature 006 — township boundary layer (mounted once) + forward-search page.
+  private com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade addressBoundaryFacade;
+  private com.atakmap.android.twcoord.address.ForwardSearchReceiver forwardSearchReceiver;
+
+  @android.annotation.SuppressLint("StaticFieldLeak")
+  private static com.atakmap.android.twcoord.address.ActiveDatasetRegistry staticAddressRegistry;
+
+  @android.annotation.SuppressLint("StaticFieldLeak")
+  private static com.atakmap.android.twcoord.address.BatchImportCoordinator
+      staticAddressCoordinator;
+
+  /**
+   * @return live registry while plugin is running, else {@code null}.
+   */
+  public static com.atakmap.android.twcoord.address.ActiveDatasetRegistry getAddressRegistry() {
+    return staticAddressRegistry;
+  }
+
+  /**
+   * @return live batch coordinator while plugin is running, else {@code null}.
+   */
+  public static com.atakmap.android.twcoord.address.BatchImportCoordinator getAddressCoordinator() {
+    return staticAddressCoordinator;
+  }
+
+  // Per-row last-emitted state; aggregated here so the widget can be repainted with all three
+  // values on every single-row update.
+  private final Map<AddressSubsystem.Row, AddressRowState> addressRowStates =
+      new EnumMap<>(AddressSubsystem.Row.class);
 
   private final CoordinateConverter converter = new CoordinateConverter();
   private final Formatter formatter = new Formatter();
@@ -116,11 +199,38 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private final PreferenceStore.Listener prefListener =
       snap -> {
         boolean languageChanged = snap.uiLanguage() != activePrefs.uiLanguage();
+        boolean meToggleChanged = snap.addressRowMe() != activePrefs.addressRowMe();
+        boolean tgtToggleChanged = snap.addressRowTarget() != activePrefs.addressRowTarget();
+        boolean mapToggleChanged = snap.addressRowMap() != activePrefs.addressRowMap();
+        boolean confidenceChanged =
+            snap.confidenceThresholds() != activePrefs.confidenceThresholds();
         activePrefs = snap;
-        if (languageChanged) rebuildLocalisedContext();
+        if (languageChanged) {
+          rebuildLocalisedContext();
+          if (widget != null && localisedPluginContext != null) {
+            widget.setAddressStrings(
+                localisedPluginContext.getString(R.string.widget_address_loading),
+                localisedPluginContext.getString(R.string.widget_address_empty_state));
+          }
+        }
         // Repaint both rows with the new unit / language.
         renderMapCentre();
         renderMeFromLastKnown();
+        // Propagate per-row toggle changes to the address subsystem.
+        if (addressSubsystem != null) {
+          if (meToggleChanged) {
+            addressSubsystem.setRowEnabled(AddressSubsystem.Row.ME, snap.addressRowMe());
+          }
+          if (tgtToggleChanged) {
+            addressSubsystem.setRowEnabled(AddressSubsystem.Row.TGT, snap.addressRowTarget());
+          }
+          if (mapToggleChanged) {
+            addressSubsystem.setRowEnabled(AddressSubsystem.Row.MAP, snap.addressRowMap());
+          }
+          if (confidenceChanged) {
+            addressSubsystem.setConfidenceThresholds(snap.confidenceThresholds());
+          }
+        }
       };
 
   private final SelfMarkerSubscriber.Listener subListener =
@@ -134,6 +244,15 @@ public class TwCoordMapComponent extends AbstractMapComponent {
                   Wgs84.Source.DEVICE_LOCATION, result, activePrefs.coordUnit(), strings);
           lastMeLine = line;
           widget.render(lastMapLine, lastMeLine, lastTargetLine);
+          // Feature 004 — feed the address subsystem so the ME address row updates.
+          if (addressSubsystem != null) {
+            try {
+              addressSubsystem.onCoord(
+                  AddressSubsystem.Row.ME, fix.latitudeDeg(), fix.longitudeDeg());
+            } catch (Throwable t) {
+              android.util.Log.w("TwCoordMapComponent", "onCoord(ME) threw", t);
+            }
+          }
         }
 
         @Override
@@ -290,6 +409,193 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     gotoFilter.addAction(TwCoordGotoIntents.ACTION_SHOW_GOTO);
     AtakBroadcast.getInstance().registerReceiver(gotoReceiver, gotoFilter);
 
+    // Feature 004 — Offline Address page. Third Tools-menu icon (OfflineAddressTool) fires
+    // SHOW_OFFLINE_ADDRESS which this receiver consumes. The importer + executor are owned
+    // here so they outlive any single drop-down open/close cycle and so US2's AddressSubsystem
+    // can reuse the same importer to read activeOrNull() without re-opening files.
+    // Pass `2` as the max supported schema version — per the generator's
+    // docs/data-contract.md (v2, 2026-05-24 evening) v2 adds `places_rtree`. The importer
+    // accepts both v1 (plugin builds R*Tree at import) and v2 (generator already shipped it,
+    // plugin skips the build).
+    com.atakmap.coremap.log.Log.i(
+        "TwCoordMapComponent",
+        "Feature 004 init: building AddressBundleImporter + OfflineAddressReceiver in pid="
+            + android.os.Process.myPid()
+            + " uid="
+            + android.os.Process.myUid());
+    // Feature 005: share one AtakFileSystem instance across importer + registry + coordinator
+    // so the sweep-orphan-staging pass runs once + per-county helper methods are consistent.
+    addressFileSystem = new AtakFileSystem();
+    // Highest data-contract schema_version the plugin accepts (inclusive). v3 is additive &
+    // non-breaking vs v2 — the generator only added `area` to places_fts; the base `places` table
+    // and every column the plugin reads are unchanged (see the generator's data-contract §7 v3
+    // CHANGELOG + address-search-guide §5). Bumping 2→3 lets v3 datasets import instead of failing
+    // UNSUPPORTED_SCHEMA_VERSION. MUST track the generator's SCHEMA_VERSION.
+    addressImporter =
+        new AddressBundleImporter(addressFileSystem, new MessageDigestShaCalculator(), 3);
+    staticAddressImporter = addressImporter;
+    addressImportExecutor =
+        Executors.newSingleThreadExecutor(
+            r -> {
+              Thread t = new Thread(r, "twcoord-address-import");
+              t.setDaemon(true);
+              return t;
+            });
+    addressReceiver =
+        new OfflineAddressReceiver(view, pluginContext, addressImporter, addressImportExecutor);
+    AtakBroadcast.DocumentedIntentFilter addressFilter = new AtakBroadcast.DocumentedIntentFilter();
+    addressFilter.addAction(OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS);
+    AtakBroadcast.getInstance().registerReceiver(addressReceiver, addressFilter);
+
+    // Feature 004 (US2) — runtime per-row address resolver. Dedicated single-thread
+    // ScheduledExecutorService for debounce + lookup; the importer hands the active
+    // dataset's File to SqliteFactory which opens the read-only DB.
+    addressLookupExecutor =
+        Executors.newSingleThreadScheduledExecutor(
+            r -> {
+              Thread t = new Thread(r, "twcoord-address-lookup");
+              t.setDaemon(true);
+              return t;
+            });
+    // 250 ms debounce — keep 004's reaction speed even though it leaves a small
+    // residual widget bg/text race on very fast pans (2026-05-27 UX call: speed
+    // matters more than the rare partial-black-box flicker, which already gets
+    // mitigated in TwCoordWidget.paintAddressRow via setVisible toggle +
+    // onSizeChanged + setBackground re-fire + MapView.postOnActive).
+    addressSubsystem =
+        new AddressSubsystem(
+            addressImporter,
+            new AtakDatabasesAddressDatabase.Factory(),
+            addressLookupExecutor,
+            250L);
+    for (AddressSubsystem.Row r : AddressSubsystem.Row.values()) {
+      addressRowStates.put(r, AddressRowState.hidden());
+    }
+
+    // Feature 005 — multi-county registry. Owns one open SQLite facade per active county.
+    // Bound to the subsystem AFTER its ctor so the legacy single-active path stays intact
+    // for the (rare) "no counties" zero-state; with the registry bound, fan-out lookup is
+    // the new code path (see AddressSubsystem.lookupAcrossAllCounties).
+    AddressDatabaseFacade.Factory primaryFactory = new AtakDatabasesAddressDatabase.Factory();
+    java.util.function.Supplier<AddressDatabaseFacade.Factory> fallbackSupplier =
+        () -> new FallbackSqliteFactory();
+    // Feature 005 US4: one-shot v1.0.5 → v1.0.6 auto-migrate (legacy
+    // active/places.sqlite → active/<county>/places.sqlite). Runs before
+    // Registry.initFromDisk so the migrated county is picked up on the same boot.
+    try {
+      com.atakmap.android.twcoord.address.AutoMigrator migrator =
+          new com.atakmap.android.twcoord.address.AutoMigrator(addressFileSystem, primaryFactory);
+      com.atakmap.android.twcoord.address.AutoMigrator.Result migrateResult = migrator.tryMigrate();
+      com.atakmap.coremap.log.Log.i(
+          "TwCoordMapComponent", "AutoMigrator → " + migrateResult.getClass().getSimpleName());
+    } catch (Throwable t) {
+      // Constitution VI: a corrupt v1.0.5 layout MUST NOT crash the host.
+      com.atakmap.coremap.log.Log.w("TwCoordMapComponent", "AutoMigrator threw", t);
+    }
+
+    addressRegistry =
+        new ActiveDatasetRegistry(
+            addressImporter, primaryFactory, fallbackSupplier, addressFileSystem);
+    addressRegistry.initFromDisk();
+    addressSubsystem.setRegistry(addressRegistry);
+
+    // Feature 006 — mount the township boundary layer (active/_boundary/townships.sqlite) and bind
+    // it to the resolver for county-scoped reverse lookup (FR-014). Null when base data absent
+    // (FR-017: reverse falls back to the 005 fan-out; forward search shows "import base data").
+    // Lazily re-mounts via boundaryFacadeOrRemount() so a boundary imported later in the SAME
+    // session is picked up the next time forward search opens — no ATAK restart required.
+    boundaryFacadeOrRemount();
+    // Re-render the widget when any county lifecycle event fires (add / replace / remove).
+    addressRegistry.addListener(
+        (county, change) -> {
+          try {
+            addressSubsystem.onActiveDatasetChanged();
+          } catch (Throwable t) {
+            android.util.Log.w("TwCoordMapComponent", "registry listener threw", t);
+          }
+        });
+
+    addressCoordinator =
+        new BatchImportCoordinator(
+            addressImporter,
+            new ZipExtractor(
+                addressFileSystem, new MessageDigestShaCalculator(), new ZipEntryClassifier()),
+            new ZipEntryClassifier(),
+            addressRegistry,
+            primaryFactory,
+            addressImportExecutor,
+            addressFileSystem);
+    staticAddressRegistry = addressRegistry;
+    staticAddressCoordinator = addressCoordinator;
+    // Wire the coordinator into the receiver so the Import button routes through the batch
+    // path (handles .zip + multi-county; legacy single-file path stays as a fallback).
+    if (addressReceiver != null) {
+      addressReceiver.setBatchCoordinator(addressCoordinator);
+      addressReceiver.setRegistry(addressRegistry);
+    }
+
+    // Feature 006 — forward-search page (fourth Tools entry). The boundary facade + registry are
+    // read live via suppliers so a later import that mounts the boundary is picked up on reopen.
+    forwardSearchReceiver =
+        new com.atakmap.android.twcoord.address.ForwardSearchReceiver(
+            view,
+            pluginContext,
+            this::boundaryFacadeOrRemount,
+            () -> addressRegistry,
+            () -> activePrefs.confidenceThresholds());
+    AtakBroadcast.DocumentedIntentFilter forwardFilter =
+        new AtakBroadcast.DocumentedIntentFilter();
+    forwardFilter.addAction(
+        com.atakmap.android.twcoord.address.ForwardSearchIntents.ACTION_SHOW_FORWARD_SEARCH);
+    AtakBroadcast.getInstance().registerReceiver(forwardSearchReceiver, forwardFilter);
+    addressSubsystem.addListener(
+        (row, state) -> {
+          try {
+            addressRowStates.put(row, state);
+            if (widget != null) {
+              widget.renderAddresses(
+                  addressRowStates.get(AddressSubsystem.Row.MAP),
+                  addressRowStates.get(AddressSubsystem.Row.ME),
+                  addressRowStates.get(AddressSubsystem.Row.TGT));
+            }
+          } catch (Throwable t) {
+            // Constitution VI: listener body cannot escape into the host.
+            android.util.Log.w("TwCoordMapComponent", "address listener threw", t);
+          }
+        });
+    // Apply initial toggle state from the preference snapshot.
+    addressSubsystem.setRowEnabled(AddressSubsystem.Row.ME, activePrefs.addressRowMe());
+    addressSubsystem.setRowEnabled(AddressSubsystem.Row.TGT, activePrefs.addressRowTarget());
+    addressSubsystem.setRowEnabled(AddressSubsystem.Row.MAP, activePrefs.addressRowMap());
+    // Feature 005 polish — confidence-indicator preset (TIGHT for unwritten prefs preserves
+    // the 2026-05-27 device-verified 20/100 m behaviour).
+    addressSubsystem.setConfidenceThresholds(activePrefs.confidenceThresholds());
+
+    // Re-open the facade when the operator imports / removes a dataset on the
+    // Offline Address page.
+    addressDatasetChangedReceiver =
+        new BroadcastReceiver() {
+          @Override
+          public void onReceive(Context ctx, Intent intent) {
+            try {
+              if (addressSubsystem != null) addressSubsystem.onActiveDatasetChanged();
+            } catch (Throwable t) {
+              android.util.Log.w("TwCoordMapComponent", "ACTION_DATASET_CHANGED threw", t);
+            }
+          }
+        };
+    AtakBroadcast.DocumentedIntentFilter dsChangedFilter =
+        new AtakBroadcast.DocumentedIntentFilter();
+    dsChangedFilter.addAction(OfflineAddressIntents.ACTION_DATASET_CHANGED);
+    AtakBroadcast.getInstance().registerReceiver(addressDatasetChangedReceiver, dsChangedFilter);
+
+    // Seed the widget's address row strings from the localised context.
+    if (localisedPluginContext != null) {
+      widget.setAddressStrings(
+          localisedPluginContext.getString(R.string.widget_address_loading),
+          localisedPluginContext.getString(R.string.widget_address_empty_state));
+    }
+
     // Initial paint so the widget is not blank.
     renderMapCentre();
     // Seed the me-row from the current self-marker position so the user sees something even
@@ -306,6 +612,33 @@ public class TwCoordMapComponent extends AbstractMapComponent {
             PREF_KEY,
             pluginContext.getResources().getDrawable(R.drawable.ic_tw_coord_plugin),
             prefFragment));
+  }
+
+  /**
+   * Feature 006 — return the mounted township-boundary facade, lazily (re)opening {@code
+   * active/_boundary/townships.sqlite} when it isn't open yet. Called once at setup and again as the
+   * forward-search boundary supplier, so a boundary imported later in the SAME session is picked up
+   * the next time forward search opens — no ATAK restart needed. Returns {@code null} when no
+   * boundary file exists yet (forward search then shows "import base data"). Synchronized because
+   * setup, the UI-thread supplier, and the import executor (which writes the file) can race.
+   */
+  private synchronized com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade
+      boundaryFacadeOrRemount() {
+    if (addressBoundaryFacade != null) return addressBoundaryFacade;
+    try {
+      java.io.File f = addressFileSystem.boundaryDbFile().toFile();
+      if (f.isFile()) {
+        addressBoundaryFacade =
+            new com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFactory().open(f);
+        if (addressBoundaryFacade != null && addressSubsystem != null) {
+          addressSubsystem.setBoundaryFacade(addressBoundaryFacade);
+        }
+      }
+    } catch (Throwable t) {
+      android.util.Log.w("TwCoordMapComponent", "boundaryFacadeOrRemount threw", t);
+      addressBoundaryFacade = null;
+    }
+    return addressBoundaryFacade;
   }
 
   @Override
@@ -328,6 +661,91 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       }
       gotoReceiver = null;
     }
+    if (addressReceiver != null) {
+      try {
+        AtakBroadcast.getInstance().unregisterReceiver(addressReceiver);
+      } catch (IllegalArgumentException ignored) {
+        // never registered
+      }
+      try {
+        addressReceiver.dispose();
+      } catch (Exception ignored) {
+        // best-effort
+      }
+      addressReceiver = null;
+    }
+    // Feature 006 — forward-search receiver + boundary facade teardown.
+    if (forwardSearchReceiver != null) {
+      try {
+        AtakBroadcast.getInstance().unregisterReceiver(forwardSearchReceiver);
+      } catch (IllegalArgumentException ignored) {
+        // never registered
+      }
+      try {
+        forwardSearchReceiver.dispose();
+      } catch (Exception ignored) {
+        // best-effort
+      }
+      forwardSearchReceiver = null;
+    }
+    if (addressBoundaryFacade != null) {
+      try {
+        addressBoundaryFacade.close();
+      } catch (Throwable t) {
+        android.util.Log.w("TwCoordMapComponent", "close boundary facade threw", t);
+      }
+      addressBoundaryFacade = null;
+    }
+    if (addressImportExecutor != null) {
+      try {
+        addressImportExecutor.shutdownNow();
+      } catch (Exception ignored) {
+        // best-effort
+      }
+      addressImportExecutor = null;
+    }
+    if (addressDatasetChangedReceiver != null) {
+      try {
+        AtakBroadcast.getInstance().unregisterReceiver(addressDatasetChangedReceiver);
+      } catch (IllegalArgumentException ignored) {
+        // never registered
+      }
+      addressDatasetChangedReceiver = null;
+    }
+    if (addressSubsystem != null) {
+      try {
+        addressSubsystem.close();
+      } catch (Exception ignored) {
+        // best-effort
+      }
+      addressSubsystem = null;
+    }
+    // addressLookupExecutor is shut down by addressSubsystem.close(); set to null so we don't
+    // double-shut.
+    addressLookupExecutor = null;
+    addressImporter = null;
+    staticAddressImporter = null;
+    // Feature 005 — Registry facades are closed individually when each county removes; close
+    // any survivors here (e.g. process teardown without operator Remove).
+    if (addressRegistry != null) {
+      for (String county : new java.util.ArrayList<>(addressRegistry.snapshot().keySet())) {
+        try {
+          // Best-effort: close facades but don't delete data (operator's data persists).
+          com.atakmap.android.twcoord.address.CountyActiveDataset entry =
+              addressRegistry.snapshot().get(county);
+          if (entry != null && entry.facade() != null) {
+            entry.facade().close();
+          }
+        } catch (Throwable t) {
+          android.util.Log.w("TwCoordMapComponent", "facade close on shutdown threw", t);
+        }
+      }
+      addressRegistry = null;
+    }
+    addressCoordinator = null;
+    addressFileSystem = null;
+    staticAddressRegistry = null;
+    staticAddressCoordinator = null;
     ToolsPreferenceFragment.unregister(PREF_KEY);
     if (ui != null) ui.removeCallbacks(selfTick);
     if (view != null) {
@@ -409,6 +827,15 @@ public class TwCoordMapComponent extends AbstractMapComponent {
         formatter.format(Wgs84.Source.MAP_CENTRE, result, activePrefs.coordUnit(), strings);
     lastMapLine = line;
     widget.render(lastMapLine, lastMeLine, lastTargetLine);
+    // Feature 004 — feed the address subsystem so the MAP address row updates.
+    if (addressSubsystem != null) {
+      try {
+        addressSubsystem.onCoord(
+            AddressSubsystem.Row.MAP, centre.getLatitude(), centre.getLongitude());
+      } catch (Throwable t) {
+        android.util.Log.w("TwCoordMapComponent", "onCoord(MAP) threw", t);
+      }
+    }
   }
 
   /**
@@ -452,6 +879,14 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     lastTargetLine =
         formatter.format(Wgs84.Source.COT_TARGET, result, activePrefs.coordUnit(), strings);
     widget.render(null, null, lastTargetLine);
+    // Feature 004 — feed the address subsystem so the TGT address row updates.
+    if (addressSubsystem != null) {
+      try {
+        addressSubsystem.onCoord(AddressSubsystem.Row.TGT, p.getLatitude(), p.getLongitude());
+      } catch (Throwable t) {
+        android.util.Log.w("TwCoordMapComponent", "onCoord(TGT) threw", t);
+      }
+    }
   }
 
   private String unitTagFor(CoordinateUnit u) {

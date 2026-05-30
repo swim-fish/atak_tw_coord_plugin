@@ -45,4 +45,59 @@
         android:title="@string/pref_open_goto_title"
         android:summary="@string/pref_open_goto_summary"/>
 
+    <!-- Feature 004 — three independent per-row Settings toggles + dataset-presence status row.
+         All toggles default to false so the upgrade is visually zero-change until opt-in. -->
+    <PreferenceCategory
+        android:layout="@layout/pref_category"
+        android:key="pref_address_header_key"
+        android:title="@string/pref_address_header"/>
+
+    <SwitchPreference
+        android:layout="@layout/pref_item"
+        android:key="pref_address_row_me"
+        android:title="@string/pref_address_row_me_title"
+        android:summary="@string/pref_address_row_me_summary"
+        android:defaultValue="false"/>
+
+    <SwitchPreference
+        android:layout="@layout/pref_item"
+        android:key="pref_address_row_target"
+        android:title="@string/pref_address_row_target_title"
+        android:summary="@string/pref_address_row_target_summary"
+        android:defaultValue="false"/>
+
+    <SwitchPreference
+        android:layout="@layout/pref_item"
+        android:key="pref_address_row_map"
+        android:title="@string/pref_address_row_map_title"
+        android:summary="@string/pref_address_row_map_summary"
+        android:defaultValue="false"/>
+
+    <!-- Feature 005 polish — confidence-indicator preset for the tilde marker prefixed onto
+         the address text. Defaults to TIGHT to preserve the 2026-05-27 device-verified 20/100 m
+         behaviour for installs that upgrade without touching settings. -->
+    <com.atakmap.android.gui.PanListPreference
+        android:layout="@layout/pref_item"
+        android:key="pref_address_confidence_preset"
+        android:title="@string/pref_address_confidence_preset_title"
+        android:summary="@string/pref_address_confidence_preset_summary"
+        android:dialogTitle="@string/pref_address_confidence_preset_title"
+        android:entries="@array/confidence_preset_entries"
+        android:entryValues="@array/confidence_preset_values"
+        android:defaultValue="TIGHT"/>
+
+    <Preference
+        android:layout="@layout/pref_item"
+        android:key="pref_address_dataset_status"
+        android:title="@string/pref_address_dataset_status_title"
+        android:summary="@string/pref_address_dataset_status_summary_none"/>
+
+    <!-- Phase 7 T042 — TwCoordPreferenceFragment fills this category programmatically with one
+         row per active county (county name as title, "<data_date> · <N> rows" as summary).
+         Header text is also refreshed by the fragment so it follows the UI-language override. -->
+    <PreferenceCategory
+        android:layout="@layout/pref_category"
+        android:key="pref_address_active_datasets"
+        android:title="@string/pref_address_active_datasets_header"/>
+
 </PreferenceScreen>

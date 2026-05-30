@@ -104,4 +104,127 @@
 
     <string name="goto_btn_atak_picker">開啟 ATAK 圖示選單</string>
 
+    <!-- ============================================================
+         Feature 004 — Offline Address (Tools menu + Settings + widget rows)
+         台灣正體中文翻譯。Prose 使用全形標點；識別字 / 路徑 / SHA 雜湊維持
+         半形。Fullwidth-punctuation rule per user CLAUDE.md.
+         ============================================================ -->
+
+    <!-- Tools-menu icon identity. -->
+    <string name="tool_offline_address_label">TW Offline Addr</string>
+    <string name="tool_offline_address_desc">匯入離線地址資料集（places-&lt;county&gt;.sqlite），在座標讀數下方顯示地址文字。</string>
+
+    <!-- Offline Address page (DropDownReceiver). -->
+    <string name="offline_address_page_title">TW Offline Addr</string>
+    <string name="offline_address_empty_state">尚未安裝任何地址資料集。請使用 atak-tw-address-generator 專案產生的 .sqlite 檔案。</string>
+
+    <!-- Action buttons + confirmations. -->
+    <string name="offline_address_button_import">匯入…</string>
+    <string name="offline_address_button_replace">取代…</string>
+    <string name="offline_address_button_remove">移除</string>
+    <string name="offline_address_confirm_replace">是否取代目前啟用中的 %1$s 資料集？</string>
+    <string name="offline_address_confirm_remove">是否移除目前啟用中的 %1$s 資料集？</string>
+
+    <!-- Import progress chip. -->
+    <string name="offline_address_progress_copying">複製中… %1$d%%</string>
+    <string name="offline_address_progress_verifying">驗證 metadata…</string>
+    <string name="offline_address_progress_building_index">建立索引中… %1$d%%</string>
+    <string name="offline_address_progress_activating">啟用中…</string>
+
+    <!-- State B — field labels. -->
+    <string name="offline_address_field_county">縣市</string>
+    <string name="offline_address_field_data_date">資料日期</string>
+    <string name="offline_address_field_source">資料來源</string>
+    <string name="offline_address_field_rows">資料筆數</string>
+    <string name="offline_address_field_csv_sha">CSV SHA-256</string>
+    <string name="offline_address_field_imported_at">匯入時間</string>
+    <string name="offline_address_field_file_sha">檔案 SHA-256</string>
+    <string name="offline_address_field_rtree_built">R*Tree 已建立</string>
+
+    <!-- Import failure messages. -->
+    <string name="offline_address_error_not_openable">無法讀取資料庫。</string>
+    <string name="offline_address_error_is_zip">這是 .zip 壓縮檔。請先在電腦端解壓縮取出 .sqlite 檔案；本版外掛尚未支援自動解壓縮。</string>
+    <string name="offline_address_error_missing_metadata">找不到 metadata 資料表。</string>
+    <string name="offline_address_error_missing_required_key">缺少必要的 metadata 鍵：%1$s。</string>
+    <string name="offline_address_error_unsupported_schema">不支援的 schema 版本：%1$s。</string>
+    <string name="offline_address_error_missing_places">找不到 places 資料表。</string>
+    <string name="offline_address_error_unexpected_columns">places 資料表缺少必要欄位：%1$s。</string>
+    <string name="offline_address_error_rtree_failed">建立空間索引失敗。</string>
+    <string name="offline_address_error_disk_full">儲存空間不足。</string>
+    <string name="offline_address_error_activation_failed">啟用失敗；保留先前的資料集。</string>
+    <string name="offline_address_error_io">匯入失敗：%1$s。</string>
+
+    <!-- Settings — Offline Address preference category. -->
+    <string name="pref_address_header">TW Offline Addr</string>
+    <string name="pref_address_row_me_title">顯示自身位置（ME）地址</string>
+    <string name="pref_address_row_me_summary">在 ME 座標列下方加上一行地址。</string>
+    <string name="pref_address_row_target_title">顯示目標（TGT）地址</string>
+    <string name="pref_address_row_target_summary">在 TGT 座標列下方加上一行地址。</string>
+    <string name="pref_address_row_map_title">顯示地圖中心（MAP）地址</string>
+    <string name="pref_address_row_map_summary">在 MAP 座標列下方加上一行地址。</string>
+    <string name="pref_address_dataset_status_title">資料集狀態</string>
+    <string name="pref_address_dataset_status_summary_none">尚未安裝資料集。</string>
+    <string name="pref_address_dataset_status_summary_hint">尚未安裝資料集 — 點此開啟「TW Offline Addr」頁面。</string>
+    <string name="pref_address_dataset_status_summary_active_format">使用中：%1$s · %2$s</string>
+
+    <!-- Widget address-row states. -->
+    <string name="widget_address_loading">查詢地址中…</string>
+    <string name="widget_address_empty_state">附近沒有可對應的地址</string>
+
+    <!-- Feature 005: 多縣市 + ZIP 批次匯入。 -->
+    <string name="offline_address_button_continue_adding">繼續加入</string>
+    <string name="offline_address_button_done">完成</string>
+    <string name="offline_address_button_cancel_batch">取消本批</string>
+    <string name="offline_address_batch_in_flight_format">待處理 %1$d 個</string>
+    <string name="offline_address_batch_done">已啟用 %1$d · 已替換 %2$d · 略過 %3$d · 失敗 %4$d</string>
+    <string name="offline_address_entry_status_extracting">解壓中…</string>
+    <string name="offline_address_entry_status_validating">驗證中…</string>
+    <string name="offline_address_entry_status_activated">已啟用</string>
+    <string name="offline_address_entry_status_skipped_supplementary">略過：補充檔</string>
+    <string name="offline_address_entry_status_skipped_duplicate">略過：重複</string>
+    <string name="offline_address_entry_status_county_mismatch">略過：縣市不符</string>
+    <string name="offline_address_entry_status_failed">失敗</string>
+    <string name="offline_address_error_zip_no_valid_datasets">此 ZIP 不含任何 places-&lt;county&gt;.sqlite。v1.0.6 僅支援逐縣市的地址資料集；townships / roads / OSM 屬於 feature 006+。</string>
+    <string name="offline_address_error_county_mismatch_format">選擇的檔案是 %1$s，無法替換 %2$s。請改用「移除」與「匯入」來切換縣市。</string>
+    <string name="offline_address_total_disk_usage_format">共佔用 %1$s</string>
+    <string name="pref_address_active_dataset_row_format">%1$s · %2$d 筆</string>
+
+    <!-- Phase 7 T042 — 動態 per-county 列表。 -->
+    <string name="pref_address_active_datasets_header">使用中的資料集</string>
+    <string name="pref_address_dataset_status_summary_multi_format">已啟用 %1$d 個縣市 — 點此開啟 TW Offline Addr</string>
+
+    <!-- Feature 005 polish — 信心指示器預設。 -->
+    <string name="pref_address_confidence_preset_title">信心指示器</string>
+    <string name="pref_address_confidence_preset_summary">當最近的紀錄距離查詢點較遠時，在地址前加上 ~ / ~~ 提示。</string>
+    <string name="opt_confidence_off">關閉（不加前綴）</string>
+    <string name="opt_confidence_tight">嚴格（~ 20 公尺 / ~~ 100 公尺）</string>
+    <string name="opt_confidence_standard">標準（~ 50 公尺 / ~~ 200 公尺）</string>
+    <string name="opt_confidence_loose">寬鬆（~ 100 公尺 / ~~ 500 公尺）</string>
+
+    <!-- ===== 功能 006：縣市優先前向搜尋 ===== -->
+    <string name="tool_forward_search_label">TW Addr Search</string>
+    <string name="tool_forward_search_desc">依縣市 → 鄉鎮市區 → 街道找出地址並前往（離線）。</string>
+
+    <string name="fs_boundary_missing">請先匯入 base 資料（townships.sqlite）以啟用前向搜尋。</string>
+
+    <string name="fs_stage_county">1. 縣市</string>
+    <string name="fs_county_none">尚未選擇縣市</string>
+    <string name="fs_county_confirm_format">%1$s %2$s</string>
+    <string name="fs_source_self">所在地</string>
+    <string name="fs_source_mapcenter">地圖中心</string>
+    <string name="fs_source_list">清單…</string>
+
+    <string name="fs_stage_district">2. 鄉鎮市區</string>
+    <string name="fs_stage_street">3. 街道</string>
+    <string name="fs_street_hint">街道（例：中山路）</string>
+    <string name="fs_search">搜尋</string>
+
+    <string name="fs_house_hint">門牌號（可省略）</string>
+    <string name="fs_no_match">此鄉鎮市區查無符合的街道。</string>
+    <string name="fs_county_dataset_missing">此縣市地址資料未安裝。</string>
+    <string name="fs_goto">前往</string>
+    <string name="fs_reset">重設</string>
+    <string name="fs_district_all">全部</string>
+    <string name="fs_candidate_format">%1$s · %2$d 公尺</string>
+
 </resources>

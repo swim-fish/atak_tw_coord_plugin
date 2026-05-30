@@ -1,0 +1,17 @@
+############ Hand-rolled WKB MultiPolygon + PIP — Tier-1 proof ############
+  zip: C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator\output\tw-central-full.zip  exists=True
+  台中車站       (24.1417,120.6736) -> county=台中市 district=西區 lvl=7 rtree_cand=1  exp=(台中市,None)  PASS
+  一中商圈       (24.1505,120.684) -> county=台中市 district=北區 lvl=7 rtree_cand=2  exp=(台中市,None)  PASS
+  彰化市中心      (24.0809,120.5386) -> county=彰化縣 district=彰化市 lvl=8 rtree_cand=2  exp=(彰化縣,彰化市)  PASS
+  鹿港鎮        (24.0576,120.4347) -> county=彰化縣 district=鹿港鎮 lvl=8 rtree_cand=2  exp=(彰化縣,鹿港鎮)  PASS
+  台中大甲區      (24.3486,120.6225) -> county=台中市 district=大甲區 lvl=7 rtree_cand=3  exp=(台中市,大甲區)  PASS
+  雲林斗六       (23.7092,120.543) -> county=雲林縣 district=斗六市 lvl=8 rtree_cand=1  exp=(雲林縣,斗六市)  PASS
+  南投市        (23.9099,120.6856) -> county=南投縣 district=南投市 lvl=8 rtree_cand=1  exp=(南投縣,南投市)  PASS
+  海上(無縣市)    (24.0,119.5) -> county=None district=None lvl=None rtree_cand=0  exp=(None,None)  PASS
+
+  RESULT: 8/8 probes correct  -> hand-rolled WKB MultiPolygon + PIP is VIABLE for Android (no JTS needed)
+
+  largest geometry_wkb blobs (device parse worst-case):
+    宜蘭縣: 534.3 KB, 102 polygons, 34109 vertices
+    新北市: 505.5 KB, 1 polygons, 32352 vertices
+    花蓮縣: 294.5 KB, 1 polygons, 18848 vertices
