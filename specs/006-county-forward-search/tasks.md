@@ -182,7 +182,7 @@ Android single-module plugin layout (same as features 001–005):
 - [X] T048 [P] Run `dart format`-equivalent (project Java formatter / Spotless) + `./gradlew :app:lintCivDebug` and fix any new warnings; confirm zero new analyzer findings (Constitution I).
 - [ ] T049 Run the full JVM suite `./gradlew :app:testCivDebugUnitTest` and the on-device suite `./gradlew :app:connectedCivDebugAndroidTest`; confirm green and record the run in the ADR.
 - [X] T050 [P] Re-run `python scripts/measure_tw_central.py`, `python scripts/verify_research_claims.py`, `python scripts/verify_polygon_in.py` against the current `tw-central-full.zip` and confirm the fixture (T005) still matches; note any drift in the ADR.
-- [X] T051 Update `README` (v1.0.6 → v1.0.7 or the chosen version) + the feature-006 roadmap memory: mark forward search + Tier-1 townships consumption shipped; note roads.sqlite / places-osm / active-root migration still pending.
+- [X] T051 Update `README` (released as v1.1.0) + the feature-006 roadmap memory: mark forward search + Tier-1 townships consumption shipped; note roads.sqlite / places-osm / active-root migration still pending.
 
 ---
 
