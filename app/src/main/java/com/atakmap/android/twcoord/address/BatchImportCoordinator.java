@@ -401,7 +401,8 @@ public final class BatchImportCoordinator {
 
   /**
    * Bare {@code .sqlite} path. Peeks the file's metadata.county via a one-shot SQLite open (through
-   * the same primary factory the registry uses), then hands the file to the importer.
+   * the registry's primary→fallback open, so a fallback-only-readable file isn't rejected here),
+   * then hands the file to the importer.
    */
   private void processBareSqlite(File sqliteFile, long startMs, String expectedCounty) {
     BatchImportReport.Entry started =
@@ -495,9 +496,12 @@ public final class BatchImportCoordinator {
     }
   }
 
-  /** Read {@code metadata.county} via the primary factory (one-shot open then close). */
+  /**
+   * Read {@code metadata.county} (one-shot open then close), via the registry's primary→fallback
+   * open so a file the fallback can read but the primary cannot is not wrongly rejected at peek.
+   */
   private String peekCounty(File sqliteFile) {
-    AddressDatabaseFacade peek = primaryFactory.open(sqliteFile);
+    AddressDatabaseFacade peek = registry.openFacadeWithFallback(sqliteFile);
     if (peek == null) return null;
     try {
       GeneratorMetadata md = peek.readMetadata();

@@ -191,6 +191,10 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
       return;
     }
     boundaryMissing.setVisibility(View.GONE);
+    // Restore the stage-1 controls: a prior open with no boundary hid them via
+    // hideFromStage(1); now that base data exists (e.g. imported mid-session and
+    // re-mounted lazily) they must come back, or the page renders blank.
+    showStage1();
 
     double[] mc = mapCentre();
     double[] self = selfMarker();
@@ -648,6 +652,14 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     candidateList.removeAllViews();
     emptyState.setVisibility(View.GONE);
     btnGoto.setVisibility(View.GONE);
+  }
+
+  /** Restore the stage-1 county controls hidden by a prior {@link #hideFromStage}(1). */
+  private void showStage1() {
+    if (countyChip != null) countyChip.setVisibility(View.VISIBLE);
+    if (btnSelf != null) btnSelf.setVisibility(View.VISIBLE);
+    if (btnMapCenter != null) btnMapCenter.setVisibility(View.VISIBLE);
+    if (btnList != null) btnList.setVisibility(View.VISIBLE);
   }
 
   // ----------------------------------------------------------------------

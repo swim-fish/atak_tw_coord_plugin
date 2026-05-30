@@ -124,6 +124,33 @@ public final class BatchImportCoordinatorTest {
     assertThat(report.failedCount()).isEqualTo(1);
   }
 
+  /**
+   * Regression (Codex PR#2 review): peekCounty must use the registry's primary→fallback open. When
+   * the primary factory can't open the file but the fallback can, the county must still be peeked
+   * (so the file reaches the importer) rather than rejected as "metadata.county unreadable".
+   */
+  @Test
+  public void peekUsesFallbackWhenPrimaryCannotOpen() throws Exception {
+    AddressDatabaseFacade.Factory nullPrimary = dbFile -> null; // primary can't open anything
+    FixedCountyFactory fallbackFac = new FixedCountyFactory("高雄市");
+    ActiveDatasetRegistry reg =
+        new ActiveDatasetRegistry(importer, nullPrimary, () -> fallbackFac, fs);
+    BatchImportCoordinator c =
+        new BatchImportCoordinator(
+            importer, extractor, classifier, reg, nullPrimary, executor, fs);
+    File picked = writeJunkSqlite("places-x.sqlite");
+
+    BatchImportReport report = runBatch(c, picked, "高雄市");
+
+    // peek resolved 高雄市 via the fallback (not rejected as unreadable / mismatch); the file then
+    // reaches the importer and fails there on the junk bytes — proving peek succeeded.
+    assertThat(report.entries())
+        .noneMatch(e -> e.status() == BatchImportReport.Status.SKIPPED_COUNTY_MISMATCH);
+    assertThat(report.entries())
+        .as("peeked county via fallback")
+        .anyMatch(e -> "高雄市".equals(e.county()));
+  }
+
   /** A plain Import (expectedCounty == null) is never rejected for a county mismatch. */
   @Test
   public void bareSqlitePlainImportIsNeverRejectedAsMismatch() throws Exception {

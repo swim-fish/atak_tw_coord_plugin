@@ -234,8 +234,13 @@ public final class ActiveDatasetRegistry {
    * Tries the primary factory first. On null result, lazily creates the fallback factory and
    * retries. The probe-with-rtree-SELECT step from research R5 is left to the higher-level test
    * code; for the registry-internal path, we treat any non-null facade as good.
+   *
+   * <p>Public so {@code BatchImportCoordinator.peekCounty} can read {@code metadata.county} through
+   * the same primary→fallback path (and shared lazy fallback cache) the registry uses to activate;
+   * otherwise a file the fallback could open but the primary cannot would be rejected at peek
+   * before activation ever reaches the fallback. Caller owns the returned facade's {@code close()}.
    */
-  private AddressDatabaseFacade openFacadeWithFallback(File dbFile) {
+  public AddressDatabaseFacade openFacadeWithFallback(File dbFile) {
     AddressDatabaseFacade primary;
     try {
       primary = primaryFactory.open(dbFile);
