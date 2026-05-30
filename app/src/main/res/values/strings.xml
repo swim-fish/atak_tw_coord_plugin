@@ -142,11 +142,11 @@
          ============================================================ -->
 
     <!-- Third Tools-menu icon identity. -->
-    <string name="tool_offline_address_label">Offline Address</string>
+    <string name="tool_offline_address_label">TW Offline Addr</string>
     <string name="tool_offline_address_desc">Import an offline address dataset (places-&lt;county&gt;.sqlite) and show address text under the coordinate readout.</string>
 
     <!-- Offline Address page (DropDownReceiver). -->
-    <string name="offline_address_page_title">Offline Address</string>
+    <string name="offline_address_page_title">TW Offline Addr</string>
     <string name="offline_address_empty_state">No address dataset installed. Use the .sqlite file produced by the atak-tw-address-generator project.</string>
 
     <!-- Action buttons + confirmations. -->
@@ -188,7 +188,7 @@
     <string name="offline_address_error_io">Import failed: %1$s.</string>
 
     <!-- Settings — Offline Address preference category. -->
-    <string name="pref_address_header">Offline Address</string>
+    <string name="pref_address_header">TW Offline Addr</string>
     <string name="pref_address_row_me_title">Show address for self-location (ME)</string>
     <string name="pref_address_row_me_summary">Adds an address line under the ME coordinate row.</string>
     <string name="pref_address_row_target_title">Show address for target (TGT)</string>
@@ -197,7 +197,7 @@
     <string name="pref_address_row_map_summary">Adds an address line under the MAP coordinate row.</string>
     <string name="pref_address_dataset_status_title">Dataset status</string>
     <string name="pref_address_dataset_status_summary_none">No dataset installed.</string>
-    <string name="pref_address_dataset_status_summary_hint">No dataset installed — tap to open Offline Address.</string>
+    <string name="pref_address_dataset_status_summary_hint">No dataset installed — tap to open TW Offline Addr.</string>
     <!-- %1$s = county label, %2$s = data_date. -->
     <string name="pref_address_dataset_status_summary_active_format">Active: %1$s · %2$s</string>
 
@@ -244,7 +244,7 @@
          Used in the multi-county world (v1.0.6+); the legacy single-active summary
          (pref_address_dataset_status_summary_active_format) remains for the auto-migrate
          intermediate state and v1.0.5 fallback. -->
-    <string name="pref_address_dataset_status_summary_multi_format">%1$d counties active — tap to open Offline Address</string>
+    <string name="pref_address_dataset_status_summary_multi_format">%1$d counties active — tap to open TW Offline Addr</string>
 
     <!-- Feature 005 polish — confidence-indicator preset.
          Summary is overridden at runtime by TwCoordPreferenceFragment with a live preview

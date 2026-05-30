@@ -109,11 +109,11 @@
          ============================================================ -->
 
     <!-- Tools-menu icon identity. -->
-    <string name="tool_offline_address_label">オフライン住所</string>
+    <string name="tool_offline_address_label">TW Offline Addr</string>
     <string name="tool_offline_address_desc">オフライン住所データセット（places-&lt;county&gt;.sqlite）を取り込み、座標表示の下に住所テキストを表示します。</string>
 
     <!-- Offline Address page (DropDownReceiver). -->
-    <string name="offline_address_page_title">オフライン住所</string>
+    <string name="offline_address_page_title">TW Offline Addr</string>
     <string name="offline_address_empty_state">住所データセットがインストールされていません。atak-tw-address-generator プロジェクトが生成した .sqlite ファイルをご利用ください。</string>
 
     <!-- Action buttons + confirmations. -->
@@ -153,7 +153,7 @@
     <string name="offline_address_error_io">インポート失敗：%1$s。</string>
 
     <!-- Settings — Offline Address preference category. -->
-    <string name="pref_address_header">オフライン住所</string>
+    <string name="pref_address_header">TW Offline Addr</string>
     <string name="pref_address_row_me_title">自分の位置（ME）の住所を表示</string>
     <string name="pref_address_row_me_summary">ME 座標行の下に住所行を追加します。</string>
     <string name="pref_address_row_target_title">ターゲット（TGT）の住所を表示</string>
@@ -162,7 +162,7 @@
     <string name="pref_address_row_map_summary">MAP 座標行の下に住所行を追加します。</string>
     <string name="pref_address_dataset_status_title">データセット状態</string>
     <string name="pref_address_dataset_status_summary_none">データセットがインストールされていません。</string>
-    <string name="pref_address_dataset_status_summary_hint">データセットがインストールされていません — タップでオフライン住所ページを開きます。</string>
+    <string name="pref_address_dataset_status_summary_hint">データセットがインストールされていません — タップで TW Offline Addr ページを開きます。</string>
     <string name="pref_address_dataset_status_summary_active_format">使用中：%1$s · %2$s</string>
 
     <!-- Widget address-row states. -->
@@ -189,7 +189,7 @@
 
     <!-- Phase 7 T042 — 動的な県別データセット一覧（初訳；T050 で校正予定）。 -->
     <string name="pref_address_active_datasets_header">使用中のデータセット</string>
-    <string name="pref_address_dataset_status_summary_multi_format">%1$d 件のデータセットを使用中 — タップでオフライン住所を開く</string>
+    <string name="pref_address_dataset_status_summary_multi_format">%1$d 件のデータセットを使用中 — タップで TW Offline Addr を開く</string>
 
     <!-- Feature 005 polish — 信頼度インジケーターのプリセット（初訳；T050 で校正予定）。 -->
     <string name="pref_address_confidence_preset_title">信頼度インジケーター</string>

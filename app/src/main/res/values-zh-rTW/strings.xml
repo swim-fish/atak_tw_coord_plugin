@@ -111,11 +111,11 @@
          ============================================================ -->
 
     <!-- Tools-menu icon identity. -->
-    <string name="tool_offline_address_label">離線地址</string>
+    <string name="tool_offline_address_label">TW Offline Addr</string>
     <string name="tool_offline_address_desc">匯入離線地址資料集（places-&lt;county&gt;.sqlite），在座標讀數下方顯示地址文字。</string>
 
     <!-- Offline Address page (DropDownReceiver). -->
-    <string name="offline_address_page_title">離線地址</string>
+    <string name="offline_address_page_title">TW Offline Addr</string>
     <string name="offline_address_empty_state">尚未安裝任何地址資料集。請使用 atak-tw-address-generator 專案產生的 .sqlite 檔案。</string>
 
     <!-- Action buttons + confirmations. -->
@@ -155,7 +155,7 @@
     <string name="offline_address_error_io">匯入失敗：%1$s。</string>
 
     <!-- Settings — Offline Address preference category. -->
-    <string name="pref_address_header">離線地址</string>
+    <string name="pref_address_header">TW Offline Addr</string>
     <string name="pref_address_row_me_title">顯示自身位置（ME）地址</string>
     <string name="pref_address_row_me_summary">在 ME 座標列下方加上一行地址。</string>
     <string name="pref_address_row_target_title">顯示目標（TGT）地址</string>
@@ -164,7 +164,7 @@
     <string name="pref_address_row_map_summary">在 MAP 座標列下方加上一行地址。</string>
     <string name="pref_address_dataset_status_title">資料集狀態</string>
     <string name="pref_address_dataset_status_summary_none">尚未安裝資料集。</string>
-    <string name="pref_address_dataset_status_summary_hint">尚未安裝資料集 — 點此開啟「離線地址」頁面。</string>
+    <string name="pref_address_dataset_status_summary_hint">尚未安裝資料集 — 點此開啟「TW Offline Addr」頁面。</string>
     <string name="pref_address_dataset_status_summary_active_format">使用中：%1$s · %2$s</string>
 
     <!-- Widget address-row states. -->
@@ -191,7 +191,7 @@
 
     <!-- Phase 7 T042 — 動態 per-county 列表。 -->
     <string name="pref_address_active_datasets_header">使用中的資料集</string>
-    <string name="pref_address_dataset_status_summary_multi_format">已啟用 %1$d 個縣市 — 點此開啟離線地址</string>
+    <string name="pref_address_dataset_status_summary_multi_format">已啟用 %1$d 個縣市 — 點此開啟 TW Offline Addr</string>
 
     <!-- Feature 005 polish — 信心指示器預設。 -->
     <string name="pref_address_confidence_preset_title">信心指示器</string>
