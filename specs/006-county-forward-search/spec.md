@@ -71,7 +71,8 @@ skipped supplementary file.
 ### User Story 1 — Find an address near me by funnelling county → 鄉鎮市區 → street (Priority: P1) 🎯 MVP
 
 A field operator wants to go to a street address near their current operating
-area. They open Tools → 離線地址 → 前向搜尋. The page shows their current
+area. They open Tools → 前向搜尋 (a standalone Tools-menu entry, sibling to
+離線地址 and the GoTo input page). The page shows their current
 county/district already detected from the map (e.g. 台中市西區). They confirm
 the county, the district list for that county is shown with the operator's own
 district pre-highlighted, they tap a district, type or pick a street fragment
@@ -175,7 +176,7 @@ facade with US1/US2, so it is cheap to include in the same feature.
 **Independent Test**: With {台中市, 彰化縣} active, a Taichung map-centre reverse
 readout MUST resolve using only the Taichung dataset (verifiable by the result
 being identical to today's globally-nearest result for in-county points) and MUST
-NOT regress the SC-002 latency budget from 004/005.
+NOT regress the reverse-lookup latency budget (SC-003, carried from 004/005).
 
 **Acceptance Scenarios**:
 
@@ -263,7 +264,8 @@ nearest-by-distance candidate.
 
 - **FR-001**: System MUST detect the current 縣市 + 鄉鎮市區 for a given
   coordinate using the administrative boundary data alone, WITHOUT opening any
-  per-county address database.
+  per-county address database. (This is the constraint; FR-003 specifies the
+  mechanism that realises it.)
 - **FR-002**: System MUST consume the boundary dataset (`townships.sqlite`,
   currently skipped as supplementary by feature 005) as a first-class input,
   mounting it once and reusing it across forward search and reverse lookup.
@@ -334,9 +336,11 @@ nearest-by-distance candidate.
 - **LocalityResult**: The outcome of resolving a coordinate against the boundary
   set — (county, district, approximate?). May have a county with no district
   (clipped/coastal) or be empty (outside all boundaries).
-- **CountySelection**: The operator's chosen county plus its provenance
+- **CountySource**: The operator's chosen county plus its provenance
   (所在地 / 地圖中心 / 清單), which drives whether the district stage
-  pre-highlights a district.
+  pre-highlights a district. (Implemented as the `CountySource` enum plus a
+  `CountySeed` value carrying the default + alternative counties — see
+  data-model §2.3.)
 - **ForwardSearchQuery**: The accumulated funnel state — county → district →
   street fragment → optional house number — plus the distance anchor used for
   ranking.
@@ -351,11 +355,14 @@ nearest-by-distance candidate.
 - **SC-001**: From opening the forward-search page at a known map centre, an
   operator can reach a confirmed GoTo for a nearby street address in **≤ 5 taps**
   and **≤ 30 s** (county confirm → district → street fragment → candidate →
-  GoTo), with no full-keyboard typing required for the county/district stages.
-- **SC-002**: Locality detection (coordinate → 縣市 + 鄉鎮市區) returns in a
-  perceptibly instant time on the reference device and **does not open any
-  per-county address database** to do so (verified by the address databases
-  remaining unopened during a pan that only updates the locality).
+  GoTo). "Taps" counts discrete touch actions on county/district/candidate/GoTo
+  controls; entering the street fragment at stage ③ is the one stage where
+  keystrokes are allowed and those keystrokes are **not** counted as taps. No
+  full-keyboard typing is required for the county/district stages.
+- **SC-002**: Locality detection (coordinate → 縣市 + 鄉鎮市區) completes in
+  **≤ 100 ms p95** on the reference device and **does not open any per-county
+  address database** to do so (verified by the address databases remaining
+  unopened during a pan that only updates the locality).
 - **SC-003**: The reverse on-map readout, after adopting county scoping, MUST NOT
   regress the 004/005 latency budget: median reverse-lookup **≤ 1000 ms**
   (p95 **≤ 2000 ms**) across 100 random pans inside the union of active county
