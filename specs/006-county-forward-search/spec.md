@@ -302,9 +302,12 @@ nearest-by-distance candidate.
 - **FR-012**: System MUST allow the operator to disambiguate the final pin by
   entering a house number; when none is entered, system MUST fall back to the
   nearest candidate by distance.
-- **FR-013**: System MUST NOT move/pan the map until the operator explicitly
-  confirms a candidate (no auto-pan on a fuzzy match); on confirm it MUST reuse
-  the plugin's existing GoTo flow.
+- **FR-013**: System MUST NOT move/pan the map on a fuzzy/empty match or while
+  the operator is still building the query; panning happens only on an explicit
+  candidate selection. *(Shipped refinement: selecting = tapping a candidate row,
+  which pans immediately and reuses the existing GoTo flow; the 前往/GoTo button
+  re-pans the last selection. The map pans only after a candidate is tapped, never
+  on a partial/fuzzy match — see "Shipped additions" below.)*
 - **FR-014**: The reverse on-map readout MUST resolve the county via the boundary
   layer first and then query only that county's dataset, replacing the
   query-all-active-counties comparison, with no operator-visible behaviour change
@@ -326,6 +329,31 @@ nearest-by-distance candidate.
 - **FR-019**: System MUST NOT regress feature 005's multi-county reverse-lookup
   behaviour or its import/lifecycle flows; consuming the boundary layer MUST be
   additive.
+
+### Shipped additions (post-spec, device-hardening)
+
+Behaviours added during implementation/on-device tuning, beyond the original
+FR set. Captured here so the spec matches what ships:
+
+- **A1 — 全部 / All districts (county-wide).** Stage ② offers an "全部" option
+  that searches the whole county (no `township` filter) via the new facade
+  method `streetCandidatesCountyWide`; still distance-anchored, so it is **not**
+  the out-of-scope global FTS search. Extends FR-008.
+- **A2 — Distance-anchor re-pointing.** Tapping 地圖中心 / 所在地 re-points the
+  ranking anchor to that coordinate (and map-follow re-points it on a
+  cross-county settle). Refines FR-011's "current anchor".
+- **A3 — Auto-select resolved district.** When 地圖中心 / 所在地 resolves a
+  district, that district is auto-selected (drops straight to ③) unless 全部 was
+  chosen. Refines FR-007's "pre-highlight".
+- **A4 — Map-follow.** While the page is open and the county is map-driven, the
+  funnel re-seeds when the map settles over a new county.
+- **A5 — Reset.** A 重設 button clears the funnel back to the map-centre default.
+- **A6 — 16-point compass arrow** on each result, from the anchor to the
+  candidate (complements FR-011's distance).
+- **A7 — Empty-street + 巷弄.** Street match coalesces `street`→`area` so
+  empty-street rows surface under their 巷/莊/新村 name; the keypad gains 巷/弄/號
+  and the house-number filter also matches `display_name_halfwidth` so a
+  "30巷5弄7號" tail narrows into the 路/街. Extends FR-009/FR-012.
 
 ### Key Entities *(include if feature involves data)*
 

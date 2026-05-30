@@ -26,7 +26,11 @@ public interface AddressDatabaseFacade extends AutoCloseable {
    */
   java.util.List<AddressCandidate> streetCandidates(
       String district, String foldedFragment,
-      double anchorLat, double anchorLon, int limit);   // NEW
+      double anchorLat, double anchorLon, int limit);   // NEW (district-scoped)
+
+  /** 全部 / All-districts: same fold+rank, NO township filter (whole county). */
+  java.util.List<AddressCandidate> streetCandidatesCountyWide(
+      String foldedFragment, double anchorLat, double anchorLon, int limit); // NEW
 
   void close();
   interface Factory { AddressDatabaseFacade open(java.io.File dbFile); }
@@ -36,11 +40,16 @@ public interface AddressDatabaseFacade extends AutoCloseable {
 ## Query shape
 
 ```sql
-SELECT p.lat, p.lon, p.display_name, p.display_name_halfwidth, p.street
+-- street-locator coalesces to `area` so empty-street rows (street NULL/'',
+-- located by a named 巷/莊/新村 in `area`) surface under their area name.
+SELECT p.lat, p.lon, p.display_name, p.display_name_halfwidth,
+       COALESCE(NULLIF(p.street,''), p.area) AS street, p.number
 FROM places p
-WHERE p.township = ?                       -- district scope (FR-008)
-  AND p.street LIKE ? ;                     -- ? = fragment || '%' (prefix) incl. 段
--- app side: optionally re-fold p.street and substring-check (handles 臺/台 stored
+WHERE p.township = ?                                       -- district scope (FR-008); OMITTED for county-wide
+  AND ( COALESCE(NULLIF(p.street,''), p.area) LIKE ?       -- fragment || '%' (prefix), incl. 段
+     OR COALESCE(NULLIF(p.street,''), p.area) LIKE ? );    -- 臺↔台 variant
+-- county-wide variant drops the `p.township = ?` line and adds `LIMIT 5000`.
+-- app side: re-fold the locator and substring-check (handles 臺/台 stored
 -- variants that LIKE alone won't fold); haversine to anchor; sort asc; take limit.
 ```
 
@@ -59,14 +68,21 @@ Notes:
 ## Invariants
 
 1. **Never `=`.** Matching is prefix/substring (FR-009).
-2. **Fold both sides.** Fragment pre-folded by the controller; candidate `street`
+2. **Fold both sides.** Fragment pre-folded by the controller; candidate locator
    re-folded app-side before the final contains-check (FR-010).
-3. **District-scoped.** Only rows with `township = district` are considered
-   (FR-008 / SC-007) — the query never scans the whole county.
-4. **Ranked + bounded.** Nearest-first by haversine; at most `limit` rows.
-5. **Never throws / never null.** SQL error ⇒ empty list + `Log.w`
+3. **District-scoped (default) or whole-county (全部).** `streetCandidates` only
+   considers rows with `township = district` (FR-008 / SC-007).
+   `streetCandidatesCountyWide` drops that filter to scan the whole county
+   (bounded by `LIMIT 5000` + app-side rank); distance ranking disambiguates
+   same-named streets across districts.
+4. **Empty-street via `area`.** The matched/returned locator is
+   `COALESCE(NULLIF(street,''), area)`, so empty-street rows are found under their
+   named 巷/莊/新村 (e.g. 十甲巷, 介壽新村). `area` is a base-table column since
+   schema v1 (independent of the v3 FTS change).
+5. **Ranked + bounded.** Nearest-first by haversine; at most `limit` rows.
+6. **Never throws / never null.** SQL error ⇒ empty list + `Log.w`
    (Constitution VI).
-6. **Reverse path untouched.** `nearestWithin` keeps its exact 004/005 behaviour.
+7. **Reverse path untouched.** `nearestWithin` keeps its exact 004/005 behaviour.
 
 ## Test plan (`AddressDatabaseFacadeStreetQueryTest`, JVM/xerial against a fixture places sqlite)
 

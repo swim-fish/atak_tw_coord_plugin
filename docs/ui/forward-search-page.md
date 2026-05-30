@@ -11,34 +11,34 @@ with a glove + ATAK-side-panel UX (FR-016).
 ┌─ 前向搜尋 ──────────────────────────────┐
 │ [boundary-missing banner]  (only if no base data) │
 │                                                   │
-│ 1. 縣市                                            │
+│ 1. 縣市                                  [重設]    │  ← Reset clears the funnel
 │   ┌───────────────────────────────────────────┐  │
-│   │ 台中市 西區          (confirm chip)         │  │  ← pre-filled from map centre
+│   │ 台中市 西區          (county chip)          │  │  ← pre-filled from map centre
 │   └───────────────────────────────────────────┘  │
-│   [所在地] [地圖中心] [清單…]   (56dp buttons)     │
-│   (清單 → vertical list of counties from data)    │
+│   [所在地] [地圖中心] [清單…]   (56dp buttons)     │  ← 地圖中心/所在地 also re-anchor
+│   (清單 → list of counties from data)             │     + auto-select the resolved 區
 │                                                   │
-│ 2. 鄉鎮市區                                        │
-│   ▶ 西區   (▶ = operator's own district)          │  ← tap-only chips, ≥52dp rows
-│   大甲區                                           │
-│   …                                               │
+│ 2. 鄉鎮市區            (3-column grid, ≥50dp)      │
+│   [全部] [▶西區] [大甲區]   (▶ = own district;     │  ← 全部 = whole-county search
+│   [南區] [北區]  …          全部 = no 區 filter)    │
 │                                                   │
 │ 3. 街道                                            │
 │   [ 中山路              ] [搜尋]                    │  ← only stage that types
 │                                                   │
-│ [門牌號 (optional)]                                │
+│ [門牌號 / 巷弄 (optional)]                          │
 │   ┌─ numeric keypad ─┐                            │
 │   │ 1  2  3 │                                      │  ← 56dp keys, no system IME
 │   │ 4  5  6 │                                      │
 │   │ 7  8  9 │                                      │
-│   │ 之 0  ⌫ │                                      │
+│   │ 巷 0  弄 │                                      │  ← 巷/弄/號 narrow the address tail
+│   │ 號 之 ⌫ │                                      │
 │   └─────────┘                                      │
 │                                                   │
-│   中山路一段1號 · 12 m      (candidate rows)        │  ← distance-ranked, tap to select
-│   中山路一段5號 · 48 m                              │
+│   ↗ 中山路一段1號 · 12 m    (candidate rows)        │  ← 16-pt compass arrow + distance;
+│   ↘ 中山路一段5號 · 48 m                            │     TAP A ROW to pan the map
 │   …                                               │
 │   ┌───────────────────────────────────────────┐  │
-│   │              前往 (GoTo)                     │  │  ← 60dp, enabled after a pick
+│   │              前往 (GoTo)                     │  │  ← 60dp, re-pans the last pick
 │   └───────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────┘
 ```
@@ -48,11 +48,19 @@ with a glove + ATAK-side-panel UX (FR-016).
 - **Single column**, fits the narrow DropDownReceiver panel (HALF_WIDTH).
 - **Touch targets**: county-source + GoTo buttons 56–60dp; district / candidate
   rows ≥52dp; keypad keys 56dp. All ≥ the 48dp minimum.
-- **Tap-only stages ① ②**: county and district need no keyboard.
-- **Numeric keypad** for the house number (digits + 之 + ⌫), never the system IME.
-- **Confirm-before-GoTo**: a candidate must be tapped (enabling 前往) before any
-  pan; the map never moves on a fuzzy match (FR-013). GoTo uses the same
-  `CameraController.Programmatic.panTo` call as `TwCoordGotoView`.
+- **Tap-only stages ① ②**: county and district need no keyboard; district is a
+  3-column grid with a leading **全部** (whole-county) cell.
+- **Numeric keypad** for the house-number / 巷弄 tail (digits + 之 + **巷/弄/號** +
+  ⌫), never the system IME.
+- **Tap-a-result-to-pan**: tapping a candidate row pans the map straight to it
+  (no separate confirm step); the map never moves on a fuzzy/partial match before
+  a row is tapped (FR-013). The 前往/GoTo button re-pans the last selection. Pan
+  uses the same `CameraController.Programmatic.panTo` call as `TwCoordGotoView`
+  (pan only — zoom is preserved).
+- **Result arrow**: each row leads with a 16-point compass arrow from the current
+  distance anchor to that address. The anchor is the map centre by default and is
+  re-pointed by 地圖中心 / 所在地 (and on a cross-county map-follow settle).
+- **Reset**: a 重設 button returns the funnel to the map-centre default.
 
 ## County sources (stage ①)
 

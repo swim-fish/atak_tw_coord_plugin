@@ -22,17 +22,22 @@ public final class ForwardSearchController {
   CountySeed seedCounty(double mapLat, double mapLon, Double selfLat, Double selfLon);
   java.util.List<String> countyList();               // FR-006 (from boundary)
   void chooseCounty(String county, CountySource src);
+  void setAnchor(double anchorLat, double anchorLon); // re-point distance anchor (地圖中心/所在地)
 
   // Stage ② — districts.
   java.util.List<String> districts();                // for the chosen county
   String suggestedDistrict();                         // pre-highlight when SELF/MAP_CENTER
   void chooseDistrict(String district);
+  void chooseAllDistricts();                          // 全部 — whole-county, no township filter
+  boolean isAllDistricts();
 
   // Stage ③ — street match (opens the county place DB for the first time).
+  // Single district → streetCandidates; 全部 → streetCandidatesCountyWide (see street-query.md).
   java.util.List<AddressCandidate> search(String streetFragment, int limit);
 
-  // Stage ④ — pin.
-  java.util.List<AddressCandidate> withHouseNumber(String houseNumber, int limit); // blank ⇒ nearest
+  // Stage ④ — pin. Fragment matches the stored house number OR display_name_halfwidth
+  // (so a 巷/弄 tail narrows into the 路/街). blank ⇒ nearest.
+  java.util.List<AddressCandidate> withHouseNumber(String houseNumber, int limit);
   AddressCandidate confirm(AddressCandidate chosen);  // returns the GoTo target (no pan here)
 
   ForwardSearchQuery state();
@@ -69,10 +74,19 @@ String selfCounty (nullable), String mapCenterCounty (nullable) }`.
 7. **Distance rank.** Candidates sorted ascending by haversine to the query
    anchor; `limit` caps the list (FR-011).
 8. **House number optional.** `withHouseNumber("")` ⇒ nearest-by-distance
-   (FR-012).
+   (FR-012). A non-blank fragment matches the stored number **or** anywhere in
+   `display_name_halfwidth`, so a 巷/弄 tail ("30巷5弄7號") narrows into the 路/街.
 9. **`confirm` does not pan.** It returns the chosen `AddressCandidate`; the
-   receiver triggers GoTo only on the explicit confirm tap (FR-013).
-10. **No throw.** Any facade error ⇒ empty candidate list + safe state
+   *receiver* pans. (Shipped: the receiver pans on candidate **tap** — no
+   separate confirm step — and the 前往/GoTo button re-pans the last pick. No pan
+   happens before a candidate is tapped; FR-013.)
+10. **全部 (county-wide).** After `chooseAllDistricts()`, `isAllDistricts()` is
+    true and `search` routes to `streetCandidatesCountyWide` (no township
+    filter); `chooseCounty`/`chooseDistrict` reset it to single-district mode.
+11. **Anchor re-pointing.** `setAnchor(lat,lon)` repoints the ranking anchor used
+    by `search`/`withHouseNumber`; the receiver calls it on 地圖中心/所在地 and on
+    a cross-county map-follow settle.
+12. **No throw.** Any facade error ⇒ empty candidate list + safe state
     (Constitution VI).
 
 ## Test plan (`ForwardSearchControllerTest`, `StreetTextNormaliserTest`, JVM)

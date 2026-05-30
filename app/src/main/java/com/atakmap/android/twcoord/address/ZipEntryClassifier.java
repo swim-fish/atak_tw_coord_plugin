@@ -5,15 +5,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Classifies a ZIP entry name into one of three buckets so {@code ZipExtractor} knows what to do
+ * Classifies a ZIP entry name into one of four buckets so {@code ZipExtractor} knows what to do
  * with the bytes:
  *
  * <ul>
  *   <li>{@link Classification#PLACES_COUNTY} — matches {@code places-<county>.sqlite}; the
  *       extractor streams it into a per-county staging directory.
- *   <li>{@link Classification#SKIPPED_SUPPLEMENTARY} — {@code townships.sqlite}, {@code
- *       roads.sqlite}, {@code places-osm.sqlite}, any {@code timestamp.*} sidecar, any {@code
- *       *.manifest.txt} sidecar. v1.0.6 does not consume these; feature 006+ will.
+ *   <li>{@link Classification#BOUNDARY} — {@code townships.sqlite}, the MOI boundary layer.
+ *       Feature 006 consumes it: the extractor stages it and {@code BatchImportCoordinator}
+ *       mounts it at {@code active/_boundary/} (was SKIPPED_SUPPLEMENTARY through feature 005).
+ *   <li>{@link Classification#SKIPPED_SUPPLEMENTARY} — {@code roads.sqlite}, {@code
+ *       places-osm.sqlite}, any {@code timestamp.*} sidecar, any {@code *.manifest.txt} sidecar.
+ *       Not consumed yet (Tier-2 / landmark layers reserved for a later feature).
  *   <li>{@link Classification#UNRECOGNIZED} — anything else (logged at {@code Log.w} by the
  *       extractor; not counted as a failure).
  * </ul>
