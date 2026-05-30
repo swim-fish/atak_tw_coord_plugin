@@ -56,10 +56,23 @@ public class StreetCandidateReorderTest {
 
   @Test
   public void blankFragmentDegradesToDistance() {
-    AddressCandidate near = c("乙路", 100);
-    AddressCandidate far = c("甲路", 500);
+    // The nearer candidate has the LONGER name so a stray leftover-length tiebreak would order it
+    // AFTER the farther short-named one — this fixture fails unless empty fragment is pure
+    // distance.
+    AddressCandidate near = c("中山一路", 100); // closer, longer name
+    AddressCandidate far = c("甲路", 500); // farther, shorter name
     List<AddressCandidate> out =
         StreetCandidateRanker.reorder(Arrays.asList(far, near), ResultOrdering.MOST_SIMILAR, "");
+    assertThat(out).containsExactly(near, far);
+  }
+
+  @Test
+  public void blankFragmentAfterTrimDegradesToDistance() {
+    // Whitespace-only fragment trims to empty → same pure-distance contract.
+    AddressCandidate near = c("中山一路", 100);
+    AddressCandidate far = c("甲路", 500);
+    List<AddressCandidate> out =
+        StreetCandidateRanker.reorder(Arrays.asList(far, near), ResultOrdering.MOST_SIMILAR, "  ");
     assertThat(out).containsExactly(near, far);
   }
 

@@ -35,11 +35,13 @@ provide moves to a new `pref_readout_visible` `CheckBoxPreference` (default
 `com.atakmap.app.ADVANCED_SETTINGS` with a `toolkey` extra of `PREF_KEY` — the
 ATAK-sanctioned jump-to-a-plugin's-Tool-Preferences pattern (mirrored from the
 meshtastic `MeshtasticDropDownReceiver.openPluginPreferences` sample; action
-listed in the SDK `docs/broadcastlist.txt`). javap of `main.jar` confirmed
-`PreferenceControl.getInstance(Context).openSettings(String)` as an alternative
-and `AtakPreferenceFragment.showScreen(...)` as `protected` (rejected). Merely
-opening the page does NOT mutate the active format (FR-007). Wrapped per
-Constitution VI.
+listed in the SDK `docs/broadcastlist.txt`). The two callable-API alternatives
+were both rejected after javap of `main.jar`: `PreferenceControl` has **no**
+`openSettings(...)` method (so it cannot launch the screen), and
+`AtakPreferenceFragment.showScreen(...)` is `protected` (in-fragment only, per the
+helloworld sample) — neither is reachable from the tool-button receiver, leaving
+the broadcast as the working public mechanism (see research.md R1). Merely opening
+the page does NOT mutate the active format (FR-007). Wrapped per Constitution VI.
 
 ### D2 — Result ordering is an in-place re-rank over the existing fold (US1)
 

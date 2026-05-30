@@ -91,10 +91,13 @@ public interface FileSystem {
    * null/absent/a directory. Best-effort — never throws.
    */
   default long sizeOf(Path path) {
-    if (path == null || !Files.exists(path) || Files.isDirectory(path)) return 0L;
+    if (path == null) return 0L;
     try {
+      if (!Files.exists(path) || Files.isDirectory(path)) return 0L;
       return Files.size(path);
-    } catch (IOException e) {
+    } catch (RuntimeException | IOException e) {
+      // Best-effort, never throws (Constitution VI). Catch RuntimeException too (e.g.
+      // SecurityException on a restrictive filesystem) so nothing escapes this seam.
       return 0L;
     }
   }
@@ -105,19 +108,24 @@ public interface FileSystem {
    * null/absent. Best-effort — never throws.
    */
   default long sizeOfDirectory(Path dir) {
-    if (dir == null || !Files.exists(dir)) return 0L;
-    try (Stream<Path> walk = Files.walk(dir)) {
-      return walk.filter(Files::isRegularFile)
-          .mapToLong(
-              p -> {
-                try {
-                  return Files.size(p);
-                } catch (IOException e) {
-                  return 0L;
-                }
-              })
-          .sum();
-    } catch (IOException e) {
+    if (dir == null) return 0L;
+    try {
+      if (!Files.exists(dir)) return 0L;
+      try (Stream<Path> walk = Files.walk(dir)) {
+        return walk.filter(Files::isRegularFile)
+            .mapToLong(
+                p -> {
+                  try {
+                    return Files.size(p);
+                  } catch (RuntimeException | IOException e) {
+                    return 0L;
+                  }
+                })
+            .sum();
+      }
+    } catch (RuntimeException | IOException e) {
+      // Best-effort, never throws (Constitution VI). RuntimeException (e.g. SecurityException from
+      // Files.walk / Files.exists) is treated as 0 rather than escaping this seam.
       return 0L;
     }
   }

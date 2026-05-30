@@ -83,6 +83,9 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   // Legacy single-active container views (hidden in the multi-county production path).
   private final View legacyTable;
   private final View legacyActions;
+  // Feature 007 US3 — page-level _boundary size row (outside the State A/B groups so it stays
+  // visible regardless of how many county datasets are active).
+  private final TextView boundaryRowView;
 
   /**
    * Feature 005 hook: bound after ctor via {@link #setBatchCoordinator(BatchImportCoordinator)}.
@@ -140,6 +143,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     this.stateBImportBtn = view.findViewById(R.id.offline_address_state_b_import);
     this.legacyTable = view.findViewById(R.id.offline_address_state_b_legacy_table);
     this.legacyActions = view.findViewById(R.id.offline_address_state_b_legacy_actions);
+    this.boundaryRowView = view.findViewById(R.id.offline_address_boundary_row);
 
     if (stateAImportBtn != null) {
       stateAImportBtn.setOnClickListener(v -> safeRun(this::launchPicker));
@@ -252,6 +256,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       } else {
         bindStateBMultiCounty(snap);
       }
+      renderBoundaryRow();
       return;
     }
     // Legacy single-active fallback (no registry bound — e.g. JVM tests).
@@ -261,6 +266,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     } else {
       bindStateB(active);
     }
+    renderBoundaryRow();
   }
 
   private void bindStateBMultiCounty(java.util.Map<String, CountyActiveDataset> snap) {
@@ -316,30 +322,32 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
         Log.w(TAG, "inflate county row " + entry.county() + " threw", t);
       }
     }
-    appendBoundaryRow();
   }
 
   /**
-   * Feature 007 US3 (FR-013) — append a distinct {@code _boundary} (townships.sqlite) size row
-   * after the per-county list. Shows the folder total, or "未安裝" when no boundary is installed
-   * (FR-015). Best-effort: any failure is logged and skipped rather than crashing the page.
+   * Feature 007 US3 (FR-013) — render the distinct {@code _boundary} (townships.sqlite) size row at
+   * the page level (outside State A/B), so the boundary size stays visible whether or not any
+   * county datasets are active (C2: the boundary exists independently of counties). Shows the
+   * folder total, or "未安裝" when no boundary is installed (FR-015). Best-effort: any failure is
+   * logged and the row is left as-is rather than crashing the page.
    */
-  private void appendBoundaryRow() {
-    if (countyList == null || fileSystem == null) return;
+  private void renderBoundaryRow() {
+    if (boundaryRowView == null) return;
+    if (fileSystem == null) {
+      boundaryRowView.setVisibility(View.GONE);
+      return;
+    }
     try {
       boolean present = fileSystem.exists(fileSystem.boundaryDbFile());
       String value =
           present
               ? ByteCountFormatter.format(fileSystem.sizeOfDirectory(fileSystem.boundaryDir()))
               : pluginContext.getString(R.string.offline_address_not_installed);
-      TextView row = new TextView(pluginContext);
-      float d = pluginContext.getResources().getDisplayMetrics().density;
-      int pad = (int) (12 * d);
-      row.setPadding(0, pad, 0, pad);
-      row.setText(pluginContext.getString(R.string.offline_address_boundary_row_format, value));
-      countyList.addView(row);
+      boundaryRowView.setText(
+          pluginContext.getString(R.string.offline_address_boundary_row_format, value));
+      boundaryRowView.setVisibility(View.VISIBLE);
     } catch (Throwable t) {
-      Log.w(TAG, "appendBoundaryRow threw", t);
+      Log.w(TAG, "renderBoundaryRow threw", t);
     }
   }
 

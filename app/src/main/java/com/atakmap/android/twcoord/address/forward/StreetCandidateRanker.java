@@ -110,6 +110,14 @@ public final class StreetCandidateRanker {
       return out;
     }
     final String frag = foldedFragment == null ? "" : foldedFragment.trim();
+    if (frag.isEmpty()) {
+      // No fragment to match on — every candidate is band 1 with no leftover signal, so degrade to
+      // pure distance order (per this method's contract). Short-circuit rather than fall through
+      // the
+      // band comparator, whose leftoverLength tiebreak would otherwise sort by street-name length.
+      out.sort(Comparator.comparingDouble(AddressCandidate::distanceMeters));
+      return out;
+    }
     out.sort(
         Comparator.comparingInt((AddressCandidate c) -> -similarityBand(c, frag))
             .thenComparingInt(c -> matchIndex(c, frag))

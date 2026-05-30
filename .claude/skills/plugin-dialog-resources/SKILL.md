@@ -3,7 +3,7 @@ name: plugin-dialog-resources
 description: Rule + diagnosis for showing AlertDialogs (or any dialog) from this ATAK plugin. Use whenever adding/editing a button OnClickListener that opens a confirm/alert dialog, calling new AlertDialog.Builder(...), or debugging "the button does nothing on device", "the confirm dialog never appears", "刪除/移除/取代 按下沒反應". Covers the cross-context plugin-resource trap that fails silently.
 ---
 
-# Showing dialogs from atak_tw_power_plugin
+# Showing dialogs from atak_tw_coord_plugin
 
 A plugin runs with **two contexts**:
 
