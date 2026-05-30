@@ -61,17 +61,20 @@ public class ZipExtractorTest {
     assertThat(result.failures()).isEmpty();
   }
 
-  // 2. tw-central-full.zip-like fixture (2 places + 3 supplementary)
+  // 2. tw-central-full.zip-like fixture (2 places + boundary + supplementary). Feature 006:
+  //    townships.sqlite is now CONSUMED as the boundary layer (result.boundary() != null), so the
+  //    supplementary count drops to 5 (osm + roads + 3 timestamp).
   @Test
-  public void multiCountyWithSupplementarySkipped() throws IOException {
+  public void multiCountyWithBoundaryConsumedAndSupplementarySkipped() throws IOException {
     byte[] taichungSqlite = synthSqliteBytes(4096);
     byte[] changhuaSqlite = synthSqliteBytes(4096);
+    byte[] townshipsSqlite = synthSqliteBytes(2048);
     byte[] zipBytes =
         buildZip(
             entry("places-taichung.sqlite", taichungSqlite),
             entry("places-changhua.sqlite", changhuaSqlite),
             entry("places-osm.sqlite", new byte[1]),
-            entry("townships.sqlite", new byte[1]),
+            entry("townships.sqlite", townshipsSqlite),
             entry("roads.sqlite", new byte[1]),
             entry("timestamp.taichung", "115-01".getBytes()),
             entry("timestamp.changhua", "114-05".getBytes()),
@@ -82,7 +85,10 @@ public class ZipExtractorTest {
     assertThat(result.counties())
         .extracting(ExtractedCounty::county)
         .containsExactlyInAnyOrder("taichung", "changhua");
-    assertThat(result.supplementaryCount()).isEqualTo(6); // osm + townships + roads + 3 timestamp
+    // Boundary layer consumed (feature 006), not counted as supplementary.
+    assertThat(result.boundary()).isNotNull();
+    assertThat(result.boundary().shaHex()).isEqualTo(sha256Hex(townshipsSqlite));
+    assertThat(result.supplementaryCount()).isEqualTo(5); // osm + roads + 3 timestamp
     assertThat(result.unrecognisedCount()).isZero();
     assertThat(result.failures()).isEmpty();
   }

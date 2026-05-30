@@ -109,6 +109,10 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private com.atakmap.android.twcoord.address.ActiveDatasetRegistry addressRegistry;
   private com.atakmap.android.twcoord.address.BatchImportCoordinator addressCoordinator;
 
+  // Feature 006 — township boundary layer (mounted once) + forward-search page.
+  private com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade addressBoundaryFacade;
+  private com.atakmap.android.twcoord.address.ForwardSearchReceiver forwardSearchReceiver;
+
   @android.annotation.SuppressLint("StaticFieldLeak")
   private static com.atakmap.android.twcoord.address.ActiveDatasetRegistry staticAddressRegistry;
 
@@ -489,6 +493,19 @@ public class TwCoordMapComponent extends AbstractMapComponent {
             addressImporter, primaryFactory, fallbackSupplier, addressFileSystem);
     addressRegistry.initFromDisk();
     addressSubsystem.setRegistry(addressRegistry);
+
+    // Feature 006 — mount the township boundary layer (active/_boundary/townships.sqlite) once and
+    // bind it to the resolver for county-scoped reverse lookup (FR-014). Null when base data absent
+    // (FR-017: reverse falls back to the 005 fan-out; forward search shows "import base data").
+    try {
+      addressBoundaryFacade =
+          new com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFactory()
+              .open(addressFileSystem.boundaryDbFile().toFile());
+      addressSubsystem.setBoundaryFacade(addressBoundaryFacade);
+    } catch (Throwable t) {
+      android.util.Log.w("TwCoordMapComponent", "boundary facade mount threw", t);
+      addressBoundaryFacade = null;
+    }
     // Re-render the widget when any county lifecycle event fires (add / replace / remove).
     addressRegistry.addListener(
         (county, change) -> {
@@ -517,6 +534,21 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       addressReceiver.setBatchCoordinator(addressCoordinator);
       addressReceiver.setRegistry(addressRegistry);
     }
+
+    // Feature 006 — forward-search page (fourth Tools entry). The boundary facade + registry are
+    // read live via suppliers so a later import that mounts the boundary is picked up on reopen.
+    forwardSearchReceiver =
+        new com.atakmap.android.twcoord.address.ForwardSearchReceiver(
+            view,
+            pluginContext,
+            () -> addressBoundaryFacade,
+            () -> addressRegistry,
+            () -> activePrefs.confidenceThresholds());
+    AtakBroadcast.DocumentedIntentFilter forwardFilter =
+        new AtakBroadcast.DocumentedIntentFilter();
+    forwardFilter.addAction(
+        com.atakmap.android.twcoord.address.ForwardSearchIntents.ACTION_SHOW_FORWARD_SEARCH);
+    AtakBroadcast.getInstance().registerReceiver(forwardSearchReceiver, forwardFilter);
     addressSubsystem.addListener(
         (row, state) -> {
           try {
@@ -615,6 +647,28 @@ public class TwCoordMapComponent extends AbstractMapComponent {
         // best-effort
       }
       addressReceiver = null;
+    }
+    // Feature 006 — forward-search receiver + boundary facade teardown.
+    if (forwardSearchReceiver != null) {
+      try {
+        AtakBroadcast.getInstance().unregisterReceiver(forwardSearchReceiver);
+      } catch (IllegalArgumentException ignored) {
+        // never registered
+      }
+      try {
+        forwardSearchReceiver.dispose();
+      } catch (Exception ignored) {
+        // best-effort
+      }
+      forwardSearchReceiver = null;
+    }
+    if (addressBoundaryFacade != null) {
+      try {
+        addressBoundaryFacade.close();
+      } catch (Throwable t) {
+        android.util.Log.w("TwCoordMapComponent", "close boundary facade threw", t);
+      }
+      addressBoundaryFacade = null;
     }
     if (addressImportExecutor != null) {
       try {

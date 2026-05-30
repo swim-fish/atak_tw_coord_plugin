@@ -29,6 +29,8 @@ public final class ZipEntryClassifier {
 
   public enum Classification {
     PLACES_COUNTY,
+    /** Feature 006: {@code townships.sqlite} — the boundary layer, now consumed (was skipped). */
+    BOUNDARY,
     SKIPPED_SUPPLEMENTARY,
     UNRECOGNIZED
   }
@@ -36,9 +38,13 @@ public final class ZipEntryClassifier {
   // ^places-(.+)\.sqlite$ where the group is the county name; >=1 char to reject `places-.sqlite`.
   private static final Pattern PLACES_COUNTY_PATTERN = Pattern.compile("^places-(.+)\\.sqlite$");
 
-  // Exact supplementary names that v1.0.6 silently ignores.
+  /** Feature 006: the boundary file the plugin now consumes (research R4). */
+  private static final String BOUNDARY_FILE = "townships.sqlite";
+
+  // Exact supplementary names that v1.0.6 silently ignores. (townships.sqlite was here in 005;
+  // feature 006 promotes it to BOUNDARY. roads / places-osm stay skipped until a later feature.)
   private static final java.util.Set<String> SUPPLEMENTARY_EXACT =
-      java.util.Set.of("townships.sqlite", "roads.sqlite", "places-osm.sqlite");
+      java.util.Set.of("roads.sqlite", "places-osm.sqlite");
 
   public Classification classify(String entryName) {
     if (entryName == null || entryName.isEmpty()) return Classification.UNRECOGNIZED;
@@ -49,6 +55,7 @@ public final class ZipEntryClassifier {
         || entryName.contains(":")) {
       return Classification.UNRECOGNIZED;
     }
+    if (BOUNDARY_FILE.equals(entryName)) return Classification.BOUNDARY;
     if (SUPPLEMENTARY_EXACT.contains(entryName)) return Classification.SKIPPED_SUPPLEMENTARY;
     if (entryName.startsWith("timestamp.")) return Classification.SKIPPED_SUPPLEMENTARY;
     if (entryName.endsWith(".manifest.txt")) return Classification.SKIPPED_SUPPLEMENTARY;

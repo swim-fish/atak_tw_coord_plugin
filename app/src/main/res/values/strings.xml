@@ -261,4 +261,30 @@
     <string name="opt_confidence_standard">Standard (~ 50 m / ~~ 200 m)</string>
     <string name="opt_confidence_loose">Loose (~ 100 m / ~~ 500 m)</string>
 
+    <!-- ===== Feature 006: county-scoped forward search ===== -->
+    <string name="tool_forward_search_label">Forward Search</string>
+    <string name="tool_forward_search_desc">Find a street address by county → district → street and GoTo it (offline).</string>
+
+    <string name="fs_boundary_missing">Import the base data (townships.sqlite) to enable forward search.</string>
+
+    <string name="fs_stage_county">1. County</string>
+    <string name="fs_county_none">No county selected</string>
+    <!-- %1$s = county, %2$s = district (may be empty) -->
+    <string name="fs_county_confirm_format">%1$s %2$s</string>
+    <string name="fs_source_self">My location</string>
+    <string name="fs_source_mapcenter">Map centre</string>
+    <string name="fs_source_list">List…</string>
+
+    <string name="fs_stage_district">2. District</string>
+    <string name="fs_stage_street">3. Street</string>
+    <string name="fs_street_hint">Street (e.g. 中山路)</string>
+    <string name="fs_search">Search</string>
+
+    <string name="fs_house_hint">House number (optional)</string>
+    <string name="fs_no_match">No matching street in this district.</string>
+    <string name="fs_county_dataset_missing">Address data for this county is not installed.</string>
+    <string name="fs_goto">GoTo</string>
+    <!-- %1$s = address text, %2$d = distance in metres -->
+    <string name="fs_candidate_format">%1$s · %2$d m</string>
+
 </resources>

@@ -72,6 +72,20 @@ public interface FileSystem {
   }
 
   /**
+   * Feature 006: {@code active/_boundary/} — the single boundary-layer mount (sibling of the
+   * per-county dirs; the leading underscore guarantees it cannot collide with a county name and is
+   * skipped by {@code ActiveDatasetRegistry.initFromDisk}).
+   */
+  default Path boundaryDir() {
+    return getActiveDir().resolve("_boundary");
+  }
+
+  /** {@code active/_boundary/townships.sqlite} — the mounted boundary database file. */
+  default Path boundaryDbFile() {
+    return boundaryDir().resolve("townships.sqlite");
+  }
+
+  /**
    * Create a fresh, empty per-county staging directory. The implementation embeds the county name
    * (sanitised) and a random UUID in the directory name so a partially-completed import is
    * identifiable on disk during debugging and gets swept by {@code sweepOrphanStagingDirs} on next

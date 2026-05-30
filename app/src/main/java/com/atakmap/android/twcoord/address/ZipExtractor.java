@@ -63,16 +63,27 @@ public final class ZipExtractor {
     private final List<FailedEntry> failures;
     private final int supplementaryCount;
     private final int unrecognisedCount;
+    private final ExtractedCounty boundary; // nullable; the staged townships.sqlite (feature 006)
 
     public ExtractResult(
         List<ExtractedCounty> counties,
         List<FailedEntry> failures,
         int supplementaryCount,
         int unrecognisedCount) {
+      this(counties, failures, supplementaryCount, unrecognisedCount, null);
+    }
+
+    public ExtractResult(
+        List<ExtractedCounty> counties,
+        List<FailedEntry> failures,
+        int supplementaryCount,
+        int unrecognisedCount,
+        ExtractedCounty boundary) {
       this.counties = Collections.unmodifiableList(new ArrayList<>(counties));
       this.failures = Collections.unmodifiableList(new ArrayList<>(failures));
       this.supplementaryCount = supplementaryCount;
       this.unrecognisedCount = unrecognisedCount;
+      this.boundary = boundary;
     }
 
     public List<ExtractedCounty> counties() {
@@ -93,6 +104,16 @@ public final class ZipExtractor {
 
     public boolean hasAnyCounty() {
       return !counties.isEmpty();
+    }
+
+    /** Feature 006: the staged {@code townships.sqlite}, or {@code null} if the ZIP had none. */
+    public ExtractedCounty boundary() {
+      return boundary;
+    }
+
+    /** True if this ZIP carried anything the plugin consumes (a county OR the boundary layer). */
+    public boolean hasAnyConsumable() {
+      return !counties.isEmpty() || boundary != null;
     }
   }
 
@@ -181,6 +202,7 @@ public final class ZipExtractor {
     int supplementaryCount = 0;
     int unrecognisedCount = 0;
     java.util.Set<String> seenCounties = new java.util.HashSet<>();
+    ExtractedCounty[] boundaryHolder = new ExtractedCounty[1]; // mutable across the loop body
 
     ZipInputStream zin = new ZipInputStream(zipStream);
     ZipEntry entry;
@@ -199,6 +221,7 @@ public final class ZipExtractor {
       // runtimes, notably Android) succeeds; on closeEntry() failure it is discarded so a corrupt
       // entry can never be activated.
       ExtractedCounty pendingCounty = null;
+      boolean pendingIsBoundary = false;
       try {
         if (entry.isDirectory()) {
           unrecognisedCount++;
@@ -206,6 +229,21 @@ public final class ZipExtractor {
         } else {
           cls = classifier.classify(name);
           switch (cls) {
+            case BOUNDARY:
+              if (boundaryHolder[0] != null) {
+                // A second townships.sqlite in the same ZIP — keep the first, skip the rest.
+                Log.w(TAG, "duplicate boundary entry ignored: " + name);
+                failures.add(new FailedEntry(name, null, "SKIPPED_DUPLICATE_BOUNDARY"));
+                break;
+              }
+              try {
+                pendingCounty = extractCountyEntry(zin, "_boundary");
+                pendingIsBoundary = true;
+              } catch (IOException e) {
+                Log.w(TAG, "extract failed for boundary entry " + name, e);
+                failures.add(new FailedEntry(name, null, describe(e)));
+              }
+              break;
             case PLACES_COUNTY:
               Optional<String> countyOpt = classifier.countyFromEntry(name);
               if (countyOpt.isEmpty()) {
@@ -266,7 +304,11 @@ public final class ZipExtractor {
         }
         // Commit only when the bytes streamed AND the CRC verified.
         if (closeOk && pendingCounty != null) {
-          counties.add(pendingCounty);
+          if (pendingIsBoundary) {
+            boundaryHolder[0] = pendingCounty;
+          } else {
+            counties.add(pendingCounty);
+          }
         }
         if (progress != null) {
           try {
@@ -278,7 +320,8 @@ public final class ZipExtractor {
       }
     }
 
-    return new ExtractResult(counties, failures, supplementaryCount, unrecognisedCount);
+    return new ExtractResult(
+        counties, failures, supplementaryCount, unrecognisedCount, boundaryHolder[0]);
   }
 
   private ZipEntry nextEntrySafely(ZipInputStream zin) throws IOException {

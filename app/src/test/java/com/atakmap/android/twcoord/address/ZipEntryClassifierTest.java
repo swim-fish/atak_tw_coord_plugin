@@ -41,11 +41,10 @@ public class ZipEntryClassifierTest {
                 .PLACES_COUNTY); // group="Taichung" — case-sensitive matches lowercase prefix only
   }
 
-  // 4. townships.sqlite → SKIPPED_SUPPLEMENTARY
+  // 4. townships.sqlite → BOUNDARY (feature 006: now consumed, was SKIPPED_SUPPLEMENTARY in 005)
   @Test
-  public void townshipsSupplementary() {
-    assertThat(classifier.classify("townships.sqlite"))
-        .isEqualTo(Classification.SKIPPED_SUPPLEMENTARY);
+  public void townshipsClassifiedAsBoundary() {
+    assertThat(classifier.classify("townships.sqlite")).isEqualTo(Classification.BOUNDARY);
     assertThat(classifier.countyFromEntry("townships.sqlite")).isEmpty();
   }
 

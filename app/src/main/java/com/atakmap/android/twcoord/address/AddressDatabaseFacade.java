@@ -27,6 +27,32 @@ public interface AddressDatabaseFacade extends AutoCloseable {
    */
   AddressRecord nearestWithin(double lat, double lon, double radiusMeters);
 
+  /**
+   * Feature 006 (T022): district-scoped, distance-ranked street lookup for forward search. Filters
+   * {@code places} to {@code district} (matched against the {@code township} column), street-matches
+   * {@code foldedFragment} as a prefix/substring spanning the {@code 段} suffix (never exact {@code
+   * =}, FR-009), folds {@code 臺}↔{@code 台} + digit width on both sides (FR-010), ranks ascending by
+   * haversine distance to the anchor, and returns at most {@code limit} rows.
+   *
+   * <p>Default implementation returns an empty list so test doubles and the legacy single-active
+   * facades that don't implement forward search keep compiling. Production facades override it.
+   * Never throws (Constitution VI) — SQL/IO faults yield an empty list.
+   *
+   * @param district the 鄉鎮市區 name (already {@code 臺}→{@code 台} normalised, matches {@code
+   *     places.township})
+   * @param foldedFragment the street fragment AFTER {@link
+   *     com.atakmap.android.twcoord.address.forward.StreetTextNormaliser#fold}
+   */
+  default java.util.List<com.atakmap.android.twcoord.address.forward.AddressCandidate>
+      streetCandidates(
+          String district,
+          String foldedFragment,
+          double anchorLat,
+          double anchorLon,
+          int limit) {
+    return java.util.Collections.emptyList();
+  }
+
   @Override
   void close();
 

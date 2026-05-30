@@ -201,4 +201,28 @@
     <string name="opt_confidence_standard">標準（~ 50 公尺 / ~~ 200 公尺）</string>
     <string name="opt_confidence_loose">寬鬆（~ 100 公尺 / ~~ 500 公尺）</string>
 
+    <!-- ===== 功能 006：縣市優先前向搜尋 ===== -->
+    <string name="tool_forward_search_label">前向搜尋</string>
+    <string name="tool_forward_search_desc">依縣市 → 鄉鎮市區 → 街道找出地址並前往（離線）。</string>
+
+    <string name="fs_boundary_missing">請先匯入 base 資料（townships.sqlite）以啟用前向搜尋。</string>
+
+    <string name="fs_stage_county">1. 縣市</string>
+    <string name="fs_county_none">尚未選擇縣市</string>
+    <string name="fs_county_confirm_format">%1$s %2$s</string>
+    <string name="fs_source_self">所在地</string>
+    <string name="fs_source_mapcenter">地圖中心</string>
+    <string name="fs_source_list">清單…</string>
+
+    <string name="fs_stage_district">2. 鄉鎮市區</string>
+    <string name="fs_stage_street">3. 街道</string>
+    <string name="fs_street_hint">街道（例：中山路）</string>
+    <string name="fs_search">搜尋</string>
+
+    <string name="fs_house_hint">門牌號（可省略）</string>
+    <string name="fs_no_match">此鄉鎮市區查無符合的街道。</string>
+    <string name="fs_county_dataset_missing">此縣市地址資料未安裝。</string>
+    <string name="fs_goto">前往</string>
+    <string name="fs_candidate_format">%1$s · %2$d 公尺</string>
+
 </resources>

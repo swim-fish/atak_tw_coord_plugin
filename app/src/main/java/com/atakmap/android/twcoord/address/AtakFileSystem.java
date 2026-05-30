@@ -29,6 +29,9 @@ public final class AtakFileSystem implements FileSystem {
   private static final String ROOT_REL = "tools/twcoord/offline-address";
   private static final String ACTIVE_DIR_NAME = "active";
   private static final String STAGING_PREFIX = ".staging-";
+  /** Feature 006: boundary layer mount, sibling of the per-county dirs under active/. */
+  static final String BOUNDARY_DIR_NAME = "_boundary";
+  static final String BOUNDARY_DB_NAME = "townships.sqlite";
 
   private final Path root;
 
@@ -57,6 +60,11 @@ public final class AtakFileSystem implements FileSystem {
   @Override
   public Path getActiveDir() {
     return root.resolve(ACTIVE_DIR_NAME);
+  }
+
+  @Override
+  public Path boundaryDir() {
+    return getActiveDir().resolve(BOUNDARY_DIR_NAME);
   }
 
   @Override

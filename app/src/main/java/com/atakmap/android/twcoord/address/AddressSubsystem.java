@@ -66,6 +66,18 @@ public final class AddressSubsystem implements AutoCloseable {
   private ActiveDatasetRegistry registry;
 
   /**
+   * Feature 006: optional township boundary facade. When non-null, {@link #runLookup} resolves the
+   * county via {@link #boundary} first and queries only that county's facade (removing the
+   * cross-county fan-out for in-county points, FR-014); falls back to {@link
+   * #lookupAcrossAllCounties} when the boundary facade is absent or returns no county (FR-017).
+   * {@code volatile} because it is bound from the UI thread and read on the worker thread.
+   */
+  private volatile com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade boundary;
+
+  /** Coastline tolerance for the reverse-path county resolve (metres). */
+  private static final double REVERSE_SNAP_M = 1000.0;
+
+  /**
    * Feature 005 polish: operator-selectable preset for the tilde confidence indicator. Default
    * {@link ConfidenceThresholds#TIGHT} preserves the 2026-05-27 device-verified 20 m / 100 m
    * behaviour when no preference has been written yet. {@code volatile} because {@link #runLookup}
@@ -126,6 +138,16 @@ public final class AddressSubsystem implements AutoCloseable {
    */
   public void setRegistry(ActiveDatasetRegistry registry) {
     this.registry = registry;
+  }
+
+  /**
+   * Feature 006: bind the shared township boundary facade for county-scoped reverse lookup. Pass
+   * {@code null} (or never call this) to keep the 005 cross-county fan-out behaviour. Idempotent;
+   * safe to call from the UI thread while lookups are in flight (the field is volatile).
+   */
+  public void setBoundaryFacade(
+      com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade boundary) {
+    this.boundary = boundary;
   }
 
   /**
@@ -243,7 +265,7 @@ public final class AddressSubsystem implements AutoCloseable {
     try {
       AddressLookupResult result;
       if (registry != null) {
-        result = lookupAcrossAllCounties(lat, lon);
+        result = lookupScoped(lat, lon);
       } else {
         result = resolver != null ? resolver.lookup(lat, lon) : AddressLookupResult.noDataset();
       }
@@ -288,6 +310,55 @@ public final class AddressSubsystem implements AutoCloseable {
     }
     if (best == null) return AddressLookupResult.empty();
     return AddressLookupResult.found(best, bestDist);
+  }
+
+  /**
+   * Feature 006 reverse-path county scoping (FR-014). Resolves the county via the boundary facade,
+   * then queries only that county's facade; falls back to {@link #lookupAcrossAllCounties} when the
+   * boundary is absent or the point is outside all boundaries (FR-017). When the detected county has
+   * no installed dataset, returns {@link AddressLookupResult#localityOnly} (FR-015).
+   *
+   * <p>For a point inside an active county the single-county result equals the old globally-nearest
+   * result (the nearest record lies in the county that contains the point), so there is no
+   * operator-visible change — only less work. Package-private for {@code
+   * AddressSubsystemReverseScopingTest}.
+   */
+  AddressLookupResult lookupScoped(double lat, double lon) {
+    com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade b = boundary;
+    if (b == null) {
+      return lookupAcrossAllCounties(lat, lon); // no boundary data → exact 005 behaviour
+    }
+    com.atakmap.android.twcoord.address.boundary.LocalityResult loc;
+    try {
+      loc = b.localityAt(lat, lon, REVERSE_SNAP_M);
+    } catch (Throwable t) {
+      Log.w(TAG, "boundary.localityAt threw; falling back to fan-out", t);
+      return lookupAcrossAllCounties(lat, lon);
+    }
+    if (loc == null || loc.county() == null) {
+      return lookupAcrossAllCounties(lat, lon); // offshore / outside data → fan-out fallback
+    }
+    Map<String, CountyActiveDataset> snap = registry.snapshot();
+    CountyActiveDataset entry = snap.get(loc.county());
+    if (entry == null) {
+      // County detected but its dataset isn't installed → best-effort locality (FR-015).
+      return AddressLookupResult.localityOnly(loc.county(), loc.district());
+    }
+    try {
+      AddressDatabaseFacade f = entry.facade();
+      if (f != null) {
+        AddressRecord rec = f.nearestWithin(lat, lon, LOOKUP_RADIUS_M);
+        if (rec != null) {
+          double d = haversineMeters(lat, lon, rec.lat(), rec.lon());
+          return AddressLookupResult.found(rec, d);
+        }
+      }
+    } catch (Throwable t) {
+      Log.w(TAG, "scoped lookup in " + loc.county() + " threw", t);
+    }
+    // County dataset present but no record within radius → still surface the locality so the row
+    // isn't blank (consistent with FR-015's best-effort intent).
+    return AddressLookupResult.localityOnly(loc.county(), loc.district());
   }
 
   /** True iff the resolver currently has at least one dataset (registry or legacy) to query. */
@@ -348,6 +419,11 @@ public final class AddressSubsystem implements AutoCloseable {
       AddressLookupResult.Found f = (AddressLookupResult.Found) r;
       return AddressRowState.text(
           confidenceThresholds.decorate(f.record().displayName(), f.distanceMeters()));
+    }
+    if (r instanceof AddressLookupResult.LocalityOnly) {
+      // Feature 006 FR-015: county/district known but no house number — show the locality text
+      // (distinct from the empty-state) so the operator still sees where they are.
+      return AddressRowState.text(((AddressLookupResult.LocalityOnly) r).localityText());
     }
     // Empty or NoDataset → empty-state ("No address nearby"). NoDataset's "Hidden" handling
     // happens upstream in onCoord before scheduling.

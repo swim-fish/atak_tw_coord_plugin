@@ -96,6 +96,8 @@ public final class ActiveDatasetRegistry {
               dir -> {
                 String county = dir.getFileName().toString();
                 if (county.startsWith(".")) return; // skip .staging-*/ and hidden dirs
+                // Feature 006: the boundary layer mounts at active/_boundary/; it is not a county.
+                if (county.startsWith("_")) return;
                 countiesFromDisk.add(county);
                 openAndRegister(county, Change.ADDED);
               });

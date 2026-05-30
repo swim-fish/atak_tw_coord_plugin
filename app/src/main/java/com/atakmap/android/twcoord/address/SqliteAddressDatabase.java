@@ -129,6 +129,57 @@ public final class SqliteAddressDatabase implements AddressDatabaseFacade {
   }
 
   @Override
+  public java.util.List<com.atakmap.android.twcoord.address.forward.AddressCandidate>
+      streetCandidates(
+          String district,
+          String foldedFragment,
+          double anchorLat,
+          double anchorLon,
+          int limit) {
+    if (district == null || district.isEmpty()) {
+      return java.util.Collections.emptyList();
+    }
+    java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw> raw;
+    try {
+      String frag = foldedFragment == null ? "" : foldedFragment;
+      String tai = com.atakmap.android.twcoord.address.forward.StreetTextNormaliser.taiVariant(frag);
+      raw = queryRows(district, frag + "%", tai + "%");
+      if (raw.isEmpty() && !frag.isEmpty()) {
+        raw = queryRows(district, "%" + frag + "%", "%" + tai + "%");
+      }
+    } catch (Throwable t) {
+      Log.w(TAG, "streetCandidates threw", t);
+      return java.util.Collections.emptyList();
+    }
+    return com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.rank(
+        raw, foldedFragment, anchorLat, anchorLon, limit);
+  }
+
+  private java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw>
+      queryRows(String district, String like1, String like2) {
+    java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw> out =
+        new java.util.ArrayList<>();
+    try (Cursor c =
+        db.rawQuery(
+            "SELECT p.lat, p.lon, p.display_name, p.display_name_halfwidth, p.street, p.number"
+                + "  FROM places p"
+                + " WHERE p.township = ? AND (p.street LIKE ? OR p.street LIKE ?)",
+            new String[] {district, like1, like2})) {
+      while (c.moveToNext()) {
+        out.add(
+            new com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw(
+                c.getDouble(0),
+                c.getDouble(1),
+                c.isNull(2) ? "" : c.getString(2),
+                c.isNull(3) ? "" : c.getString(3),
+                c.isNull(4) ? "" : c.getString(4),
+                c.isNull(5) ? "" : c.getString(5)));
+      }
+    }
+    return out;
+  }
+
+  @Override
   public void close() {
     try {
       db.close();
