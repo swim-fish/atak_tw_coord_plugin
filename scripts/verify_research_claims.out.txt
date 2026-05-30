@@ -1,0 +1,68 @@
+############ V1 — zip freshness ############
+  path   : C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator\output\tw-central-full.zip
+  size   : 148.97 MB
+  mtime  : 1780109437.1833775  (epoch)
+  sha256 : 28a10e7d30bdd5d98316a8a84e1fe0321091d50d64232f760e2fd9b1833a9821
+  WARN: shapely unavailable (No module named 'shapely'); V4/V5 polygon tests will be skipped
+
+  zip entries:
+    places-changhua.sqlite
+    places-osm.sqlite
+    places-taichung.sqlite
+    roads.sqlite
+    timestamp.base
+    timestamp.changhua
+    timestamp.taichung
+    townships.sqlite
+
+############ V2 — township level + per-county counts ############
+  source=moi-shapefile release=1140318 bbox=120.2,23.55,121.45,24.75
+  level4=12 (meta 12) level7=31 (meta 31) level8=105 (meta 105)
+  doc claim 12/31/105 -> PASS
+  counties (12): 南投縣 台中市 嘉義縣 宜蘭縣 彰化縣 新北市 新竹市 新竹縣 桃園市 花蓮縣 苗栗縣 雲林縣
+  districts/county (level 7/8):
+    台中市: 29
+    彰化縣: 26
+    雲林縣: 20
+    苗栗縣: 18
+    南投縣: 13
+    新竹縣: 9
+    嘉義縣: 8
+    花蓮縣: 8
+    宜蘭縣: 2
+    新北市: 1
+    新竹市: 1
+    桃園市: 1
+
+############ V3 — county_zh coverage on level 7/8 ############
+  level7/8 rows=136  null/empty county_zh=0
+  claim 'county_zh inline on EVERY 鄉鎮市區' -> PASS
+
+############ V4 — Tier-1 polygon-in actually resolves ############
+  SKIPPED (no shapely)
+
+############ V5 — geometry_wkb byte shape ############
+  sample=麥寮鄉  bytes=32454  endian=little  geomtype=MultiPolygon
+
+############ V6 — stage-③ per-district scoping in places ############
+  places columns: id, source, osm_id, lat, lon, name, display_name, display_name_halfwidth, district_code, county, township, village, neighbor, street, area, lane, alley, number
+  district_code present=True  township present=True
+  distinct townships holding 中山路% : 18
+  top 中山路 districts: 太平區=4979  大甲區=3220  神岡區=3191  沙鹿區=3054  潭子區=2258
+  county-wide 中山路%=23065 -> scoped to 太平區=4979  (22% of county) — scoping narrows PASS
+  向上路% across districts: 西區=817  南屯區=363  沙鹿區=190  梧棲區=166  龍井區=96  大肚區=13
+
+############ V7 — forward-search bbox candidate counts (taichung) ############
+  台中車站 24.1417,120.6736: 0.5km=664  1km=3381  2km=13679
+  一中商圈 24.1505,120.6840: 0.5km=598  1km=3098  2km=12819
+  大甲區 24.3486,120.6225: 0.5km=1021  1km=4164  2km=10361
+
+############ V8 — 臺/台 fold + 段 suffix (taichung) ############
+  中山路 =:10412  LIKE%:23065  (= drops PASS)
+  向上路 =:0  LIKE%:1645  (= is 100% miss PASS)
+  street LIKE '臺%':4873  (臺↔台 fold needed PASS)
+
+############ extra — places-osm + per-county COUNT(*) ############
+  places-taichung: county=台中市 schema=2 meta.inserted=731005 COUNT(*)=731005
+  places-changhua: county=彰化縣 schema=2 meta.inserted=426690 COUNT(*)=426690
+  places-osm: county=None schema=2 meta.inserted=None COUNT(*)=588393

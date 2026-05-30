@@ -11,6 +11,8 @@ Companion docs:
 - Plugin data model: `specs/004-offline-address/data-model.md`
 - Generator normalisation: `atak-tw-address-generator/scripts/normalize_address.py`
 - Reverse-geocode roadmap: feature 006 (townships / roads / places-osm tiers)
+- **County-first funnel + locality detection + glove UX (revises §5.3):**
+  [`county-scoped-forward-search.md`](./county-scoped-forward-search.md)
 
 > **Measured-data provenance.** The 2026-05-30 update replaces the original
 > order-of-magnitude estimates with figures queried directly from the generator
@@ -193,6 +195,15 @@ substring matching that spans the `段` suffix** (§2.7): treat the typed `中�
 as a prefix of `中山路一段` / `中山路二段`, not an exact `street` value.
 
 ### 5.3 Why "single county" is not the convergence unit (measured)
+
+> **Revised 2026-05-30 — see [`county-scoped-forward-search.md`](./county-scoped-forward-search.md).**
+> This section's "single county is not the convergence unit → go spatial-first"
+> conclusion was reasoned before the MOI authoritative boundary re-source. With
+> `county_zh` now inline on every 鄉鎮市區 polygon, the administrative funnel
+> (縣市 → 鄉鎮市區 → street) is authoritative, single-query, and free, so it is
+> the right *coarse* converger + DB-scoper + glove-friendly UI; the spatial
+> argument below still holds, but only as the **final pin** (stage ④), not as
+> the whole strategy. Read the two together.
 
 A natural first instinct is to scope road-name fuzzy search to one county. The
 data shows that **county is too coarse, and even township is not enough** — the
