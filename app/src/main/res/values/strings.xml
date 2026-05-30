@@ -262,7 +262,7 @@
     <string name="opt_confidence_loose">Loose (~ 100 m / ~~ 500 m)</string>
 
     <!-- ===== Feature 006: county-scoped forward search ===== -->
-    <string name="tool_forward_search_label">Forward Search</string>
+    <string name="tool_forward_search_label">TW Addr Search</string>
     <string name="tool_forward_search_desc">Find a street address by county → district → street and GoTo it (offline).</string>
 
     <string name="fs_boundary_missing">Import the base data (townships.sqlite) to enable forward search.</string>
@@ -284,6 +284,8 @@
     <string name="fs_no_match">No matching street in this district.</string>
     <string name="fs_county_dataset_missing">Address data for this county is not installed.</string>
     <string name="fs_goto">GoTo</string>
+    <string name="fs_reset">Reset</string>
+    <string name="fs_district_all">All</string>
     <!-- %1$s = address text, %2$d = distance in metres -->
     <string name="fs_candidate_format">%1$s · %2$d m</string>
 

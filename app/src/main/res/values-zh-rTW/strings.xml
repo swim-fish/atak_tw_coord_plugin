@@ -202,7 +202,7 @@
     <string name="opt_confidence_loose">寬鬆（~ 100 公尺 / ~~ 500 公尺）</string>
 
     <!-- ===== 功能 006：縣市優先前向搜尋 ===== -->
-    <string name="tool_forward_search_label">前向搜尋</string>
+    <string name="tool_forward_search_label">TW Addr Search</string>
     <string name="tool_forward_search_desc">依縣市 → 鄉鎮市區 → 街道找出地址並前往（離線）。</string>
 
     <string name="fs_boundary_missing">請先匯入 base 資料（townships.sqlite）以啟用前向搜尋。</string>
@@ -223,6 +223,8 @@
     <string name="fs_no_match">此鄉鎮市區查無符合的街道。</string>
     <string name="fs_county_dataset_missing">此縣市地址資料未安裝。</string>
     <string name="fs_goto">前往</string>
+    <string name="fs_reset">重設</string>
+    <string name="fs_district_all">全部</string>
     <string name="fs_candidate_format">%1$s · %2$d 公尺</string>
 
 </resources>

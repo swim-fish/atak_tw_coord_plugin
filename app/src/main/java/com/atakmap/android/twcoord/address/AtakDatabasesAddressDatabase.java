@@ -150,15 +150,78 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
         raw, foldedFragment, anchorLat, anchorLon, limit);
   }
 
+  @Override
+  public java.util.List<com.atakmap.android.twcoord.address.forward.AddressCandidate>
+      streetCandidatesCountyWide(
+          String foldedFragment, double anchorLat, double anchorLon, int limit) {
+    java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw> raw =
+        new java.util.ArrayList<>();
+    try {
+      String frag = foldedFragment == null ? "" : foldedFragment;
+      if (frag.isEmpty()) return java.util.Collections.emptyList();
+      String tai = com.atakmap.android.twcoord.address.forward.StreetTextNormaliser.taiVariant(frag);
+      raw = queryRowsCountyWide(frag + "%", tai + "%");
+      if (raw.isEmpty()) {
+        raw = queryRowsCountyWide("%" + frag + "%", "%" + tai + "%");
+      }
+    } catch (Throwable t) {
+      Log.w(TAG, "streetCandidatesCountyWide threw", t);
+      return java.util.Collections.emptyList();
+    }
+    return com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.rank(
+        raw, foldedFragment, anchorLat, anchorLon, limit);
+  }
+
+  /** Bounds the whole-county scan; the app-side ranker caps further to the display limit. */
+  private static final int COUNTY_WIDE_SQL_LIMIT = 5000;
+
+  private java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw>
+      queryRowsCountyWide(String like1, String like2) {
+    java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw> out =
+        new java.util.ArrayList<>();
+    try (CursorIface c =
+        db.query(
+            // Same street→area coalescing as queryRows, minus the township filter (county-wide).
+            "SELECT p.lat, p.lon, p.display_name, p.display_name_halfwidth,"
+                + " COALESCE(NULLIF(p.street, ''), p.area) AS street, p.number"
+                + "  FROM places p"
+                + " WHERE COALESCE(NULLIF(p.street, ''), p.area) LIKE ?"
+                + "    OR COALESCE(NULLIF(p.street, ''), p.area) LIKE ?"
+                + " LIMIT " + COUNTY_WIDE_SQL_LIMIT,
+            new String[] {like1, like2})) {
+      while (c.moveToNext()) {
+        out.add(
+            new com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw(
+                c.getDouble(0),
+                c.getDouble(1),
+                c.isNull(2) ? "" : c.getString(2),
+                c.isNull(3) ? "" : c.getString(3),
+                c.isNull(4) ? "" : c.getString(4),
+                c.isNull(5) ? "" : c.getString(5)));
+      }
+    }
+    return out;
+  }
+
   private java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw>
       queryRows(String district, String like1, String like2) {
     java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw> out =
         new java.util.ArrayList<>();
     try (CursorIface c =
         db.query(
-            "SELECT p.lat, p.lon, p.display_name, p.display_name_halfwidth, p.street, p.number"
+            // Empty-street addresses (p.street NULL/'': ~1.9% of Taichung, ~10% of Changhua) are
+            // located by their named 巷/莊/新村 in p.area, not a 路/街 — see the generator's
+            // data-contract §5.5 / address-search-guide §3. Coalescing street→area in BOTH the
+            // matched value and the returned locator slot lets those rows surface under their area
+            // name and feed StreetCandidateRanker's fold-check unchanged. p.area is a base-table
+            // column since schema v1 (v3 only added it to places_fts, which this LIKE path skips),
+            // so this works on every shipped dataset. Streeted rows are unaffected.
+            "SELECT p.lat, p.lon, p.display_name, p.display_name_halfwidth,"
+                + " COALESCE(NULLIF(p.street, ''), p.area) AS street, p.number"
                 + "  FROM places p"
-                + " WHERE p.township = ? AND (p.street LIKE ? OR p.street LIKE ?)",
+                + " WHERE p.township = ?"
+                + "   AND (COALESCE(NULLIF(p.street, ''), p.area) LIKE ?"
+                + "     OR COALESCE(NULLIF(p.street, ''), p.area) LIKE ?)",
             new String[] {district, like1, like2})) {
       while (c.moveToNext()) {
         out.add(

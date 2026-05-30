@@ -42,6 +42,15 @@ public final class ForwardSearchQuery {
     return new ForwardSearchQuery(county, source, null, null, null, anchorLat, anchorLon);
   }
 
+  /**
+   * Re-point the distance-ranking anchor (everything else preserved). Used when the operator taps
+   * 地圖中心 / 所在地 so subsequent candidate distances are relative to that reference point.
+   */
+  public ForwardSearchQuery withAnchor(double anchorLat, double anchorLon) {
+    return new ForwardSearchQuery(
+        county, countySource, district, streetFragment, houseNumber, anchorLat, anchorLon);
+  }
+
   public ForwardSearchQuery withDistrict(String district) {
     // Changing district clears the downstream street/number.
     return new ForwardSearchQuery(

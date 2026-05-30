@@ -23,18 +23,35 @@
             android:layout_height="wrap_content"
             android:padding="16dp"
             android:textSize="16sp"
+            android:textColor="#FFFFFF"
             android:visibility="gone"
             android:text="@string/fs_boundary_missing" />
 
-        <!-- ===== Stage 1: county ===== -->
-        <TextView
+        <!-- ===== Stage 1: county (label + Reset) ===== -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:textStyle="bold"
-            android:textSize="15sp"
-            android:text="@string/fs_stage_county" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:textStyle="bold"
+                android:textSize="15sp"
+                android:textColor="#FFFFFF"
+                android:text="@string/fs_stage_county" />
+
+            <Button
+                android:id="@+id/fs_btn_reset"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:textSize="14sp"
+                android:text="@string/fs_reset" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/fs_county_chip"
@@ -45,6 +62,7 @@
             android:paddingStart="12dp"
             android:paddingEnd="12dp"
             android:textSize="18sp"
+            android:textColor="#FFFFFF"
             android:background="?android:attr/selectableItemBackground"
             android:text="@string/fs_county_none" />
 
@@ -79,12 +97,12 @@
                 android:text="@string/fs_source_list" />
         </LinearLayout>
 
-        <!-- County list (shown when 清單 tapped); chips added programmatically. -->
-        <LinearLayout
+        <!-- County list (shown when 清單 tapped); cells added programmatically, 3 per row. -->
+        <GridLayout
             android:id="@+id/fs_county_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:columnCount="3"
             android:visibility="gone" />
 
         <!-- ===== Stage 2: district ===== -->
@@ -96,14 +114,15 @@
             android:paddingBottom="4dp"
             android:textStyle="bold"
             android:textSize="15sp"
+            android:textColor="#FFFFFF"
             android:visibility="gone"
             android:text="@string/fs_stage_district" />
 
-        <LinearLayout
+        <GridLayout
             android:id="@+id/fs_district_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:columnCount="3"
             android:visibility="gone" />
 
         <!-- ===== Stage 3: street ===== -->
@@ -115,6 +134,7 @@
             android:paddingBottom="4dp"
             android:textStyle="bold"
             android:textSize="15sp"
+            android:textColor="#FFFFFF"
             android:visibility="gone"
             android:text="@string/fs_stage_street" />
 
@@ -132,6 +152,8 @@
                 android:layout_weight="1"
                 android:inputType="text"
                 android:textSize="18sp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#7C7C7C"
                 android:hint="@string/fs_street_hint"
                 android:importantForAutofill="no" />
 
@@ -153,6 +175,8 @@
             android:gravity="center_vertical"
             android:paddingStart="12dp"
             android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#7C7C7C"
             android:hint="@string/fs_house_hint" />
 
         <GridLayout
@@ -169,6 +193,7 @@
             android:layout_height="wrap_content"
             android:padding="12dp"
             android:textSize="15sp"
+            android:textColor="#FFFFFF"
             android:visibility="gone"
             android:text="@string/fs_no_match" />
 

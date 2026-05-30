@@ -31,6 +31,7 @@ public final class ForwardSearchController {
 
   private ForwardSearchQuery query;
   private String suggestedDistrict; // set during seedCounty/chooseCounty for SELF/MAP_CENTER
+  private boolean allDistricts; // "全部" — search the whole county, no township filter
 
   public ForwardSearchController(
       TownshipBoundaryFacade boundary, Function<String, AddressDatabaseFacade> facadeForCounty) {
@@ -101,9 +102,19 @@ public final class ForwardSearchController {
     }
   }
 
+  /**
+   * Re-point the distance anchor used to rank candidates (FR-011). The receiver calls this when the
+   * operator taps 地圖中心 / 所在地 so the relative-distance maths uses the freshly chosen reference
+   * point, not the one captured at session start.
+   */
+  public void setAnchor(double anchorLat, double anchorLon) {
+    query = query.withAnchor(anchorLat, anchorLon);
+  }
+
   /** Select a county. For {@link CountySource#LIST} there is no suggested district. */
   public void chooseCounty(String county, CountySource source) {
     query = query.withCounty(county, source);
+    allDistricts = false; // changing county resets the all-districts toggle
     if (source == CountySource.LIST) {
       suggestedDistrict = null;
     }
@@ -138,6 +149,21 @@ public final class ForwardSearchController {
 
   public void chooseDistrict(String district) {
     query = query.withDistrict(district);
+    allDistricts = false;
+  }
+
+  /**
+   * "全部" — search every district in the chosen county (no township filter). Clears any single
+   * district so the funnel renders as whole-county.
+   */
+  public void chooseAllDistricts() {
+    query = query.withDistrict(null);
+    allDistricts = true;
+  }
+
+  /** True when the funnel is in whole-county ("全部") mode. */
+  public boolean isAllDistricts() {
+    return allDistricts;
   }
 
   // ----------------------------------------------------------------------
@@ -153,12 +179,17 @@ public final class ForwardSearchController {
     query = query.withStreetFragment(streetFragment);
     String county = query.county();
     String district = query.district();
-    if (county == null || district == null) return Collections.emptyList();
+    // Whole-county "全部" mode has no district; every other mode needs one.
+    if (county == null || (district == null && !allDistricts)) return Collections.emptyList();
     String folded = StreetTextNormaliser.fold(streetFragment);
     if (folded.isEmpty()) return Collections.emptyList();
     try {
       AddressDatabaseFacade facade = facadeForCounty.apply(county);
       if (facade == null) return Collections.emptyList();
+      if (allDistricts) {
+        return facade.streetCandidatesCountyWide(
+            folded, query.anchorLat(), query.anchorLon(), limit);
+      }
       return facade.streetCandidates(
           district, folded, query.anchorLat(), query.anchorLon(), limit);
     } catch (Throwable t) {
@@ -186,9 +217,12 @@ public final class ForwardSearchController {
     java.util.List<AddressCandidate> filtered = new java.util.ArrayList<>();
     for (AddressCandidate c : base) {
       String foldedRowNum = StreetTextNormaliser.fold(c.number());
-      // The house number the operator types is a prefix of the stored number (e.g. "123" matches
-      // "123號" / "123-1號"). Fold both sides so 全形 digits + 之/- normalise.
-      if (foldedRowNum.contains(foldedNum)) {
+      // The typed fragment matches either the stored house number (e.g. "123" ⊂ "123號" / "123-1號")
+      // OR anywhere in the full half-width address — the latter lets 巷/弄 detail entered on the
+      // keypad (e.g. "30巷5弄7號") narrow into the 路/街, since 巷弄 live in the display name, not the
+      // number column. Fold both sides so 全形 digits + 之/- + 臺↔台 normalise.
+      String foldedRowName = StreetTextNormaliser.fold(c.displayNameHalfwidth());
+      if (foldedRowNum.contains(foldedNum) || foldedRowName.contains(foldedNum)) {
         filtered.add(c);
       }
     }

@@ -183,6 +183,57 @@ public final class BatchImportCoordinatorTest {
     assertThat(survivingStaging).isZero();
   }
 
+  /**
+   * Feature 006 regression — a ZIP carrying {@code townships.sqlite} must land the boundary at
+   * {@code active/_boundary/townships.sqlite}. Before the fix the extractor staged it but the
+   * coordinator never moved it, so forward search was stuck on "import base data" forever.
+   */
+  @Test
+  public void zipWithTownshipsMountsBoundaryIntoActiveBoundaryDir() throws Exception {
+    File zip = writeZip("tw-central.zip", "townships.sqlite", junkBytes(2048));
+
+    BatchImportReport report = runBatch(zip, null);
+
+    assertThat(Files.exists(fs.boundaryDbFile()))
+        .as("townships.sqlite must be mounted at active/_boundary/")
+        .isTrue();
+    assertThat(report.entries())
+        .anyMatch(
+            e ->
+                e.status() == BatchImportReport.Status.ACTIVATED
+                    && e.filename().contains("townships.sqlite"));
+    assertThat(report.failedCount()).isZero();
+    // No staging dir may survive once the boundary has been moved into place.
+    long survivingStaging =
+        Files.list(fs.getActiveDir().getParent())
+            .filter(p -> p.getFileName().toString().startsWith(".staging-"))
+            .count();
+    assertThat(survivingStaging).isZero();
+  }
+
+  /**
+   * Feature 006 regression — a ZIP that carries BOTH a places county and the boundary mounts the
+   * boundary in addition to activating the county (the real tw-central-full.zip shape).
+   */
+  @Test
+  public void zipWithCountyAndTownshipsMountsBoth() throws Exception {
+    primary.county = "高雄市";
+    File zip =
+        writeZipMulti(
+            "tw-central.zip",
+            new String[] {"places-kaohsiung.sqlite", "townships.sqlite"},
+            new byte[][] {junkBytes(1024), junkBytes(2048)});
+
+    BatchImportReport report = runBatch(zip, null);
+
+    assertThat(Files.exists(fs.boundaryDbFile())).as("boundary mounted").isTrue();
+    assertThat(report.entries())
+        .anyMatch(
+            e ->
+                e.status() == BatchImportReport.Status.ACTIVATED
+                    && e.filename().contains("townships.sqlite"));
+  }
+
   // ----------------------------------------------------------------------
   // Listener lifecycle — backs the OfflineAddressReceiver detach fix (review finding #4): once a
   // listener is removed (e.g. on receiver dispose / re-bind), it must receive no further batch
@@ -239,6 +290,19 @@ public final class BatchImportCoordinatorTest {
       z.putNextEntry(new ZipEntry(entryName));
       z.write(entryData);
       z.closeEntry();
+    }
+    return f;
+  }
+
+  private File writeZipMulti(String zipName, String[] entryNames, byte[][] entryData)
+      throws IOException {
+    File f = tmp.newFile(zipName);
+    try (ZipOutputStream z = new ZipOutputStream(Files.newOutputStream(f.toPath()))) {
+      for (int i = 0; i < entryNames.length; i++) {
+        z.putNextEntry(new ZipEntry(entryNames[i]));
+        z.write(entryData[i]);
+        z.closeEntry();
+      }
     }
     return f;
   }

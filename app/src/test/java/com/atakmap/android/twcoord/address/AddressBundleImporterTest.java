@@ -47,11 +47,12 @@ public final class AddressBundleImporterTest {
   private AddressBundleImporter importer;
 
   /**
-   * The plugin's pinned max supported schema version. Per data-contract.md v2 (2026-05-24 evening)
-   * the generator emits {@code schema_version=2} (adds {@code places_rtree}); v1 stays accepted as
-   * a backward-compat path (plugin builds R*Tree itself).
+   * The plugin's pinned max supported schema version. Per data-contract.md v3 (2026-05-30) the
+   * generator emits {@code schema_version=3} (adds {@code area} to {@code places_fts}, additive over
+   * v2's {@code places_rtree}); v1/v2 stay accepted as backward-compat paths. MUST track {@code
+   * TwCoordMapComponent}'s production value.
    */
-  private static final int MAX_SUPPORTED_SCHEMA = 2;
+  private static final int MAX_SUPPORTED_SCHEMA = 3;
 
   @Before
   public void setUp() throws IOException {
@@ -173,7 +174,7 @@ public final class AddressBundleImporterTest {
         (AddressBundleImporter.ImportResult.Failure) r;
     assertThat(fail.reason())
         .isEqualTo(AddressBundleImporter.ImportResult.Reason.UNSUPPORTED_SCHEMA_VERSION);
-    assertThat(fail.details()).contains("supported 1..2").contains("got 99");
+    assertThat(fail.details()).contains("supported 1..3").contains("got 99");
   }
 
   /**
@@ -193,6 +194,23 @@ public final class AddressBundleImporterTest {
     assertThat(ok.dataset().imported().rtreeBuilt())
         .as("generator already shipped the R*Tree — plugin must NOT build")
         .isFalse();
+  }
+
+  /**
+   * data-contract.md v3 (2026-05-30) bumps {@code schema_version} to `'3'` (adds {@code area} to
+   * {@code places_fts}; additive & non-breaking, base {@code places} unchanged). The plugin MUST
+   * accept v3 imports — regression for the "import shows failed N" report caused by the prior max=2
+   * cap rejecting v3 datasets as UNSUPPORTED_SCHEMA_VERSION.
+   */
+  @Test
+  public void import_acceptsSchemaVersion3() throws Exception {
+    byte[] bytes = buildFixture(/* schemaVersion= */ "3", /* withPlacesRtree= */ true);
+    AddressBundleImporter.ImportResult r =
+        importer.importFrom(new ByteArrayInputStream(bytes), null);
+
+    assertThat(r.isSuccess()).as("v3 fixture must be accepted").isTrue();
+    AddressBundleImporter.ImportResult.Success ok = (AddressBundleImporter.ImportResult.Success) r;
+    assertThat(ok.dataset().generator().schemaVersion()).isEqualTo(3);
   }
 
   // ----------------------------------------------------------------------

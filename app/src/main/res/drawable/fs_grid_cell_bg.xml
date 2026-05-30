@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Forward-search county / district grid cell. Looks like a button on the dark ATAK panel:
+  - default  : subtle translucent fill + light border
+  - pressed  : solid accent (immediate tap feedback)
+  - selected : accent fill + bright border (the currently-chosen cell stays highlighted)
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#3399FF" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#3340A0D0" />
+            <stroke android:width="2dp" android:color="#33CCFF" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#22FFFFFF" />
+            <stroke android:width="1dp" android:color="#66FFFFFF" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+</selector>

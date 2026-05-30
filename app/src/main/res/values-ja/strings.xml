@@ -200,7 +200,7 @@
     <string name="opt_confidence_loose">ルーズ（~ 100 m / ~~ 500 m）</string>
 
     <!-- ===== Feature 006: county-scoped forward search ===== -->
-    <string name="tool_forward_search_label">前方検索</string>
+    <string name="tool_forward_search_label">TW Addr Search</string>
     <string name="tool_forward_search_desc">県市 → 郷鎮市区 → 街路で住所を検索して移動（オフライン）。</string>
 
     <string name="fs_boundary_missing">前方検索を有効にするには base データ（townships.sqlite）を取り込んでください。</string>
@@ -221,6 +221,8 @@
     <string name="fs_no_match">この郷鎮市区に一致する街路がありません。</string>
     <string name="fs_county_dataset_missing">この県市の住所データは未インストールです。</string>
     <string name="fs_goto">移動</string>
+    <string name="fs_reset">リセット</string>
+    <string name="fs_district_all">すべて</string>
     <string name="fs_candidate_format">%1$s · %2$d m</string>
 
 </resources>

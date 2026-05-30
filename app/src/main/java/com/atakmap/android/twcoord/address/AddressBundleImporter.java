@@ -78,7 +78,9 @@ public final class AddressBundleImporter {
    *     [MIN_SUPPORTED_SCHEMA_VERSION, maxSupportedSchemaVersion]} pass validation. Per {@code
    *     atak-tw-address-generator/docs/data-contract.md}: v1 (2026-05-24 morning) shipped bare
    *     {@code places} + {@code places_fts}; v2 (2026-05-24 evening) adds {@code places_rtree} for
-   *     native nearest-address lookup. Production passes the latest known version (currently 2).
+   *     native nearest-address lookup; v3 (2026-05-30) adds {@code area} to {@code places_fts}
+   *     (additive, base {@code places} unchanged). Production passes the latest known version
+   *     (currently 3).
    */
   public AddressBundleImporter(
       FileSystem fs, ShaCalculator shaCalculator, int maxSupportedSchemaVersion) {

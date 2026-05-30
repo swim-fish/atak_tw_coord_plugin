@@ -187,7 +187,8 @@ public final class BatchImportCoordinator {
     fireOnStart(started);
     try (InputStream in = new FileInputStream(zipFile)) {
       ZipExtractor.ExtractResult result = zipExtractor.extract(in, null);
-      if (!result.hasAnyCounty()) {
+      if (!result.hasAnyConsumable()) {
+        // Neither a places-<county>.sqlite NOR the townships.sqlite boundary — nothing to mount.
         addAndFire(
             zipFile.getName(),
             null,
@@ -212,6 +213,12 @@ public final class BatchImportCoordinator {
       for (ZipExtractor.ExtractedCounty ec : result.counties()) {
         long countyStart = System.currentTimeMillis();
         activateExtractedCounty(ec, zipFile.getName(), countyStart, expectedCounty);
+      }
+      // Feature 006: persist the boundary layer (townships.sqlite) into active/_boundary/ so the
+      // township facade can mount it. Without this the extractor staged it but it was discarded,
+      // leaving forward search permanently on "import base data" (the empty-_boundary bug).
+      if (result.boundary() != null) {
+        activateBoundary(result.boundary(), zipFile.getName(), System.currentTimeMillis());
       }
     } catch (ZipException e) {
       addAndFire(
@@ -353,6 +360,41 @@ public final class BatchImportCoordinator {
         fs.deleteRecursively(ec.stagingDir());
       } catch (Throwable t) {
         Log.w(TAG, "cleanup of extractor staging " + ec.stagingDir() + " threw", t);
+      }
+    }
+  }
+
+  /**
+   * Feature 006: atomically move the extractor-staged {@code townships.sqlite} into {@code
+   * active/_boundary/townships.sqlite} so the township-boundary facade can mount it (locality
+   * detection + county-scoped reverse, and the forward-search funnel gate). Reported as {@code
+   * ACTIVATED} since it activates base data; a move failure is {@code FAILED}. Mirrors the
+   * per-county staging-dir cleanup in {@link #activateExtractedCounty}.
+   */
+  private void activateBoundary(
+      ZipExtractor.ExtractedCounty boundary, String parentZipName, long startMs) {
+    String entryName = parentZipName + "/townships.sqlite";
+    try {
+      fs.atomicMove(boundary.placesFile(), fs.boundaryDbFile());
+      addAndFire(
+          entryName,
+          null,
+          BatchImportReport.Status.ACTIVATED,
+          "boundary",
+          System.currentTimeMillis() - startMs);
+    } catch (Throwable t) {
+      Log.w(TAG, "activateBoundary threw", t);
+      addAndFire(
+          entryName,
+          null,
+          BatchImportReport.Status.FAILED,
+          "BOUNDARY_MOVE_FAILED: " + describe(t),
+          System.currentTimeMillis() - startMs);
+    } finally {
+      try {
+        fs.deleteRecursively(boundary.stagingDir());
+      } catch (Throwable t) {
+        Log.w(TAG, "cleanup of boundary staging " + boundary.stagingDir() + " threw", t);
       }
     }
   }

@@ -175,6 +175,65 @@ public class ForwardSearchControllerTest {
     assertThat(c.search("中山路", 10)).isEmpty(); // facade null → empty, no throw
   }
 
+  @Test
+  public void setAnchorRepointsDistanceReferencePassedToFacade() {
+    FakeBoundary b = new FakeBoundary();
+    StubFacade facade = new StubFacade();
+    facade.candidates =
+        Collections.singletonList(
+            new AddressCandidate(24.34, 120.62, "中山路1號", "", "中山路", "1號", 10));
+    ForwardSearchController c = new ForwardSearchController(b, county -> facade);
+    c.chooseCounty("台中市", CountySource.LIST);
+    c.chooseDistrict("西區");
+
+    // Operator taps 地圖中心 / 所在地 → re-anchor, then a search must use the new reference point.
+    c.setAnchor(24.5, 120.8);
+    c.search("中山路", 10);
+
+    assertThat(facade.lastAnchorLat).isEqualTo(24.5);
+    assertThat(facade.lastAnchorLon).isEqualTo(120.8);
+    assertThat(c.state().anchorLat()).isEqualTo(24.5);
+    assertThat(c.state().anchorLon()).isEqualTo(120.8);
+  }
+
+  @Test
+  public void allDistrictsUsesCountyWideQuery() {
+    FakeBoundary b = new FakeBoundary();
+    StubFacade facade = new StubFacade();
+    facade.countyWideCandidates =
+        Collections.singletonList(
+            new AddressCandidate(24.34, 120.62, "台中市西區中山路1號", "", "中山路", "1號", 10));
+    ForwardSearchController c = new ForwardSearchController(b, county -> facade);
+    c.chooseCounty("台中市", CountySource.LIST);
+    c.chooseAllDistricts();
+
+    List<AddressCandidate> r = c.search("中山路", 10);
+
+    assertThat(c.isAllDistricts()).isTrue();
+    assertThat(facade.countyWideCalled).as("全部 mode must use the county-wide query").isTrue();
+    assertThat(facade.lastCountyWideFolded).isEqualTo("中山路");
+    assertThat(r).hasSize(1);
+  }
+
+  @Test
+  public void choosingASingleDistrictAfterAllRevertsToScopedQuery() {
+    FakeBoundary b = new FakeBoundary();
+    StubFacade facade = new StubFacade();
+    facade.candidates =
+        Collections.singletonList(
+            new AddressCandidate(24.34, 120.62, "台中市西區中山路1號", "", "中山路", "1號", 10));
+    ForwardSearchController c = new ForwardSearchController(b, county -> facade);
+    c.chooseCounty("台中市", CountySource.LIST);
+    c.chooseAllDistricts();
+    c.chooseDistrict("西區"); // operator narrows back to one district
+
+    c.search("中山路", 10);
+
+    assertThat(c.isAllDistricts()).isFalse();
+    assertThat(facade.countyWideCalled).isFalse();
+    assertThat(facade.lastDistrict).isEqualTo("西區");
+  }
+
   // ---- house number (US4 / T037) ----
 
   @Test
@@ -214,6 +273,29 @@ public class ForwardSearchControllerTest {
 
     assertThat(r).hasSize(2); // nearest-by-distance list
     assertThat(r.get(0).distanceMeters()).isLessThanOrEqualTo(r.get(1).distanceMeters());
+  }
+
+  @Test
+  public void houseDetailNarrowsByLaneInDisplayName() {
+    // 巷/弄 live in the display name, not the number column. The keypad's 巷/弄 keys build a tail
+    // like "30巷" which must narrow via display_name_halfwidth.
+    FakeBoundary b = new FakeBoundary();
+    StubFacade facade = new StubFacade();
+    facade.candidates =
+        Arrays.asList(
+            new AddressCandidate(
+                24.34, 120.62, "台中市東區十甲路30巷5弄7號", "台中市東區十甲路30巷5弄7號", "十甲路", "7號", 10),
+            new AddressCandidate(
+                24.35, 120.63, "台中市東區十甲路88號", "台中市東區十甲路88號", "十甲路", "88號", 50));
+    ForwardSearchController c = new ForwardSearchController(b, county -> facade);
+    c.chooseCounty("台中市", CountySource.LIST);
+    c.chooseDistrict("東區");
+    c.search("十甲路", 0);
+
+    List<AddressCandidate> r = c.withHouseNumber("30巷", 10);
+
+    assertThat(r).hasSize(1);
+    assertThat(r.get(0).displayName()).contains("30巷");
   }
 
   @Test
@@ -276,8 +358,13 @@ public class ForwardSearchControllerTest {
   /** Records the last streetCandidates args + returns a canned list. */
   private static final class StubFacade implements AddressDatabaseFacade {
     List<AddressCandidate> candidates = new ArrayList<>();
+    List<AddressCandidate> countyWideCandidates = new ArrayList<>();
     String lastDistrict;
     String lastFolded;
+    double lastAnchorLat;
+    double lastAnchorLon;
+    boolean countyWideCalled;
+    String lastCountyWideFolded;
 
     @Override
     public GeneratorMetadata readMetadata() {
@@ -295,7 +382,19 @@ public class ForwardSearchControllerTest {
         String district, String foldedFragment, double anchorLat, double anchorLon, int limit) {
       lastDistrict = district;
       lastFolded = foldedFragment;
+      lastAnchorLat = anchorLat;
+      lastAnchorLon = anchorLon;
       return new ArrayList<>(candidates);
+    }
+
+    @Override
+    public List<AddressCandidate> streetCandidatesCountyWide(
+        String foldedFragment, double anchorLat, double anchorLon, int limit) {
+      countyWideCalled = true;
+      lastCountyWideFolded = foldedFragment;
+      lastAnchorLat = anchorLat;
+      lastAnchorLon = anchorLon;
+      return new ArrayList<>(countyWideCandidates);
     }
 
     @Override

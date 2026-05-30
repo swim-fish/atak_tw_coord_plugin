@@ -426,8 +426,13 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     // Feature 005: share one AtakFileSystem instance across importer + registry + coordinator
     // so the sweep-orphan-staging pass runs once + per-county helper methods are consistent.
     addressFileSystem = new AtakFileSystem();
+    // Highest data-contract schema_version the plugin accepts (inclusive). v3 is additive &
+    // non-breaking vs v2 — the generator only added `area` to places_fts; the base `places` table
+    // and every column the plugin reads are unchanged (see the generator's data-contract §7 v3
+    // CHANGELOG + address-search-guide §5). Bumping 2→3 lets v3 datasets import instead of failing
+    // UNSUPPORTED_SCHEMA_VERSION. MUST track the generator's SCHEMA_VERSION.
     addressImporter =
-        new AddressBundleImporter(addressFileSystem, new MessageDigestShaCalculator(), 2);
+        new AddressBundleImporter(addressFileSystem, new MessageDigestShaCalculator(), 3);
     staticAddressImporter = addressImporter;
     addressImportExecutor =
         Executors.newSingleThreadExecutor(
@@ -494,18 +499,12 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     addressRegistry.initFromDisk();
     addressSubsystem.setRegistry(addressRegistry);
 
-    // Feature 006 — mount the township boundary layer (active/_boundary/townships.sqlite) once and
-    // bind it to the resolver for county-scoped reverse lookup (FR-014). Null when base data absent
+    // Feature 006 — mount the township boundary layer (active/_boundary/townships.sqlite) and bind
+    // it to the resolver for county-scoped reverse lookup (FR-014). Null when base data absent
     // (FR-017: reverse falls back to the 005 fan-out; forward search shows "import base data").
-    try {
-      addressBoundaryFacade =
-          new com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFactory()
-              .open(addressFileSystem.boundaryDbFile().toFile());
-      addressSubsystem.setBoundaryFacade(addressBoundaryFacade);
-    } catch (Throwable t) {
-      android.util.Log.w("TwCoordMapComponent", "boundary facade mount threw", t);
-      addressBoundaryFacade = null;
-    }
+    // Lazily re-mounts via boundaryFacadeOrRemount() so a boundary imported later in the SAME
+    // session is picked up the next time forward search opens — no ATAK restart required.
+    boundaryFacadeOrRemount();
     // Re-render the widget when any county lifecycle event fires (add / replace / remove).
     addressRegistry.addListener(
         (county, change) -> {
@@ -541,7 +540,7 @@ public class TwCoordMapComponent extends AbstractMapComponent {
         new com.atakmap.android.twcoord.address.ForwardSearchReceiver(
             view,
             pluginContext,
-            () -> addressBoundaryFacade,
+            this::boundaryFacadeOrRemount,
             () -> addressRegistry,
             () -> activePrefs.confidenceThresholds());
     AtakBroadcast.DocumentedIntentFilter forwardFilter =
@@ -613,6 +612,33 @@ public class TwCoordMapComponent extends AbstractMapComponent {
             PREF_KEY,
             pluginContext.getResources().getDrawable(R.drawable.ic_tw_coord_plugin),
             prefFragment));
+  }
+
+  /**
+   * Feature 006 — return the mounted township-boundary facade, lazily (re)opening {@code
+   * active/_boundary/townships.sqlite} when it isn't open yet. Called once at setup and again as the
+   * forward-search boundary supplier, so a boundary imported later in the SAME session is picked up
+   * the next time forward search opens — no ATAK restart needed. Returns {@code null} when no
+   * boundary file exists yet (forward search then shows "import base data"). Synchronized because
+   * setup, the UI-thread supplier, and the import executor (which writes the file) can race.
+   */
+  private synchronized com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade
+      boundaryFacadeOrRemount() {
+    if (addressBoundaryFacade != null) return addressBoundaryFacade;
+    try {
+      java.io.File f = addressFileSystem.boundaryDbFile().toFile();
+      if (f.isFile()) {
+        addressBoundaryFacade =
+            new com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFactory().open(f);
+        if (addressBoundaryFacade != null && addressSubsystem != null) {
+          addressSubsystem.setBoundaryFacade(addressBoundaryFacade);
+        }
+      }
+    } catch (Throwable t) {
+      android.util.Log.w("TwCoordMapComponent", "boundaryFacadeOrRemount threw", t);
+      addressBoundaryFacade = null;
+    }
+    return addressBoundaryFacade;
   }
 
   @Override
