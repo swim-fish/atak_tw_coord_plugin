@@ -5,6 +5,21 @@ loosely based on [Keep a Changelog](https://keepachangelog.com/); the project
 follows Semantic Versioning. Per-feature design records live under
 [`docs/adr/`](docs/adr/); per-feature specs under [`specs/`](specs/).
 
+## [1.2.1] — 2026-05-31 — TW Addr Search bug fixes
+
+### Fixed
+- **TW Addr Search source buttons (所在地 / 地圖中心 / 清單) showed English labels.**
+  The forward-search page inflated its layout against the raw plugin context, whose
+  resources resolve to the default (English) bundle, instead of the locale-overridden
+  context (ADR-0003). The page now inflates against the live localised context and
+  re-inflates on the next open after an in-app UI-language change (FR-018).
+- **「最相似」ordering had no visible effect after a house number was typed.** Once a
+  number narrows the list, every candidate shares the same street (e.g. `五權西路一段/二段`),
+  so the street-only similarity bands tied and `MOST_SIMILAR` collapsed to distance
+  order. The rank now adds a secondary key — numeric proximity of the candidate's leading
+  house number to the typed one — so `五權西路 + 2` floats `…一段2C號` ahead of `12號 / 20號`,
+  ties broken by distance.
+
 ## [1.2.0] — 2026-05-31 — Settings page & search/storage UX tweaks (feature 007)
 
 ### Changed

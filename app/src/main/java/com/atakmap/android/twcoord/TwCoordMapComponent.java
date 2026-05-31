@@ -570,7 +570,9 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     forwardSearchReceiver =
         new com.atakmap.android.twcoord.address.ForwardSearchReceiver(
             view,
-            pluginContext,
+            // Supply the live localised context (ADR-0003) so the page localises and repaints on a
+            // language change; fall back to the raw plugin context only before it is built.
+            () -> localisedPluginContext != null ? localisedPluginContext : pluginContext,
             this::boundaryFacadeOrRemount,
             () -> addressRegistry,
             () -> activePrefs.confidenceThresholds(),

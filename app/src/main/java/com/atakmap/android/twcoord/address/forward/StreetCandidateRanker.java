@@ -101,6 +101,27 @@ public final class StreetCandidateRanker {
    */
   public static List<AddressCandidate> reorder(
       List<AddressCandidate> results, ResultOrdering ordering, String foldedFragment) {
+    return reorder(results, ordering, foldedFragment, null);
+  }
+
+  /**
+   * House-number-aware overload (issue: 最相似 had no visible effect once a house number was typed).
+   * Once the operator narrows by house number, every surviving candidate shares the same street
+   * (e.g. all {@code 五權西路一段/二段}), so the street-only similarity bands tie and {@code MOST_SIMILAR}
+   * degrades to distance order — looking like a no-op. This adds a SECONDARY key: candidates whose
+   * leading house number is numerically closest to the typed one rank first (so typing {@code 五權西路
+   * 2號} surfaces {@code …一段2C號} ahead of {@code 12號 / 20號}), ties broken by the existing
+   * street-match index / leftover length / distance.
+   *
+   * @param foldedHouseNumber the house-number tail typed on the keypad, AFTER {@link
+   *     StreetTextNormaliser#fold} ({@code null}/blank ⇒ neutral, so this collapses to the
+   *     street-only behaviour of the 3-arg overload)
+   */
+  public static List<AddressCandidate> reorder(
+      List<AddressCandidate> results,
+      ResultOrdering ordering,
+      String foldedFragment,
+      String foldedHouseNumber) {
     List<AddressCandidate> out = new ArrayList<>();
     if (results == null) return out;
     out.addAll(results);
@@ -110,7 +131,8 @@ public final class StreetCandidateRanker {
       return out;
     }
     final String frag = foldedFragment == null ? "" : foldedFragment.trim();
-    if (frag.isEmpty()) {
+    final String num = foldedHouseNumber == null ? "" : foldedHouseNumber.trim();
+    if (frag.isEmpty() && num.isEmpty()) {
       // No fragment to match on — every candidate is band 1 with no leftover signal, so degrade to
       // pure distance order (per this method's contract). Short-circuit rather than fall through
       // the
@@ -120,10 +142,41 @@ public final class StreetCandidateRanker {
     }
     out.sort(
         Comparator.comparingInt((AddressCandidate c) -> -similarityBand(c, frag))
+            .thenComparingInt(c -> houseNumberProximity(c, num))
             .thenComparingInt(c -> matchIndex(c, frag))
             .thenComparingInt(c -> leftoverLength(c, frag))
             .thenComparingDouble(AddressCandidate::distanceMeters));
     return out;
+  }
+
+  /**
+   * Numeric closeness of a candidate's house number to the typed one (smaller = better), the {@code
+   * MOST_SIMILAR} secondary key. Returns {@code 0} (neutral) when nothing comparable was typed, and
+   * {@link Integer#MAX_VALUE} (sorted last) when the candidate has no leading integer to compare —
+   * so empty-street/area rows fall below any real number match once a number is typed.
+   */
+  static int houseNumberProximity(AddressCandidate c, String foldedHouseNumber) {
+    Integer typed = leadingInt(foldedHouseNumber);
+    if (typed == null) return 0; // nothing typed (or no digits) — neutral, distance decides
+    Integer got = leadingInt(StreetTextNormaliser.fold(c.number()));
+    if (got == null) return Integer.MAX_VALUE;
+    return Math.abs(got - typed);
+  }
+
+  /** The first run of decimal digits in {@code s} as an int, or {@code null} if none / overflow. */
+  private static Integer leadingInt(String s) {
+    if (s == null) return null;
+    int n = s.length();
+    int i = 0;
+    while (i < n && !Character.isDigit(s.charAt(i))) i++;
+    if (i >= n) return null;
+    int start = i;
+    while (i < n && Character.isDigit(s.charAt(i))) i++;
+    try {
+      return Integer.parseInt(s.substring(start, i));
+    } catch (NumberFormatException e) {
+      return null; // absurdly long digit run — treat as incomparable
+    }
   }
 
   /** Folded text used for similarity: the street, or the display name when street is empty. */

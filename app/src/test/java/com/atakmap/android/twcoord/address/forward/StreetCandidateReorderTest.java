@@ -13,6 +13,14 @@ public class StreetCandidateReorderTest {
     return new AddressCandidate(0, 0, street, street, street, "", distM);
   }
 
+  /**
+   * A candidate with a distinct house number — for the house-number-aware MOST_SIMILAR overload.
+   */
+  private static AddressCandidate cn(String street, String number, double distM) {
+    String display = street + number;
+    return new AddressCandidate(0, 0, display, display, street, number, distM);
+  }
+
   @Test
   public void distanceOrderingIsAscendingByDistance() {
     AddressCandidate near = c("乙路", 100);
@@ -74,6 +82,42 @@ public class StreetCandidateReorderTest {
     List<AddressCandidate> out =
         StreetCandidateRanker.reorder(Arrays.asList(far, near), ResultOrdering.MOST_SIMILAR, "  ");
     assertThat(out).containsExactly(near, far);
+  }
+
+  @Test
+  public void mostSimilarFloatsNumericallyClosestHouseNumberFirst() {
+    // Real-world repro: 五權西路 + 2號 — every candidate shares the street segment, so the street-only
+    // bands tie and MOST_SIMILAR used to degrade to distance (the "no effect" bug). With the typed
+    // house number it must surface the numerically-closest number, regardless of distance.
+    AddressCandidate n2c = cn("五權西路一段", "2C號", 800); // leading 2 — closest, but farthest
+    AddressCandidate n12 = cn("五權西路一段", "12號", 200);
+    AddressCandidate n20 = cn("五權西路一段", "20號", 100);
+    List<AddressCandidate> out =
+        StreetCandidateRanker.reorder(
+            Arrays.asList(n20, n12, n2c), ResultOrdering.MOST_SIMILAR, "五權西路", "2號");
+    assertThat(out).containsExactly(n2c, n12, n20);
+  }
+
+  @Test
+  public void mostSimilarEqualHouseNumberBreaksTieByDistance() {
+    // Two segments both have a number-2 address → equal numeric proximity → nearer wins.
+    AddressCandidate seg1Far = cn("五權西路一段", "2C號", 500);
+    AddressCandidate seg2Near = cn("五權西路二段", "2號", 100);
+    List<AddressCandidate> out =
+        StreetCandidateRanker.reorder(
+            Arrays.asList(seg1Far, seg2Near), ResultOrdering.MOST_SIMILAR, "五權西路", "2號");
+    assertThat(out).containsExactly(seg2Near, seg1Far);
+  }
+
+  @Test
+  public void blankHouseNumberKeepsStreetOnlyBehaviour() {
+    // 4-arg overload with a blank number must match the 3-arg street-only ranking exactly.
+    AddressCandidate exact = cn("中山路", "1號", 900);
+    AddressCandidate prefix = cn("中山路一段", "1號", 100);
+    List<AddressCandidate> out =
+        StreetCandidateRanker.reorder(
+            Arrays.asList(prefix, exact), ResultOrdering.MOST_SIMILAR, "中山路", "");
+    assertThat(out).containsExactly(exact, prefix); // exact street match still wins over prefix
   }
 
   @Test

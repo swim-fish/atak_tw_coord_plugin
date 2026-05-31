@@ -51,38 +51,43 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private static final String TAG = "ForwardSearchReceiver";
   private static final int CANDIDATE_LIMIT = 30;
 
-  private final Context pluginContext;
+  // Supplies the CURRENT localised plugin context (ADR-0003): the page inflates against it so its
+  // layout strings (所在地 / 地圖中心 / 清單 / 最相似 / 距離 …) and every programmatic getString follow the
+  // in-app UI-language override, not the raw plugin context (which resolves to the default English
+  // bundle). Refreshed lazily in onReceive when the language changed.
+  private final Supplier<Context> contextSupplier;
+  private Context pluginContext;
   private final MapView mapView;
   private final Supplier<TownshipBoundaryFacade> boundarySupplier;
   private final Supplier<ActiveDatasetRegistry> registrySupplier;
   private final Supplier<ConfidenceThresholds> confidenceSupplier;
   // Feature 007 US1 — persisted result-ordering preference (nullable in JVM tests).
   private final PreferenceStore prefs;
-  private final View view;
+  private View view;
 
-  // ---- inflated refs ----
-  private final TextView boundaryMissing;
-  private final TextView countyChip;
-  private final Button btnSelf;
-  private final Button btnMapCenter;
-  private final Button btnList;
-  private final Button btnReset;
-  private final GridLayout countyList;
-  private final TextView districtLabel;
-  private final GridLayout districtList;
-  private final TextView streetLabel;
-  private final LinearLayout streetRow;
-  private final EditText streetInput;
-  private final Button btnSearch;
-  private final TextView houseValue;
-  private final GridLayout keypad;
-  private final TextView emptyState;
-  private final LinearLayout candidateList;
-  private final Button btnGoto;
+  // ---- inflated refs (rebuilt by inflate() on each language change) ----
+  private TextView boundaryMissing;
+  private TextView countyChip;
+  private Button btnSelf;
+  private Button btnMapCenter;
+  private Button btnList;
+  private Button btnReset;
+  private GridLayout countyList;
+  private TextView districtLabel;
+  private GridLayout districtList;
+  private TextView streetLabel;
+  private LinearLayout streetRow;
+  private EditText streetInput;
+  private Button btnSearch;
+  private TextView houseValue;
+  private GridLayout keypad;
+  private TextView emptyState;
+  private LinearLayout candidateList;
+  private Button btnGoto;
   // Feature 007 US1 — ordering toggle (最相似 / 距離).
-  private final View orderingRow;
-  private final Button btnOrderSimilar;
-  private final Button btnOrderDistance;
+  private View orderingRow;
+  private Button btnOrderSimilar;
+  private Button btnOrderDistance;
 
   private final AtomicBoolean gotoInFlight = new AtomicBoolean(false);
 
@@ -109,19 +114,33 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
 
   public ForwardSearchReceiver(
       MapView mapView,
-      Context pluginContext,
+      Supplier<Context> localisedContextSupplier,
       Supplier<TownshipBoundaryFacade> boundarySupplier,
       Supplier<ActiveDatasetRegistry> registrySupplier,
       Supplier<ConfidenceThresholds> confidenceSupplier,
       PreferenceStore prefs) {
     super(mapView);
     this.mapView = mapView;
-    this.pluginContext = pluginContext;
+    this.contextSupplier = localisedContextSupplier;
     this.boundarySupplier = boundarySupplier;
     this.registrySupplier = registrySupplier;
     this.confidenceSupplier = confidenceSupplier;
     this.prefs = prefs;
-    LayoutInflater inflater = LayoutInflater.from(pluginContext);
+    inflate();
+  }
+
+  /**
+   * (Re)inflate the page against the CURRENT localised plugin context (ADR-0003). Called from the
+   * constructor and again from {@link #onReceive} whenever the in-app UI language changed since the
+   * last inflation, so the page repaints in the new language on its next open (FR-018). Both the
+   * layout-XML strings and every {@code pluginContext.getString(...)} below resolve from this
+   * context, which is why the source buttons (所在地 / 地圖中心 / 清單) now localise instead of falling back
+   * to the default English bundle.
+   */
+  private void inflate() {
+    Context ctx = safeGet(contextSupplier);
+    this.pluginContext = ctx;
+    LayoutInflater inflater = LayoutInflater.from(ctx);
     this.view = inflater.inflate(R.layout.forward_search_page, null);
 
     boundaryMissing = view.findViewById(R.id.fs_boundary_missing);
@@ -162,6 +181,13 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
         return;
       }
       if (isVisible()) return;
+      // Re-inflate in the current UI language if the operator changed it since the last open
+      // (ADR-0003 / FR-018) — createConfigurationContext yields a NEW Context instance per locale,
+      // so an identity change is the signal to rebuild the page.
+      Context current = safeGet(contextSupplier);
+      if (current != null && current != pluginContext) {
+        inflate();
+      }
       startSession();
       showDropDown(view, HALF_WIDTH, FULL_HEIGHT, FULL_WIDTH, HALF_HEIGHT);
     } catch (Throwable t) {
@@ -279,7 +305,13 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private void onOrderingChosen(ResultOrdering ordering) {
     if (prefs != null) prefs.setResultOrdering(ordering);
     reflectOrderingButtons();
-    renderCandidates(StreetCandidateRanker.reorder(lastResults, ordering, lastFoldedFragment));
+    renderCandidates(
+        StreetCandidateRanker.reorder(lastResults, ordering, lastFoldedFragment, foldedHouse()));
+  }
+
+  /** The house-number tail currently entered on the keypad, folded for matching/ranking. */
+  private String foldedHouse() {
+    return StreetTextNormaliser.fold(houseNumber.toString());
   }
 
   /** Highlight whichever ordering button matches the persisted preference. */
@@ -496,9 +528,9 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     lastResults =
         results == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(results);
     // Apply the persisted ordering to the fresh result set (FR-003 default applies to new
-    // searches).
+    // searches). No house number yet — pass blank so MOST_SIMILAR ranks on the street alone.
     renderCandidates(
-        StreetCandidateRanker.reorder(lastResults, currentOrdering(), lastFoldedFragment));
+        StreetCandidateRanker.reorder(lastResults, currentOrdering(), lastFoldedFragment, ""));
     // Reveal the house-number keypad once a street search has run.
     houseValue.setVisibility(View.VISIBLE);
     keypad.setVisibility(View.VISIBLE);
@@ -652,8 +684,11 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
         controller.withHouseNumber(houseNumber.toString(), CANDIDATE_LIMIT);
     lastResults =
         results == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(results);
+    // Feed the typed house number into the rank so MOST_SIMILAR floats the numerically-closest
+    // number up (same-street candidates would otherwise tie and look unsorted).
     renderCandidates(
-        StreetCandidateRanker.reorder(lastResults, currentOrdering(), lastFoldedFragment));
+        StreetCandidateRanker.reorder(
+            lastResults, currentOrdering(), lastFoldedFragment, foldedHouse()));
   }
 
   // ----------------------------------------------------------------------
