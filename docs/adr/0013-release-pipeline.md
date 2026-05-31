@@ -49,7 +49,8 @@ Each stage's specifics are documented below.
 `scripts/build-tpp-source-zip.py` is the canonical generator. Default behaviour:
 
 - Runs `git archive HEAD --format=zip --prefix=<rootProject.name>/` so only committed files land in the zip.
-- Strips developer-tooling overhead that TPP doesn't need: `.claude/`, `.specify/`, `CLAUDE.md`, `docs/images/` (added v1.0.3 — the 11 user-guide screenshots were inflating the zip from 470 KB to 4.2 MB with zero TPP value).
+- Strips everything TPP's `assembleCivRelease` doesn't read: `.claude/`, `.specify/`, `CLAUDE.md`, all of `docs/` (superseded the v1.0.3 `docs/images/`-only rule), `app/src/test/` + `app/src/androidTest/`, and `specs/` + `scripts/` + `test-data/`. Rationale: the curated zip is the *TPP build input* only — GitHub auto-attaches a full "Source code (zip)" at the tag and the git tag carries everything, so docs/specs/scripts add no provenance value where the zip is consumed. The test exclusion is the dominant size win — its `src/test/resources/fixtures/*.sqlite` binaries had inflated the zip to ~4.4 MB; with all of the above stripped the upload is ~340 KB. Bonus: scoping out test sources also scopes TPP's Fortify scan to the shipped code, so test-only findings (hardcoded test passwords, test SQL) stop cluttering the published security-scan PDF.
+- **Exclusion-safety guard.** Because the exclusion list now strips whole top-level trees, two preflight checks (below) and a standalone `scripts/check-tpp-exclusions.py` (CI-friendly, builds no zip) assert the rules can't break TPP: that no build-critical input is dropped, and that no *active* gradle file (`settings.gradle` / `build.gradle` / `app/build.gradle` + any `apply from` target) wires an excluded path into the build. The lone allowlisted references are spotless's `src/test`/`src/androidTest` globs (spotless runs under `check`, never `assemble`); `gradle/typst.gradle`'s `docs/user_manual` reference is moot because nothing applies that file.
 - Reads `PLUGIN_VERSION` from `app/build.gradle` and emits the zip as `build/<rootProject.name>-source-tpp-v<VERSION>.zip` (added v1.0.3 — versioned filenames prevent re-uploading a stale zip).
 
 Static preflight checks (mirror the `Source Archive Requirements` from `docs/pipe/Third Party Pipeline.md`):
@@ -63,6 +64,8 @@ Static preflight checks (mirror the `Source Archive Requirements` from `docs/pip
 | `assembleCivRelease target defined` | FAIL — Gradle would not have a target to invoke. |
 | `gradle version vs TPP FAQ` | WARN — FAQ pins Gradle 6.9.1 but TPP env actually runs modern Gradle (Gradle 8.14.3 confirmed via real submission v1.0.0 onwards). FAQ is stale; warning preserved as a "verify on submission" reminder. |
 | `NDK version (if pinned)` | FAIL — if `ndkVersion` is set, it must be one of TPP's preinstalled versions. Not pinned today (pure-Java plugin) so the check trivially passes. |
+| `required build inputs survive exclusion` | FAIL — an exclusion rule would drop a file `assembleCivRelease` needs (`REQUIRED_BUILD_INPUTS` in the generator). Guards against over-broad exclusions. |
+| `excluded paths are not build inputs` | FAIL — an active gradle file wires an excluded path into the build (and it isn't an allowlisted, non-`assemble` reference). Guards against an exclusion silently becoming a build dependency. |
 
 Archive shape checks (run after the zip is written):
 
@@ -118,6 +121,12 @@ Identical across every v1.0.x release. If a future release ever changes signer, 
 ### Stage 4 — release-artifact staging
 
 Working location: `build/release-vX.Y.Z/` (gitignored under `build/`).
+
+`scripts/stage-tpp-release.py` automates this stage: feed it the TPP bundle zip and it extracts only the four shippable files, renames them per the table below, copies in the Stage-2 source zip, drops the seven diagnostics-only files (`build.log`, the Fortify logs/txt, `scan_results.fpr`, the `.aab`), prints the APK SHA-256 + signer-cert check, and emits the ready-to-run Stage-6 `gh release create` command. Version + ATAK target are auto-detected from the bundle APK filename.
+
+```sh
+python scripts/stage-tpp-release.py build/<email>-<YYYYMMDD>-<HHMMSS>.zip
+```
 
 Renaming convention (changes from TPP's `*-unsigned.apk` naming so end users don't worry about the misleading suffix):
 
@@ -259,7 +268,9 @@ For Route A (TPP) the practical impact is muted — TPP re-signs anyway — but 
 - TPP requirements: [`docs/pipe/Third Party Pipeline.md`](../pipe/Third Party Pipeline.md)
 - TPP terms of participation: [`docs/pipe/Third Party Pipeline Participation Terms.md`](../pipe/Third Party Pipeline Participation Terms.md)
 - Keystore: [`keystore/README.md`](../../keystore/README.md)
-- Source-archive script: [`scripts/build-tpp-source-zip.py`](../../scripts/build-tpp-source-zip.py)
+- Source-archive script (Stage 2): [`scripts/build-tpp-source-zip.py`](../../scripts/build-tpp-source-zip.py)
+- Exclusion-safety guard (CI): [`scripts/check-tpp-exclusions.py`](../../scripts/check-tpp-exclusions.py)
+- Release-staging script (Stage 4): [`scripts/stage-tpp-release.py`](../../scripts/stage-tpp-release.py)
 - Related ADRs: [ADR-0012](./0012-tw-icon-asset-pipeline.md) (icon pipeline; uses the same "render scripts derive from source XML" pattern as this release pipeline derives from `app/build.gradle`'s `PLUGIN_VERSION`).
 - Past commits referenced:
   - `2aceae6` chore(release): migrate signing config out of build.gradle into local.properties

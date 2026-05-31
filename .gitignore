@@ -14,6 +14,10 @@ obj/
 *.tmp
 *.log
 
+# Python bytecode cache (scripts/check-tpp-exclusions.py imports the generator)
+__pycache__/
+*.pyc
+
 # Exception: the Gradle wrapper jar MUST be committed so fresh clones
 # (and TAK TPP's ephemeral build environment) can bootstrap ./gradlew.
 # Without this, TPP fails with "Could not find or load main class

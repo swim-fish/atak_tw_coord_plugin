@@ -39,18 +39,82 @@ from typing import Optional
 
 EXCLUDE_PREFIXES: tuple[str, ...] = (
     # Developer-tooling overhead that TPP's `./gradlew assembleCivRelease`
-    # does not need. Stripping these shrinks the upload by ~25% and avoids
-    # leaking internal Claude Code / Speckit state to a public-facing pipeline.
+    # does not need. Stripping these shrinks the upload and avoids leaking
+    # internal Claude Code / Speckit state to a public-facing pipeline.
     ".claude/",
     ".specify/",
-    # Doc-only screenshots + icon-preview PNGs. They live in docs/images/
-    # purely for embedding into docs/user-guide{,_zh}.md and have zero
-    # effect on `assembleCivRelease`. Currently ~4 MB of bulk; dropping
-    # them keeps the upload close to the 400 KB code+config baseline.
-    "docs/images/",
+    # All documentation. TPP only ever runs `assembleCivRelease`, which reads
+    # nothing under docs/. The zip we attach to the GitHub Release as
+    # `source-archive-vX.Y.Z.zip` is purely the *TPP build input* — it is NOT
+    # the authoritative source snapshot, because GitHub already auto-attaches a
+    # full "Source code (zip)" at the tag and the git tag itself carries
+    # everything (ADRs, user-guide, research). So docs add provenance value
+    # nowhere the zip is consumed; dropping the whole tree (this supersedes the
+    # earlier docs/images/-only rule) keeps the upload at the code+config
+    # baseline.
+    "docs/",
+    # Test sources + their fixtures. `assembleCivRelease` compiles only the
+    # main sourceSet — it never builds src/test or src/androidTest (spotless is
+    # the lone build reference to them and it only runs under the `check` task,
+    # not `assemble`). Excluding them: (1) drops ~5.8 MB, almost all of it the
+    # binary SQLite fixtures under src/test/resources/fixtures/, and (2) scopes
+    # TPP's Fortify scan to the *shipped* code — the test-only findings
+    # (hardcoded test passwords, test SQL strings) no longer clutter the
+    # published security-scan PDF.
+    "app/src/test/",
+    "app/src/androidTest/",
+    # More inputs `assembleCivRelease` never reads (verified: no exec /
+    # commandLine task in any *.gradle references any of them):
+    #   specs/      — speckit planning docs (~1.1 MB of spec/plan/tasks/research)
+    #   scripts/    — dev + build helper scripts; icons ship as pre-rendered
+    #                 PNGs so the build uses those, not the render scripts
+    #   test-data/  — standalone taiwan_cities_coords.csv, unreferenced by any
+    #                 main or test source
+    # All remain in the git tag + GitHub's auto "Source code (zip)"; none is
+    # part of the TPP build input, so none belongs in the curated upload.
+    "specs/",
+    "scripts/",
+    "test-data/",
 )
 EXCLUDE_EXACT: frozenset[str] = frozenset({
     "CLAUDE.md",
+})
+
+# ---------- Exclusion-safety guard data ----------
+# Two failure modes turn a harmless exclusion into a broken TPP build:
+#   (A) the rules drop something `assembleCivRelease` actually needs, or
+#   (B) a new build wiring (exec / apply from / srcDir) starts depending on a
+#       path we exclude.
+# check_exclusions_keep_required_inputs (A) and check_no_build_wiring_into_excluded
+# (B) below catch each, and run on every zip build + in --check-only.
+
+# Paths `assembleCivRelease` needs; the exclusion rules must never drop them.
+# ("file", p) = that exact tracked file must survive. ("glob", p) = at least
+# one tracked file under prefix p must survive.
+REQUIRED_BUILD_INPUTS: tuple[tuple[str, str], ...] = (
+    ("file", "settings.gradle"),
+    ("file", "build.gradle"),
+    ("file", "gradle.properties"),
+    ("file", "gradlew"),
+    ("file", "gradlew.bat"),
+    ("file", "gradle/wrapper/gradle-wrapper.jar"),
+    ("file", "gradle/wrapper/gradle-wrapper.properties"),
+    ("file", "app/build.gradle"),
+    ("file", "app/src/main/AndroidManifest.xml"),
+    ("file", "app/proguard-gradle.txt"),
+    ("glob", "app/src/main/java/"),
+    ("glob", "app/src/main/res/"),
+)
+
+# Known-safe references to an excluded path from an active gradle file. These
+# are in the build script but NOT in the assembleCivRelease task graph, so the
+# exclusion can't break the release build. Each entry is (gradle file relpath,
+# matched token). Anything not listed here trips check_no_build_wiring_into_excluded.
+GRADLE_REF_ALLOWLIST: frozenset[tuple[str, str]] = frozenset({
+    # spotless formats test sources, but spotlessCheck is wired into `check`,
+    # never `assemble` (see app/build.gradle: tasks.named('check')).
+    ("app/build.gradle", "src/test/"),
+    ("app/build.gradle", "src/androidTest/"),
 })
 
 # Anything matching these would indicate a leaked secret. Refuse to ship.
@@ -271,6 +335,87 @@ def check_ndk_version(root: Path) -> Check:
                  f"{v} not in TPP allowlist {TPP_ALLOWED_NDK}")
 
 
+def _is_excluded(path: str) -> bool:
+    """Mirror the strip_dev_tooling() filter: would this repo-relative path be
+    dropped from the zip?"""
+    return path in EXCLUDE_EXACT or any(path.startswith(p) for p in EXCLUDE_PREFIXES)
+
+
+def _active_gradle_files(root: Path) -> list[str]:
+    """The gradle files actually evaluated by the build: the always-active trio
+    plus anything they `apply from`. typst.gradle is deliberately NOT here —
+    nothing applies it, so its docs/ reference can't affect assembleCivRelease.
+    If someone later applies it, it gets pulled in and its references are then
+    scrutinised — which is exactly what we want."""
+    seen: list[str] = [rel for rel in ("settings.gradle", "build.gradle", "app/build.gradle")
+                       if (root / rel).is_file()]
+    i = 0
+    while i < len(seen):
+        text = (root / seen[i]).read_text(encoding="utf-8", errors="replace")
+        for m in re.finditer(r"""apply\s+from\s*:\s*["']([^"']+)["']""", text):
+            target = (m.group(1).replace("${rootDir}/", "").replace("$rootDir/", "")
+                      .lstrip("./"))
+            if target.endswith(".gradle") and target not in seen and (root / target).is_file():
+                seen.append(target)
+        i += 1
+    return seen
+
+
+def _exclusion_ref_tokens(prefix: str) -> set[str]:
+    """Path tokens a gradle file might use to reference `prefix`. app/-rooted
+    prefixes are also written module-relative (app/build.gradle says
+    'src/test/java', not 'app/src/test/java')."""
+    tokens = {prefix}
+    if prefix.startswith("app/"):
+        tokens.add(prefix[len("app/"):])
+    return tokens
+
+
+def check_exclusions_keep_required_inputs(root: Path) -> Check:
+    """(A) Fail if the exclusion rules would drop a file assembleCivRelease needs."""
+    tracked = run(["git", "ls-files"], root).stdout.splitlines()
+    tracked_set = set(tracked)
+    surviving = [p for p in tracked if not _is_excluded(p)]
+    surviving_set = set(surviving)
+    missing: list[str] = []
+    for kind, val in REQUIRED_BUILD_INPUTS:
+        if kind == "file":
+            if val in tracked_set and val not in surviving_set:
+                missing.append(val)
+        else:  # glob: at least one surviving entry under the prefix
+            if any(t.startswith(val) for t in tracked) and \
+                    not any(t.startswith(val) for t in surviving):
+                missing.append(val + "*")
+    if missing:
+        return Check("required build inputs survive exclusion", Check.FAIL,
+                     f"exclusion rules would drop build-critical: {', '.join(missing)}")
+    return Check("required build inputs survive exclusion", Check.PASS,
+                 f"all {len(REQUIRED_BUILD_INPUTS)} build-critical inputs retained")
+
+
+def check_no_build_wiring_into_excluded(root: Path) -> Check:
+    """(B) Fail if an active gradle file wires an excluded path into the build
+    (and it isn't a known-safe, non-assemble reference on the allowlist)."""
+    actives = _active_gradle_files(root)
+    offenders: list[str] = []
+    for rel in actives:
+        lines = (root / rel).read_text(encoding="utf-8", errors="replace").splitlines()
+        for prefix in EXCLUDE_PREFIXES:
+            for token in _exclusion_ref_tokens(prefix):
+                if (rel, token) in GRADLE_REF_ALLOWLIST:
+                    continue
+                for lineno, line in enumerate(lines, 1):
+                    if token in line:
+                        offenders.append(f"{rel}:{lineno} → '{token}' (excluded by '{prefix}')")
+    if offenders:
+        return Check("excluded paths are not build inputs", Check.FAIL,
+                     "; ".join(offenders[:3]) + ("…" if len(offenders) > 3 else "") +
+                     " — remove the dependency, or allowlist it if it's outside "
+                     "the assembleCivRelease task graph")
+    return Check("excluded paths are not build inputs", Check.PASS,
+                 f"no active gradle file ({', '.join(actives)}) wires an excluded path in")
+
+
 STATIC_CHECKS = [
     check_git_clean,
     check_manifest_activity,
@@ -279,6 +424,8 @@ STATIC_CHECKS = [
     check_civ_release_target,
     check_gradle_version,
     check_ndk_version,
+    check_exclusions_keep_required_inputs,
+    check_no_build_wiring_into_excluded,
 ]
 
 
