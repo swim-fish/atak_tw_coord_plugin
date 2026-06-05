@@ -165,7 +165,7 @@ target).
   unchanged (FR-012).
 - **Progress** — `showProgress`/`hideProgress` toggle an
   `offline_address_progress_card`; `postProgress(stage, completed, total)` sets a
-  `ProgressBar` **determinate** only for `Stage.COPYING` / `Stage.BUILDING_INDEX`
+  `ProgressBar` **determinate** only for `Stage.COPYING` / `Stage.BUILDING_RTREE`
   (which carry a percent) and **indeterminate** otherwise (FR-013). The stage
   enum and `renderProgress` text are unchanged. No cancel on a single import
   (none exists); batch cancel keeps its existing flow.

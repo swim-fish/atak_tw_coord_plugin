@@ -216,13 +216,15 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       stateBRemoveBtn.setOnClickListener(v -> safeRun(this::confirmRemove));
     }
     // Feature 008 US5 — failure banner actions: retry re-opens the picker; dismiss hides it.
+    // Reuse the pending expected county (set by a per-county Replace) so retrying a failed/
+    // mismatched Replace stays constrained to that county instead of importing unvalidated.
     if (errorRetry != null) {
       errorRetry.setOnClickListener(
           v ->
               safeRun(
                   () -> {
                     clearError();
-                    launchPicker();
+                    launchPicker(pendingReplaceCounty);
                   }));
     }
     if (errorDismiss != null) {
@@ -436,12 +438,11 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
         addLegend(countyColor(i), nonNull(e.dataset().generator().county()), bytes);
         i++;
       }
-      // Boundary folder folded into the total and the bar as a grey segment (FR-009 / FR-015).
-      long boundary = 0L;
+      // Boundary folder folded into the total and the bar as a grey segment whenever it is
+      // INSTALLED (FR-009 / FR-015) — gate on presence, not size, so a 0-byte / unsized-but-present
+      // boundary still shows (addBarSegment's max(weight,1) keeps it minimally visible).
       if (fileSystem != null && fileSystem.exists(fileSystem.boundaryDbFile())) {
-        boundary = fileSystem.sizeOfDirectory(fileSystem.boundaryDir());
-      }
-      if (boundary > 0) {
+        long boundary = fileSystem.sizeOfDirectory(fileSystem.boundaryDir());
         total += boundary;
         addBarSegment(boundary, OA_BOUNDARY_COLOR);
         addLegend(
@@ -745,8 +746,12 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
             report.skippedCount(),
             report.failedCount());
     if (report.failedCount() > 0) {
-      // Keep the card up on failure so the operator reads the summary.
-      showProgress(summary);
+      // Feature 008 US5 — surface batch failures through the dismissible error banner (with the
+      // "choose file again" retry) instead of leaving only the progress card; the production
+      // import path is the batch coordinator, so without this a corrupt file gives no retry
+      // affordance. The summary line carries the per-status counts.
+      hideProgress();
+      showError(summary);
     } else {
       progressView.setText(summary);
     }

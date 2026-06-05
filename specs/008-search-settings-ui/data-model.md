@@ -83,7 +83,7 @@ colour(row swatch) (FR-010 / SC-004).
 | State | Trigger | UI |
 |---|---|---|
 | idle | no import | progress card hidden, error banner hidden. |
-| in-progress | importer `ProgressListener` | progress card visible; `ProgressBar` **determinate** for `COPYING`/`BUILDING_INDEX`, else **indeterminate**; progress text shown (FR-013). |
+| in-progress | importer `ProgressListener` | progress card visible; `ProgressBar` **determinate** for `COPYING`/`BUILDING_RTREE`, else **indeterminate**; progress text shown (FR-013). |
 | failed | import error | error banner visible (reason + retry + dismiss); installed county list/sizes unchanged (FR-014). |
 
 **Boundary detail row**: retained; shows boundary detail when

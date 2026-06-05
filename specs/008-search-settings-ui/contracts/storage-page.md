@@ -37,7 +37,7 @@ guard).
 - **Given** an import is running, **then** the progress card is visible with the
   existing progress text and a `ProgressBar`.
 - The bar is **determinate** (percent) during `Stage.COPYING` and
-  `Stage.BUILDING_INDEX`, and **indeterminate** during all other stages.
+  `Stage.BUILDING_RTREE`, and **indeterminate** during all other stages.
 - A single import shows no cancel control; batch cancellation continues via the
   existing batch flow.
 

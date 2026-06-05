@@ -446,6 +446,17 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
                         dlg.dismiss();
                       }));
     }
+    // If the chooser is dismissed (Cancel / back / tap-outside) with no district chosen, the scope
+    // radio may already be on 指定鄉鎮 (tapping it is what opened this) — revert to 全部 so the scope
+    // UI matches the actual whole-county state and the chooser can be re-opened. Tapping a cell
+    // sets
+    // chosenDistrict (or runs applyAll) first, so this no-ops on a real pick.
+    dlg.setOnDismissListener(
+        di ->
+            safeRun(
+                () -> {
+                  if (chosenDistrict == null) applyAll();
+                }));
     dlg.show();
   }
 
@@ -504,26 +515,38 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     }
     root.addView(grid);
 
-    new AlertDialog.Builder(atak)
-        .setTitle(ui.getString(R.string.fs_house_dialog_title))
-        .setMessage(ui.getString(R.string.fs_house_dialog_subtitle))
-        .setView(root)
-        .setNeutralButton(
-            ui.getString(R.string.fs_clear),
-            (di, w) ->
-                safeRun(
-                    () -> {
-                      houseNumber.setLength(0);
-                      reflectHouseField();
-                      List<AddressCandidate> r = controller.withHouseNumber("", CANDIDATE_LIMIT);
-                      lastResults =
-                          r == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(r);
-                      renderCandidates(
-                          StreetCandidateRanker.reorder(
-                              lastResults, currentOrdering(), lastFoldedFragment, ""));
-                    }))
-        .setPositiveButton(ui.getString(R.string.fs_done), null) // Done just closes
-        .show();
+    final AlertDialog dlg =
+        new AlertDialog.Builder(atak)
+            .setTitle(ui.getString(R.string.fs_house_dialog_title))
+            .setMessage(ui.getString(R.string.fs_house_dialog_subtitle))
+            .setView(root)
+            // Listeners wired in onShow so Clear can reset WITHOUT dismissing (a plain
+            // setNeutralButton listener auto-dismisses; only Done should close — contract C-FS-5).
+            .setNeutralButton(ui.getString(R.string.fs_clear), null)
+            .setPositiveButton(ui.getString(R.string.fs_done), null) // Done just closes
+            .create();
+    dlg.setOnShowListener(
+        di -> {
+          Button clear = dlg.getButton(AlertDialog.BUTTON_NEUTRAL);
+          if (clear == null) return;
+          clear.setOnClickListener(
+              v ->
+                  safeRun(
+                      () -> {
+                        houseNumber.setLength(0);
+                        display.setText(
+                            houseNumber.toString()); // keep the in-dialog display in sync
+                        reflectHouseField();
+                        List<AddressCandidate> r = controller.withHouseNumber("", CANDIDATE_LIMIT);
+                        lastResults =
+                            r == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(r);
+                        renderCandidates(
+                            StreetCandidateRanker.reorder(
+                                lastResults, currentOrdering(), lastFoldedFragment, ""));
+                        // intentionally NOT dismissing — the keypad stays open after Clear
+                      }));
+        });
+    dlg.show();
   }
 
   /** House-number field text: empty → hint; otherwise the number. */

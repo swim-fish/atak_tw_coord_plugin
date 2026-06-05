@@ -200,12 +200,20 @@
                 android:orientation="horizontal"
                 android:background="@drawable/oa_usage_track_bg" />
 
-            <LinearLayout
-                android:id="@+id/offline_address_usage_legend"
+            <!-- Legend wrapped in a horizontal scroller so many counties' entries stay readable
+                 (scroll instead of being clipped off the right edge). -->
+            <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:orientation="horizontal" />
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/offline_address_usage_legend"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
         </LinearLayout>
 
         <!-- Per-county list container (B row template inflated per county). -->

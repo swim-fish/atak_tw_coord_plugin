@@ -32,7 +32,7 @@ them against the shipped code seams and the ATAK SDK sample dialog patterns.
    boundary layer) with a colour **legend**, **compact county rows** whose
    per-row **replace/remove** actions move into an overflow (⋮) `PopupMenu`, an
    **import-in-progress card** with a `ProgressBar` (determinate during
-   COPYING / BUILDING_INDEX, indeterminate otherwise), and a dismissible
+   COPYING / BUILDING_RTREE, indeterminate otherwise), and a dismissible
    **failure banner** (retry = re-open picker / dismiss). The importer,
    `ActiveDatasetRegistry`, `FileSystem.sizeOfDirectory/activeCountyDir/
    boundaryDir/boundaryDbFile`, and the existing `confirmReplaceCounty` /
@@ -186,7 +186,7 @@ the project's plan-phase discipline — `javap -public` of
 - **R6** — Overflow menu + progress/error cards: per-row `PopupMenu` (remove
   styled destructive via `SpannableString`+`ForegroundColorSpan`) delegating to
   the existing confirm flows; `ProgressBar` determinate only for COPYING /
-  BUILDING_INDEX stages; failure banner leaves installed data untouched.
+  BUILDING_RTREE stages; failure banner leaves installed data untouched.
 
 ## Phase 1 — Design & Contracts
 
