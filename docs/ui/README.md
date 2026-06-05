@@ -19,7 +19,14 @@ later polish pass.
   feature 003 ATAK-picker delegation button).
 - `offline-address-page.md` — the Offline Address `DropDownReceiver`
   (feature 004): State A (empty) / State B (active dataset), the
-  Import / Replace / Remove flows, and the inline-error matrix.
+  Import / Replace / Remove flows, and the inline-error matrix; the
+  feature-008 storage-dashboard redesign (usage bar/legend, ⋮ overflow,
+  progress/error cards) and its localisation fix.
+- `forward-search-page.md` — the TW Addr Search `DropDownReceiver`
+  (feature 006): the county → 鄉鎮市區 → street → house-number funnel,
+  the result-order toggle (feature 007), and the feature-008 redesign
+  (segmented scope control + on-demand district / house-number dialogs,
+  county-list missing-data ⚠, county-only chip).
 
 ## Contribution rules
 

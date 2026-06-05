@@ -47,6 +47,20 @@ lower visual weight than the coordinate row's white. The colour is the
 same regardless of the underlying coordinate-row state so the operator
 reads the address as a single contextual line, not as an alert.
 
+### Direction arrow prefix (ADR-0020 F6, since v1.3.0)
+
+A `Text` row now prefixes an **8-point compass arrow** (↑ N, ↗ NE, → E,
+↘ SE, ↓ S, ↙ SW, ← W, ↖ NW) pointing from the anchor's query point to the
+resolved nearest record, so the operator can tell which way the actual
+address point lies (e.g. `↗ 台中市西區…`). The bearing
+(`CompassDirection.bearingDegrees`) is quantised to the nearest of 8 fixed
+glyphs (`CompassDirection.arrowGlyph`) because a plain ATAK `TextWidget`
+can't rotate a glyph the way the forward-search list does. The arrow is
+**omitted when the record is within 3 m** of the query point (no
+meaningful direction) and **precedes** the existing `~` / `~~` confidence
+marker. Applies to all three rows (MAP / ME / TGT); each uses its own
+anchor as the query point.
+
 Per-row gating rules (`contracts/address-resolver.md § State derivation`):
 
 | Toggle | Dataset active | Coord state | Address state |
@@ -143,3 +157,4 @@ _TODO — capture during US2/US3 device acceptance walk (T044 / T057) and embed:
 - Contracts: `contracts/widget-overlay.md` (feature 001), `specs/004-offline-address/contracts/widget-address-rows.md`, `contracts/address-resolver.md`.
 - ADR-0002 (TDAL not used — single in-plugin render path).
 - ADR-0014 (feature 004 reconnaissance; R7 widget integration + R15 coverage-gap honesty rule).
+- ADR-0020 F6 (v1.3.0 — the 8-point compass arrow prefix on the resolved address row).

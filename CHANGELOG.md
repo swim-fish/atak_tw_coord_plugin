@@ -5,6 +5,45 @@ loosely based on [Keep a Changelog](https://keepachangelog.com/); the project
 follows Semantic Versioning. Per-feature design records live under
 [`docs/adr/`](docs/adr/); per-feature specs under [`specs/`](specs/).
 
+## [1.3.0] — 2026-06-05 — Search & storage page UI redesign (feature 008)
+
+### Changed
+- **TW Addr Search — township & house-number redesign.** The always-visible
+  township `GridLayout` is replaced by an **All / District** segmented scope
+  control plus an on-demand district chooser dialog; the always-visible numeric
+  keypad is replaced by an on-demand house-number keypad dialog. After a county is
+  chosen the scope defaults to whole-county, so an operator who knows only a street
+  can search immediately. Same search results, ranking, and GoTo as before.
+- **TW Offline Addr — storage dashboard redesign.** State B now shows a total
+  on-disk figure, a single stacked usage bar (one weighted segment per county plus
+  a grey boundary segment) and a colour legend, compact per-county rows whose
+  Replace / Remove actions collapse into a per-row ⋮ overflow menu, an
+  import-in-progress card with a progress bar (determinate during copy /
+  index-build), and a dismissible failure banner with retry / dismiss. Import /
+  registry / sizing behaviour is unchanged.
+- **On-map address row gains a direction arrow.** The reverse-resolved address row
+  (MAP / ME / TGT) prefixes an 8-point compass arrow (↑↗→↘↓↙←↖) pointing from the
+  query point to the nearest record, omitted within 3 m, before the existing
+  `~` / `~~` confidence marker.
+
+### Fixed
+- **Scope segmented control showed no selected state** — the 全部 / 指定鄉鎮 radios
+  use a drawable that reacts to `state_selected`, not `state_checked`; the active
+  scope now highlights (and the district dialog marks the current pick).
+- **地圖中心 / 所在地 didn't surface the resolved 鄉鎮市區** — they now auto-select the
+  resolved district (falling back to whole-county) so the district button + scope
+  update visibly.
+- **County list gave no missing-data hint** — counties without an installed dataset
+  are marked with ⚠ and dimmed in the 清單… grid.
+- **County chip showed county + district** — it is now county-only.
+- **TW Offline Addr ignored the in-app UI-language override** — the storage page now
+  takes a localised-context supplier and re-inflates on a language change, so its
+  strings (import / replace / remove, total-usage figure, `_boundary` row, overflow
+  menu, legend) follow the selected language like the forward-search page.
+
+See [ADR-0020](docs/adr/0020-search-settings-ui-redesign.md) (decisions D1–D6 plus
+device fixes F1–F6) and `specs/008-search-settings-ui/`.
+
 ## [1.2.1] — 2026-05-31 — TW Addr Search bug fixes
 
 ### Fixed

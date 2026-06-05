@@ -1,5 +1,6 @@
 package com.atakmap.android.twcoord.address;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.view.Gravity;
@@ -10,6 +11,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import com.atakmap.android.dropdown.DropDown.OnStateListener;
 import com.atakmap.android.dropdown.DropDownReceiver;
@@ -74,13 +78,20 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private Button btnReset;
   private GridLayout countyList;
   private TextView districtLabel;
-  private GridLayout districtList;
+  // Feature 008 — segmented scope control (全部 / 指定鄉鎮) + on-demand district button,
+  // replacing the always-visible district GridLayout.
+  private View scopeRow;
+  private RadioGroup scopeGroup;
+  private RadioButton scopeAll;
+  private RadioButton scopeSpecific;
+  private Button btnDistrict;
   private TextView streetLabel;
   private LinearLayout streetRow;
   private EditText streetInput;
   private Button btnSearch;
-  private TextView houseValue;
-  private GridLayout keypad;
+  // Feature 008 — house-number field (opens a numeric-keypad AlertDialog), replacing the
+  // always-visible keypad GridLayout.
+  private Button houseField;
   private TextView emptyState;
   private LinearLayout candidateList;
   private Button btnGoto;
@@ -101,10 +112,8 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private java.util.List<AddressCandidate> lastResults = new java.util.ArrayList<>();
   private String lastFoldedFragment = "";
 
-  // District cells from the last onCountyChosen() render, so a 地圖中心 / 所在地 tap can auto-select
-  // the resolved district (or re-select 全部).
-  private TextView districtAllCell;
-  private final java.util.Map<String, TextView> districtCells = new java.util.HashMap<>();
+  // Feature 008 — the currently selected 鄉鎮市區; null = 全部 (whole-county scope).
+  private String chosenDistrict;
 
   // Map-follow: while the page is open and the county is still map-driven, re-seed the funnel when
   // the map settles over a NEW county. Detached on close.
@@ -151,13 +160,16 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     btnReset = view.findViewById(R.id.fs_btn_reset);
     countyList = view.findViewById(R.id.fs_county_list);
     districtLabel = view.findViewById(R.id.fs_stage_district_label);
-    districtList = view.findViewById(R.id.fs_district_list);
+    scopeRow = view.findViewById(R.id.fs_scope_row);
+    scopeGroup = view.findViewById(R.id.fs_scope_group);
+    scopeAll = view.findViewById(R.id.fs_scope_all);
+    scopeSpecific = view.findViewById(R.id.fs_scope_specific);
+    btnDistrict = view.findViewById(R.id.fs_btn_district);
     streetLabel = view.findViewById(R.id.fs_stage_street_label);
     streetRow = view.findViewById(R.id.fs_street_row);
     streetInput = view.findViewById(R.id.fs_street_input);
     btnSearch = view.findViewById(R.id.fs_btn_search);
-    houseValue = view.findViewById(R.id.fs_house_value);
-    keypad = view.findViewById(R.id.fs_keypad);
+    houseField = view.findViewById(R.id.fs_house_field);
     emptyState = view.findViewById(R.id.fs_empty_state);
     candidateList = view.findViewById(R.id.fs_candidate_list);
     btnGoto = view.findViewById(R.id.fs_btn_goto);
@@ -166,7 +178,6 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     btnOrderDistance = view.findViewById(R.id.fs_btn_order_distance);
 
     wireStaticButtons();
-    buildKeypad();
   }
 
   // ----------------------------------------------------------------------
@@ -283,6 +294,10 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     btnSearch.setOnClickListener(v -> safeRun(this::runSearch));
     btnGoto.setOnClickListener(v -> safeRun(() -> panTo(selected)));
     if (btnReset != null) btnReset.setOnClickListener(v -> safeRun(this::resetFunnel));
+    // Feature 008 — scope segmented control + on-demand district / house-number dialogs.
+    wireScopeListener();
+    if (btnDistrict != null) btnDistrict.setOnClickListener(v -> safeRun(this::showDistrictDialog));
+    if (houseField != null) houseField.setOnClickListener(v -> safeRun(this::showHouseDialog));
     if (btnOrderSimilar != null) {
       btnOrderSimilar.setOnClickListener(
           v -> safeRun(() -> onOrderingChosen(ResultOrdering.MOST_SIMILAR)));
@@ -291,6 +306,256 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
       btnOrderDistance.setOnClickListener(
           v -> safeRun(() -> onOrderingChosen(ResultOrdering.DISTANCE)));
     }
+  }
+
+  // ----------------------------------------------------------------------
+  // Feature 008 — scope control + on-demand district / house-number dialogs
+  // ----------------------------------------------------------------------
+
+  /** (Re)attach the scope listener; centralised so programmatic check() can detach it first. */
+  private void wireScopeListener() {
+    if (scopeGroup != null) {
+      scopeGroup.setOnCheckedChangeListener((g, id) -> safeRun(() -> onScopeChanged(id)));
+    }
+  }
+
+  private void onScopeChanged(int id) {
+    if (controller == null) return;
+    if (id == R.id.fs_scope_specific) {
+      // No district chosen yet → open the chooser straight away rather than leave the
+      // operator on an empty "District" scope.
+      if (chosenDistrict == null) showDistrictDialog();
+      else applySpecific(chosenDistrict);
+    } else {
+      applyAll();
+    }
+  }
+
+  /** Set the scope radio WITHOUT firing onScopeChanged (avoids listener re-entrancy). */
+  private void checkScopeSilently(int id) {
+    if (scopeGroup == null) return;
+    scopeGroup.setOnCheckedChangeListener(null);
+    scopeGroup.check(id);
+    wireScopeListener();
+    reflectScopeButtons(id == R.id.fs_scope_all);
+  }
+
+  /**
+   * Mirror the checked scope onto the segmented buttons' {@code selected} state. The shared {@code
+   * fs_grid_cell_bg} reacts to {@code state_selected} (not {@code state_checked}), so without this
+   * the 全部 / 指定鄉鎮 buttons look identical whichever is active — the operator can't tell which scope
+   * is selected.
+   */
+  private void reflectScopeButtons(boolean all) {
+    if (scopeAll != null) scopeAll.setSelected(all);
+    if (scopeSpecific != null) scopeSpecific.setSelected(!all);
+  }
+
+  /** Apply whole-county scope: no district, query the whole county. */
+  private void applyAll() {
+    if (controller == null) return;
+    chosenDistrict = null;
+    if (btnDistrict != null) {
+      btnDistrict.setEnabled(false);
+      btnDistrict.setText(wholeCountyLabel());
+    }
+    checkScopeSilently(R.id.fs_scope_all);
+    onAllDistrictsChosen();
+  }
+
+  /** Apply a specific 鄉鎮市區. */
+  private void applySpecific(String name) {
+    if (controller == null || name == null) return;
+    chosenDistrict = name;
+    if (btnDistrict != null) {
+      btnDistrict.setEnabled(true);
+      btnDistrict.setText(name);
+    }
+    checkScopeSilently(R.id.fs_scope_specific);
+    controller.chooseDistrict(name);
+    revealStreetStage();
+  }
+
+  private String wholeCountyLabel() {
+    return pluginContext.getString(R.string.fs_district_whole_county);
+  }
+
+  private String safeCounty() {
+    return controller != null && controller.state() != null && controller.state().county() != null
+        ? controller.state().county()
+        : "";
+  }
+
+  /**
+   * The 鄉鎮市區 chooser — a glove-friendly 3-column grid (plus a 全部 cell) in a scrollable {@link
+   * AlertDialog}. Built with the ATAK Activity context (window token) while views/strings resolve
+   * against the plugin context (ADR-0003 / contract dialog-context.md), so it appears reliably on
+   * device instead of throwing {@code BadTokenException}.
+   */
+  private void showDistrictDialog() {
+    if (controller == null) return;
+    List<String> districts = controller.districts();
+    if (districts == null || districts.isEmpty()) return;
+
+    Context ui = pluginContext; // resources / strings
+    Context atak = getMapView().getContext(); // dialog window token
+    float d = ui.getResources().getDisplayMetrics().density;
+
+    GridLayout grid = new GridLayout(ui);
+    grid.setColumnCount(3);
+    int pad = (int) (8 * d);
+    grid.setPadding(pad, pad, pad, pad);
+
+    String suggested = controller.suggestedDistrict();
+    TextView all = gridCell(ui.getString(R.string.fs_district_all), null);
+    // Highlight the currently-active choice so re-opening shows the current pick (全部 vs a
+    // district).
+    all.setSelected(chosenDistrict == null);
+    grid.addView(all);
+    for (String dd : districts) {
+      TextView cell = gridCell((dd.equals(suggested) ? "▶ " : "") + dd, null);
+      cell.setSelected(dd.equals(chosenDistrict));
+      grid.addView(cell);
+    }
+
+    ScrollView sv = new ScrollView(ui);
+    sv.addView(grid);
+
+    final AlertDialog dlg =
+        new AlertDialog.Builder(atak)
+            .setTitle(ui.getString(R.string.fs_district_choose_title) + "（" + safeCounty() + "）")
+            .setView(sv)
+            .setNegativeButton(ui.getString(R.string.fs_cancel), null)
+            .create();
+
+    all.setOnClickListener(
+        v ->
+            safeRun(
+                () -> {
+                  applyAll();
+                  dlg.dismiss();
+                }));
+    for (int i = 0; i < districts.size(); i++) {
+      final String name = districts.get(i);
+      grid.getChildAt(i + 1)
+          .setOnClickListener(
+              v ->
+                  safeRun(
+                      () -> {
+                        applySpecific(name);
+                        dlg.dismiss();
+                      }));
+    }
+    // If the chooser is dismissed (Cancel / back / tap-outside) with no district chosen, the scope
+    // radio may already be on 指定鄉鎮 (tapping it is what opened this) — revert to 全部 so the scope
+    // UI matches the actual whole-county state and the chooser can be re-opened. Tapping a cell
+    // sets
+    // chosenDistrict (or runs applyAll) first, so this no-ops on a real pick.
+    dlg.setOnDismissListener(
+        di ->
+            safeRun(
+                () -> {
+                  if (chosenDistrict == null) applyAll();
+                }));
+    dlg.show();
+  }
+
+  /**
+   * The house-number numeric keypad — built fresh per open in an {@link AlertDialog} (digits + 巷 /
+   * 弄 / 號 / 之 / ⌫) with a live display. Each key routes through {@link #onKeypad} (which re-queries
+   * the candidate list); Clear empties it and Done dismisses. Same cross-context rule as {@link
+   * #showDistrictDialog}.
+   */
+  private void showHouseDialog() {
+    if (controller == null) return;
+    Context ui = pluginContext;
+    Context atak = getMapView().getContext();
+    float d = ui.getResources().getDisplayMetrics().density;
+
+    LinearLayout root = new LinearLayout(ui);
+    root.setOrientation(LinearLayout.VERTICAL);
+    int p = (int) (12 * d);
+    root.setPadding(p, p, p, p);
+
+    final TextView display = new TextView(ui);
+    display.setTextSize(26f);
+    display.setTextColor(0xFFFFFFFF);
+    display.setMinHeight((int) (50 * d));
+    display.setGravity(Gravity.CENTER_VERTICAL);
+    display.setText(houseNumber.toString());
+    root.addView(display);
+
+    GridLayout grid = new GridLayout(ui);
+    grid.setColumnCount(3);
+    String[] keys = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "巷", "0", "弄", "號", "之", "⌫"};
+    for (String k : keys) {
+      final String key = k;
+      Button b = new Button(ui);
+      b.setText(key);
+      b.setTextSize(20f);
+      b.setTextColor(0xFFFFFFFF);
+      b.setBackgroundResource(R.drawable.fs_grid_cell_bg);
+      b.setStateListAnimator(null);
+      GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
+      lp.width = 0;
+      lp.height = (int) (56 * d);
+      lp.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
+      int m = (int) (2 * d);
+      lp.setMargins(m, m, m, m);
+      b.setLayoutParams(lp);
+      b.setOnClickListener(
+          v ->
+              safeRun(
+                  () -> {
+                    onKeypad(key);
+                    display.setText(houseNumber.toString());
+                    reflectHouseField();
+                  }));
+      grid.addView(b);
+    }
+    root.addView(grid);
+
+    final AlertDialog dlg =
+        new AlertDialog.Builder(atak)
+            .setTitle(ui.getString(R.string.fs_house_dialog_title))
+            .setMessage(ui.getString(R.string.fs_house_dialog_subtitle))
+            .setView(root)
+            // Listeners wired in onShow so Clear can reset WITHOUT dismissing (a plain
+            // setNeutralButton listener auto-dismisses; only Done should close — contract C-FS-5).
+            .setNeutralButton(ui.getString(R.string.fs_clear), null)
+            .setPositiveButton(ui.getString(R.string.fs_done), null) // Done just closes
+            .create();
+    dlg.setOnShowListener(
+        di -> {
+          Button clear = dlg.getButton(AlertDialog.BUTTON_NEUTRAL);
+          if (clear == null) return;
+          clear.setOnClickListener(
+              v ->
+                  safeRun(
+                      () -> {
+                        houseNumber.setLength(0);
+                        display.setText(
+                            houseNumber.toString()); // keep the in-dialog display in sync
+                        reflectHouseField();
+                        List<AddressCandidate> r = controller.withHouseNumber("", CANDIDATE_LIMIT);
+                        lastResults =
+                            r == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(r);
+                        renderCandidates(
+                            StreetCandidateRanker.reorder(
+                                lastResults, currentOrdering(), lastFoldedFragment, ""));
+                        // intentionally NOT dismissing — the keypad stays open after Clear
+                      }));
+        });
+    dlg.show();
+  }
+
+  /** House-number field text: empty → hint; otherwise the number. */
+  private void reflectHouseField() {
+    if (houseField == null) return;
+    houseField.setText(
+        houseNumber.length() == 0
+            ? pluginContext.getString(R.string.fs_house_hint)
+            : houseNumber.toString());
   }
 
   /** Current ordering preference; defaults to DISTANCE when no PreferenceStore is wired (tests). */
@@ -327,7 +592,7 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private void resetFunnel() {
     if (streetInput != null) streetInput.setText("");
     houseNumber.setLength(0);
-    if (houseValue != null) houseValue.setText("");
+    reflectHouseField();
     // startSession() rebuilds the controller, re-seeds the county from the map centre, and hides
     // every downstream stage — exactly the "start over" state.
     startSession();
@@ -341,34 +606,21 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     if (loc.county() == null) return; // offshore — leave as-is
     // Re-point the distance anchor to the tapped reference (地圖中心 / 所在地) so subsequent candidate
     // distances are measured from here, not the session-start position.
-    boolean wasAll = controller.isAllDistricts(); // chooseCounty resets this — capture first
     controller.setAnchor(lat, lon);
     controller.chooseCounty(loc.county(), source);
     renderCountyChip();
     onCountyChosen();
-    if (wasAll) {
-      // 全部 was selected — keep whole-county mode, don't switch to the resolved district.
-      selectAllDistrictsCell();
-    } else {
-      // Auto-select the district the coordinate falls in, if this county has it (FR: 地圖中心 →
-      // pre-pick the district so the operator drops straight to the street stage).
-      autoSelectDistrict(loc.district());
-    }
+    // 地圖中心 / 所在地 surface the resolved 鄉鎮市區: auto-select it so the district button + the
+    // 指定鄉鎮 scope visibly reflect where the point landed (and distances anchor there). Falls back
+    // to whole-county when the point's district can't be resolved in this county.
+    autoSelectDistrict(loc.district());
   }
 
-  /** Programmatically pick {@code district} (as if tapped), if it exists in the current grid. */
+  /** Programmatically pick {@code district} via the scope control, if this county has it. */
   private void autoSelectDistrict(String district) {
-    TextView cell = district == null ? null : districtCells.get(district);
-    if (cell == null) return; // coordinate's district isn't in this county / unresolved
-    markSelected(districtList, cell);
-    onDistrictChosen(district);
-  }
-
-  /** Re-select the 全部 cell (as if tapped). */
-  private void selectAllDistrictsCell() {
-    if (districtAllCell == null) return;
-    markSelected(districtList, districtAllCell);
-    onAllDistrictsChosen();
+    if (controller == null) return;
+    if (district != null && controller.districts().contains(district)) applySpecific(district);
+    else applyAll(); // coordinate's district isn't in this county / unresolved → whole-county
   }
 
   // ----------------------------------------------------------------------
@@ -426,13 +678,30 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     onCountyChosen();
   }
 
+  /** The set of counties that have an installed place dataset (registry snapshot keys). */
+  private java.util.Set<String> countiesWithData() {
+    ActiveDatasetRegistry reg = safeGet(registrySupplier);
+    if (reg == null) return java.util.Collections.emptySet();
+    try {
+      return new java.util.HashSet<>(reg.snapshot().keySet());
+    } catch (Throwable t) {
+      Log.w(TAG, "countiesWithData threw", t);
+      return java.util.Collections.emptySet();
+    }
+  }
+
   private void showCountyList() {
     if (controller == null) return;
     countyList.removeAllViews();
     List<String> counties = controller.countyList();
+    // Counties with an installed place dataset can actually be searched; the rest only have the
+    // boundary layer, so mark them with a missing-data glyph (⚠) and dim them as a hint.
+    java.util.Set<String> withData = countiesWithData();
     for (String cc : counties) {
       final String c = cc;
-      TextView cell = gridCell(c, null);
+      boolean hasData = withData.contains(c);
+      TextView cell = gridCell(hasData ? c : c + " ⚠", null);
+      if (!hasData) cell.setAlpha(0.55f);
       cell.setOnClickListener(
           v ->
               safeRun(
@@ -451,54 +720,19 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private void onCountyChosen() {
     countyList.setVisibility(View.GONE);
     districtLabel.setVisibility(View.VISIBLE);
-    districtList.removeAllViews();
-    districtCells.clear();
-    districtAllCell = null;
-    List<String> districts = controller.districts();
-    String suggested = controller.suggestedDistrict();
-    // "全部" — search the whole county when the operator doesn't know the 鄉鎮市區.
-    if (!districts.isEmpty()) {
-      TextView allCell = gridCell(pluginContext.getString(R.string.fs_district_all), null);
-      allCell.setOnClickListener(
-          v ->
-              safeRun(
-                  () -> {
-                    markSelected(districtList, allCell);
-                    onAllDistrictsChosen();
-                  }));
-      districtList.addView(allCell);
-      districtAllCell = allCell;
+    if (scopeRow != null) scopeRow.setVisibility(View.VISIBLE);
+    // Default to 全部 (whole county): once a county is chosen the operator can search a street
+    // immediately, since they often don't know the 鄉鎮市區 (feature 008 US1).
+    chosenDistrict = null;
+    if (btnDistrict != null) {
+      btnDistrict.setEnabled(false);
+      btnDistrict.setText(wholeCountyLabel());
     }
-    for (String dd : districts) {
-      final String d = dd;
-      boolean isSuggested = d.equals(suggested);
-      TextView cell = gridCell((isSuggested ? "▶ " : "") + d, null);
-      cell.setOnClickListener(
-          v ->
-              safeRun(
-                  () -> {
-                    markSelected(districtList, cell);
-                    onDistrictChosen(d);
-                  }));
-      districtList.addView(cell);
-      districtCells.put(d, cell);
-    }
-    districtList.setVisibility(districts.isEmpty() ? View.GONE : View.VISIBLE);
-    // hide stages 3/4 until a district is picked
-    streetLabel.setVisibility(View.GONE);
-    streetRow.setVisibility(View.GONE);
-    houseValue.setVisibility(View.GONE);
-    keypad.setVisibility(View.GONE);
-    candidateList.removeAllViews();
-    emptyState.setVisibility(View.GONE);
-    if (orderingRow != null) orderingRow.setVisibility(View.GONE);
-    lastResults.clear();
-    lastFoldedFragment = "";
-    btnGoto.setVisibility(View.GONE);
-  }
-
-  private void onDistrictChosen(String district) {
-    controller.chooseDistrict(district);
+    checkScopeSilently(R.id.fs_scope_all);
+    if (houseField != null) houseField.setVisibility(View.GONE);
+    // chooseAllDistricts() + revealStreetStage() drop straight to the street stage and reset
+    // every downstream control (candidate list, ordering, GoTo).
+    controller.chooseAllDistricts();
     revealStreetStage();
   }
 
@@ -510,6 +744,8 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private void revealStreetStage() {
     streetLabel.setVisibility(View.VISIBLE);
     streetRow.setVisibility(View.VISIBLE);
+    // House-number field stays hidden until a street search produces results (feature 008 FR-007).
+    if (houseField != null) houseField.setVisibility(View.GONE);
     candidateList.removeAllViews();
     emptyState.setVisibility(View.GONE);
     if (orderingRow != null) orderingRow.setVisibility(View.GONE);
@@ -521,7 +757,7 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private void runSearch() {
     if (controller == null) return;
     houseNumber.setLength(0);
-    houseValue.setText("");
+    reflectHouseField();
     String fragment = streetInput.getText() == null ? "" : streetInput.getText().toString();
     lastFoldedFragment = StreetTextNormaliser.fold(fragment);
     List<AddressCandidate> results = controller.search(fragment, CANDIDATE_LIMIT);
@@ -531,9 +767,8 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     // searches). No house number yet — pass blank so MOST_SIMILAR ranks on the street alone.
     renderCandidates(
         StreetCandidateRanker.reorder(lastResults, currentOrdering(), lastFoldedFragment, ""));
-    // Reveal the house-number keypad once a street search has run.
-    houseValue.setVisibility(View.VISIBLE);
-    keypad.setVisibility(View.VISIBLE);
+    // Reveal the house-number field once a street search has run; it opens the keypad dialog.
+    if (houseField != null) houseField.setVisibility(View.VISIBLE);
   }
 
   private void renderCandidates(List<AddressCandidate> results) {
@@ -643,34 +878,9 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
 
   // ----------------------------------------------------------------------
   // Numeric keypad (FR-016: large digit buttons, no system IME)
+  // Feature 008 — the keypad is built per-open inside showHouseDialog(); onKeypad only mutates
+  // houseNumber and re-queries, leaving the dialog's display + the field to reflectHouseField().
   // ----------------------------------------------------------------------
-
-  private void buildKeypad() {
-    // 3-column grid. Digits + 之 (the - separator) plus 巷/弄/號 so a glove operator can narrow an
-    // address tail like "30巷5弄7號" without summoning the system IME (the filter matches these
-    // against the full display name, see ForwardSearchController.withHouseNumber).
-    String[] keys = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "巷", "0", "弄", "號", "之", "⌫"};
-    float d = pluginContext.getResources().getDisplayMetrics().density;
-    for (String k : keys) {
-      Button b = new Button(pluginContext);
-      b.setText(k);
-      b.setTextSize(20f);
-      b.setTextColor(0xFFFFFFFF);
-      // Explicit dark cell background so white digits are legible — the platform Button background
-      // is light in ATAK's theme, which washed the white text out. Matches the grid cells.
-      b.setBackgroundResource(R.drawable.fs_grid_cell_bg);
-      b.setStateListAnimator(null); // drop the material elevation shadow on the flat cell bg
-      GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
-      lp.width = 0;
-      lp.height = (int) (56 * d);
-      lp.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
-      int m = (int) (2 * d);
-      lp.setMargins(m, m, m, m);
-      b.setLayoutParams(lp);
-      b.setOnClickListener(v -> safeRun(() -> onKeypad(k)));
-      keypad.addView(b);
-    }
-  }
 
   private void onKeypad(String k) {
     if (controller == null) return;
@@ -679,7 +889,6 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     } else {
       houseNumber.append(k);
     }
-    houseValue.setText(houseNumber.toString());
     List<AddressCandidate> results =
         controller.withHouseNumber(houseNumber.toString(), CANDIDATE_LIMIT);
     lastResults =
@@ -698,14 +907,9 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private void renderCountyChip() {
     String county =
         controller != null && controller.state() != null ? controller.state().county() : null;
-    if (county == null) {
-      countyChip.setText(R.string.fs_county_none);
-      return;
-    }
-    String district = controller.suggestedDistrict();
-    countyChip.setText(
-        pluginContext.getString(
-            R.string.fs_county_confirm_format, county, district == null ? "" : district));
+    // Show the county only (no 鄉鎮市區): the resolved district is surfaced on the district button
+    // / scope control instead, and operators asked the chip to stay at county level.
+    countyChip.setText(county == null ? pluginContext.getString(R.string.fs_county_none) : county);
   }
 
   /**
@@ -754,11 +958,10 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     }
     countyList.setVisibility(View.GONE);
     districtLabel.setVisibility(View.GONE);
-    districtList.setVisibility(View.GONE);
+    if (scopeRow != null) scopeRow.setVisibility(View.GONE);
     streetLabel.setVisibility(View.GONE);
     streetRow.setVisibility(View.GONE);
-    houseValue.setVisibility(View.GONE);
-    keypad.setVisibility(View.GONE);
+    if (houseField != null) houseField.setVisibility(View.GONE);
     candidateList.removeAllViews();
     emptyState.setVisibility(View.GONE);
     if (orderingRow != null) orderingRow.setVisibility(View.GONE);

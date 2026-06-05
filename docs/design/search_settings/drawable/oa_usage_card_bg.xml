@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 卡片底：半透明白填色 + 細邊框 + 圓角（對應搜尋頁 T.card / T.cardBorder）。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#09FFFFFF" />
+    <stroke android:width="1dp" android:color="#12FFFFFF" />
+    <corners android:radius="10dp" />
+</shape>

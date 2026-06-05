@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「基礎資料」區塊底：虛線框 + 極淡填色，讀起來像次級區塊而非 debug 文字行。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#06FFFFFF" />
+    <stroke android:width="1dp" android:color="#1FFFFFFF" android:dashWidth="4dp" android:dashGap="3dp" />
+    <corners android:radius="10dp" />
+</shape>

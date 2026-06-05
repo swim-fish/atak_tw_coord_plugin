@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Feature 008 — compact per-county row template (replaces the feature 005 row).
-  Changes:
-    * Left colour bar offline_address_county_color (colour set by the receiver per
-      index, matching the top usage bar).
-    * Name + small "data date · rows" on two lines; size moves to its own
-      right-aligned TextView.
-    * The former REPLACE / REMOVE buttons collapse into one overflow control
-      (offline_address_county_overflow); the receiver raises a PopupMenu
-      ("Replace… / Remove").
-    * 1dp bottom divider (the receiver hides it on the last row).
-  Pure Android widgets (ADR-0009 D6).
+  B 案 — 每縣市「緊湊條列」row template（取代原 offline_address_county_row.xml）。
+  改動：
+    • 左側色條 offline_address_county_color（顏色由 receiver 依索引指定，對應頂部容量長條）。
+    • 名稱 + 小字「資料日期 · 筆數」分兩行；容量移到右側獨立 TextView。
+    • 原本 REPLACE / REMOVE 兩顆按鈕 → 收成一顆 ⋮ overflow（offline_address_county_overflow），
+      receiver 用 PopupMenu 帶出「取代… / 移除」。
+    • 底部 1dp 分隔線（最後一列由 receiver 隱藏）。
+  純 Android widget（ADR-0009 D6）。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -47,8 +44,7 @@
                 android:textStyle="bold"
                 android:textColor="#FFFFFF" />
 
-            <!-- Small print: data date · rows (size moved to the right). The id is
-                 unchanged; its meaning becomes the date/rows sub-line. -->
+            <!-- 小字：資料日期 · 筆數（容量改放右側）。沿用既有 id 不變，語意改為 sub。 -->
             <TextView
                 android:id="@+id/offline_address_county_summary"
                 android:layout_width="wrap_content"
@@ -68,7 +64,7 @@
             android:textColor="#BFBFBF"
             android:singleLine="true" />
 
-        <!-- Overflow -> PopupMenu (Replace… / Remove). Text "⋮" avoids an extra drawable. -->
+        <!-- ⋮ overflow → PopupMenu（取代… / 移除）。Button 用文字 ⋮，免額外 drawable 依賴。 -->
         <Button
             android:id="@+id/offline_address_county_overflow"
             android:layout_width="44dp"
@@ -81,7 +77,7 @@
             android:text="⋮" />
     </LinearLayout>
 
-    <!-- divider; the receiver sets the last row to GONE -->
+    <!-- divider；最後一列 receiver 設為 GONE -->
     <View
         android:id="@+id/offline_address_county_divider"
         android:layout_width="match_parent"

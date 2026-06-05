@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Feature 006 forward-search page — feature 008 "compact single-row" redesign.
-  Key changes vs. the original layout:
-    * District: the inline fs_district_list GridLayout is removed. Replaced by a
-      [All | District] segmented RadioGroup plus one fs_btn_district button;
-      tapping fs_btn_district (when District scope is selected) raises an
-      AlertDialog containing the township GridLayout (built in code). Default
-      scope is "All" -> once a county is chosen the operator can search a street
-      immediately.
-    * House number: the inline fs_house_value + fs_keypad GridLayout are removed.
-      Replaced by a single fs_house_field button that raises a numeric-keypad
-      AlertDialog (built in code).
-    * Everything else (county source, street, ordering, results, GoTo) is
-      unchanged; the ids are unchanged.
-  Still single-column, large targets (>=48dp, primary 56dp+), tap-only, GoTo
-  only after a candidate is tapped.
+  Feature 006 forward-search page — V1「緊湊單行」改版。
+  改動重點（相對於原版）：
+    • 鄉鎮市區：移除原本內嵌的 fs_district_list 整片 GridLayout。
+      改成 [全部 | 指定鄉鎮] 的 RadioGroup segmented + 一顆 fs_btn_district 按鈕；
+      指定鄉鎮時按下 fs_btn_district 會跳出 AlertDialog（內含鄉鎮 GridLayout，程式碼建立）。
+      預設選「全部」→ 選好縣市即可直接搜街道。
+    • 門牌：移除內嵌的 fs_house_value + fs_keypad GridLayout。
+      改成一顆 fs_house_field 按鈕，按下跳出 AlertDialog 數字鍵盤（程式碼建立）。
+    • 其餘（縣市來源、街道、排序、結果、前往）維持原樣，id 不變。
+  仍是單欄、大目標（≥48dp、主要 56dp+）、tap-only、確認後才 GoTo。
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -28,7 +23,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Empty-state: boundary data absent (FR-017 of feature 006). -->
+        <!-- Empty-state: boundary data absent (FR-017). -->
         <TextView
             android:id="@+id/fs_boundary_missing"
             android:layout_width="match_parent"
@@ -109,7 +104,7 @@
                 android:text="@string/fs_source_list" />
         </LinearLayout>
 
-        <!-- County list (shown when List tapped); cells added in code, 3 per row. -->
+        <!-- County list (shown when 清單 tapped); cells added programmatically, 3 per row. -->
         <GridLayout
             android:id="@+id/fs_county_list"
             android:layout_width="match_parent"
@@ -117,7 +112,7 @@
             android:columnCount="3"
             android:visibility="gone" />
 
-        <!-- ===== Stage 2: district — segmented All/District + popup button ===== -->
+        <!-- ===== Stage 2: 鄉鎮市區 — segmented 全部/指定 + popup button (V1) ===== -->
         <TextView
             android:id="@+id/fs_stage_district_label"
             android:layout_width="match_parent"
@@ -130,7 +125,7 @@
             android:visibility="gone"
             android:text="@string/fs_stage_district" />
 
-        <!-- One row: [All | District] segmented (RadioGroup) + district picker button. -->
+        <!-- One row: [全部 | 指定鄉鎮] segmented (RadioGroup) + 鄉鎮選擇按鈕. -->
         <LinearLayout
             android:id="@+id/fs_scope_row"
             android:layout_width="match_parent"
@@ -176,7 +171,7 @@
                     android:text="@string/fs_scope_specific" />
             </RadioGroup>
 
-            <!-- Opens the district AlertDialog. Disabled while All is selected. -->
+            <!-- Opens the 鄉鎮市區 AlertDialog. Disabled while 全部 is selected. -->
             <Button
                 android:id="@+id/fs_btn_district"
                 android:layout_width="0dp"
@@ -228,7 +223,7 @@
                 android:text="@string/fs_search" />
         </LinearLayout>
 
-        <!-- ===== Stage 4: house number — opens numeric-keypad AlertDialog ===== -->
+        <!-- ===== Stage 4: house number — opens numeric-keypad AlertDialog (V1) ===== -->
         <Button
             android:id="@+id/fs_house_field"
             android:layout_width="match_parent"
@@ -241,7 +236,7 @@
             android:visibility="gone"
             android:text="@string/fs_house_hint" />
 
-        <!-- ===== Result ordering (feature 007 US1): most-similar / distance ===== -->
+        <!-- ===== Result ordering (feature 007 US1): 最相似 / 距離 ===== -->
         <LinearLayout
             android:id="@+id/fs_ordering_row"
             android:layout_width="match_parent"

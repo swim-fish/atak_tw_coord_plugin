@@ -52,8 +52,8 @@ captured under `docs/ui/` (`readout-widget.md`, `settings-fragment.md`).
 | **Recent list** | Up to 10 prior successful submissions, deduped on (unit, value), persisted across ATAK restarts; tap any row to re-fill, per-row delete |
 | **In-page marker-mode picker** | 9 radios under Submit (Move only + 7 affiliation/spot-map types + **Custom Icon**). Selecting non-Move-only drops a marker of that type at the resolved coord; selection persists across plugin restarts |
 | **Custom Icon picker** | Two-step modal (iconset list → icon grid) reading exclusively from ATAK's existing iconset library (5 bundled iconsets out of the box + any operator-loaded). Picked icon is applied via `MarkerCreator.setIconPath`; marker behaves identically to host-placed ones. Graceful one-shot fallback when the picked iconset is removed |
-| **Offline reverse address** ("TW Offline Addr") | Imports county-scoped address SQLite produced by the [sibling generator](https://github.com/swim-fish/atak-tw-address-generator); decorates each coordinate row with the nearest record. v1.0.6 adds multi-county import (one active dataset per county) and ZIP-bundle import (`tw-central-full.zip` etc.), with auto-migration from v1.0.5's single-active layout. v1.1.0 (feature 006) scopes the readout to the detected county via the boundary layer (replacing the query-all-counties fan-out). v1.2.0 (feature 007) shows each county's on-disk size and a distinct `_boundary` (townships.sqlite) size row |
-| **Offline forward search** ("TW Addr Search") | Fourth Tools-menu page: find a street address offline via a county → 鄉鎮市區 (or 全部) → street → house-number/巷弄 funnel, ranked by distance with a 16-point compass arrow, then tap a result to pan. Consumes the MOI `townships.sqlite` boundary layer for county/district detection. Glove UX: 3-column grid, large numeric keypad (+ 巷/弄/號), Reset, map-follow. v1.2.0 adds a *distance* / *most similar* result-order toggle (in-place re-rank, also in Settings); v1.2.1 localises the source buttons (所在地 / 地圖中心 / 清單) and makes *most similar* house-number-aware (numerically-closest number first) |
+| **Offline reverse address** ("TW Offline Addr") | Imports county-scoped address SQLite produced by the [sibling generator](https://github.com/swim-fish/atak-tw-address-generator); decorates each coordinate row with the nearest record (prefixed since v1.3.0 with an 8-point compass arrow pointing from the query point to that record). v1.0.6 adds multi-county import (one active dataset per county) and ZIP-bundle import (`tw-central-full.zip` etc.), with auto-migration from v1.0.5's single-active layout. v1.1.0 (feature 006) scopes the readout to the detected county via the boundary layer (replacing the query-all-counties fan-out). v1.2.0 (feature 007) shows each county's on-disk size and a distinct `_boundary` (townships.sqlite) size row. **v1.3.0 (feature 008)** redesigns the storage page — total-usage figure + stacked bar + colour legend, compact rows with a per-row ⋮ overflow (Replace / Remove), an import-progress card and a dismissible failure banner — and makes the whole page follow the in-app UI-language override |
+| **Offline forward search** ("TW Addr Search") | Fourth Tools-menu page: find a street address offline via a county → 鄉鎮市區 (or 全部) → street → house-number/巷弄 funnel, ranked by distance with a 16-point compass arrow, then tap a result to pan. Consumes the MOI `townships.sqlite` boundary layer for county/district detection. Glove UX: 3-column grid, large numeric keypad (+ 巷/弄/號), Reset, map-follow. v1.2.0 adds a *distance* / *most similar* result-order toggle (in-place re-rank, also in Settings); v1.2.1 localises the source buttons (所在地 / 地圖中心 / 清單) and makes *most similar* house-number-aware (numerically-closest number first). **v1.3.0 (feature 008)** collapses the township grid into an All / District segmented scope control + an on-demand district chooser, and the keypad into an on-demand house-number dialog; the county list flags counties with no installed data (⚠), and 地圖中心 / 所在地 auto-select the resolved 鄉鎮市區 |
 | **Confidence indicator** | Per-row tilde marker (`~` / `~~`) prefix on the address text reflecting haversine distance to the nearest record. 4 presets (Off / Tight 20-100 m / Standard 50-200 m / Loose 100-500 m) selectable in Settings |
 
 ## Coverage and accuracy
@@ -256,18 +256,23 @@ spec / plan / tasks / contracts live under `specs/NNN-<short-name>/`:
 - [`specs/005-multi-county-zip-import/`](specs/005-multi-county-zip-import/) — multi-county + ZIP import
 - [`specs/006-county-forward-search/`](specs/006-county-forward-search/) — county-first forward search
 - [`specs/007-settings-ux-tweaks/`](specs/007-settings-ux-tweaks/) — settings page + search/storage UX tweaks
+- [`specs/008-search-settings-ui/`](specs/008-search-settings-ui/) — search/storage page UI redesign (v1.3.0)
 
-Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Nineteen ADRs
+Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty ADRs
 under [`docs/adr/`](docs/adr/) cover every architecturally significant decision
 (ADR-0001 is the entry point and carries the 2026-05-23 Taipower letter-table
 correction follow-up; ADR-0014/0015 the offline-address reconnaissance +
 implementation, ADR-0017 multi-county + ZIP import, and
 [ADR-0018](docs/adr/0018-settings-ux-tweaks.md) the feature-007 settings/search/storage
 tweaks plus the two device-found fixes — the dialog-resource trap and the
-programmatic-pan readout refresh; and
+programmatic-pan readout refresh;
 [ADR-0019](docs/adr/0019-forward-search-i18n-and-house-number-similarity-fixes.md) the
 1.2.1 forward-search fixes — localised page inflation and house-number-aware "most
-similar").
+similar"; and
+[ADR-0020](docs/adr/0020-search-settings-ui-redesign.md) the v1.3.0 search/storage
+page redesign plus six device-found fixes — scope-button highlight,
+地圖中心 district auto-select, county-list missing-data ⚠, county-only chip,
+storage-page localisation, and the on-map address direction arrow).
 
 ## References
 

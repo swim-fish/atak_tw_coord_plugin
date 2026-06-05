@@ -1,0 +1,22 @@
+<!--
+  B 案 — 匯入中卡片 + 失敗 banner 新增字串。
+  分別貼到三個 strings.xml（zh-rTW / 預設 / ja）。
+-->
+
+<!-- ========== values-zh-rTW/strings.xml ========== -->
+<string name="offline_address_importing_label">匯入中</string>
+<string name="offline_address_error_title">匯入失敗</string>
+<string name="offline_address_action_retry">重新選擇檔案</string>
+<string name="offline_address_action_dismiss">關閉</string>
+
+<!-- ========== values/strings.xml (English base) ========== -->
+<string name="offline_address_importing_label">Importing</string>
+<string name="offline_address_error_title">Import failed</string>
+<string name="offline_address_action_retry">Choose file again</string>
+<string name="offline_address_action_dismiss">Dismiss</string>
+
+<!-- ========== values-ja/strings.xml ========== -->
+<string name="offline_address_importing_label">インポート中</string>
+<string name="offline_address_error_title">インポート失敗</string>
+<string name="offline_address_action_retry">ファイルを選び直す</string>
+<string name="offline_address_action_dismiss">閉じる</string>

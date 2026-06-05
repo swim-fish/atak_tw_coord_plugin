@@ -1,0 +1,43 @@
+<!--
+  V1 改版新增字串。把對應區塊各自貼到：
+    • 中文：app/src/main/res/values-zh-rTW/strings.xml
+    • 英文（base）：app/src/main/res/values/strings.xml
+    • 日文：app/src/main/res/values-ja/strings.xml
+  既有可重用：fs_district_all（全部）、fs_house_hint（門牌號（可省略））、fs_reset、fs_search…
+-->
+
+<!-- ========== values-zh-rTW/strings.xml ========== -->
+<string name="fs_scope_all">全部</string>
+<string name="fs_scope_specific">指定鄉鎮</string>
+<string name="fs_district_whole_county">整個縣市（免選鄉鎮）</string>
+<string name="fs_district_choose_title">選擇鄉鎮市區</string>
+<string name="fs_filter_hint">輸入過濾（可省略）</string>
+<string name="fs_house_dialog_title">門牌號</string>
+<string name="fs_house_dialog_subtitle">可省略 · 直接按完成查整條街</string>
+<string name="fs_clear">清除</string>
+<string name="fs_done">完成</string>
+<string name="fs_cancel">取消</string>
+
+<!-- ========== values/strings.xml (English base) ========== -->
+<string name="fs_scope_all">All</string>
+<string name="fs_scope_specific">District</string>
+<string name="fs_district_whole_county">Whole county (no district)</string>
+<string name="fs_district_choose_title">Select district</string>
+<string name="fs_filter_hint">Filter (optional)</string>
+<string name="fs_house_dialog_title">House number</string>
+<string name="fs_house_dialog_subtitle">Optional · Done = whole street</string>
+<string name="fs_clear">Clear</string>
+<string name="fs_done">Done</string>
+<string name="fs_cancel">Cancel</string>
+
+<!-- ========== values-ja/strings.xml ========== -->
+<string name="fs_scope_all">すべて</string>
+<string name="fs_scope_specific">地区指定</string>
+<string name="fs_district_whole_county">県全体（地区なし）</string>
+<string name="fs_district_choose_title">市区町村を選択</string>
+<string name="fs_filter_hint">絞り込み（任意）</string>
+<string name="fs_house_dialog_title">番地</string>
+<string name="fs_house_dialog_subtitle">任意 · 完了で通り全体</string>
+<string name="fs_clear">クリア</string>
+<string name="fs_done">完了</string>
+<string name="fs_cancel">キャンセル</string>
