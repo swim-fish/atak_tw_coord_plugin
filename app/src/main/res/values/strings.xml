@@ -303,4 +303,26 @@
     <string name="fs_ordering_similar">Most similar</string>
     <string name="fs_ordering_distance">Distance</string>
 
+    <!-- ===== Feature 008: search/storage page UI redesign ===== -->
+    <!-- Forward-search scope control + district / house-number dialogs. -->
+    <string name="fs_scope_all">All</string>
+    <string name="fs_scope_specific">District</string>
+    <string name="fs_district_whole_county">Whole county (no district)</string>
+    <string name="fs_district_choose_title">Select district</string>
+    <string name="fs_filter_hint">Filter (optional)</string>
+    <string name="fs_house_dialog_title">House number</string>
+    <string name="fs_house_dialog_subtitle">Optional · Done = whole street</string>
+    <string name="fs_clear">Clear</string>
+    <string name="fs_done">Done</string>
+    <string name="fs_cancel">Cancel</string>
+
+    <!-- Offline address — usage legend label for the shared boundary layer. -->
+    <string name="offline_address_usage_boundary_label">Base data</string>
+
+    <!-- Offline address — import progress card + failure banner. -->
+    <string name="offline_address_importing_label">Importing</string>
+    <string name="offline_address_error_title">Import failed</string>
+    <string name="offline_address_action_retry">Choose file again</string>
+    <string name="offline_address_action_dismiss">Dismiss</string>
+
 </resources>

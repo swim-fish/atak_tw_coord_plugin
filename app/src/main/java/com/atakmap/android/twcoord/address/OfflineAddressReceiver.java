@@ -3,11 +3,19 @@ package com.atakmap.android.twcoord.address;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.PopupMenu;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.atakmap.android.dropdown.DropDown.OnStateListener;
 import com.atakmap.android.dropdown.DropDownReceiver;
@@ -86,6 +94,27 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   // Feature 007 US3 — page-level _boundary size row (outside the State A/B groups so it stays
   // visible regardless of how many county datasets are active).
   private final TextView boundaryRowView;
+  // Feature 008 US3 — total usage + stacked bar + legend.
+  private final TextView usageTotal;
+  private final LinearLayout usageBar;
+  private final LinearLayout usageLegend;
+  // Feature 008 US5 — import-in-progress card + progress bar, and the failure banner.
+  private final View progressCard;
+  private final ProgressBar progressBar;
+  private final View errorCard;
+  private final Button errorRetry;
+  private final Button errorDismiss;
+
+  // Feature 008 US3 — per-county palette; the bar segment, legend dot, and row swatch for a given
+  // county share one colour. Indexed by snapshot iteration order (stable within a render).
+  private static final int[] OA_PALETTE = {
+    0xFF33CCFF, 0xFF5BD6A8, 0xFFE0B341, 0xFFC98BE0, 0xFFEF8A6B, 0xFF7FA8FF
+  };
+  private static final int OA_BOUNDARY_COLOR = 0xFF7C7C7C;
+
+  private int countyColor(int i) {
+    return OA_PALETTE[i % OA_PALETTE.length];
+  }
 
   /**
    * Feature 005 hook: bound after ctor via {@link #setBatchCoordinator(BatchImportCoordinator)}.
@@ -144,6 +173,14 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     this.legacyTable = view.findViewById(R.id.offline_address_state_b_legacy_table);
     this.legacyActions = view.findViewById(R.id.offline_address_state_b_legacy_actions);
     this.boundaryRowView = view.findViewById(R.id.offline_address_boundary_row);
+    this.usageTotal = view.findViewById(R.id.offline_address_usage_total);
+    this.usageBar = view.findViewById(R.id.offline_address_usage_bar);
+    this.usageLegend = view.findViewById(R.id.offline_address_usage_legend);
+    this.progressCard = view.findViewById(R.id.offline_address_progress_card);
+    this.progressBar = view.findViewById(R.id.offline_address_progress_bar);
+    this.errorCard = view.findViewById(R.id.offline_address_error_card);
+    this.errorRetry = view.findViewById(R.id.offline_address_error_retry);
+    this.errorDismiss = view.findViewById(R.id.offline_address_error_dismiss);
 
     if (stateAImportBtn != null) {
       stateAImportBtn.setOnClickListener(v -> safeRun(this::launchPicker));
@@ -156,6 +193,19 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     }
     if (stateBRemoveBtn != null) {
       stateBRemoveBtn.setOnClickListener(v -> safeRun(this::confirmRemove));
+    }
+    // Feature 008 US5 — failure banner actions: retry re-opens the picker; dismiss hides it.
+    if (errorRetry != null) {
+      errorRetry.setOnClickListener(
+          v ->
+              safeRun(
+                  () -> {
+                    clearError();
+                    launchPicker();
+                  }));
+    }
+    if (errorDismiss != null) {
+      errorDismiss.setOnClickListener(v -> safeRun(this::clearError));
     }
   }
 
@@ -287,41 +337,164 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       return;
     }
     countyList.removeAllViews();
+    // Feature 008 US3 — total usage + stacked bar + legend, drawn before the rows so the row
+    // colour swatches (countyColor by index) line up with the bar segments.
+    renderUsageBar(snap);
     LayoutInflater inflater = LayoutInflater.from(pluginContext);
+    int index = 0;
+    int count = snap.size();
     for (CountyActiveDataset entry : snap.values()) {
       try {
         View row = inflater.inflate(R.layout.offline_address_county_row, countyList, false);
         TextView nameView = row.findViewById(R.id.offline_address_county_name);
         TextView summaryView = row.findViewById(R.id.offline_address_county_summary);
-        Button replaceBtn = row.findViewById(R.id.offline_address_county_replace);
-        Button removeBtn = row.findViewById(R.id.offline_address_county_remove);
+        TextView sizeView = row.findViewById(R.id.offline_address_county_size);
+        View colorBar = row.findViewById(R.id.offline_address_county_color);
+        Button overflow = row.findViewById(R.id.offline_address_county_overflow);
+        View divider = row.findViewById(R.id.offline_address_county_divider);
         GeneratorMetadata gm = entry.dataset().generator();
+        final String county = entry.county();
         if (nameView != null) nameView.setText(nonNull(gm.county()));
+        // Feature 008 US3 — the sub-line is now date · rows only; size moved to its own view.
         if (summaryView != null) {
-          String summary =
+          summaryView.setText(
               pluginContext.getString(
                   R.string.pref_address_active_dataset_row_format,
                   nonNull(gm.dataDate()),
-                  gm.insertedRows() >= 0 ? gm.insertedRows() : 0L);
-          // Feature 007 US3 — append the county folder's on-disk size (FR-012).
-          if (fileSystem != null) {
-            long bytes = fileSystem.sizeOfDirectory(fileSystem.activeCountyDir(entry.county()));
-            summary = summary + " · " + ByteCountFormatter.format(bytes);
-          }
-          summaryView.setText(summary);
+                  gm.insertedRows() >= 0 ? gm.insertedRows() : 0L));
         }
-        final String county = entry.county();
-        if (replaceBtn != null) {
-          replaceBtn.setOnClickListener(v -> safeRun(() -> confirmReplaceCounty(county)));
+        long bytes =
+            fileSystem != null
+                ? fileSystem.sizeOfDirectory(fileSystem.activeCountyDir(county))
+                : 0L;
+        if (sizeView != null) sizeView.setText(ByteCountFormatter.format(bytes));
+        if (colorBar != null) colorBar.setBackgroundColor(countyColor(index));
+        // Feature 008 US4 — Replace / Remove collapse into one ⋮ overflow PopupMenu.
+        if (overflow != null) {
+          overflow.setOnClickListener(v -> safeRun(() -> showCountyMenu(v, county)));
         }
-        if (removeBtn != null) {
-          removeBtn.setOnClickListener(v -> safeRun(() -> confirmRemoveCounty(county)));
+        if (divider != null) {
+          divider.setVisibility(index == count - 1 ? View.GONE : View.VISIBLE);
         }
         countyList.addView(row);
       } catch (Throwable t) {
         Log.w(TAG, "inflate county row " + entry.county() + " threw", t);
       }
+      index++;
     }
+  }
+
+  /**
+   * Feature 008 US3 — render the total-usage figure, the stacked usage bar (one weighted segment
+   * per county plus a grey boundary segment), and a matching colour legend. The total includes the
+   * shared boundary folder (FR-009). Best-effort: any failure is logged and the bar is left as-is
+   * rather than crashing the page (Constitution VI).
+   */
+  private void renderUsageBar(java.util.Map<String, CountyActiveDataset> snap) {
+    if (usageBar == null || usageTotal == null) return;
+    try {
+      usageBar.removeAllViews();
+      if (usageLegend != null) usageLegend.removeAllViews();
+
+      long total = 0L;
+      int i = 0;
+      for (CountyActiveDataset e : snap.values()) {
+        long bytes =
+            fileSystem != null
+                ? fileSystem.sizeOfDirectory(fileSystem.activeCountyDir(e.county()))
+                : 0L;
+        total += bytes;
+        addBarSegment(bytes, countyColor(i));
+        addLegend(countyColor(i), nonNull(e.dataset().generator().county()), bytes);
+        i++;
+      }
+      // Boundary folder folded into the total and the bar as a grey segment (FR-009 / FR-015).
+      long boundary = 0L;
+      if (fileSystem != null && fileSystem.exists(fileSystem.boundaryDbFile())) {
+        boundary = fileSystem.sizeOfDirectory(fileSystem.boundaryDir());
+      }
+      if (boundary > 0) {
+        total += boundary;
+        addBarSegment(boundary, OA_BOUNDARY_COLOR);
+        addLegend(
+            OA_BOUNDARY_COLOR,
+            pluginContext.getString(R.string.offline_address_usage_boundary_label),
+            boundary);
+      }
+      usageBar.setClipToOutline(true); // clip the weighted segments to the rounded track
+      usageTotal.setText(
+          pluginContext.getString(
+              R.string.offline_address_total_disk_usage_format, ByteCountFormatter.format(total)));
+    } catch (Throwable t) {
+      Log.w(TAG, "renderUsageBar threw", t);
+    }
+  }
+
+  private void addBarSegment(long weight, int color) {
+    if (usageBar == null) return;
+    View seg = new View(pluginContext);
+    LinearLayout.LayoutParams lp =
+        new LinearLayout.LayoutParams(
+            0, ViewGroup.LayoutParams.MATCH_PARENT, (float) Math.max(weight, 1L));
+    seg.setLayoutParams(lp);
+    seg.setBackgroundColor(color);
+    usageBar.addView(seg);
+  }
+
+  private void addLegend(int color, String label, long bytes) {
+    if (usageLegend == null) return;
+    float d = pluginContext.getResources().getDisplayMetrics().density;
+
+    LinearLayout item = new LinearLayout(pluginContext);
+    item.setOrientation(LinearLayout.HORIZONTAL);
+    item.setGravity(Gravity.CENTER_VERTICAL);
+    LinearLayout.LayoutParams ip =
+        new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+    ip.setMargins(0, 0, (int) (14 * d), 0);
+    item.setLayoutParams(ip);
+
+    View dot = new View(pluginContext);
+    GradientDrawable g = new GradientDrawable();
+    g.setColor(color);
+    g.setCornerRadius(2 * d);
+    dot.setBackground(g);
+    LinearLayout.LayoutParams dp = new LinearLayout.LayoutParams((int) (9 * d), (int) (9 * d));
+    dp.setMargins(0, 0, (int) (5 * d), 0);
+    dot.setLayoutParams(dp);
+
+    TextView tv = new TextView(pluginContext);
+    tv.setText(label + " " + ByteCountFormatter.format(bytes));
+    tv.setTextSize(12f);
+    tv.setTextColor(0xFFBFBFBF);
+
+    item.addView(dot);
+    item.addView(tv);
+    usageLegend.addView(item);
+  }
+
+  /**
+   * Feature 008 US4 — the per-row ⋮ overflow menu. Built with the ATAK Activity context (anchor's
+   * context) per contract dialog-context.md. Remove is styled destructively (red) and both items
+   * delegate to the existing confirm-then-act flows unchanged.
+   */
+  private void showCountyMenu(View anchor, String county) {
+    PopupMenu pm = new PopupMenu(getMapView().getContext(), anchor);
+    pm.getMenu().add(0, 1, 0, pluginContext.getString(R.string.offline_address_button_replace));
+    SpannableString remove =
+        new SpannableString(pluginContext.getString(R.string.offline_address_button_remove));
+    remove.setSpan(new ForegroundColorSpan(0xFFFF6B6B), 0, remove.length(), 0);
+    pm.getMenu().add(0, 2, 1, remove);
+    pm.setOnMenuItemClickListener(
+        it -> {
+          safeRun(
+              () -> {
+                if (it.getItemId() == 1) confirmReplaceCounty(county);
+                else confirmRemoveCounty(county);
+              });
+          return true;
+        });
+    pm.show();
   }
 
   /**
@@ -491,11 +664,11 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       };
 
   private void renderInflight(BatchImportReport.Entry entry) {
-    if (progressView == null) return;
     String county = entry.county() != null ? entry.county() : entry.filename();
-    progressView.setText(
+    // Feature 008 US5 — drive the progress card (the batch path has no per-stage percent, so the
+    // bar stays indeterminate, which showProgress sets by default).
+    showProgress(
         pluginContext.getString(R.string.offline_address_entry_status_extracting) + " — " + county);
-    progressView.setVisibility(View.VISIBLE);
   }
 
   private void renderEntryFinished(BatchImportReport.Entry entry) {
@@ -543,9 +716,11 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
             report.replacedCount(),
             report.skippedCount(),
             report.failedCount());
-    progressView.setText(summary);
     if (report.failedCount() > 0) {
-      progressView.setVisibility(View.VISIBLE);
+      // Keep the card up on failure so the operator reads the summary.
+      showProgress(summary);
+    } else {
+      progressView.setText(summary);
     }
   }
 
@@ -632,8 +807,19 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     ui.post(
         () -> {
           try {
-            String text = renderProgress(stage, completed, total);
-            showProgress(text);
+            showProgress(renderProgress(stage, completed, total));
+            // Feature 008 US5 — COPYING and BUILDING_RTREE carry a percent (determinate); the other
+            // stages (verifying / activating) have no meaningful fraction (indeterminate).
+            if (progressBar != null) {
+              boolean determinate =
+                  stage == AddressBundleImporter.ProgressListener.Stage.COPYING
+                      || stage == AddressBundleImporter.ProgressListener.Stage.BUILDING_RTREE;
+              progressBar.setIndeterminate(!determinate);
+              if (determinate) {
+                int pct = total > 0 ? (int) (completed * 100L / total) : 0;
+                progressBar.setProgress(Math.max(0, Math.min(100, pct)));
+              }
+            }
           } catch (Throwable t) {
             Log.w(TAG, "postProgress threw", t);
           }
@@ -845,27 +1031,45 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   // UI helpers
   // ----------------------------------------------------------------------
 
+  /**
+   * Feature 008 US5 — show the import-in-progress card. The progress bar defaults to indeterminate;
+   * {@link #postProgress} refines it to determinate percent for the copy / index-build stages.
+   */
   private void showProgress(String text) {
-    if (progressView == null) return;
-    progressView.setText(text == null ? "" : text);
-    progressView.setVisibility(View.VISIBLE);
+    if (progressView != null) progressView.setText(text == null ? "" : text);
+    if (progressBar != null) progressBar.setIndeterminate(true);
+    if (progressCard != null) {
+      progressCard.setVisibility(View.VISIBLE);
+    } else if (progressView != null) {
+      // Legacy layout without the card — keep the inline text visible.
+      progressView.setVisibility(View.VISIBLE);
+    }
   }
 
   private void hideProgress() {
-    if (progressView == null) return;
-    progressView.setVisibility(View.GONE);
+    if (progressCard != null) {
+      progressCard.setVisibility(View.GONE);
+      return;
+    }
+    if (progressView != null) progressView.setVisibility(View.GONE);
   }
 
+  /** Feature 008 US5 — show the failure banner with the reason. */
   private void showError(String text) {
-    if (errorView == null) return;
-    errorView.setText(text == null ? "" : text);
-    errorView.setVisibility(View.VISIBLE);
+    if (errorView != null) errorView.setText(text == null ? "" : text);
+    if (errorCard != null) {
+      errorCard.setVisibility(View.VISIBLE);
+    } else if (errorView != null) {
+      errorView.setVisibility(View.VISIBLE);
+    }
   }
 
   private void clearError() {
-    if (errorView == null) return;
-    errorView.setVisibility(View.GONE);
-    errorView.setText("");
+    if (errorCard != null) errorCard.setVisibility(View.GONE);
+    if (errorView != null) {
+      errorView.setVisibility(View.GONE);
+      errorView.setText("");
+    }
   }
 
   private static String nonNull(String s) {

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Boundary ("base data") block background: dashed border + very faint fill,
+     reads as a secondary block rather than a debug text row. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#06FFFFFF" />
+    <stroke android:width="1dp" android:color="#1FFFFFFF" android:dashWidth="4dp" android:dashGap="3dp" />
+    <corners android:radius="10dp" />
+</shape>

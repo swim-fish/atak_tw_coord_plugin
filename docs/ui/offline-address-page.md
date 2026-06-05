@@ -226,6 +226,39 @@ _TODO — capture during US1 / US2 / US3 device acceptance walks (T031 / T044 / 
 - `offline-address-confirm-replace.png` — Replace confirmation dialog.
 - `offline-address-confirm-remove.png` — Remove confirmation dialog.
 
+## Feature 008 redesign — usage summary, overflow menu, progress/error cards
+
+State B's flat per-county list became a storage dashboard. Importer / registry /
+sizing behaviour is unchanged — only rendering.
+
+- **Usage summary** (`offline_address_usage_card`): a total-on-disk figure
+  (`offline_address_usage_total`), a single stacked bar
+  (`offline_address_usage_bar`) with one weighted segment per county plus a grey
+  **基礎資料** (boundary) segment, and a colour legend
+  (`offline_address_usage_legend`). The total includes the boundary folder
+  (FR-009). The bar segment, legend dot, and per-row swatch for a county share
+  one colour from `OA_PALETTE`, indexed by snapshot order (FR-010 / SC-004).
+- **Compact rows** (`offline_address_county_row`): colour swatch
+  (`_county_color`) + name + "資料日期 · 筆數" sub-line + on-disk size
+  (`_county_size`) + a ⋮ overflow (`_county_overflow`) + a divider.
+- **Overflow menu** (US4): the former inline Replace / Remove buttons collapse
+  into a `PopupMenu` with **取代…** and a destructively-styled (red) **移除**,
+  delegating to the existing confirm-then-act flows unchanged.
+- **Import-in-progress card** (`offline_address_progress_card`): the old plain
+  progress text becomes a card with a `ProgressBar` that is determinate (percent)
+  during `COPYING` / `BUILDING_RTREE` and indeterminate otherwise (US5 / FR-013).
+- **Failure banner** (`offline_address_error_card`): a dismissible red banner with
+  the reason, **重新選擇檔案** (re-opens the picker) and **關閉**; installed data
+  is left untouched on failure (US5 / FR-014).
+- **Boundary row** (`offline_address_boundary_row`): retained, now wrapped in a
+  dashed `oa_boundary_block_bg` block; shows the boundary size when installed and
+  "未安裝" when absent (FR-015). Its bytes are also folded into the top bar.
+- New drawables: `oa_usage_card_bg`, `oa_usage_track_bg`, `oa_boundary_block_bg`,
+  `oa_progress_card_bg`, `oa_error_card_bg`. New strings:
+  `offline_address_usage_boundary_label`, `offline_address_importing_label`,
+  `offline_address_error_title`, `offline_address_action_retry/dismiss` (en /
+  zh-rTW / ja). See ADR-0020.
+
 ## Related artefacts
 
 - Spec: `specs/004-offline-address/spec.md` FR-001..FR-014, FR-019, SC-001..SC-006.

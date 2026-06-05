@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 匯入中卡片底：淡藍填色 + 藍邊框 + 圓角。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#1433CCFF" />
+    <stroke android:width="1dp" android:color="#4D33CCFF" />
+    <corners android:radius="10dp" />
+</shape>
