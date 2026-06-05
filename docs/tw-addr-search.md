@@ -109,6 +109,16 @@ opens. Three buttons change it:
 > with **no imported address data** are marked with **⚠** and dimmed — those have
 > boundary data only and can't return streets.
 
+<p align="center">
+  <img src="images/19-tw-addr-search-county-popup.jpg" alt="County chooser pop-up (count + order follow the imported townships.sqlite)" width="560"><br>
+  <sub>The <b>county pop-up</b> opened from "List…": ordered geographically (宜蘭 →
+  north → down the west coast → 台東/花蓮 → outlying islands last), the <b>current
+  county</b> highlighted with a blue outline (台中市 here), and counties with <b>no
+  address data</b> marked <b>⚠</b> and dimmed.<br>Note: the list shows only the
+  counties present in the <b>imported <code>townships.sqlite</code></b> — this is
+  the central pack (12 counties); a national boundary shows all 22.</sub>
+</p>
+
 ### ② Township
 
 After a county is chosen, this stage is an **[ All │ District ]** toggle plus one
