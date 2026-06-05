@@ -673,11 +673,24 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
                 importInFlight.set(false);
                 renderBatchSummary(report);
                 bindFromActiveDataset();
-                // Auto-hide the progress chip after the summary has been visible briefly,
-                // BUT only when the batch fully succeeded. Failures and county mismatches stay
-                // visible so the operator notices them. 3 s is roughly the time it takes to read
-                // the summary line.
-                if (report.failedCount() == 0 && !sawCountyMismatch) {
+                // A county mismatch is only a REAL error when the Replace target wasn't applied
+                // (e.g. picking the wrong single-county file). Replacing one county from a
+                // multi-county ZIP legitimately skips the other counties with a mismatch while the
+                // target still succeeds — that must NOT show a failure banner. See logcat repro:
+                // "Replace 彰化縣 with tw-central-full.zip" → 彰化縣 REPLACED + 台中市 mismatch.
+                boolean realMismatch = sawCountyMismatch && !expectedCountyApplied(report);
+                if (realMismatch && report.failedCount() == 0) {
+                  String picked = firstMismatchCounty(report);
+                  showError(
+                      pluginContext.getString(
+                          R.string.offline_address_error_county_mismatch_format,
+                          nonNull(picked),
+                          pendingReplaceCounty != null ? pendingReplaceCounty : nonNull(picked)));
+                }
+                // Auto-hide the progress chip after the summary has been visible briefly, but only
+                // when the batch fully succeeded (no failures, no real mismatch). A benign mismatch
+                // (target applied) counts as success and auto-hides.
+                if (report.failedCount() == 0 && !realMismatch) {
                   ui.postDelayed(this::hideProgressFromBatchComplete, 3000L);
                 }
               });
@@ -720,13 +733,10 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       case SKIPPED_COUNTY_MISMATCH:
         sawCountyMismatch = true;
         strId = R.string.offline_address_entry_status_county_mismatch;
-        // Surface as an inline error too — a mismatch is an operator mistake worth flagging.
-        // %1$s = picked file's county, %2$s = the row's expected county.
-        showError(
-            pluginContext.getString(
-                R.string.offline_address_error_county_mismatch_format,
-                county,
-                pendingReplaceCounty != null ? pendingReplaceCounty : county));
+        // NOTE: don't raise the error banner here. Replacing one county from a multi-county ZIP
+        // legitimately skips the OTHER counties with a mismatch even though the target succeeded —
+        // erroring per-entry would show "failed" on a successful Replace. onBatchComplete decides:
+        // the mismatch is only a real error when the expected county was NOT applied.
         break;
       case FAILED:
       default:
@@ -755,6 +765,31 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     } else {
       progressView.setText(summary);
     }
+  }
+
+  /**
+   * Whether the per-county Replace target ({@link #pendingReplaceCounty}) was actually applied
+   * (REPLACED/ACTIVATED) in this batch. Used to tell a benign multi-county-ZIP mismatch (target
+   * succeeded) from a real wrong-file mismatch (target not applied).
+   */
+  private boolean expectedCountyApplied(BatchImportReport report) {
+    if (pendingReplaceCounty == null) return false;
+    for (BatchImportReport.Entry e : report.entries()) {
+      if (pendingReplaceCounty.equals(e.county())
+          && (e.status() == BatchImportReport.Status.REPLACED
+              || e.status() == BatchImportReport.Status.ACTIVATED)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** The county of the first county-mismatch entry (for the error message), or null. */
+  private String firstMismatchCounty(BatchImportReport report) {
+    for (BatchImportReport.Entry e : report.entries()) {
+      if (e.status() == BatchImportReport.Status.SKIPPED_COUNTY_MISMATCH) return e.county();
+    }
+    return null;
   }
 
   /**
