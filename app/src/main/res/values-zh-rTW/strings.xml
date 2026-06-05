@@ -229,6 +229,15 @@
     <string name="fs_district_all">全部</string>
     <string name="fs_candidate_format">%1$s · %2$d 公尺</string>
 
+    <!-- Backfill: feature 007 strings missing zh-rTW translations (MissingTranslation lint). -->
+    <string name="pref_readout_visible_title">顯示地圖讀數</string>
+    <string name="pref_readout_visible_summary">顯示或隱藏地圖上的座標讀數。</string>
+    <string name="pref_search_result_ordering_title">地址搜尋結果排序</string>
+    <string name="pref_search_result_ordering_summary">依距離或最相符文字排序前向搜尋結果。</string>
+    <string name="fs_ordering_label">排序方式</string>
+    <string name="fs_ordering_similar">最相似</string>
+    <string name="fs_ordering_distance">距離</string>
+
     <!-- ===== Feature 008: search/storage page UI redesign ===== -->
     <!-- Forward-search scope control + district / house-number dialogs. -->
     <string name="fs_scope_all">全部</string>
