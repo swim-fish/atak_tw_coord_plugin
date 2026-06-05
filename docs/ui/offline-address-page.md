@@ -259,6 +259,17 @@ sizing behaviour is unchanged — only rendering.
   `offline_address_error_title`, `offline_address_action_retry/dismiss` (en /
   zh-rTW / ja). See ADR-0020.
 
+### Localisation follows the in-app language override (ADR-0020 F5)
+
+`OfflineAddressReceiver` now takes a `Supplier<Context>` localised-context supplier
+(`() -> localisedPluginContext`) instead of a fixed `pluginContext`, and
+re-inflates in `onReceive` when the UI language changed since the last open — the
+same pattern as `ForwardSearchReceiver` (ADR-0003). Before this fix the storage
+page's strings (import / replace / remove, total-usage figure, `_boundary` row,
+overflow menu, legend) were frozen at construction and never switched language.
+As with the forward page, a language change while the page is **open** takes
+effect on the next open (close + reopen), not live.
+
 ## Related artefacts
 
 - Spec: `specs/004-offline-address/spec.md` FR-001..FR-014, FR-019, SC-001..SC-006.

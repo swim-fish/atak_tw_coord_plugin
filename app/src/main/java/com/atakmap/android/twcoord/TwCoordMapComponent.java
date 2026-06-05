@@ -471,7 +471,13 @@ public class TwCoordMapComponent extends AbstractMapComponent {
               return t;
             });
     addressReceiver =
-        new OfflineAddressReceiver(view, pluginContext, addressImporter, addressImportExecutor);
+        new OfflineAddressReceiver(
+            view,
+            // Live localised context (ADR-0003) so the storage page localises and repaints on a
+            // language change; fall back to the raw plugin context only before it is built.
+            () -> localisedPluginContext != null ? localisedPluginContext : pluginContext,
+            addressImporter,
+            addressImportExecutor);
     AtakBroadcast.DocumentedIntentFilter addressFilter = new AtakBroadcast.DocumentedIntentFilter();
     addressFilter.addAction(OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS);
     AtakBroadcast.getInstance().registerReceiver(addressReceiver, addressFilter);

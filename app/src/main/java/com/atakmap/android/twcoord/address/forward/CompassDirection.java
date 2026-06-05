@@ -13,6 +13,9 @@ public final class CompassDirection {
     "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
   };
 
+  /** 8-point Unicode arrow glyphs, index 0 = N (↑), clockwise in 45° steps. */
+  private static final String[] ARROW_GLYPHS_8 = {"↑", "↗", "→", "↘", "↓", "↙", "←", "↖"};
+
   private CompassDirection() {}
 
   /**
@@ -47,5 +50,17 @@ public final class CompassDirection {
    */
   public static float arrowRotation16(double bearingDegrees) {
     return point16Index(bearingDegrees) * 22.5f;
+  }
+
+  /**
+   * A single Unicode arrow glyph pointing along {@code bearingDegrees}, quantised to the nearest of
+   * 8 compass directions (N ↑, NE ↗, E →, SE ↘, S ↓, SW ↙, W ←, NW ↖). Plain-text readouts (the
+   * on-map address row) can't rotate a glyph the way the forward-search list does, so 8 fixed
+   * arrows are the closest a text line can get to the 16-point bearing.
+   */
+  public static String arrowGlyph(double bearingDegrees) {
+    double norm = (bearingDegrees % 360.0 + 360.0) % 360.0;
+    int idx = (int) Math.round(norm / 45.0) % 8;
+    return ARROW_GLYPHS_8[idx];
   }
 }

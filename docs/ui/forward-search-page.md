@@ -132,3 +132,18 @@ search behaviour changed — same controller calls, same candidates, same GoTo.
 - New strings: `fs_scope_all`, `fs_scope_specific`, `fs_district_whole_county`,
   `fs_district_choose_title`, `fs_house_dialog_title/subtitle`, `fs_clear`,
   `fs_done`, `fs_cancel` (en / zh-rTW / ja parity). See ADR-0020.
+
+### Device-found behaviour (ADR-0020 F1–F4)
+
+- **Scope highlight**: the 全部 / 指定鄉鎮 buttons show the accent
+  (`fs_grid_cell_bg` selected state) for the active scope — driven by
+  `reflectScopeButtons` mirroring the checked radio onto `setSelected`, because
+  the shared drawable reacts to `state_selected`, not `state_checked`. The
+  district chooser dialog also marks the currently-chosen cell.
+- **地圖中心 / 所在地 auto-select the district**: tapping a source re-anchors and
+  auto-selects the resolved 鄉鎮市區 (district button + 指定鄉鎮 scope update), or
+  falls back to whole-county when the point's district can't be resolved.
+- **County list missing-data hint**: counties with no installed place dataset are
+  marked with a ⚠ glyph and dimmed in the 清單… grid; they stay tappable.
+- **County chip is county-only**: the chip shows just the county (e.g. 臺中市); the
+  resolved district lives on the district button / scope control, not the chip.

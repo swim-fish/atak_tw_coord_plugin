@@ -128,6 +128,53 @@ to avoid.
   regression.
 - **On-device acceptance** (quickstart, all three locales) pending hardware.
 
+## Post-implementation device fixes (2026-06-05, on Galaxy Tab S10+ / SM-X826B)
+
+On-device exercise of the redesign surfaced six issues, all fixed on the same
+`1.3.0` branch:
+
+- **F1 — scope segmented control had no visible selected state.** The 全部 /
+  指定鄉鎮 buttons are `RadioButton`s backed by `fs_grid_cell_bg`, which reacts to
+  `state_selected` / `state_pressed` — **not** `state_checked` — so checking a
+  radio changed nothing visually. Fix: `reflectScopeButtons(boolean all)` mirrors
+  the checked scope onto the buttons' `setSelected(...)` (driven from
+  `checkScopeSilently`), so the active scope shows the accent highlight. The
+  district chooser dialog also marks the currently-chosen cell (全部 vs a district)
+  as selected.
+- **F2 — 地圖中心 / 所在地 didn't surface the resolved 鄉鎮市區.** The old code kept
+  whole-county scope when 全部 was already selected (the page default), so tapping
+  地圖中心 left the district button on "整個縣市" and nothing visibly updated. Fix:
+  `chooseCountyFromCoord` now always `autoSelectDistrict(loc.district())` —
+  matching the feature-006 intent ("地圖中心/所在地 auto-select the resolved
+  鄉鎮市區") — so the district button + 指定鄉鎮 scope reflect where the point
+  landed (falling back to whole-county when the district can't be resolved). The
+  now-unused `wasAll` branch / `selectAllDistrictsCell` were removed.
+- **F3 — county list gave no hint which counties have data.** `countyList()` comes
+  from the boundary layer (all 22 counties) but only counties with an installed
+  place dataset can be searched. Fix: `showCountyList` marks counties absent from
+  the registry snapshot with a ⚠ glyph and dims them (`setAlpha(0.55f)`); they
+  remain tappable (street search then shows the existing "dataset not installed"
+  message).
+- **F4 — county chip showed county + 鄉鎮市區.** Per operator request the chip is
+  now county-only (`renderCountyChip` drops the district); the resolved district
+  is surfaced on the district button / scope control instead.
+- **F5 — the storage page didn't follow the in-app UI-language override.**
+  `OfflineAddressReceiver` was constructed with a fixed `pluginContext` and
+  inflated once, so its strings (import / replace / remove, total-usage figure,
+  `_boundary` row, etc.) were frozen at construction while the forward-search page
+  re-localised. Fix: it now takes a `Supplier<Context>` localised-context supplier
+  and re-inflates in `onReceive` when the language changed since the last open —
+  the exact `ForwardSearchReceiver` pattern (ADR-0003). `TwCoordMapComponent`
+  passes `() -> localisedPluginContext`.
+- **F6 — on-map address row gained a direction arrow.** The bottom-left
+  map-centre address readout (and the ME / TGT rows) now prefix an 8-point Unicode
+  compass arrow (↑↗→↘↓↙←↖) pointing from the query point to the resolved nearest
+  record, so the operator can see which way the actual address point lies. Plain
+  ATAK text widgets can't rotate a glyph (unlike the forward-search list's rotated
+  ↑), so the bearing is quantised to the nearest of 8 fixed arrows
+  (`CompassDirection.arrowGlyph`); the arrow is skipped when the record is within
+  3 m of the query point. The arrow precedes the existing ~/~~ confidence marker.
+
 ## Links
 
 - Spec / plan / tasks: `specs/008-search-settings-ui/{spec,plan,tasks}.md`

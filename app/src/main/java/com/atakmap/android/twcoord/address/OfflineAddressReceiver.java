@@ -30,6 +30,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * Tools-menu DropDown for the Offline Address page. Two visual states:
@@ -60,50 +61,55 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
 
   private static final String TAG = "OfflineAddressReceiver";
 
-  private final Context pluginContext;
+  // Feature 008 — the CURRENT localised plugin context (ADR-0003). The page re-inflates against it
+  // on a UI-language change so its strings (import / replace / remove / total usage / _boundary …)
+  // follow the in-app language override instead of being frozen at construction time. Mirrors the
+  // ForwardSearchReceiver contextSupplier pattern.
+  private final Supplier<Context> contextSupplier;
+  private Context pluginContext;
   private final AddressBundleImporter importer;
   private final ExecutorService importExecutor;
   private final Handler ui;
-  private final View view;
+  private View view;
 
   // Re-entrancy guard for the buttons (Constitution VI §AtomicBoolean rule).
   private final AtomicBoolean importInFlight = new AtomicBoolean(false);
 
-  // ---- inflated view refs ----
-  private final TextView progressView;
-  private final TextView errorView;
-  private final View stateAGroup;
-  private final Button stateAImportBtn;
-  private final View stateBGroup;
-  private final TextView valueCounty;
-  private final TextView valueDataDate;
-  private final TextView valueSource;
-  private final TextView valueRows;
-  private final TextView valueCsvSha;
-  private final TextView valueImportedAt;
-  private final TextView valueFileSha;
-  private final TextView valueRtreeBuilt;
-  private final Button stateBReplaceBtn;
-  private final Button stateBRemoveBtn;
+  // ---- inflated view refs (rebuilt by inflate() on each language change) ----
+  private TextView progressView;
+  private TextView errorView;
+  private View stateAGroup;
+  private Button stateAImportBtn;
+  private View stateBGroup;
+  private TextView valueCounty;
+  private TextView valueDataDate;
+  private TextView valueSource;
+  private TextView valueRows;
+  private TextView valueCsvSha;
+  private TextView valueImportedAt;
+  private TextView valueFileSha;
+  private TextView valueRtreeBuilt;
+  private Button stateBReplaceBtn;
+  private Button stateBRemoveBtn;
   // Feature 005 — State B "Import…" button so the operator can add more counties without
   // having to Remove first. Same target as the State A Import button.
-  private final Button stateBImportBtn;
+  private Button stateBImportBtn;
   // Legacy single-active container views (hidden in the multi-county production path).
-  private final View legacyTable;
-  private final View legacyActions;
+  private View legacyTable;
+  private View legacyActions;
   // Feature 007 US3 — page-level _boundary size row (outside the State A/B groups so it stays
   // visible regardless of how many county datasets are active).
-  private final TextView boundaryRowView;
+  private TextView boundaryRowView;
   // Feature 008 US3 — total usage + stacked bar + legend.
-  private final TextView usageTotal;
-  private final LinearLayout usageBar;
-  private final LinearLayout usageLegend;
+  private TextView usageTotal;
+  private LinearLayout usageBar;
+  private LinearLayout usageLegend;
   // Feature 008 US5 — import-in-progress card + progress bar, and the failure banner.
-  private final View progressCard;
-  private final ProgressBar progressBar;
-  private final View errorCard;
-  private final Button errorRetry;
-  private final Button errorDismiss;
+  private View progressCard;
+  private ProgressBar progressBar;
+  private View errorCard;
+  private Button errorRetry;
+  private Button errorDismiss;
 
   // Feature 008 US3 — per-county palette; the bar segment, legend dot, and row swatch for a given
   // county share one colour. Indexed by snapshot iteration order (stable within a render).
@@ -143,16 +149,31 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
 
   public OfflineAddressReceiver(
       MapView mapView,
-      Context pluginContext,
+      Supplier<Context> localisedContextSupplier,
       AddressBundleImporter importer,
       ExecutorService importExecutor) {
     super(mapView);
-    this.pluginContext = pluginContext;
+    this.contextSupplier = localisedContextSupplier;
     this.importer = importer;
     this.importExecutor = importExecutor;
     this.ui = new Handler(Looper.getMainLooper());
-    LayoutInflater inflater = LayoutInflater.from(pluginContext);
+    inflate();
+  }
+
+  /**
+   * (Re)inflate the page against the CURRENT localised plugin context (ADR-0003). Called from the
+   * constructor and again from {@link #onReceive} whenever the in-app UI language changed since the
+   * last inflation, so the page (import / replace / remove buttons, total-usage figure, _boundary
+   * row, etc.) repaints in the new language on its next open. Mirrors {@code
+   * ForwardSearchReceiver.inflate()}.
+   */
+  private void inflate() {
+    Context ctx = safeGet(contextSupplier);
+    this.pluginContext = ctx;
+    LayoutInflater inflater = LayoutInflater.from(ctx);
     this.view = inflater.inflate(R.layout.offline_address_page, null);
+    // Force the lazily-resolved per-county list container to re-resolve against the new view.
+    this.countyList = null;
 
     this.progressView = view.findViewById(R.id.offline_address_progress);
     this.errorView = view.findViewById(R.id.offline_address_error);
@@ -238,6 +259,13 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       if (intent == null) return;
       if (!OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS.equals(intent.getAction())) return;
       if (isVisible()) return; // idempotent
+      // Re-inflate in the current UI language if the operator changed it since the last open
+      // (ADR-0003) — LocaleOverride.contextFor yields a NEW Context per locale, so an identity
+      // change is the signal to rebuild the page so its strings follow the new language.
+      Context current = safeGet(contextSupplier);
+      if (current != null && current != pluginContext) {
+        inflate();
+      }
       bindFromActiveDataset();
       showDropDown(view, HALF_WIDTH, FULL_HEIGHT, FULL_WIDTH, HALF_HEIGHT, this);
     } catch (Throwable t) {
@@ -1074,6 +1102,16 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
 
   private static String nonNull(String s) {
     return s == null ? "—" : s;
+  }
+
+  /** Resolve a supplier, catching any Throwable per Constitution VI (returns null on failure). */
+  private static <T> T safeGet(Supplier<T> s) {
+    try {
+      return s == null ? null : s.get();
+    } catch (Throwable t) {
+      Log.w(TAG, "supplier threw", t);
+      return null;
+    }
   }
 
   /** Runs the given block, catching any Throwable per Constitution VI. */

@@ -88,6 +88,12 @@ public final class AddressSubsystem implements AutoCloseable {
   /** Production lookup radius (research.md §R4). */
   private static final double LOOKUP_RADIUS_M = 500.0;
 
+  /**
+   * Below this query-to-record distance the on-map address row shows no direction arrow — the
+   * record is essentially on the query point, so a bearing would be noise.
+   */
+  private static final double ARROW_MIN_DISTANCE_M = 3.0;
+
   /** Earth mean radius for haversine (matches AtakDatabasesAddressDatabase). */
   private static final double EARTH_R_M = 6_371_000.0;
 
@@ -269,7 +275,7 @@ public final class AddressSubsystem implements AutoCloseable {
       } else {
         result = resolver != null ? resolver.lookup(lat, lon) : AddressLookupResult.noDataset();
       }
-      state = mapResultToState(result);
+      state = mapResultToState(result, lat, lon);
     } catch (Throwable t) {
       Log.w(TAG, "lookup task threw", t);
       state = AddressRowState.emptyState();
@@ -414,11 +420,25 @@ public final class AddressSubsystem implements AutoCloseable {
     }
   }
 
-  private AddressRowState mapResultToState(AddressLookupResult r) {
+  private AddressRowState mapResultToState(
+      AddressLookupResult r, double queryLat, double queryLon) {
     if (r instanceof AddressLookupResult.Found) {
       AddressLookupResult.Found f = (AddressLookupResult.Found) r;
-      return AddressRowState.text(
-          confidenceThresholds.decorate(f.record().displayName(), f.distanceMeters()));
+      String text = confidenceThresholds.decorate(f.record().displayName(), f.distanceMeters());
+      // Prefix a compass arrow pointing from the query point (map centre / self / target) to the
+      // resolved record, so the operator can see which way the actual address point lies. Skipped
+      // when the record is essentially on the query point (no meaningful direction).
+      double metres = haversineMeters(queryLat, queryLon, f.record().lat(), f.record().lon());
+      if (metres >= ARROW_MIN_DISTANCE_M) {
+        double bearing =
+            com.atakmap.android.twcoord.address.forward.CompassDirection.bearingDegrees(
+                queryLat, queryLon, f.record().lat(), f.record().lon());
+        text =
+            com.atakmap.android.twcoord.address.forward.CompassDirection.arrowGlyph(bearing)
+                + " "
+                + text;
+      }
+      return AddressRowState.text(text);
     }
     if (r instanceof AddressLookupResult.LocalityOnly) {
       // Feature 006 FR-015: county/district known but no house number — show the locality text

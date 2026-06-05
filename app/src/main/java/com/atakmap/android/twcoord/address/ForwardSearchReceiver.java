@@ -337,6 +337,18 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     scopeGroup.setOnCheckedChangeListener(null);
     scopeGroup.check(id);
     wireScopeListener();
+    reflectScopeButtons(id == R.id.fs_scope_all);
+  }
+
+  /**
+   * Mirror the checked scope onto the segmented buttons' {@code selected} state. The shared {@code
+   * fs_grid_cell_bg} reacts to {@code state_selected} (not {@code state_checked}), so without this
+   * the 全部 / 指定鄉鎮 buttons look identical whichever is active — the operator can't tell which scope
+   * is selected.
+   */
+  private void reflectScopeButtons(boolean all) {
+    if (scopeAll != null) scopeAll.setSelected(all);
+    if (scopeSpecific != null) scopeSpecific.setSelected(!all);
   }
 
   /** Apply whole-county scope: no district, query the whole county. */
@@ -396,9 +408,13 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
 
     String suggested = controller.suggestedDistrict();
     TextView all = gridCell(ui.getString(R.string.fs_district_all), null);
+    // Highlight the currently-active choice so re-opening shows the current pick (全部 vs a
+    // district).
+    all.setSelected(chosenDistrict == null);
     grid.addView(all);
     for (String dd : districts) {
       TextView cell = gridCell((dd.equals(suggested) ? "▶ " : "") + dd, null);
+      cell.setSelected(dd.equals(chosenDistrict));
       grid.addView(cell);
     }
 
@@ -567,19 +583,14 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     if (loc.county() == null) return; // offshore — leave as-is
     // Re-point the distance anchor to the tapped reference (地圖中心 / 所在地) so subsequent candidate
     // distances are measured from here, not the session-start position.
-    boolean wasAll = controller.isAllDistricts(); // chooseCounty resets this — capture first
     controller.setAnchor(lat, lon);
     controller.chooseCounty(loc.county(), source);
     renderCountyChip();
     onCountyChosen();
-    if (wasAll) {
-      // 全部 was selected — keep whole-county mode, don't switch to the resolved district.
-      selectAllDistrictsCell();
-    } else {
-      // Auto-select the district the coordinate falls in, if this county has it (FR: 地圖中心 →
-      // pre-pick the district so the operator drops straight to the street stage).
-      autoSelectDistrict(loc.district());
-    }
+    // 地圖中心 / 所在地 surface the resolved 鄉鎮市區: auto-select it so the district button + the
+    // 指定鄉鎮 scope visibly reflect where the point landed (and distances anchor there). Falls back
+    // to whole-county when the point's district can't be resolved in this county.
+    autoSelectDistrict(loc.district());
   }
 
   /** Programmatically pick {@code district} via the scope control, if this county has it. */
@@ -587,11 +598,6 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     if (controller == null) return;
     if (district != null && controller.districts().contains(district)) applySpecific(district);
     else applyAll(); // coordinate's district isn't in this county / unresolved → whole-county
-  }
-
-  /** Re-apply whole-county scope (map-follow / 地圖中心 with 全部 previously selected). */
-  private void selectAllDistrictsCell() {
-    applyAll();
   }
 
   // ----------------------------------------------------------------------
@@ -649,13 +655,30 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     onCountyChosen();
   }
 
+  /** The set of counties that have an installed place dataset (registry snapshot keys). */
+  private java.util.Set<String> countiesWithData() {
+    ActiveDatasetRegistry reg = safeGet(registrySupplier);
+    if (reg == null) return java.util.Collections.emptySet();
+    try {
+      return new java.util.HashSet<>(reg.snapshot().keySet());
+    } catch (Throwable t) {
+      Log.w(TAG, "countiesWithData threw", t);
+      return java.util.Collections.emptySet();
+    }
+  }
+
   private void showCountyList() {
     if (controller == null) return;
     countyList.removeAllViews();
     List<String> counties = controller.countyList();
+    // Counties with an installed place dataset can actually be searched; the rest only have the
+    // boundary layer, so mark them with a missing-data glyph (⚠) and dim them as a hint.
+    java.util.Set<String> withData = countiesWithData();
     for (String cc : counties) {
       final String c = cc;
-      TextView cell = gridCell(c, null);
+      boolean hasData = withData.contains(c);
+      TextView cell = gridCell(hasData ? c : c + " ⚠", null);
+      if (!hasData) cell.setAlpha(0.55f);
       cell.setOnClickListener(
           v ->
               safeRun(
@@ -861,14 +884,9 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private void renderCountyChip() {
     String county =
         controller != null && controller.state() != null ? controller.state().county() : null;
-    if (county == null) {
-      countyChip.setText(R.string.fs_county_none);
-      return;
-    }
-    String district = controller.suggestedDistrict();
-    countyChip.setText(
-        pluginContext.getString(
-            R.string.fs_county_confirm_format, county, district == null ? "" : district));
+    // Show the county only (no 鄉鎮市區): the resolved district is surfaced on the district button
+    // / scope control instead, and operators asked the chip to stay at county level.
+    countyChip.setText(county == null ? pluginContext.getString(R.string.fs_county_none) : county);
   }
 
   /**
