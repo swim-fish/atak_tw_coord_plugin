@@ -98,7 +98,7 @@ opens. Three buttons change it:
 |---|---|
 | **My location** | the county of your current GPS position |
 | **Map centre** | the county at the centre of the map (default) |
-| **List…** | pick from the full county list |
+| **List…** | opens a scrollable **county pop-up** (all counties in the boundary), pick one |
 
 > Tapping **Map centre / My location** also **auto-selects the township** it
 > resolves (the district button shows the name and the scope flips to

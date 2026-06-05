@@ -308,6 +308,7 @@
     <string name="fs_scope_all">All</string>
     <string name="fs_scope_specific">District</string>
     <string name="fs_district_whole_county">Whole county (no district)</string>
+    <string name="fs_county_choose_title">Select county</string>
     <string name="fs_district_choose_title">Select district</string>
     <string name="fs_filter_hint">Filter (optional)</string>
     <string name="fs_house_dialog_title">House number</string>

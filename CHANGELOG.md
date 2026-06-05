@@ -5,6 +5,22 @@ loosely based on [Keep a Changelog](https://keepachangelog.com/); the project
 follows Semantic Versioning. Per-feature design records live under
 [`docs/adr/`](docs/adr/); per-feature specs under [`specs/`](specs/).
 
+## [1.3.1] — 2026-06-06 — TW Addr Search county list popup + geographic order
+
+### Changed
+- **The TW Addr Search county list (清單…) is now an on-demand pop-up.** Tapping
+  **清單…** opens a scrollable `AlertDialog` grid (same pattern as the township
+  chooser) instead of expanding an inline grid on the page. Counties with no
+  imported dataset stay marked ⚠ and dimmed; the currently-chosen county is
+  highlighted. The inline `fs_county_list` grid (and the now-unused
+  `markSelected` helper) were removed.
+- **County list order is now geographic, not alphabetical.** Counties are ordered
+  starting at 宜蘭, north, down the west coast, around the south, up the east
+  coast, then outlying islands last (澎湖 / 金門 / 連江). Only the counties present
+  in the imported `townships.sqlite` appear — e.g. the central `tw-central-full`
+  pack's boundary contains 12 counties, so 12 show; a national boundary shows all
+  22. The order folds 臺↔台 so either name form matches.
+
 ## [1.3.0] — 2026-06-05 — Search & storage page UI redesign (feature 008)
 
 ### Changed

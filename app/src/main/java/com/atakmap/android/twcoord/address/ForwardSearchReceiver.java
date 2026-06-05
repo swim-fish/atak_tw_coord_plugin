@@ -76,7 +76,6 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   private Button btnMapCenter;
   private Button btnList;
   private Button btnReset;
-  private GridLayout countyList;
   private TextView districtLabel;
   // Feature 008 — segmented scope control (全部 / 指定鄉鎮) + on-demand district button,
   // replacing the always-visible district GridLayout.
@@ -158,7 +157,6 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     btnMapCenter = view.findViewById(R.id.fs_btn_mapcenter);
     btnList = view.findViewById(R.id.fs_btn_list);
     btnReset = view.findViewById(R.id.fs_btn_reset);
-    countyList = view.findViewById(R.id.fs_county_list);
     districtLabel = view.findViewById(R.id.fs_stage_district_label);
     scopeRow = view.findViewById(R.id.fs_scope_row);
     scopeGroup = view.findViewById(R.id.fs_scope_group);
@@ -259,7 +257,6 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     controller.seedCounty(mc[0], mc[1], box(self, 0), box(self, 1));
     renderCountyChip();
     // Reset downstream stages.
-    countyList.setVisibility(View.GONE);
     candidateList.removeAllViews();
     emptyState.setVisibility(View.GONE);
     btnGoto.setVisibility(View.GONE);
@@ -690,35 +687,85 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     }
   }
 
+  /**
+   * The county chooser — same on-demand {@link AlertDialog} + scrollable glove grid as {@link
+   * #showDistrictDialog}, instead of an inline list. Counties with an installed place dataset are
+   * searchable; the rest (boundary only) are marked ⚠ and dimmed. Cross-context rule per contract
+   * dialog-context.md (Activity context for the builder, plugin context for views/strings).
+   */
+  // County display order (operator request): starting at 宜蘭, north, down the west coast, around
+  // the south, up the east coast, then outlying islands last. Names in 台 form; countyOrderIndex
+  // folds 臺→台 so either form in the data matches. Counties not listed sort after these.
+  private static final String[] COUNTY_ORDER = {
+    "宜蘭縣", "基隆市", "台北市", "新北市", "桃園市", "新竹市", "新竹縣", "苗栗縣", "台中市", "彰化縣", "南投縣", "雲林縣", "嘉義市",
+    "嘉義縣", "台南市", "高雄市", "屏東縣", "台東縣", "花蓮縣", "澎湖縣", "金門縣", "連江縣"
+  };
+
+  /** Index of {@code county} in {@link #COUNTY_ORDER} (臺↔台 folded), or MAX_VALUE if unlisted. */
+  private static int countyOrderIndex(String county) {
+    if (county == null) return Integer.MAX_VALUE;
+    String norm = county.replace('臺', '台');
+    for (int i = 0; i < COUNTY_ORDER.length; i++) {
+      if (COUNTY_ORDER[i].equals(norm)) return i;
+    }
+    return Integer.MAX_VALUE;
+  }
+
   private void showCountyList() {
     if (controller == null) return;
-    countyList.removeAllViews();
-    List<String> counties = controller.countyList();
-    // Counties with an installed place dataset can actually be searched; the rest only have the
-    // boundary layer, so mark them with a missing-data glyph (⚠) and dim them as a hint.
+    List<String> raw = controller.countyList();
+    if (raw.isEmpty()) return;
+    // Geographic order (operator request): 宜蘭 → 北部 → 西岸往南 → 台東/花蓮 → 離島 last, instead
+    // of name_zh alphabetical. Only the counties present in the imported townships.sqlite appear;
+    // any name not in COUNTY_ORDER sorts to the end.
+    java.util.List<String> counties = new java.util.ArrayList<>(raw);
+    counties.sort(java.util.Comparator.comparingInt(ForwardSearchReceiver::countyOrderIndex));
+
+    Context ui = pluginContext; // resources / strings
+    Context atak = getMapView().getContext(); // dialog window token
+    float d = ui.getResources().getDisplayMetrics().density;
     java.util.Set<String> withData = countiesWithData();
+    String current = controller.state() != null ? controller.state().county() : null;
+
+    GridLayout grid = new GridLayout(ui);
+    grid.setColumnCount(3);
+    int pad = (int) (8 * d);
+    grid.setPadding(pad, pad, pad, pad);
     for (String cc : counties) {
-      final String c = cc;
-      boolean hasData = withData.contains(c);
-      TextView cell = gridCell(hasData ? c : c + " ⚠", null);
+      boolean hasData = withData.contains(cc);
+      TextView cell = gridCell(hasData ? cc : cc + " ⚠", null);
       if (!hasData) cell.setAlpha(0.55f);
-      cell.setOnClickListener(
-          v ->
-              safeRun(
-                  () -> {
-                    markSelected(countyList, cell);
-                    controller.chooseCounty(c, CountySource.LIST);
-                    renderCountyChip();
-                    countyList.setVisibility(View.GONE);
-                    onCountyChosen();
-                  }));
-      countyList.addView(cell);
+      cell.setSelected(cc.equals(current)); // highlight the currently-chosen county
+      grid.addView(cell);
     }
-    countyList.setVisibility(counties.isEmpty() ? View.GONE : View.VISIBLE);
+
+    ScrollView sv = new ScrollView(ui);
+    sv.addView(grid);
+
+    final AlertDialog dlg =
+        new AlertDialog.Builder(atak)
+            .setTitle(ui.getString(R.string.fs_county_choose_title))
+            .setView(sv)
+            .setNegativeButton(ui.getString(R.string.fs_cancel), null)
+            .create();
+
+    for (int i = 0; i < counties.size(); i++) {
+      final String c = counties.get(i);
+      grid.getChildAt(i)
+          .setOnClickListener(
+              v ->
+                  safeRun(
+                      () -> {
+                        controller.chooseCounty(c, CountySource.LIST);
+                        renderCountyChip();
+                        onCountyChosen();
+                        dlg.dismiss();
+                      }));
+    }
+    dlg.show();
   }
 
   private void onCountyChosen() {
-    countyList.setVisibility(View.GONE);
     districtLabel.setVisibility(View.VISIBLE);
     if (scopeRow != null) scopeRow.setVisibility(View.VISIBLE);
     // Default to 全部 (whole county): once a county is chosen the operator can search a street
@@ -940,15 +987,6 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     return tv;
   }
 
-  /** Highlight {@code chosen} (selected state) and clear the rest of {@code grid}'s cells. */
-  private void markSelected(GridLayout grid, View chosen) {
-    if (grid == null) return;
-    for (int i = 0; i < grid.getChildCount(); i++) {
-      View child = grid.getChildAt(i);
-      child.setSelected(child == chosen);
-    }
-  }
-
   private void hideFromStage(int stage) {
     if (stage <= 1) {
       countyChip.setVisibility(View.GONE);
@@ -956,7 +994,6 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
       btnMapCenter.setVisibility(View.GONE);
       btnList.setVisibility(View.GONE);
     }
-    countyList.setVisibility(View.GONE);
     districtLabel.setVisibility(View.GONE);
     if (scopeRow != null) scopeRow.setVisibility(View.GONE);
     streetLabel.setVisibility(View.GONE);
