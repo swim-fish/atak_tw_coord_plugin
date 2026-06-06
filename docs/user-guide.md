@@ -80,18 +80,18 @@ Open ATAK's **Tools** menu (the toolbar button in the bottom-right, or edge-swip
 <td width="280" valign="top"><img src="images/09-coordinate-input-taipower.jpg" alt="Coordinate Input — Taipower tab" width="280"></td>
 <td valign="top">
 
-Tap **TW Coord GoTo** and a panel slides in from the right with three tabs: **Taipower**, **TWD97**, **TWD67**.
+Tap **TW Coord GoTo** and a panel slides in from the right with a segmented selector for three coordinate systems: **Taipower**, **TWD97**, **TWD67**. _(v1.3.2 refreshes this page into the compact, glove-friendly layout shared with the other plugin pages — same workflow, clearer controls.)_
 
 Workflow on every tab is the same:
 
-1. **Type the coordinate** in that tab's format, or tap **Auto Fill** to copy the current map-centre coordinate into the field.
-2. **(Optional) pick a Marker mode** — eight choices laid out as a 2×4 grid:
+1. **Type the coordinate** in that tab's format, or tap **Use map centre** (the button in the panel header) to copy the current map-centre coordinate into the active tab's field.
+2. **(Optional) pick a Marker mode** — eight choices laid out as a glove-friendly 2×4 grid:
    - *Move only* (default — just pan, no marker)
    - *Waypoint*, *GoTo Pin*, *Point of Interest*
    - *Friendly*, *Hostile*, *Neutral*, *Unknown* (MIL-STD-2525 colours)
-3. **Tap SUBMIT.** The map pans to your coordinate. If a Marker mode other than *Move only* is picked, a marker is dropped there using ATAK's native marker tool — long-press it later to edit, move, or delete it from the standard radial menu.
+3. **Tap Submit & go.** The map pans to your coordinate. If a Marker mode other than *Move only* is picked, a marker is dropped there using ATAK's native marker tool — long-press it later to edit, move, or delete it from the standard radial menu.
 
-Alternative drop button: **OPEN ATAK ICON MENU** pans to the coordinate and then hands off to ATAK's native Enter Location pane, letting you pick any iconset / pallet ATAK has installed.
+Alternative drop button: **Use ATAK icon palette…** pans to the coordinate and then hands off to ATAK's native Enter Location pane, letting you pick any iconset / pallet ATAK has installed.
 
 Every successful submit is saved in **Recent** (10 entries, oldest dropped first). Tap a Recent row to refill the input; tap its **×** to delete just that row.
 
