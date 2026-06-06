@@ -5,6 +5,24 @@ loosely based on [Keep a Changelog](https://keepachangelog.com/); the project
 follows Semantic Versioning. Per-feature design records live under
 [`docs/adr/`](docs/adr/); per-feature specs under [`specs/`](specs/).
 
+## [1.3.3] — 2026-06-06 — Hotfix: TW Offline Addr Import button could be pushed off-screen
+
+### Fixed
+- **TW Offline Addr — Import button (and the boundary row) could be clipped off
+  the bottom on a long county list.** The page root was a non-scrolling
+  `LinearLayout` with the Import button placed below an unweighted
+  `wrap_content` inner `ScrollView`; a tall county list let the inner scroller
+  consume all remaining height and push the fixed Import button past the bottom
+  edge with no way to reach it. The whole page is now wrapped in a single outer
+  `ScrollView` and the per-county list is a plain `LinearLayout` (no nested
+  vertical scroller), so every control stays reachable on short panes.
+
+### Governance
+- **Constitution → 1.2.0**: Principle III gains a "Scrollable by default" rule —
+  new/modified tool pages MUST use an outer `ScrollView` unless the content is
+  provably short and fixed, and fixed actions must never sit below an unbounded
+  inner scroller. This hotfix is its first application.
+
 ## [1.3.2] — 2026-06-06 — GoTo input page UI redesign (feature 010)
 
 ### Changed

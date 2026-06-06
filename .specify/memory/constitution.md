@@ -1,40 +1,38 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.0.0 → 1.1.0
-Rationale: Add Principle VI "Host-Process Isolation (NON-NEGOTIABLE)" in
-response to a real on-device incident: a Resources.NotFoundException raised
-by a plugin view-rendering path propagated out of the plugin's broadcast
-receiver callback and killed the entire ATAK-CIV process. This amendment
-codifies the rule that no plugin code path may ever take down the host
-application. Bump type: MINOR (new principle added; no removals or
+Version change: 1.1.0 → 1.2.0
+Rationale: Add a "Scrollable by default" rule to Principle III (User
+Experience Consistency) in response to a real layout defect: the TW Offline
+Addr page used a non-scrolling LinearLayout root with the Import button placed
+below an unweighted wrap_content inner ScrollView, so a long county list could
+push the Import button (and the boundary row) off the bottom edge with no way
+to reach them. The rule makes tool pages scrollable by default and forbids
+placing fixed actions below an unbounded inner scroller. Bump type: MINOR
+(new normative rule added under an existing principle; no removals or
 incompatible redefinitions).
 
-Modified principles:
-- (no renames)
+Prior amendment (1.0.0 → 1.1.0): added Principle VI "Host-Process Isolation
+(NON-NEGOTIABLE)" after a Resources.NotFoundException in a view-rendering path
+crashed the whole ATAK-CIV process.
 
-Added sections:
-- VI. Host-Process Isolation (NON-NEGOTIABLE)
-- Development Workflow & Quality Gates — new "Crash isolation" bullet
-  surfacing the defensive-wrapping rule in the day-to-day discipline list.
+Modified principles:
+- III. User Experience Consistency — new "Scrollable by default" bullet.
+
+Added sections: none (bullet added to an existing principle).
 
 Removed sections: none.
 
 Templates requiring updates:
-- ✅ .specify/templates/plan-template.md — Constitution Check sections in
-  future /speckit-plan runs MUST include a row evaluating Principle VI
-  (host-process isolation); no structural change required to the template
-  itself, but the per-feature plan.md instances should add the row when
-  next regenerated.
-- ✅ .specify/templates/spec-template.md — no schema change; specs MAY
-  reference Principle VI when a feature surfaces new plugin-to-host
-  boundaries (e.g. a new broadcast receiver, MapEvent listener, view tree).
-- ✅ .specify/templates/tasks-template.md — the Polish phase MAY include
-  an explicit "crash-isolation audit" task for features that introduce new
-  callbacks; not strictly required because Principle VI also gates the
-  per-task Definition of Done.
-- ⚠ Existing plan.md instances (specs/001-*/plan.md, specs/002-*/plan.md)
-  do NOT need retroactive amendment; the principle applies going forward.
+- ✅ .specify/templates/plan-template.md — Constitution Check should evaluate
+  the scrollability rule for any feature that adds/edits a tool page layout;
+  no structural template change required.
+- ✅ .specify/templates/spec-template.md — no schema change.
+- ✅ .specify/templates/tasks-template.md — no schema change; a layout
+  "scrollability check" may be added to the Polish phase for UI features.
+- ⚠ Existing layouts: only newly added/modified tool pages must comply;
+  shipped pages are brought into compliance when next touched (the TW Offline
+  Addr fix in v1.3.x is the first application).
 
 Follow-up TODOs: none.
 -->
@@ -92,6 +90,17 @@ Every user-facing change MUST preserve a coherent, predictable experience:
 - Interaction patterns (navigation, gestures, feedback, error states,
   loading states, empty states) MUST mirror existing flows. New patterns
   require an explicit design decision recorded under `docs/ui/`.
+- **Scrollable by default.** When adding or modifying a tool page / DropDown
+  view, the page MUST be wrapped in a single outer `ScrollView` so no control
+  can be clipped or pushed off-screen on short panes or small devices. A
+  non-scrolling root (`LinearLayout` etc.) is permitted ONLY when the content
+  is provably short and fixed — a small, bounded set of fixed-height widgets
+  that cannot grow. Any variable-length content (per-item lists, optional
+  cards / banners, localised text that may wrap) makes the page scrollable.
+  Fixed actions (Submit, Import, etc.) MUST NOT be placed below an unweighted
+  `wrap_content` inner scroller, where a long list eats their space and pushes
+  them past the bottom edge. Avoid nested vertical scrollers — prefer one
+  outer `ScrollView` with plain inner containers.
 - Accessibility minimums MUST be met: semantic labels for interactive
   widgets, sufficient contrast, scalable text, and keyboard / screen-reader
   reachability where the platform supports it.
@@ -275,4 +284,4 @@ guidance conflict, this document wins until amended.
   `CLAUDE.md` and the per-feature plan; they MUST NOT contradict this
   constitution. When they drift, the constitution is the source of truth.
 
-**Version**: 1.1.0 | **Ratified**: 2026-05-16 | **Last Amended**: 2026-05-16
+**Version**: 1.2.0 | **Ratified**: 2026-05-16 | **Last Amended**: 2026-06-06

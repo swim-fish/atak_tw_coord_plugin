@@ -114,9 +114,17 @@ v2 (`places-<county>.sqlite` per-county zip, or the bundled
 
 ### State B layout (multi-county)
 
-Each active county is rendered as a row in a vertical `ScrollView`
-+ `LinearLayout` container (`offline_address_county_row.xml`), with
-its own Replace + Remove buttons:
+Each active county is rendered as a row in the
+`offline_address_state_b_list` `LinearLayout` container
+(`offline_address_county_row.xml`), with its own Replace + Remove buttons.
+
+> **v1.3.3 hotfix (Constitution III "Scrollable by default"):** the whole page
+> is now wrapped in a single outer `ScrollView`; the per-county list is a plain
+> `LinearLayout` (it used to be its own inner `ScrollView`). Previously the page
+> root was a non-scrolling `LinearLayout` and the Import button sat below an
+> unweighted `wrap_content` inner scroller, so a long county list could push the
+> Import button (and the boundary row) off the bottom edge. With one outer
+> scroller every control stays reachable; nested vertical scrollers are avoided.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐

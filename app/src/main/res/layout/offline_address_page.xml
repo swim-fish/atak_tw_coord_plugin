@@ -13,12 +13,21 @@
   the per-county list container, Import, legacy table, and the boundary row are
   otherwise unchanged. Pure Android widgets (ADR-0009 D6).
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/offline_address_root"
+<!-- Constitution III "Scrollable by default": the whole page is wrapped in a single
+     outer ScrollView so a long county list can never push the Import button (or the
+     boundary row) off the bottom edge. The per-county list is a plain LinearLayout
+     (no inner vertical scroller — nested vertical scrollers are forbidden). -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="#1B1B1B"
+    android:fillViewport="true">
+
+<LinearLayout
+    android:id="@+id/offline_address_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
     android:padding="16dp">
 
     <TextView
@@ -216,22 +225,17 @@
             </HorizontalScrollView>
         </LinearLayout>
 
-        <!-- Per-county list container (B row template inflated per county). -->
-        <ScrollView
-            android:id="@+id/offline_address_state_b_scroll"
+        <!-- Per-county list container (B row template inflated per county).
+             Plain LinearLayout: the whole page scrolls via the outer ScrollView, so
+             this must NOT be an inner vertical scroller (Constitution III). -->
+        <LinearLayout
+            android:id="@+id/offline_address_state_b_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fillViewport="true">
-
-            <LinearLayout
-                android:id="@+id/offline_address_state_b_list"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/oa_usage_card_bg"
-                android:paddingStart="12dp"
-                android:paddingEnd="6dp" />
-        </ScrollView>
+            android:orientation="vertical"
+            android:background="@drawable/oa_usage_card_bg"
+            android:paddingStart="12dp"
+            android:paddingEnd="6dp" />
 
         <Button
             android:id="@+id/offline_address_state_b_import"
@@ -320,3 +324,4 @@
         android:visibility="gone" />
 
 </LinearLayout>
+</ScrollView>
