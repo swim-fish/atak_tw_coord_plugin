@@ -680,7 +680,9 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     ActiveDatasetRegistry reg = safeGet(registrySupplier);
     if (reg == null) return java.util.Collections.emptySet();
     try {
-      return new java.util.HashSet<>(reg.snapshot().keySet());
+      java.util.Set<String> out = new java.util.HashSet<>();
+      for (String k : reg.snapshot().keySet()) out.add(foldCountyName(k));
+      return out;
     } catch (Throwable t) {
       Log.w(TAG, "countiesWithData threw", t);
       return java.util.Collections.emptySet();
@@ -704,11 +706,16 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
   /** Index of {@code county} in {@link #COUNTY_ORDER} (臺↔台 folded), or MAX_VALUE if unlisted. */
   private static int countyOrderIndex(String county) {
     if (county == null) return Integer.MAX_VALUE;
-    String norm = county.replace('臺', '台');
+    String norm = foldCountyName(county);
     for (int i = 0; i < COUNTY_ORDER.length; i++) {
       if (COUNTY_ORDER[i].equals(norm)) return i;
     }
     return Integer.MAX_VALUE;
+  }
+
+  /** Fold 台/臺 variants for cross-source comparisons (boundary vs dataset metadata keys). */
+  private static String foldCountyName(String county) {
+    return county == null ? null : county.replace('臺', '台');
   }
 
   private void showCountyList() {
@@ -726,16 +733,17 @@ public final class ForwardSearchReceiver extends DropDownReceiver implements OnS
     float d = ui.getResources().getDisplayMetrics().density;
     java.util.Set<String> withData = countiesWithData();
     String current = controller.state() != null ? controller.state().county() : null;
+    String currentFolded = foldCountyName(current);
 
     GridLayout grid = new GridLayout(ui);
     grid.setColumnCount(3);
     int pad = (int) (8 * d);
     grid.setPadding(pad, pad, pad, pad);
     for (String cc : counties) {
-      boolean hasData = withData.contains(cc);
+      boolean hasData = withData.contains(foldCountyName(cc));
       TextView cell = gridCell(hasData ? cc : cc + " ⚠", null);
       if (!hasData) cell.setAlpha(0.55f);
-      cell.setSelected(cc.equals(current)); // highlight the currently-chosen county
+      cell.setSelected(currentFolded != null && currentFolded.equals(foldCountyName(cc)));
       grid.addView(cell);
     }
 
