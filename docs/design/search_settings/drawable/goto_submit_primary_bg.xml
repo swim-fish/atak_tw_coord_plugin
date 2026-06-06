@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主送出鈕底（goto_btn_submit）。enabled = 青色實心；disabled = 暗灰。
+     文字色在 layout 設 #06222E（深青），disabled 時系統會自動套上 textColor 的停用態，
+     若要更明顯可在 Java 依 enabled 切 setTextColor（見 changes.md §5 備註）。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="#14FFFFFF"/>
+            <corners android:radius="9dp"/>
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#33CCFF"/>
+            <corners android:radius="9dp"/>
+        </shape>
+    </item>
+</selector>
