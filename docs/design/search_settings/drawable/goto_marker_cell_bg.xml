@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 標點模式格背景（8 格共用）。state_checked = 青框青底（被選的標點），預設 = 淡框。
+     8 個 RadioButton 不在同一 RadioGroup，互斥靠 applyMarkerModeUI() 的 setChecked()
+     逐顆設定；state_checked 變動即驅動本 selector 換色（不再需要 setBackgroundColor）。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#4740A0D0"/>
+            <stroke android:width="2dp" android:color="#33CCFF"/>
+            <corners android:radius="8dp"/>
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#1AFFFFFF"/>
+            <stroke android:width="1dp" android:color="#57FFFFFF"/>
+            <corners android:radius="8dp"/>
+        </shape>
+    </item>
+</selector>

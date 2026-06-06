@@ -1,0 +1,52 @@
+<!--
+  V1 GoTo 重新設計的字串改動。貼到對應檔案：
+    • 中文：app/src/main/res/values-zh-rTW/strings.xml
+    • 英文（base）：app/src/main/res/values/strings.xml
+    • 日文：app/src/main/res/values-ja/strings.xml
+
+  分三類：
+    (A) 改文案（沿用既有 id）— 把既有 <string> 換成下面的值
+    (B) 新增 id（本次新增的小提示字串）
+  其餘 goto_* 字串（hint / error / zone / recent / mode_* …）皆不變。
+-->
+
+<!-- ============================================================ -->
+<!-- (A) 改文案（id 不變，換值）                                   -->
+<!-- ============================================================ -->
+
+<!-- values-zh-rTW/strings.xml -->
+<string name="goto_marker_mode_header">標點模式</string>   <!-- 原：落點模式 -->
+<string name="goto_btn_submit">送出並前往</string>          <!-- 原：送出 -->
+<string name="goto_btn_autofill">帶入地圖中心</string>      <!-- 原：自動填入 -->
+<string name="goto_btn_atak_picker">改用 ATAK 圖示盤…</string> <!-- 原：開啟 ATAK 圖示選單 -->
+
+<!-- values/strings.xml (English base) -->
+<string name="goto_marker_mode_header">Marker mode</string>
+<string name="goto_btn_submit">Submit &amp; go</string>
+<string name="goto_btn_autofill">Use map centre</string>
+<string name="goto_btn_atak_picker">Use ATAK icon palette…</string>
+
+<!-- values-ja/strings.xml -->
+<string name="goto_marker_mode_header">マーカー種別</string>
+<string name="goto_btn_submit">送信して移動</string>
+<string name="goto_btn_autofill">地図中心を取得</string>
+<string name="goto_btn_atak_picker">ATAK アイコンパレットを使う…</string>
+
+
+<!-- ============================================================ -->
+<!-- (B) 新增 id                                                  -->
+<!-- ============================================================ -->
+
+<!-- 台電欄位下方的小說明（V1 在輸入框下顯示）。 -->
+<!-- values-zh-rTW/strings.xml -->
+<string name="goto_taipower_help">9 碼（10m）或 11 碼（1m）· 不分大小寫 · 可含空格</string>
+<!-- values/strings.xml -->
+<string name="goto_taipower_help">9-char (10 m) or 11-char (1 m) · case-insensitive · spaces OK</string>
+<!-- values-ja/strings.xml -->
+<string name="goto_taipower_help">9桁（10m）/ 11桁（1m）· 大文字小文字不問 · 空白可</string>
+
+<!--
+  （選配）若採用「行內 Auto Fill 停用原因提示」而非既有 Toast（見 changes.md §2 備註），
+  可重用既有 goto_autofill_hint_outside_taiwan / goto_autofill_hint_taipower_outer_island，
+  不需新增字串。
+-->

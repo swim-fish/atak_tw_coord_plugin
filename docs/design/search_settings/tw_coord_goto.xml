@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  TW Coord GoTo input page — V1 "compact stacked" redesign (feature 010).
-  Applies the feature-008 visual language with no coordinate-behaviour change:
-    1. Condensed single column, segmented tabs, carded fields.
-    2. Primary "Submit & go" enlarged/filled vs ghost "Use ATAK icon palette".
-    3. Marker grid enlarged to >=72dp glove-friendly cells.
-    4. Auto Fill promoted to one header-level "Use map centre" button.
-    5. 121/119 projection zone as a labelled segmented control; 119 shows the precision advisory.
-    6. Unified "tab -> field" rhythm across Taipower / TWD.
+  TW Coord GoTo 輸入頁 — V1「緊湊堆疊」重新設計（主案）。
+  目標：在不動座標數學、不改 ParseResult / controller 的前提下，修掉六個痛點：
+    ① 整頁太長 → 區塊收斂、分頁=segmented、欄位卡片化
+    ② 兩顆送出鈕困惑 → 主「送出並前往」放大上色，次「改用 ATAK 圖示盤」做成 ghost
+    ③ 標點 8 格太小 → 放大成 ≥72dp 手套友善格（drawableTop 圖示加大）
+    ④ Auto Fill 太小又藏右上 → 升級成標題列「⊕ 帶入地圖中心」大鈕
+    ⑤ 投影帶/外島不清 → 121/119 做成有說明的 segmented，119 即時顯示橘色精度提醒
+    ⑥ 三系切換不一致 → 統一「分頁 → 欄位」語彙，台電/TWD 同一節奏
 
-  All ids are preserved from the prior layout. The only structural change: the three per-pane
-  goto_autofill_taipower/_twd97/_twd67 buttons are merged into a single header goto_autofill whose
-  behaviour is dispatched on activeTab (see TwCoordGotoView). Selection state for tabs / zone /
-  marker cells is expressed via state-list drawables, not programmatic colour (Constitution VI).
+  ★ id 全數沿用原 tw_coord_goto.xml；唯一結構性改動：
+    原本三個 per-pane 的 goto_autofill_taipower/_twd97/_twd67 合併為「單一」
+    goto_autofill（放在標題列，依 activeTab 決定行為）。對應 Java 改動見
+    TwCoordGotoView_changes.md §2。其餘 id（goto_tabs / goto_tab_* / goto_pane_* /
+    goto_input_* / goto_zone_* / goto_advisory_* / goto_error_* / goto_marker_mode_* /
+    goto_mode_* / goto_btn_submit / goto_btn_atak_picker / goto_recent_*）皆不變。
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -27,7 +29,7 @@
         android:orientation="vertical"
         android:padding="12dp">
 
-        <!-- ===== Header: title + single Auto Fill ===== -->
+        <!-- ===== 標題列：標題 + 單一 Auto Fill（痛點④）===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -45,8 +47,8 @@
                 android:textSize="18sp"
                 android:textStyle="bold"/>
 
-            <!-- Single Auto Fill; onClick fills the active tab, enabled by that unit's
-                 representability. Disabled reason uses the existing toast (onAutoFill early-return). -->
+            <!-- 合併後的單一 Auto Fill；onClick 依 activeTab 決定填哪一格、enable 依該帶可表示性。
+                 disabled 原因走既有 Toast（onAutoFill 早退）或選配的 goto_autofill_hint。 -->
             <Button
                 android:id="@+id/goto_autofill"
                 android:layout_width="wrap_content"
@@ -61,9 +63,8 @@
                 android:text="@string/goto_btn_autofill"/>
         </LinearLayout>
 
-        <!-- ===== Tab strip: segmented ===== -->
-        <!-- Rounded translucent track; selected state set by styleTab() via goto_tab_selected
-             (button=@null removes the default radio bullet). -->
+        <!-- ===== 分頁列：segmented（痛點⑥）===== -->
+        <!-- 容器圓角半透明；選取態由 styleTab() 以 goto_tab_selected 背景表現（button=@null）。 -->
         <RadioGroup
             android:id="@+id/goto_tabs"
             android:layout_width="match_parent"
@@ -110,7 +111,7 @@
                 android:text="@string/goto_tab_twd67"/>
         </RadioGroup>
 
-        <!-- ===== Taipower pane ===== -->
+        <!-- ===== 台電 pane（US1）===== -->
         <LinearLayout
             android:id="@+id/goto_pane_taipower"
             android:layout_width="match_parent"
@@ -154,7 +155,7 @@
                 android:visibility="gone"/>
         </LinearLayout>
 
-        <!-- ===== TWD97 pane ===== -->
+        <!-- ===== TWD97 pane（US2）===== -->
         <LinearLayout
             android:id="@+id/goto_pane_twd97"
             android:layout_width="match_parent"
@@ -208,8 +209,8 @@
                 android:textColor="#BFBFBF"
                 android:textSize="13sp"/>
 
-            <!-- Projection zone segmented; RadioGroup handles mutual exclusion, goto_zone_cell_bg
-                 state_checked colours the selection. -->
+            <!-- 投影帶 segmented（痛點⑤）；mutual-exclusion 由 RadioGroup 自動處理，
+                 選取態由 goto_zone_cell_bg 的 state_checked 自動上色。 -->
             <RadioGroup
                 android:id="@+id/goto_zone_twd97"
                 android:layout_width="match_parent"
@@ -242,7 +243,7 @@
                     android:text="@string/goto_zone_119"/>
             </RadioGroup>
 
-            <!-- Outer-island precision advisory; validateTwd97() toggles VISIBLE/GONE on zone==119. -->
+            <!-- 外島精度提醒；validateTwd97() 已依 zone==119 切 VISIBLE/GONE。 -->
             <TextView
                 android:id="@+id/goto_advisory_twd97"
                 android:layout_width="match_parent"
@@ -265,7 +266,7 @@
                 android:visibility="gone"/>
         </LinearLayout>
 
-        <!-- ===== TWD67 pane ===== -->
+        <!-- ===== TWD67 pane（US2）===== -->
         <LinearLayout
             android:id="@+id/goto_pane_twd67"
             android:layout_width="match_parent"
@@ -380,10 +381,10 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="12dp"/>
 
-        <!-- ===== Marker mode: 8 glove-friendly cells (4x2) =====
-             goto_marker_mode_header label is "Marker mode". The 8 goto_mode_* ids are unchanged;
-             selection colour comes from goto_marker_cell_bg state_checked, and applyMarkerModeUI()
-             drives manual mutual exclusion via setChecked(). -->
+        <!-- ===== 標點模式 8 格（4×2，放大成手套友善，痛點③）=====
+             id 改名：goto_marker_mode_header 文案改「標點模式」（strings）。
+             8 個 goto_mode_* id 不變；選取態由 goto_marker_cell_bg 的 state_checked
+             自動上色，applyMarkerModeUI() 仍負責手動互斥（setChecked）。 -->
         <TextView
             android:id="@+id/goto_marker_mode_header"
             android:layout_width="match_parent"
@@ -461,8 +462,8 @@
                 android:text="@string/goto_mode_unknown"/>
         </LinearLayout>
 
-        <!-- ===== Submit area: clear primary vs secondary ===== -->
-        <!-- Primary: goto_btn_submit enlarged/filled (cyan); disabled state via goto_submit_primary_bg. -->
+        <!-- ===== 送出區：主/次分明（痛點②）===== -->
+        <!-- 主：goto_btn_submit 放大上色（cyan），disabled 時走 goto_submit_primary_bg 的灰態。 -->
         <Button
             android:id="@+id/goto_btn_submit"
             android:layout_width="match_parent"
@@ -475,7 +476,7 @@
             android:text="@string/goto_btn_submit"
             android:enabled="false"/>
 
-        <!-- Secondary: goto_btn_atak_picker as a ghost button, clearly weaker than the primary. -->
+        <!-- 次：goto_btn_atak_picker 做成 ghost 連結感，明顯弱於主鈕。 -->
         <Button
             android:id="@+id/goto_btn_atak_picker"
             android:layout_width="match_parent"
@@ -487,7 +488,7 @@
             android:text="@string/goto_btn_atak_picker"
             android:enabled="false"/>
 
-        <!-- ===== Recent inputs ===== -->
+        <!-- ===== 最近輸入（US4）===== -->
         <LinearLayout
             android:id="@+id/goto_recent_section"
             android:layout_width="match_parent"

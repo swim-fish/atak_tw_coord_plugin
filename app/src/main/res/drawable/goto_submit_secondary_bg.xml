@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Secondary button background (goto_btn_atak_picker). Ghost: transparent fill + thin border;
+     fainter when disabled. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000"/>
+            <stroke android:width="1dp" android:color="#14FFFFFF"/>
+            <corners android:radius="8dp"/>
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000"/>
+            <stroke android:width="1dp" android:color="#38FFFFFF"/>
+            <corners android:radius="8dp"/>
+        </shape>
+    </item>
+</selector>

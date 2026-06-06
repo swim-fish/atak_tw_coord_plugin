@@ -1,32 +1,55 @@
 # UI — TW Coord GoTo input page
 
-**Features**: 002-tw-coord-goto (base page) + 003-custom-marker-icon (ATAK-picker delegation button — ADR-0011 D8)
+**Features**: 002-tw-coord-goto (base page) + 003-custom-marker-icon (ATAK-picker delegation button — ADR-0011 D8) + 010-goto-ui-redesign (compact-stacked visual redesign)
 **Source**: `app/src/main/res/layout/tw_coord_goto.xml` + `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoView.java`
 
 The TW Coord GoTo input page is a `DropDownReceiver` side-pane opened by the second Tools-menu icon (or the settings-page button). It is the *only* new user-facing surface this feature adds; everything downstream of Submit is pure ATAK behaviour the operator already knows.
 
+> **Feature 010 note:** the page was restyled into the feature-008 "compact stacked" visual language (see the redesign section below). The structure, ids, and Submit/Auto Fill/marker/zone *behaviour* are unchanged; only layout, drawables, and three button labels changed.
+
 ## Anatomy
+
+The current page anatomy is in the **V1 compact-stacked redesign (feature 010)** section immediately below. (The pre-010 layout used a flat tab bar, three per-tab Auto Fill buttons, and flat-colour selection; it was replaced wholesale in v1.3.2 — the redesign section is the single source of truth for layout and labels.)
+
+## V1 compact-stacked redesign (feature 010)
+
+Feature 010 brings the GoTo page into visual parity with the redesigned TW Addr Search and TW Offline Addr pages, resolving six pain points **with no coordinate-behaviour change** (parser, datum/projection conversion, Submit-and-pan, ATAK-picker hand-off, validation, and Recent are untouched — confirmed by the unmodified, passing GoTo unit suite).
+
+| # | Pain point | Resolution |
+|---|---|---|
+| ① | Page too long | Single-column stack, segmented tabs, carded fields (`goto_input_bg`) |
+| ② | Two equal submit buttons | Primary **Submit & go** enlarged/filled (`goto_submit_primary_bg`); ATAK-palette button is a ghost secondary (`goto_submit_secondary_bg`) |
+| ③ | Marker cells too small | 8-cell 4×2 grid enlarged to ≥72 dp glove-friendly cells |
+| ④ | Auto Fill small + hidden | Promoted to one header-level **Use map centre** button (`goto_autofill`) dispatching on the active tab |
+| ⑤ | Projection zone unclear | 121/119 as a labelled segmented control (`goto_zone_cell_bg`); 119 shows the amber precision advisory (`goto_advisory_bg`) |
+| ⑥ | Inconsistent system switching | Unified "tab → field" rhythm shared by Taipower / TWD |
+
+**Selection styling is now drawable-driven.** Tab selection uses the `goto_tab_selected` pill (via `styleTab()`); marker-cell and zone selection use `state_checked` state-list drawables. `styleMarkerModeRadio()` no longer calls `setBackgroundColor` — removing an imperative view-mutate from the hot path (Constitution VI). All new `goto_*` drawables are concrete resource ids; no `android.R.attr.*` is passed to `setBackgroundResource`.
+
+**Labels changed (ids unchanged):** `goto_btn_submit` → "Submit & go" (送出並前往 / 送信して移動); `goto_btn_autofill` → "Use map centre" (帶入地圖中心 / 地図中心を取得); `goto_btn_atak_picker` → "Use ATAK icon palette…" (改用 ATAK 圖示盤… / ATAK アイコンパレットを使う…); `goto_marker_mode_header` zh-TW "落點模式" → "標點模式". New `goto_taipower_help` hint sits under the Taipower field.
+
+### Anatomy (redesigned)
 
 ```
 ┌────────────────────────────────────────┐
-│ Coordinate input                       │  ← title (R.id.goto_title)
-│ ┌──────────┬──────────┬──────────┐    │
-│ │ Taipower │  TWD97   │  TWD67   │    │  ← tab bar (RadioGroup,
-│ └──────────┴──────────┴──────────┘    │     one radio per unit)
-│ ────────────────────────────────────   │
-│                          [ Auto Fill ] │  ← per-tab Auto Fill button
-│ [Input field(s) for the active tab]   │
-│ [Inline error TextView, red]           │  ← visible only when input invalid
-│ [Outer-island advisory, amber]         │  ← visible only when zone = 119
-│                                        │
-│ [        Submit        ]               │  ← disabled until input is Ok
-│ [ Open ATAK icon menu ]                │  ← optional: delegate to ATAK
-│                                        │
-│ Recent                                 │  ← section header
-│ ──────────────                          │
-│ TAIPOWER  H7509 DB4016    [ Remove ]   │  ← rows, newest first
-│ TWD97     302912 / 2770905 [ Remove ]   │
-│ ...                                    │
+│ Coordinate input        [Use map centre]│  ← title + single header Auto Fill
+│ ╭──────────┬──────────┬──────────╮     │
+│ │ Taipower │  TWD97   │  TWD67   │     │  ← segmented tabs (pill on selected)
+│ ╰──────────┴──────────┴──────────╯     │
+│ ┌────────────────────────────────────┐ │
+│ │ H7509 DB4016                        │ │  ← carded input(s) for the active tab
+│ └────────────────────────────────────┘ │
+│ 9-char (10 m) or 11-char (1 m) · …      │  ← goto_taipower_help
+│ [inline error, red]   [119 advisory]    │
+│ ────────────────────────────────────    │
+│ Marker mode                             │
+│ [ ▣ ][ ▢ ][ ▢ ][ ▢ ]   (≥72 dp cells)  │
+│ [ ▢ ][ ▢ ][ ▢ ][ ▢ ]                    │
+│ ┌────────────────────────────────────┐ │
+│ │            Submit & go              │ │  ← primary, filled
+│ └────────────────────────────────────┘ │
+│ [    Use ATAK icon palette…    ]        │  ← ghost secondary
+│ Recent … (unchanged)                    │
 └────────────────────────────────────────┘
 ```
 
@@ -51,17 +74,17 @@ Same shape as TWD97 (easting + northing + zone toggle + advisory + error). TWD67
 
 ## Auto Fill
 
-Each tab has a small **Auto Fill** button in the top-right of the pane. When the operator taps it, the input fields are populated from the current map centre:
+Since feature 010 there is a single **Use map centre** button in the panel header (it replaced the three per-tab Auto Fill buttons). When the operator taps it, the **active tab's** input fields are populated from the current map centre:
 
 - Taipower: writes the canonical `H7509 DB4016` form into the input field.
 - TWD97 / TWD67: writes integer easting + northing into the two fields, **and** sets the zone toggle from the map-centre's longitude (`<120°` → zone 119, else 121).
 
-The button is **disabled in real time** whenever the map centre cannot be expressed in the active tab:
+The button is **disabled in real time** whenever the map centre cannot be expressed in the active tab (`refreshAutoFillEnabled()` switches on `activeTab`):
 
-- Map centre outside Taiwan's coverage box → all three Auto Fill buttons disabled.
-- Map centre on an outer island while the Taipower tab is active → only Taipower's Auto Fill is disabled (TWD97 / TWD67 stay enabled).
+- Map centre outside Taiwan's coverage box → the button is disabled on every tab.
+- Map centre on an outer island while the Taipower tab is active → the button is disabled on the Taipower tab but enabled on TWD97 / TWD67.
 
-Tapping a disabled Auto Fill button shows a localised toast explaining why.
+Tapping the button while it would be invalid shows a localised toast explaining why.
 
 The map-centre stream attaches when the DropDown opens and detaches when it closes — no `MapEventDispatcher` listeners leak beyond the page's lifetime.
 

@@ -60,8 +60,9 @@
     <string name="goto_zone_121">121（本島）</string>
     <string name="goto_zone_119">119（外島）</string>
 
-    <string name="goto_btn_submit">送出</string>
-    <string name="goto_btn_autofill">自動填入</string>
+    <string name="goto_btn_submit">送出並前往</string>
+    <string name="goto_btn_autofill">帶入地圖中心</string>
+    <string name="goto_taipower_help">9 碼（10m）或 11 碼（1m）· 不分大小寫 · 可含空格</string>
     <string name="goto_btn_paste">貼上</string>
 
     <string name="goto_err_empty">請輸入座標。</string>
@@ -88,7 +89,7 @@
     <string name="pref_open_goto_title">開啟座標輸入頁</string>
     <string name="pref_open_goto_summary">輸入台電 / TWD97 / TWD67 座標並讓地圖平移過去。</string>
 
-    <string name="goto_marker_mode_header">落點模式</string>
+    <string name="goto_marker_mode_header">標點模式</string>
     <string name="goto_mode_move">僅移動</string>
     <string name="goto_mode_waypoint">航點</string>
     <string name="goto_mode_friendly">友軍</string>
@@ -102,7 +103,7 @@
          Feature 003（Option B / ADR-0011 D8）— 委派 ATAK 圖示挑選按鈕
          ============================================================ -->
 
-    <string name="goto_btn_atak_picker">開啟 ATAK 圖示選單</string>
+    <string name="goto_btn_atak_picker">改用 ATAK 圖示盤…</string>
 
     <!-- ============================================================
          Feature 004 — Offline Address (Tools menu + Settings + widget rows)

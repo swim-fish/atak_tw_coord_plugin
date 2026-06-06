@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 分頁「選取態」背景：styleTab() 在選取時 setBackgroundResource(goto_tab_selected)，
+     未選取時 setBackgroundColor(0x00000000)。圓角實心淺灰，呼應 search-shared 的 T.grey 膠囊。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#BFBFBF"/>
+    <corners android:radius="6dp"/>
+</shape>

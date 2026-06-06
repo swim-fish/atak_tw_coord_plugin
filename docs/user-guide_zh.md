@@ -80,18 +80,18 @@ adb shell am force-stop com.atakmap.app.civ
 <td width="280" valign="top"><img src="images/09-coordinate-input-taipower.jpg" alt="座標輸入頁 — 台電分頁" width="280"></td>
 <td valign="top">
 
-按下 **TW Coord GoTo**，右側會滑出一個面板，有三個分頁：**Taipower（台電）**、**TWD97**、**TWD67**。
+按下 **TW Coord GoTo**，右側會滑出一個面板，以 segmented（分段）控制項選擇三種座標系統：**Taipower（台電）**、**TWD97**、**TWD67**。_（v1.3.2 將本頁改為與其他外掛頁面一致的「緊湊堆疊」手套友善版面 — 操作流程不變，控制項更清楚。）_
 
 三個分頁的操作流程相同：
 
-1. **輸入座標**（依各分頁的格式），或按 **Auto Fill** 把目前的地圖中心座標直接帶入欄位。
-2. **（選用）挑選 Marker mode（標記模式）** — 以 2×4 網格排列的 8 種選項：
+1. **輸入座標**（依各分頁的格式），或按面板標題列的 **帶入地圖中心** 鈕，把目前的地圖中心座標直接帶入當前分頁的欄位。
+2. **（選用）挑選 Marker mode（標點模式）** — 以手套友善的 2×4 網格排列的 8 種選項：
    - *Move only*（預設 — 只平移地圖，不放標記）
    - *Waypoint*、*GoTo Pin*、*Point of Interest*
    - *Friendly*、*Hostile*、*Neutral*、*Unknown*（MIL-STD-2525 標準配色）
-3. **按 SUBMIT。** 地圖會平移到你輸入的座標。若 Marker mode 不是 *Move only*，會用 ATAK 原生的標記工具在該位置放一個標記 — 之後長按該標記即可從標準環形選單編輯、移動或刪除。
+3. **按 送出並前往。** 地圖會平移到你輸入的座標。若 Marker mode 不是 *Move only*，會用 ATAK 原生的標記工具在該位置放一個標記 — 之後長按該標記即可從標準環形選單編輯、移動或刪除。
 
-另一個放置按鈕：**OPEN ATAK ICON MENU** 會平移到座標後，把控制權交給 ATAK 原生的 Enter Location 面板，讓你從 ATAK 已安裝的任何 iconset / pallet 中選擇圖示。
+另一個放置按鈕：**改用 ATAK 圖示盤…** 會平移到座標後，把控制權交給 ATAK 原生的 Enter Location 面板，讓你從 ATAK 已安裝的任何 iconset / pallet 中選擇圖示。
 
 每次成功送出都會記錄到 **Recent**（最多 10 筆，舊的先被擠掉）。點 Recent 列表的某一列可以把當時的輸入帶回欄位；點該列的 **×** 則只刪除那一筆。
 
