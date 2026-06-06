@@ -59,7 +59,8 @@ Install and eyeball on device:
 2. Enter a valid coordinate; confirm one emphasised **Submit & go** + ghost
    **Use ATAK icon palette…**; submit pans the map (SC-004, US2).
 3. Confirm marker grid cells are glove-sized; selecting then submitting drops the
-   right marker incl. Custom Icon (SC-003, US3).
+   right marker — Move-only or any of the seven marker types; custom icons via the
+   separate ATAK icon-palette button (SC-003, US3).
 4. Press header **Use map centre** on each tab; confirm it fills the active
    system and disables when not representable (toast) (US4).
 5. On TWD97/67, confirm 121/119 segmented + 119 precision advisory (US5).

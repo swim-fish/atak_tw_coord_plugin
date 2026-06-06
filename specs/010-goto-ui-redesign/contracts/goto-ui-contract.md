@@ -29,8 +29,8 @@ on, plus the **behaviour-preservation guarantees**. Anything not listed as
 `goto_advisory_twd67`, `goto_error_taipower`, `goto_error_twd97`,
 `goto_error_twd67`, `goto_marker_mode_header`, `goto_mode_move`,
 `goto_mode_waypoint`, `goto_mode_mission`, `goto_mode_spi`, `goto_mode_friendly`,
-`goto_mode_hostile`, `goto_mode_neutral`, `goto_mode_unknown` (+ custom-icon
-mode id as currently defined), `goto_btn_submit`, `goto_btn_atak_picker`,
+`goto_mode_hostile`, `goto_mode_neutral`, `goto_mode_unknown`, `goto_btn_submit`,
+`goto_btn_atak_picker` (the separate custom-icon palette button — not a marker mode),
 `goto_recent_*`.
 
 ## String id contract
@@ -64,7 +64,8 @@ State-list selection colour MUST be expressed via `state_checked` /
 ## Java binding contract (`TwCoordGotoView`)
 
 - Fields `autoFillTaipower/Twd97/Twd67` → single `autoFill`; bound from
-  `R.id.goto_autofill`; null-checked.
+  `R.id.goto_autofill` (direct binding, matching the other constructor
+  `findViewById` calls).
 - `autoFill.setOnClickListener(v -> safeClick("autoFill", () -> onAutoFill(activeTab)))`.
 - `refreshAutoFillEnabled()` sets `autoFill.setEnabled(...)` from the active
   tab's `latestFix.*Ok()`.
@@ -81,8 +82,9 @@ State-list selection colour MUST be expressed via `state_checked` /
    identical output for all systems and both zones, before vs after.
 2. Submit pans the map to the resolved location (X/Y only; zoom preserved).
 3. The ATAK icon-palette hand-off behaves identically.
-4. Marker-mode set (incl. Move-only and Custom Icon) and the marker created on
-   submit are identical.
+4. Marker-mode set (Move-only plus the seven marker types) and the marker created
+   on submit are identical; custom-icon placement via `goto_btn_atak_picker` is
+   unchanged.
 5. Recent list contents and behaviour are identical.
 6. Submit/Auto Fill re-entrancy guard (`submitInFlight`) and all entry-point
    `Throwable` wrapping (Constitution VI) remain in place.

@@ -33,9 +33,11 @@ and the `goto_*` drawables).
 - Q: Should the optional inline "why is Use map centre disabled" hint replace the
   current toast? → A: No — keep the existing toast for this release; the inline
   hint is out of scope (matches design doc §2 default).
-- Q: Should the Custom Icon marker mode and the full set of existing marker types
-  be preserved? → A: Yes — the redesign only resizes/restyles the marker grid;
-  the available marker modes and their behaviour are unchanged.
+- Q: Should the full set of existing marker modes and the separate custom-icon
+  flow be preserved? → A: Yes — the redesign only resizes/restyles the marker grid
+  and buttons; the marker modes (Move-only + the seven marker types) and the
+  separate ATAK icon-palette button (which handles custom icons — it is NOT a
+  marker mode) are behaviourally unchanged.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -122,9 +124,10 @@ mode still drops the correct marker on submit — testable by tapping each cell.
 2. **Given** a marker mode is selected, **When** the operator taps a different
    mode, **Then** selection moves to the new cell (mutually exclusive) with a
    clear selected appearance.
-3. **Given** any marker mode (including "Move only" and "Custom Icon"), **When**
+3. **Given** any marker mode (Move-only or any of the seven marker types), **When**
    the operator submits a valid coordinate, **Then** the resulting marker (or
-   move-only behaviour) is identical to the current version.
+   move-only behaviour) is identical to the current version; custom-icon placement
+   remains available via the separate ATAK icon-palette button (unchanged).
 
 ---
 
@@ -223,8 +226,10 @@ testable without submitting.
   spaced grid in which every selectable cell meets a glove-friendly minimum touch
   size, with legible icons.
 - **FR-007**: Marker-mode selection MUST remain mutually exclusive with a clear
-  selected appearance, and the full set of existing marker modes (including "Move
-  only" and "Custom Icon") MUST be preserved.
+  selected appearance, and the full set of existing marker modes (Move-only plus
+  the seven marker types) MUST be preserved. Custom-icon placement remains via the
+  separate ATAK icon-palette button (`goto_btn_atak_picker`) — it is not a marker
+  mode.
 - **FR-008**: A single prominent "Use map centre" auto-fill control MUST be
   provided at the page header level, replacing the three per-pane auto-fill
   buttons, and MUST fill the currently active coordinate system.

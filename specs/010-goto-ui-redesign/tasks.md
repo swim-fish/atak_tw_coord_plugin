@@ -86,7 +86,7 @@ under `docs/design/search_settings/`.
 
 **Goal**: Enlarged, evenly spaced marker grid with state-list selection styling.
 
-**Independent Test**: Each marker cell meets the glove-friendly minimum size; selecting then submitting drops the correct marker (incl. Custom Icon).
+**Independent Test**: Each marker cell meets the glove-friendly minimum size; selecting then submitting drops the correct marker (Move-only or any of the seven marker types; custom icons remain via the separate ATAK icon-palette button).
 
 - [x] T008 [US3] In `app/src/main/res/layout/tw_coord_goto.xml`, confirm the marker grid renders as the enlarged glove-friendly grid (≥72dp cells, `@drawable/goto_marker_cell_bg`, enlarged `drawableTop` icons) with all existing mode ids preserved (depends on T004; same file).
 - [x] T009 [US3] Update `styleMarkerModeRadio(RadioButton, boolean)` in `TwCoordGotoView.java` to call `setChecked(selected)` only and **remove** the `setBackgroundColor` call (selection colour now via the `state_checked` drawable) per `TwCoordGotoView_changes.md` §4; `applyMarkerModeUI()` mutual-exclusion loop unchanged.
@@ -101,7 +101,7 @@ under `docs/design/search_settings/`.
 
 **Independent Test**: One header "Use map centre" button fills the active tab's fields and is disabled (with existing toast) when the map centre isn't representable.
 
-- [x] T010 [US4] In `TwCoordGotoView.java`, replace the fields `autoFillTaipower`/`autoFillTwd97`/`autoFillTwd67` with a single `private Button autoFill;` and bind it from `R.id.goto_autofill` in `inflate()` (null-checked), removing the three old `findViewById(R.id.goto_autofill_*)` calls (per `TwCoordGotoView_changes.md` §2). Requires `goto_autofill` to exist in the layout (T004).
+- [x] T010 [US4] In `TwCoordGotoView.java`, replace the fields `autoFillTaipower`/`autoFillTwd97`/`autoFillTwd67` with a single `private Button autoFill;` and bind it from `R.id.goto_autofill` in `inflate()` (direct binding, matching the other core constructor `findViewById` calls), removing the three old `findViewById(R.id.goto_autofill_*)` calls (per `TwCoordGotoView_changes.md` §2). Requires `goto_autofill` to exist in the layout (T004).
 - [x] T011 [US4] In `TwCoordGotoView.java`, wire one listener `autoFill.setOnClickListener(v -> safeClick("autoFill", () -> onAutoFill(activeTab)))`; rewrite `refreshAutoFillEnabled()` to set `autoFill.setEnabled(...)` from the active tab's `latestFix.taipowerOk()/twd97Ok()/twd67Ok()`; and in `refreshLocalisedStrings()` set the single `autoFill.setText(c.getString(R.string.goto_btn_autofill))`. `onAutoFill(...)`/`autoFill*FromFix(...)`/`onMapCenterFix(...)` bodies unchanged; disabled feedback stays the existing toast.
 
 **Checkpoint**: Single header Auto Fill works across all three tabs; not-representable still toasts.
@@ -124,7 +124,7 @@ under `docs/design/search_settings/`.
 
 **Purpose**: Safety audit, docs, and the verification gate across all stories.
 
-- [x] T013 [P] Constitution VI crash-isolation audit in `TwCoordGotoView.java`: the merged `goto_autofill` onClick is wrapped via `safeClick` (catches `Throwable`); no `android.R.attr.*` is passed to `setBackgroundResource`/`setImageResource`; every `findViewById` result used in this change is null-checked; the `submitInFlight` re-entrancy guard is intact.
+- [x] T013 [P] Constitution VI crash-isolation audit in `TwCoordGotoView.java`: the merged `goto_autofill` onClick is wrapped via `safeClick` (catches `Throwable`); no `android.R.attr.*` is passed to `setBackgroundResource`/`setImageResource`; deferred/optional lookups stay null-checked and the `goto_autofill` binding follows the existing constructor convention; the `submitInFlight` re-entrancy guard is intact.
 - [x] T014 [P] Update `CHANGELOG.md` and the GoTo guide under `docs/` (add a docs/ui note per Constitution III) describing the redesign and the six resolved pain points; add a refreshed GoTo screenshot.
 - [x] T015 Run the verification gate: `./gradlew spotlessCheck lint testCivDebugUnitTest assembleCivDebug` — zero new warnings (Constitution I) and the existing GoTo unit tests (`CoordinateParserRoundTripTest`, `TaipowerParserTest`, `TwdTm2ParserTest`, `MapCenterFixTest`, `MarkerModeTest`) pass **unmodified** (Constitution II).
 - [~] T016 Install on device (`./gradlew installCivDebug`) and run the on-device acceptance steps in `specs/010-goto-ui-redesign/quickstart.md` covering US1–US5 and the in-app language toggle (SC-006).

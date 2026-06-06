@@ -33,8 +33,9 @@
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
 - Two clarifications were resolved inline at authoring time (toast vs inline hint;
-  preserve marker modes incl. Custom Icon) and recorded in the spec's
-  Clarifications section — no open [NEEDS CLARIFICATION] markers remain.
+  preserve the marker modes — Move-only + 7 types — and the separate custom-icon
+  palette button) and recorded in the spec's Clarifications section — no open
+  [NEEDS CLARIFICATION] markers remain.
 - The spec deliberately names coordinate systems (Taipower / TWD97 / TWD67) and
   reference design file paths; these are domain/product terms and design-source
   pointers, not implementation prescriptions, so they do not violate the
