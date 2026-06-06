@@ -297,4 +297,4 @@ storage-page localisation, and the on-map address direction arrow).
 
 ## License
 
-TBD. Until a `LICENSE` file lands, do not assume any specific terms.
+Released under the [MIT License](LICENSE). Copyright (c) 2026 Shihyu.
