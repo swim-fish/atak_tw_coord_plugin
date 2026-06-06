@@ -241,6 +241,7 @@
     <string name="fs_scope_all">すべて</string>
     <string name="fs_scope_specific">地区指定</string>
     <string name="fs_district_whole_county">県全体（地区なし）</string>
+    <string name="fs_county_choose_title">県市を選択</string>
     <string name="fs_district_choose_title">市区町村を選択</string>
     <string name="fs_filter_hint">絞り込み（任意）</string>
     <string name="fs_house_dialog_title">番地</string>

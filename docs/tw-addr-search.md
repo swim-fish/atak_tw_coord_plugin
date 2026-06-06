@@ -98,7 +98,7 @@ opens. Three buttons change it:
 |---|---|
 | **My location** | the county of your current GPS position |
 | **Map centre** | the county at the centre of the map (default) |
-| **List…** | pick from the full county list |
+| **List…** | opens a scrollable **county pop-up** (all counties in the boundary), pick one |
 
 > Tapping **Map centre / My location** also **auto-selects the township** it
 > resolves (the district button shows the name and the scope flips to
@@ -108,6 +108,16 @@ opens. Three buttons change it:
 > 💡 The chip shows the **county only** (e.g. 「台中市」). In **List…**, counties
 > with **no imported address data** are marked with **⚠** and dimmed — those have
 > boundary data only and can't return streets.
+
+<p align="center">
+  <img src="images/19-tw-addr-search-county-popup.jpg" alt="County chooser pop-up (count + order follow the imported townships.sqlite)" width="560"><br>
+  <sub>The <b>county pop-up</b> opened from "List…": ordered geographically (宜蘭 →
+  north → down the west coast → 台東/花蓮 → outlying islands last), the <b>current
+  county</b> highlighted with a blue outline (台中市 here), and counties with <b>no
+  address data</b> marked <b>⚠</b> and dimmed.<br>Note: the list shows only the
+  counties present in the <b>imported <code>townships.sqlite</code></b> — this is
+  the central pack (12 counties); a national boundary shows all 22.</sub>
+</p>
 
 ### ② Township
 

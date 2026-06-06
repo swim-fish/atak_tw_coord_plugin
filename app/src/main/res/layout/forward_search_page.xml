@@ -109,13 +109,8 @@
                 android:text="@string/fs_source_list" />
         </LinearLayout>
 
-        <!-- County list (shown when List tapped); cells added in code, 3 per row. -->
-        <GridLayout
-            android:id="@+id/fs_county_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:columnCount="3"
-            android:visibility="gone" />
+        <!-- The county list is now an on-demand AlertDialog (showCountyList), like the district
+             chooser — no inline grid here. -->
 
         <!-- ===== Stage 2: district — segmented All/District + popup button ===== -->
         <TextView
