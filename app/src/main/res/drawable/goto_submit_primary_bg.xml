@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Primary submit button background (goto_btn_submit). enabled = solid cyan; disabled = dark grey.
+     Text colour is #06222E (deep cyan) in the layout; for a stronger disabled look the view may
+     switch setTextColor by enabled state (see TwCoordGotoView refreshSubmitEnabled). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="#14FFFFFF"/>
+            <corners android:radius="9dp"/>
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#33CCFF"/>
+            <corners android:radius="9dp"/>
+        </shape>
+    </item>
+</selector>

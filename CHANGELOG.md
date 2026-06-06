@@ -5,6 +5,32 @@ loosely based on [Keep a Changelog](https://keepachangelog.com/); the project
 follows Semantic Versioning. Per-feature design records live under
 [`docs/adr/`](docs/adr/); per-feature specs under [`specs/`](specs/).
 
+## [1.3.2] — 2026-06-06 — GoTo input page UI redesign (feature 010)
+
+### Changed
+- **The TW Coord GoTo input page adopts the feature-008 "compact stacked"
+  design**, bringing it into visual parity with the TW Addr Search and TW
+  Offline Addr pages and resolving six pain points: single-column stack with
+  segmented coordinate-system tabs and carded fields; a clear primary
+  **Submit & go** vs ghost **Use ATAK icon palette…** hierarchy; an enlarged
+  ≥72 dp glove-friendly marker grid; a single header **Use map centre** Auto
+  Fill button (replacing the three per-pane buttons) that dispatches on the
+  active tab; and a labelled 121/119 projection-zone segmented control with the
+  119 precision advisory. Tab / zone / marker selection is now driven by
+  state-list drawables, and `styleMarkerModeRadio` no longer calls
+  `setBackgroundColor` (Constitution VI).
+- **Relabelled** `goto_btn_submit` (送出並前往 / Submit & go),
+  `goto_btn_autofill` (帶入地圖中心 / Use map centre), `goto_btn_atak_picker`
+  (改用 ATAK 圖示盤… / Use ATAK icon palette…), and the zh-TW
+  `goto_marker_mode_header` (落點模式 → 標點模式); added a `goto_taipower_help`
+  hint. New strings localised to en / zh-rTW / ja.
+
+### Unchanged
+- No coordinate behaviour changes: parsing, datum/projection conversion,
+  Submit-and-pan (X/Y only), the ATAK icon-palette hand-off, input validation,
+  and the Recent list are all untouched. The existing GoTo unit suite passes
+  unmodified.
+
 ## [1.3.1] — 2026-06-06 — TW Addr Search county list popup + geographic order
 
 ### Changed

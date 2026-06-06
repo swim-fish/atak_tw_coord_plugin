@@ -1,26 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  TW Coord GoTo input page.
+  TW Coord GoTo input page — V1 "compact stacked" redesign (feature 010).
+  Applies the feature-008 visual language with no coordinate-behaviour change:
+    1. Condensed single column, segmented tabs, carded fields.
+    2. Primary "Submit & go" enlarged/filled vs ghost "Use ATAK icon palette".
+    3. Marker grid enlarged to >=72dp glove-friendly cells.
+    4. Auto Fill promoted to one header-level "Use map centre" button.
+    5. 121/119 projection zone as a labelled segmented control; 119 shows the precision advisory.
+    6. Unified "tab -> field" rhythm across Taipower / TWD.
 
-  Layout strategy: avoid Fragments inside a DropDownReceiver. Instead, all
-  three tab panes are inflated up-front as siblings of @id/goto_pane_root,
-  and the controller flips View.GONE / View.VISIBLE per tab. This sidesteps
-  the FragmentManager-from-plugin-context lifecycle gotchas the meshtastic
-  sample documents (its DropDowns also avoid Fragments for the same reason).
-
-  Tab pane content is filled in per user story:
-  - Taipower pane (T024 / T025, US1)
-  - TWD97 / TWD67 panes (T038 / T039, US2)
-  - Auto Fill button overlay (T060, US5)
-  - Recent section (T076, US4)
--->
-<!--
-  Outer ScrollView so the page is scrollable on short screens — without it,
-  on phones the marker-mode grid + Submit + ATAK-picker button + Recent
-  section get clipped below the fold and the operator cannot reach them.
-  The dark background lives on the ScrollView so it fills the whole pane;
-  padding stays on the inner LinearLayout so the scrollbar tracks the
-  outer edge.
+  All ids are preserved from the prior layout. The only structural change: the three per-pane
+  goto_autofill_taipower/_twd97/_twd67 buttons are merged into a single header goto_autofill whose
+  behaviour is dispatched on activeTab (see TwCoordGotoView). Selection state for tabs / zone /
+  marker cells is expressed via state-list drawables, not programmatic colour (Constitution VI).
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -35,535 +27,504 @@
         android:orientation="vertical"
         android:padding="12dp">
 
-    <TextView
-        android:id="@+id/goto_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/goto_title"
-        android:textColor="#FFFFFF"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:paddingBottom="8dp"/>
-
-    <!-- Simple radio-group tab bar (no TabLayout dependency — keeps the layout
-         agnostic of androidx.material). Selecting a radio shows the matching
-         pane below. -->
-    <RadioGroup
-        android:id="@+id/goto_tabs"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
-
-        <RadioButton
-            android:id="@+id/goto_tab_taipower"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_tab_taipower"
-            android:textColor="#FFFFFF"
-            android:button="@null"
-            android:gravity="center"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="8dp"
-            android:checked="true"/>
-
-        <RadioButton
-            android:id="@+id/goto_tab_twd97"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_tab_twd97"
-            android:textColor="#BFBFBF"
-            android:button="@null"
-            android:gravity="center"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="8dp"/>
-
-        <RadioButton
-            android:id="@+id/goto_tab_twd67"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_tab_twd67"
-            android:textColor="#BFBFBF"
-            android:button="@null"
-            android:gravity="center"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="8dp"/>
-    </RadioGroup>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#2E2E2E"
-        android:layout_marginBottom="8dp"/>
-
-    <!-- Taipower pane (US1) -->
-    <LinearLayout
-        android:id="@+id/goto_pane_taipower"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="visible">
-
-        <Button
-            android:id="@+id/goto_autofill_taipower"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginBottom="4dp"
-            android:minHeight="0dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:textSize="12sp"
-            android:text="@string/goto_btn_autofill"/>
-
-        <EditText
-            android:id="@+id/goto_input_taipower"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/goto_hint_taipower"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#7C7C7C"
-            android:textSize="16sp"
-            android:inputType="textCapCharacters"
-            android:maxLines="1"
-            android:imeOptions="actionGo"
-            android:backgroundTint="#FFFFFF"
-            android:autofillHints="postalAddress"/>
-
-        <TextView
-            android:id="@+id/goto_error_taipower"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="#FF8A80"
-            android:textSize="13sp"
-            android:paddingTop="4dp"
-            android:visibility="gone"/>
-    </LinearLayout>
-
-    <!-- TWD97 pane (US2). -->
-    <LinearLayout
-        android:id="@+id/goto_pane_twd97"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <Button
-            android:id="@+id/goto_autofill_twd97"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginBottom="4dp"
-            android:minHeight="0dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:textSize="12sp"
-            android:text="@string/goto_btn_autofill"/>
-
-        <!-- Easting + Northing on a single horizontal row to save vertical space. Each takes
-             half the pane width via layout_weight; a 6dp spacer between keeps them visually
-             distinct. -->
+        <!-- ===== Header: title + single Auto Fill ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="10dp">
 
-            <EditText
-                android:id="@+id/goto_input_twd97_easting"
+            <TextView
+                android:id="@+id/goto_title"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="@string/goto_hint_easting"
+                android:text="@string/goto_title"
                 android:textColor="#FFFFFF"
-                android:textColorHint="#7C7C7C"
-                android:textSize="16sp"
-                android:inputType="number"
-                android:maxLines="1"
-                android:backgroundTint="#FFFFFF"
-                android:autofillHints="postalAddress"/>
+                android:textSize="18sp"
+                android:textStyle="bold"/>
 
-            <Space
-                android:layout_width="6dp"
-                android:layout_height="wrap_content"/>
-
-            <EditText
-                android:id="@+id/goto_input_twd97_northing"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/goto_hint_northing"
-                android:textColor="#FFFFFF"
-                android:textColorHint="#7C7C7C"
-                android:textSize="16sp"
-                android:inputType="number"
-                android:maxLines="1"
-                android:backgroundTint="#FFFFFF"
-                android:autofillHints="postalAddress"/>
+            <!-- Single Auto Fill; onClick fills the active tab, enabled by that unit's
+                 representability. Disabled reason uses the existing toast (onAutoFill early-return). -->
+            <Button
+                android:id="@+id/goto_autofill"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:minWidth="0dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#33CCFF"
+                android:background="@drawable/goto_autofill_bg"
+                android:text="@string/goto_btn_autofill"/>
         </LinearLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="@string/goto_zone_label"
-            android:textColor="#BFBFBF"
-            android:textSize="13sp"/>
-
+        <!-- ===== Tab strip: segmented ===== -->
+        <!-- Rounded translucent track; selected state set by styleTab() via goto_tab_selected
+             (button=@null removes the default radio bullet). -->
         <RadioGroup
-            android:id="@+id/goto_zone_twd97"
+            android:id="@+id/goto_tabs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <RadioButton
-                android:id="@+id/goto_zone_twd97_121"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/goto_zone_121"
-                android:textColor="#FFFFFF"
-                android:checked="true"/>
-            <RadioButton
-                android:id="@+id/goto_zone_twd97_119"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/goto_zone_119"
-                android:textColor="#FFFFFF"/>
-        </RadioGroup>
-
-        <TextView
-            android:id="@+id/goto_advisory_twd97"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="@string/goto_outer_island_advisory"
-            android:textColor="#FFB74D"
-            android:textSize="12sp"
-            android:visibility="gone"/>
-
-        <TextView
-            android:id="@+id/goto_error_twd97"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="#FF8A80"
-            android:textSize="13sp"
-            android:paddingTop="4dp"
-            android:visibility="gone"/>
-    </LinearLayout>
-
-    <!-- TWD67 pane (US2). -->
-    <LinearLayout
-        android:id="@+id/goto_pane_twd67"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <Button
-            android:id="@+id/goto_autofill_twd67"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginBottom="4dp"
-            android:minHeight="0dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:textSize="12sp"
-            android:text="@string/goto_btn_autofill"/>
-
-        <!-- Easting + Northing on a single horizontal row (same compaction as TWD97 above). -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <EditText
-                android:id="@+id/goto_input_twd67_easting"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/goto_hint_easting"
-                android:textColor="#FFFFFF"
-                android:textColorHint="#7C7C7C"
-                android:textSize="16sp"
-                android:inputType="number"
-                android:maxLines="1"
-                android:backgroundTint="#FFFFFF"
-                android:autofillHints="postalAddress"/>
-
-            <Space
-                android:layout_width="6dp"
-                android:layout_height="wrap_content"/>
-
-            <EditText
-                android:id="@+id/goto_input_twd67_northing"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/goto_hint_northing"
-                android:textColor="#FFFFFF"
-                android:textColorHint="#7C7C7C"
-                android:textSize="16sp"
-                android:inputType="number"
-                android:maxLines="1"
-                android:backgroundTint="#FFFFFF"
-                android:autofillHints="postalAddress"/>
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="@string/goto_zone_label"
-            android:textColor="#BFBFBF"
-            android:textSize="13sp"/>
-
-        <RadioGroup
-            android:id="@+id/goto_zone_twd67"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <RadioButton
-                android:id="@+id/goto_zone_twd67_121"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/goto_zone_121"
-                android:textColor="#FFFFFF"
-                android:checked="true"/>
-            <RadioButton
-                android:id="@+id/goto_zone_twd67_119"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/goto_zone_119"
-                android:textColor="#FFFFFF"/>
-        </RadioGroup>
-
-        <TextView
-            android:id="@+id/goto_advisory_twd67"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="@string/goto_outer_island_advisory"
-            android:textColor="#FFB74D"
-            android:textSize="12sp"
-            android:visibility="gone"/>
-
-        <TextView
-            android:id="@+id/goto_error_twd67"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="#FF8A80"
-            android:textSize="13sp"
-            android:paddingTop="4dp"
-            android:visibility="gone"/>
-    </LinearLayout>
-
-    <!-- Marker-drop mode picker (8 options laid out 4×2). Manual mutual exclusion is
-         enforced in TwCoordGotoView.applyMarkerModeUI because Android RadioGroup only
-         scopes its mutual exclusion to direct child RadioButtons — splitting into 2 rows
-         loses that scope, so the controller handles it. Default = Move only. -->
-    <TextView
-        android:id="@+id/goto_marker_mode_header"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="@string/goto_marker_mode_header"
-        android:textColor="#FFFFFF"
-        android:textSize="13sp"
-        android:textStyle="bold"/>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="2dp">
-        <RadioButton
-            android:id="@+id/goto_mode_move"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_mode_move"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
-            android:button="@null"
-            android:drawableTop="@drawable/ic_marker_move"
-            android:drawablePadding="2dp"
-            android:gravity="center"
+            android:orientation="horizontal"
+            android:background="@drawable/goto_segment_track"
             android:padding="4dp"
-            android:checked="true"/>
-        <RadioButton
-            android:id="@+id/goto_mode_waypoint"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_mode_waypoint"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
-            android:button="@null"
-            android:drawableTop="@drawable/ic_marker_waypoint"
-            android:drawablePadding="2dp"
-            android:gravity="center"
-            android:padding="4dp"/>
-        <RadioButton
-            android:id="@+id/goto_mode_mission"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_mode_mission"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
-            android:button="@null"
-            android:drawableTop="@drawable/ic_marker_mission"
-            android:drawablePadding="2dp"
-            android:gravity="center"
-            android:padding="4dp"/>
-        <RadioButton
-            android:id="@+id/goto_mode_spi"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_mode_spi"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
-            android:button="@null"
-            android:drawableTop="@drawable/ic_marker_spi"
-            android:drawablePadding="2dp"
-            android:gravity="center"
-            android:padding="4dp"/>
-    </LinearLayout>
+            android:layout_marginBottom="12dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="2dp">
-        <RadioButton
-            android:id="@+id/goto_mode_friendly"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_mode_friendly"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
-            android:button="@null"
-            android:drawableTop="@drawable/ic_marker_friendly"
-            android:drawablePadding="2dp"
-            android:gravity="center"
-            android:padding="4dp"/>
-        <RadioButton
-            android:id="@+id/goto_mode_hostile"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_mode_hostile"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
-            android:button="@null"
-            android:drawableTop="@drawable/ic_marker_hostile"
-            android:drawablePadding="2dp"
-            android:gravity="center"
-            android:padding="4dp"/>
-        <RadioButton
-            android:id="@+id/goto_mode_neutral"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_mode_neutral"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
-            android:button="@null"
-            android:drawableTop="@drawable/ic_marker_neutral"
-            android:drawablePadding="2dp"
-            android:gravity="center"
-            android:padding="4dp"/>
-        <RadioButton
-            android:id="@+id/goto_mode_unknown"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goto_mode_unknown"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
-            android:button="@null"
-            android:drawableTop="@drawable/ic_marker_unknown"
-            android:drawablePadding="2dp"
-            android:gravity="center"
-            android:padding="4dp"/>
-    </LinearLayout>
+            <RadioButton
+                android:id="@+id/goto_tab_taipower"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:button="@null"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:text="@string/goto_tab_taipower"
+                android:checked="true"/>
 
-    <!-- Submit button shared by all tabs. Disabled until the active tab's
-         input is in ParseResult.Ok state. Uses the selected marker-mode radio above. -->
-    <Button
-        android:id="@+id/goto_btn_submit"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:text="@string/goto_btn_submit"
-        android:enabled="false"/>
+            <RadioButton
+                android:id="@+id/goto_tab_twd97"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:button="@null"
+                android:gravity="center"
+                android:textColor="#BFBFBF"
+                android:textSize="16sp"
+                android:text="@string/goto_tab_twd97"/>
 
-    <!-- Feature 003 (Option B / ADR-0011 D8): "Open ATAK icon menu" sibling of Submit.
-         Hands the parsed coordinate to ATAK's native EnterLocationDropDownReceiver, which
-         drops a marker using whichever pallet/icon the operator already has selected in
-         ATAK's own enter-location pane. The 8 marker-mode radios above do NOT gate this
-         button — it always delegates to ATAK regardless of the radio selection. -->
-    <Button
-        android:id="@+id/goto_btn_atak_picker"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="@string/goto_btn_atak_picker"
-        android:enabled="false"/>
+            <RadioButton
+                android:id="@+id/goto_tab_twd67"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:button="@null"
+                android:gravity="center"
+                android:textColor="#BFBFBF"
+                android:textSize="16sp"
+                android:text="@string/goto_tab_twd67"/>
+        </RadioGroup>
 
-    <!-- Recent entries section (US4). -->
-    <LinearLayout
-        android:id="@+id/goto_recent_section"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginTop="16dp">
-
-        <TextView
-            android:id="@+id/goto_recent_header"
+        <!-- ===== Taipower pane ===== -->
+        <LinearLayout
+            android:id="@+id/goto_pane_taipower"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/goto_recent_header"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"/>
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <EditText
+                android:id="@+id/goto_input_taipower"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/goto_input_bg"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
+                android:hint="@string/goto_hint_taipower"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#7C7C7C"
+                android:textSize="20sp"
+                android:inputType="textCapCharacters"
+                android:maxLines="1"
+                android:imeOptions="actionGo"
+                android:importantForAutofill="no"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="6dp"
+                android:textColor="#7C7C7C"
+                android:textSize="12sp"
+                android:text="@string/goto_taipower_help"/>
+
+            <TextView
+                android:id="@+id/goto_error_taipower"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FF8A80"
+                android:textSize="13sp"
+                android:paddingTop="6dp"
+                android:visibility="gone"/>
+        </LinearLayout>
+
+        <!-- ===== TWD97 pane ===== -->
+        <LinearLayout
+            android:id="@+id/goto_pane_twd97"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/goto_input_twd97_easting"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/goto_input_bg"
+                    android:padding="13dp"
+                    android:hint="@string/goto_hint_easting"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#7C7C7C"
+                    android:textSize="20sp"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:importantForAutofill="no"/>
+
+                <Space android:layout_width="10dp" android:layout_height="wrap_content"/>
+
+                <EditText
+                    android:id="@+id/goto_input_twd97_northing"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/goto_input_bg"
+                    android:padding="13dp"
+                    android:hint="@string/goto_hint_northing"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#7C7C7C"
+                    android:textSize="20sp"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:importantForAutofill="no"/>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/goto_zone_label"
+                android:textColor="#BFBFBF"
+                android:textSize="13sp"/>
+
+            <!-- Projection zone segmented; RadioGroup handles mutual exclusion, goto_zone_cell_bg
+                 state_checked colours the selection. -->
+            <RadioGroup
+                android:id="@+id/goto_zone_twd97"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp">
+                <RadioButton
+                    android:id="@+id/goto_zone_twd97_121"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:button="@null"
+                    android:gravity="center"
+                    android:background="@drawable/goto_zone_cell_bg"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:text="@string/goto_zone_121"
+                    android:checked="true"/>
+                <RadioButton
+                    android:id="@+id/goto_zone_twd97_119"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:button="@null"
+                    android:gravity="center"
+                    android:background="@drawable/goto_zone_cell_bg"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:text="@string/goto_zone_119"/>
+            </RadioGroup>
+
+            <!-- Outer-island precision advisory; validateTwd97() toggles VISIBLE/GONE on zone==119. -->
+            <TextView
+                android:id="@+id/goto_advisory_twd97"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/goto_advisory_bg"
+                android:padding="10dp"
+                android:text="@string/goto_outer_island_advisory"
+                android:textColor="#FFC97A"
+                android:textSize="12sp"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/goto_error_twd97"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FF8A80"
+                android:textSize="13sp"
+                android:paddingTop="6dp"
+                android:visibility="gone"/>
+        </LinearLayout>
+
+        <!-- ===== TWD67 pane ===== -->
+        <LinearLayout
+            android:id="@+id/goto_pane_twd67"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/goto_input_twd67_easting"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/goto_input_bg"
+                    android:padding="13dp"
+                    android:hint="@string/goto_hint_easting"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#7C7C7C"
+                    android:textSize="20sp"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:importantForAutofill="no"/>
+
+                <Space android:layout_width="10dp" android:layout_height="wrap_content"/>
+
+                <EditText
+                    android:id="@+id/goto_input_twd67_northing"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/goto_input_bg"
+                    android:padding="13dp"
+                    android:hint="@string/goto_hint_northing"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#7C7C7C"
+                    android:textSize="20sp"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:importantForAutofill="no"/>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/goto_zone_label"
+                android:textColor="#BFBFBF"
+                android:textSize="13sp"/>
+
+            <RadioGroup
+                android:id="@+id/goto_zone_twd67"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp">
+                <RadioButton
+                    android:id="@+id/goto_zone_twd67_121"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:button="@null"
+                    android:gravity="center"
+                    android:background="@drawable/goto_zone_cell_bg"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:text="@string/goto_zone_121"
+                    android:checked="true"/>
+                <RadioButton
+                    android:id="@+id/goto_zone_twd67_119"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:button="@null"
+                    android:gravity="center"
+                    android:background="@drawable/goto_zone_cell_bg"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:text="@string/goto_zone_119"/>
+            </RadioGroup>
+
+            <TextView
+                android:id="@+id/goto_advisory_twd67"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/goto_advisory_bg"
+                android:padding="10dp"
+                android:text="@string/goto_outer_island_advisory"
+                android:textColor="#FFC97A"
+                android:textSize="12sp"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/goto_error_twd67"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FF8A80"
+                android:textSize="13sp"
+                android:paddingTop="6dp"
+                android:visibility="gone"/>
+        </LinearLayout>
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="#2E2E2E"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="4dp"/>
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="12dp"/>
 
+        <!-- ===== Marker mode: 8 glove-friendly cells (4x2) =====
+             goto_marker_mode_header label is "Marker mode". The 8 goto_mode_* ids are unchanged;
+             selection colour comes from goto_marker_cell_bg state_checked, and applyMarkerModeUI()
+             drives manual mutual exclusion via setChecked(). -->
         <TextView
-            android:id="@+id/goto_recent_empty"
+            android:id="@+id/goto_marker_mode_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/goto_recent_empty"
-            android:textColor="#7C7C7C"
-            android:textSize="13sp"
-            android:padding="8dp"/>
+            android:text="@string/goto_marker_mode_header"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:paddingBottom="6dp"/>
 
         <LinearLayout
-            android:id="@+id/goto_recent_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"/>
-    </LinearLayout>
+            android:orientation="horizontal">
+            <RadioButton android:id="@+id/goto_mode_move"
+                android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+                android:button="@null" android:gravity="center" android:textColor="#FFFFFF"
+                android:textSize="13sp" android:drawableTop="@drawable/ic_marker_move"
+                android:drawablePadding="5dp" android:background="@drawable/goto_marker_cell_bg"
+                android:text="@string/goto_mode_move" android:checked="true"/>
+            <Space android:layout_width="8dp" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/goto_mode_waypoint"
+                android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+                android:button="@null" android:gravity="center" android:textColor="#FFFFFF"
+                android:textSize="13sp" android:drawableTop="@drawable/ic_marker_waypoint"
+                android:drawablePadding="5dp" android:background="@drawable/goto_marker_cell_bg"
+                android:text="@string/goto_mode_waypoint"/>
+            <Space android:layout_width="8dp" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/goto_mode_mission"
+                android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+                android:button="@null" android:gravity="center" android:textColor="#FFFFFF"
+                android:textSize="13sp" android:drawableTop="@drawable/ic_marker_mission"
+                android:drawablePadding="5dp" android:background="@drawable/goto_marker_cell_bg"
+                android:text="@string/goto_mode_mission"/>
+            <Space android:layout_width="8dp" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/goto_mode_spi"
+                android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+                android:button="@null" android:gravity="center" android:textColor="#FFFFFF"
+                android:textSize="13sp" android:drawableTop="@drawable/ic_marker_spi"
+                android:drawablePadding="5dp" android:background="@drawable/goto_marker_cell_bg"
+                android:text="@string/goto_mode_spi"/>
+        </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+            <RadioButton android:id="@+id/goto_mode_friendly"
+                android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+                android:button="@null" android:gravity="center" android:textColor="#FFFFFF"
+                android:textSize="13sp" android:drawableTop="@drawable/ic_marker_friendly"
+                android:drawablePadding="5dp" android:background="@drawable/goto_marker_cell_bg"
+                android:text="@string/goto_mode_friendly"/>
+            <Space android:layout_width="8dp" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/goto_mode_hostile"
+                android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+                android:button="@null" android:gravity="center" android:textColor="#FFFFFF"
+                android:textSize="13sp" android:drawableTop="@drawable/ic_marker_hostile"
+                android:drawablePadding="5dp" android:background="@drawable/goto_marker_cell_bg"
+                android:text="@string/goto_mode_hostile"/>
+            <Space android:layout_width="8dp" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/goto_mode_neutral"
+                android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+                android:button="@null" android:gravity="center" android:textColor="#FFFFFF"
+                android:textSize="13sp" android:drawableTop="@drawable/ic_marker_neutral"
+                android:drawablePadding="5dp" android:background="@drawable/goto_marker_cell_bg"
+                android:text="@string/goto_mode_neutral"/>
+            <Space android:layout_width="8dp" android:layout_height="wrap_content"/>
+            <RadioButton android:id="@+id/goto_mode_unknown"
+                android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+                android:button="@null" android:gravity="center" android:textColor="#FFFFFF"
+                android:textSize="13sp" android:drawableTop="@drawable/ic_marker_unknown"
+                android:drawablePadding="5dp" android:background="@drawable/goto_marker_cell_bg"
+                android:text="@string/goto_mode_unknown"/>
+        </LinearLayout>
+
+        <!-- ===== Submit area: clear primary vs secondary ===== -->
+        <!-- Primary: goto_btn_submit enlarged/filled (cyan); disabled state via goto_submit_primary_bg. -->
+        <Button
+            android:id="@+id/goto_btn_submit"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/goto_submit_primary_bg"
+            android:textColor="#06222E"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:text="@string/goto_btn_submit"
+            android:enabled="false"/>
+
+        <!-- Secondary: goto_btn_atak_picker as a ghost button, clearly weaker than the primary. -->
+        <Button
+            android:id="@+id/goto_btn_atak_picker"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/goto_submit_secondary_bg"
+            android:textColor="#BFBFBF"
+            android:textSize="14sp"
+            android:text="@string/goto_btn_atak_picker"
+            android:enabled="false"/>
+
+        <!-- ===== Recent inputs ===== -->
+        <LinearLayout
+            android:id="@+id/goto_recent_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="18dp">
+
+            <TextView
+                android:id="@+id/goto_recent_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/goto_recent_header"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#2E2E2E"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/goto_recent_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/goto_recent_empty"
+                android:textColor="#7C7C7C"
+                android:textSize="13sp"
+                android:padding="10dp"/>
+
+            <LinearLayout
+                android:id="@+id/goto_recent_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"/>
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

@@ -60,8 +60,9 @@
     <string name="goto_zone_121">121 (本島)</string>
     <string name="goto_zone_119">119 (離島)</string>
 
-    <string name="goto_btn_submit">送信</string>
-    <string name="goto_btn_autofill">自動入力</string>
+    <string name="goto_btn_submit">送信して移動</string>
+    <string name="goto_btn_autofill">地図中心を取得</string>
+    <string name="goto_taipower_help">9桁（10m）/ 11桁（1m）· 大文字小文字不問 · 空白可</string>
     <string name="goto_btn_paste">貼り付け</string>
 
     <string name="goto_err_empty">座標を入力してください。</string>
@@ -102,7 +103,7 @@
          Feature 003（Option B / ADR-0011 D8）— ATAK アイコン選択への委譲ボタン
          ============================================================ -->
 
-    <string name="goto_btn_atak_picker">ATAK アイコンメニューを開く</string>
+    <string name="goto_btn_atak_picker">ATAK アイコンパレットを使う…</string>
 
     <!-- ============================================================
          Feature 004 — Offline Address（ツールメニュー + 設定 + ウィジェット行）

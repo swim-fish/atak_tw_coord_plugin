@@ -84,8 +84,9 @@
     <string name="goto_zone_119">119 (outer island)</string>
 
     <!-- Buttons. -->
-    <string name="goto_btn_submit">Submit</string>
-    <string name="goto_btn_autofill">Auto Fill</string>
+    <string name="goto_btn_submit">Submit &amp; go</string>
+    <string name="goto_btn_autofill">Use map centre</string>
+    <string name="goto_taipower_help">9-char (10 m) or 11-char (1 m) · case-insensitive · spaces OK</string>
     <string name="goto_btn_paste">Paste</string>
 
     <!-- Inline error reasons (mapped from ParseResult.Invalid.Reason). -->
@@ -140,7 +141,7 @@
          ============================================================ -->
 
     <!-- Label on the "Drop via ATAK picker" button (sibling of Submit). -->
-    <string name="goto_btn_atak_picker">Open ATAK icon menu</string>
+    <string name="goto_btn_atak_picker">Use ATAK icon palette…</string>
 
     <!-- ============================================================
          Feature 004 — Offline Address (Tools menu + Settings + widget rows)

@@ -96,10 +96,8 @@ public final class TwCoordGotoView {
   private final Button submitButton;
   private final Button atakPickerButton;
 
-  // Auto Fill (US5).
-  private final Button autoFillTaipower;
-  private final Button autoFillTwd97;
-  private final Button autoFillTwd67;
+  // Auto Fill — single header button "Use map centre"; dispatches on activeTab (feature 010).
+  private final Button autoFill;
   private final CoordinateConverter forwardConverter = new CoordinateConverter();
 
   // Recent entries (US4).
@@ -183,9 +181,7 @@ public final class TwCoordGotoView {
 
     this.submitButton = root.findViewById(R.id.goto_btn_submit);
     this.atakPickerButton = root.findViewById(R.id.goto_btn_atak_picker);
-    this.autoFillTaipower = root.findViewById(R.id.goto_autofill_taipower);
-    this.autoFillTwd97 = root.findViewById(R.id.goto_autofill_twd97);
-    this.autoFillTwd67 = root.findViewById(R.id.goto_autofill_twd67);
+    this.autoFill = root.findViewById(R.id.goto_autofill);
     this.recentList = root.findViewById(R.id.goto_recent_list);
     this.recentEmpty = root.findViewById(R.id.goto_recent_empty);
 
@@ -217,12 +213,8 @@ public final class TwCoordGotoView {
     modeUnknown.setOnClickListener(
         v -> safeClick("modeUnknown", () -> setMarkerMode(MarkerMode.UNKNOWN)));
 
-    autoFillTaipower.setOnClickListener(
-        v -> safeClick("autoFillTaipower", () -> onAutoFill(CoordinateUnit.TAIPOWER)));
-    autoFillTwd97.setOnClickListener(
-        v -> safeClick("autoFillTwd97", () -> onAutoFill(CoordinateUnit.TWD97)));
-    autoFillTwd67.setOnClickListener(
-        v -> safeClick("autoFillTwd67", () -> onAutoFill(CoordinateUnit.TWD67)));
+    // Single Auto Fill — fills whichever tab is active; enable state tracks activeTab.
+    autoFill.setOnClickListener(v -> safeClick("autoFill", () -> onAutoFill(activeTab)));
 
     tabTaipower.setOnClickListener(
         v -> safeClick("tabTaipower", () -> setActiveTab(CoordinateUnit.TAIPOWER)));
@@ -297,12 +289,10 @@ public final class TwCoordGotoView {
       zoneTwd67_119.setText(c.getString(R.string.goto_zone_119));
       advisoryTwd67.setText(c.getString(R.string.goto_outer_island_advisory));
 
-      // Buttons (Submit + ATAK picker + Auto Fill ×3).
+      // Buttons (Submit + ATAK picker + single Auto Fill).
       submitButton.setText(c.getString(R.string.goto_btn_submit));
       atakPickerButton.setText(c.getString(R.string.goto_btn_atak_picker));
-      autoFillTaipower.setText(c.getString(R.string.goto_btn_autofill));
-      autoFillTwd97.setText(c.getString(R.string.goto_btn_autofill));
-      autoFillTwd67.setText(c.getString(R.string.goto_btn_autofill));
+      autoFill.setText(c.getString(R.string.goto_btn_autofill));
 
       // Recent section header + empty state.
       TextView recentHeader = root.findViewById(R.id.goto_recent_header);
@@ -419,9 +409,22 @@ public final class TwCoordGotoView {
   }
 
   private void refreshAutoFillEnabled() {
-    autoFillTaipower.setEnabled(latestFix.taipowerOk());
-    autoFillTwd97.setEnabled(latestFix.twd97Ok());
-    autoFillTwd67.setEnabled(latestFix.twd67Ok());
+    // One button, enabled by the active tab's representability. setActiveTab() calls this so the
+    // button re-evaluates on every tab switch.
+    boolean ok;
+    switch (activeTab) {
+      case TAIPOWER:
+        ok = latestFix.taipowerOk();
+        break;
+      case TWD97:
+        ok = latestFix.twd97Ok();
+        break;
+      case TWD67:
+      default:
+        ok = latestFix.twd67Ok();
+        break;
+    }
+    autoFill.setEnabled(ok);
   }
 
   // ----------- Auto Fill -----------
@@ -651,15 +654,20 @@ public final class TwCoordGotoView {
   }
 
   private static void styleMarkerModeRadio(RadioButton btn, boolean selected) {
+    // Selection colour is driven by goto_marker_cell_bg (state_checked); no programmatic
+    // background here. Removing the old setBackgroundColor also removes an imperative view-mutate
+    // from this hot path (Constitution VI).
     btn.setChecked(selected);
-    btn.setBackgroundColor(selected ? 0xFF333333 : 0x00000000);
   }
 
   private static void styleTab(RadioButton tab, boolean selected) {
+    // Segmented pill: the selected tab gets the goto_tab_selected light pill with dark bold text;
+    // unselected tabs are transparent so the goto_segment_track shows through. Driven
+    // programmatically because button="@null" removes the default radio bullet.
     if (selected) {
-      tab.setTextColor(0xFFFFFFFF);
+      tab.setTextColor(0xFF1B1B1B);
       tab.setTypeface(Typeface.DEFAULT_BOLD);
-      tab.setBackgroundColor(0xFF333333);
+      tab.setBackgroundResource(R.drawable.goto_tab_selected);
     } else {
       tab.setTextColor(0xFFBFBFBF);
       tab.setTypeface(Typeface.DEFAULT);
@@ -734,6 +742,9 @@ public final class TwCoordGotoView {
   private void refreshSubmitEnabled() {
     boolean coordOk = activeTabParse() != null && activeTabParse().isOk();
     submitButton.setEnabled(coordOk);
+    // Appearance only: dim the primary label when disabled so the filled/ghost contrast reads even
+    // on the deep-cyan text. The goto_submit_primary_bg state-list handles the fill colour.
+    submitButton.setTextColor(coordOk ? 0xFF06222E : 0xFF5F6B70);
     // The ATAK-picker button shares Submit's enable rule: the active tab must parse cleanly.
     // markerMode does not gate it — picker delegation always uses ATAK's currently-active pallet.
     atakPickerButton.setEnabled(coordOk);

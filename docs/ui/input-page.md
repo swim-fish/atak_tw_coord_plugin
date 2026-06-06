@@ -1,9 +1,11 @@
 # UI — TW Coord GoTo input page
 
-**Features**: 002-tw-coord-goto (base page) + 003-custom-marker-icon (ATAK-picker delegation button — ADR-0011 D8)
+**Features**: 002-tw-coord-goto (base page) + 003-custom-marker-icon (ATAK-picker delegation button — ADR-0011 D8) + 010-goto-ui-redesign (compact-stacked visual redesign)
 **Source**: `app/src/main/res/layout/tw_coord_goto.xml` + `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoView.java`
 
 The TW Coord GoTo input page is a `DropDownReceiver` side-pane opened by the second Tools-menu icon (or the settings-page button). It is the *only* new user-facing surface this feature adds; everything downstream of Submit is pure ATAK behaviour the operator already knows.
+
+> **Feature 010 note:** the page was restyled into the feature-008 "compact stacked" visual language (see the redesign section below). The structure, ids, and Submit/Auto Fill/marker/zone *behaviour* are unchanged; only layout, drawables, and three button labels changed. Where the older sections below describe per-tab Auto Fill buttons or flat-colour selection, the redesign section is authoritative.
 
 ## Anatomy
 
@@ -27,6 +29,48 @@ The TW Coord GoTo input page is a `DropDownReceiver` side-pane opened by the sec
 │ TAIPOWER  H7509 DB4016    [ Remove ]   │  ← rows, newest first
 │ TWD97     302912 / 2770905 [ Remove ]   │
 │ ...                                    │
+└────────────────────────────────────────┘
+```
+
+## V1 compact-stacked redesign (feature 010)
+
+Feature 010 brings the GoTo page into visual parity with the redesigned TW Addr Search and TW Offline Addr pages, resolving six pain points **with no coordinate-behaviour change** (parser, datum/projection conversion, Submit-and-pan, ATAK-picker hand-off, validation, and Recent are untouched — confirmed by the unmodified, passing GoTo unit suite).
+
+| # | Pain point | Resolution |
+|---|---|---|
+| ① | Page too long | Single-column stack, segmented tabs, carded fields (`goto_input_bg`) |
+| ② | Two equal submit buttons | Primary **Submit & go** enlarged/filled (`goto_submit_primary_bg`); ATAK-palette button is a ghost secondary (`goto_submit_secondary_bg`) |
+| ③ | Marker cells too small | 8-cell 4×2 grid enlarged to ≥72 dp glove-friendly cells |
+| ④ | Auto Fill small + hidden | Promoted to one header-level **Use map centre** button (`goto_autofill`) dispatching on the active tab |
+| ⑤ | Projection zone unclear | 121/119 as a labelled segmented control (`goto_zone_cell_bg`); 119 shows the amber precision advisory (`goto_advisory_bg`) |
+| ⑥ | Inconsistent system switching | Unified "tab → field" rhythm shared by Taipower / TWD |
+
+**Selection styling is now drawable-driven.** Tab selection uses the `goto_tab_selected` pill (via `styleTab()`); marker-cell and zone selection use `state_checked` state-list drawables. `styleMarkerModeRadio()` no longer calls `setBackgroundColor` — removing an imperative view-mutate from the hot path (Constitution VI). All new `goto_*` drawables are concrete resource ids; no `android.R.attr.*` is passed to `setBackgroundResource`.
+
+**Labels changed (ids unchanged):** `goto_btn_submit` → "Submit & go" (送出並前往 / 送信して移動); `goto_btn_autofill` → "Use map centre" (帶入地圖中心 / 地図中心を取得); `goto_btn_atak_picker` → "Use ATAK icon palette…" (改用 ATAK 圖示盤… / ATAK アイコンパレットを使う…); `goto_marker_mode_header` zh-TW "落點模式" → "標點模式". New `goto_taipower_help` hint sits under the Taipower field.
+
+### Anatomy (redesigned)
+
+```
+┌────────────────────────────────────────┐
+│ Coordinate input        [Use map centre]│  ← title + single header Auto Fill
+│ ╭──────────┬──────────┬──────────╮     │
+│ │ Taipower │  TWD97   │  TWD67   │     │  ← segmented tabs (pill on selected)
+│ ╰──────────┴──────────┴──────────╯     │
+│ ┌────────────────────────────────────┐ │
+│ │ H7509 DB4016                        │ │  ← carded input(s) for the active tab
+│ └────────────────────────────────────┘ │
+│ 9-char (10 m) or 11-char (1 m) · …      │  ← goto_taipower_help
+│ [inline error, red]   [119 advisory]    │
+│ ────────────────────────────────────    │
+│ Marker mode                             │
+│ [ ▣ ][ ▢ ][ ▢ ][ ▢ ]   (≥72 dp cells)  │
+│ [ ▢ ][ ▢ ][ ▢ ][ ▢ ]                    │
+│ ┌────────────────────────────────────┐ │
+│ │            Submit & go              │ │  ← primary, filled
+│ └────────────────────────────────────┘ │
+│ [    Use ATAK icon palette…    ]        │  ← ghost secondary
+│ Recent … (unchanged)                    │
 └────────────────────────────────────────┘
 ```
 
