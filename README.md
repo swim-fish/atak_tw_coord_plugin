@@ -47,7 +47,7 @@ captured under `docs/ui/` (`readout-widget.md`, `settings-fragment.md`).
 | Outer-island support | Penghu / Kinmen / Matsu (TM2 zone 119, EPSG:3825) — auto-selected by longitude. `z119` suffix appears on the readout when zone is non-default |
 | Offline, no telemetry | Zero outbound network. Manifest deliberately omits `INTERNET` permission. No analytics or crash-reporting SDKs |
 | Settings advisory | Built-in accuracy notice explaining TWD67 main-island ±3-5 m vs outer-island ±10-20 m |
-| **Coordinate input page** ("GoTo") | Second Tools-menu icon opens a DropDown with three tabs (Taipower / TWD97 / TWD67), submit pans the camera to the resolved location (X/Y only — operator's zoom is preserved) |
+| **Coordinate input page** ("GoTo") | Second Tools-menu icon opens a DropDown with three tabs (Taipower / TWD97 / TWD67), submit pans the camera to the resolved location (X/Y only — operator's zoom is preserved). **v1.3.2 (feature 010)** restyles the page into the compact-stacked layout shared with the other pages — a segmented system selector + carded fields, a single header **Use map centre** button, a glove-friendly marker grid, and a primary **Submit & go** vs ghost **Use ATAK icon palette…** hierarchy; coordinate behaviour unchanged |
 | **Auto Fill** | One-tap fill of the active tab from the current map centre, with zone toggle (TWD97/TWD67) auto-set from longitude; disabled in real time when the centre is unrepresentable in the active tab |
 | **Recent list** | Up to 10 prior successful submissions, deduped on (unit, value), persisted across ATAK restarts; tap any row to re-fill, per-row delete |
 | **In-page marker-mode picker** | 9 radios under Submit (Move only + 7 affiliation/spot-map types + **Custom Icon**). Selecting non-Move-only drops a marker of that type at the resolved coord; selection persists across plugin restarts |
@@ -257,8 +257,9 @@ spec / plan / tasks / contracts live under `specs/NNN-<short-name>/`:
 - [`specs/006-county-forward-search/`](specs/006-county-forward-search/) — county-first forward search
 - [`specs/007-settings-ux-tweaks/`](specs/007-settings-ux-tweaks/) — settings page + search/storage UX tweaks
 - [`specs/008-search-settings-ui/`](specs/008-search-settings-ui/) — search/storage page UI redesign (v1.3.0)
+- [`specs/010-goto-ui-redesign/`](specs/010-goto-ui-redesign/) — GoTo input page UI redesign (v1.3.2)
 
-Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty ADRs
+Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty-one ADRs
 under [`docs/adr/`](docs/adr/) cover every architecturally significant decision
 (ADR-0001 is the entry point and carries the 2026-05-23 Taipower letter-table
 correction follow-up; ADR-0014/0015 the offline-address reconnaissance +
@@ -272,7 +273,11 @@ similar"; and
 [ADR-0020](docs/adr/0020-search-settings-ui-redesign.md) the v1.3.0 search/storage
 page redesign plus six device-found fixes — scope-button highlight,
 地圖中心 district auto-select, county-list missing-data ⚠, county-only chip,
-storage-page localisation, and the on-map address direction arrow).
+storage-page localisation, and the on-map address direction arrow; and
+[ADR-0021](docs/adr/0021-goto-ui-redesign.md) the v1.3.2 GoTo input-page
+compact-stacked redesign — segmented tabs, single header Auto Fill, primary /
+ghost submit hierarchy, glove-friendly marker grid, and drawable-driven
+selection).
 
 ## References
 

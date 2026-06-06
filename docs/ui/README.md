@@ -16,7 +16,8 @@ later polish pass.
   language rows (feature 001) plus the feature 004 "Offline Address"
   section (3 per-row toggles + dataset-status row).
 - `input-page.md` — the TW Coord GoTo input page (feature 002 + the
-  feature 003 ATAK-picker delegation button).
+  feature 003 ATAK-picker delegation button + the feature 010 / v1.3.2
+  compact-stacked redesign).
 - `offline-address-page.md` — the Offline Address `DropDownReceiver`
   (feature 004): State A (empty) / State B (active dataset), the
   Import / Replace / Remove flows, and the inline-error matrix; the
