@@ -2,7 +2,7 @@
 
 > **Traditional Chinese version:** [user-guide_zh.md](user-guide_zh.md)
 
-**Version:** v1.1.0 | **ATAK-CIV compatibility:** 5.4.0 — 5.7.x
+**Version:** v1.1.0 | **ATAK-CIV compatibility:** 5.5.0 — 5.7.x
 **Latest release:** <https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest>
 
 This is the short version. If you just want to install the plugin and use it, read this. For deeper background — accuracy notes, datum shift internals, MIL-STD-2525 marker reference — see the source files in `docs/`.
@@ -26,7 +26,7 @@ This is the short version. If you just want to install the plugin and use it, re
 <td width="280" valign="top"><img src="images/01-package-mgmt-dialog.jpg" alt="TAK Package Mgmt confirmation dialog" width="280"></td>
 <td valign="top">
 
-1. Grab the latest APK from the [Releases page](https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest). The file is named `ATAK-Plugin-TWCoord-vX.Y.Z-ATAK-5.4+.apk`.
+1. Grab the latest APK from the [Releases page](https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest). The file is named `ATAK-Plugin-TWCoord-vX.Y.Z-ATAK-5.5+.apk`.
 2. Sideload it onto the device. Either:
    - `adb install -r <apk>` from a workstation, or
    - copy the APK to the device and tap it in a file manager.

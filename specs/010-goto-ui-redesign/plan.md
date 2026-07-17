@@ -23,7 +23,7 @@ is `docs/design/search_settings/` (`tw_coord_goto.xml`,
 ## Technical Context
 
 **Language/Version**: Java 8 (Android plugin sources), Android resource XML;
-built against ATAK-CIV 5.7.0.3 SDK (`takdev` plugin), targeting ATAK 5.4+.
+built against ATAK-CIV 5.7.0.3 SDK (`takdev` plugin), targeting ATAK 5.5+.
 
 **Primary Dependencies**: ATAK-CIV SDK (`main.jar`); Android framework (`View`,
 `RadioGroup`, `GridLayout`, state-list drawables). No new third-party runtime

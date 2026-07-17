@@ -2,7 +2,7 @@
 
 > **English version:** [user-guide.md](user-guide.md)
 
-**對應版本：** v1.1.0 ｜ **對應 ATAK-CIV：** 5.4.0 — 5.7.x
+**對應版本：** v1.1.0 ｜ **對應 ATAK-CIV：** 5.5.0 — 5.7.x
 **最新發行：** <https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest>
 
 這是精簡版。若你只是想把外掛裝起來用，看這份就夠了。需要更深入的背景知識（精度資訊、基準轉換內部原理、MIL-STD-2525 標記說明），請參閱 `docs/` 目錄下的其他原始文件。
@@ -26,7 +26,7 @@
 <td width="280" valign="top"><img src="images/01-package-mgmt-dialog.jpg" alt="TAK Package Mgmt 確認對話框" width="280"></td>
 <td valign="top">
 
-1. 到 [Releases 頁面](https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest) 下載最新的 APK，檔名為 `ATAK-Plugin-TWCoord-vX.Y.Z-ATAK-5.4+.apk`。
+1. 到 [Releases 頁面](https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest) 下載最新的 APK，檔名為 `ATAK-Plugin-TWCoord-vX.Y.Z-ATAK-5.5+.apk`。
 2. 把 APK 側載到裝置上，二擇一：
    - 從工作站用 `adb install -r <apk>` 安裝，或
    - 把 APK 複製到裝置，再用檔案管理員點開。

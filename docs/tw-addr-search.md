@@ -8,7 +8,7 @@
 > Type an address → find it on the map **offline** → jump there in one tap.
 > Built for gloved use inside the ATAK tool panel.
 
-**Feature:** 006 county-first forward search · 008 UI redesign | **Versions:** v1.1.0 → **v1.3.0** | **Targets:** ATAK-CIV 5.4.0 – 5.7.x | **Language:** English · [中文](tw-addr-search_zh.md)
+**Feature:** 006 county-first forward search · 008 UI redesign | **Versions:** v1.1.0 → **v1.3.0** | **Targets:** ATAK-CIV 5.5.0 – 5.7.x | **Language:** English · [中文](tw-addr-search_zh.md)
 
 ---
 

@@ -84,7 +84,7 @@ just like any other ATAK extension.
 
 ### Prerequisites
 
-- ATAK-CIV **5.4.0 or later** installed on the target Android device
+- ATAK-CIV **5.5.0 or later** installed on the target Android device
 - USB debugging or another sideload mechanism
 
 ### Install
@@ -187,9 +187,9 @@ sdk.path=<path to ATAK-CIV-5.7.0.3-SDK>
 takdev.plugin=<path to ATAK-CIV-5.7.0.3-SDK>/atak-gradle-takdev.jar
 ```
 
-The plugin's compile target is the 5.7.0.3 SDK; runtime compatibility
-is declared as `com.atakmap.app@5.4.0.CIV` (works on every ATAK-CIV
-version we have tested, 5.4 through 5.7.0.3).
+The plugin's compile target is the 5.7.0.3 SDK; minimum runtime compatibility
+is declared as `com.atakmap.app@5.5.0.CIV`. ATAK 5.4 is no longer supported;
+see ADR-0022.
 
 ### Common commands
 
@@ -201,7 +201,7 @@ version we have tested, 5.4 through 5.7.0.3).
 ```
 
 The build outputs an APK at
-`app/build/outputs/apk/civ/debug/ATAK-Plugin-atak_tw_coord_plugin-<version>-<gitHash>-5.4.0-civ-debug.apk`.
+`app/build/outputs/apk/civ/debug/ATAK-Plugin-atak_tw_coord_plugin-<version>-<gitHash>-5.5.0-civ-debug.apk`.
 
 ## Project layout
 

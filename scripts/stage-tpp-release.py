@@ -13,11 +13,11 @@ naming convention, drops everything else, and prints the ready-to-run
 
     # Stage from a TPP bundle (version + ATAK target auto-detected from the
     # APK filename inside the bundle):
-    python scripts/stage-tpp-release.py build/hhhnrnew82-gmail-com-20260530-174239.zip
+    python scripts/stage-tpp-release.py build/operator-release-20260530-174239.zip
 
     # Override anything auto-detection gets wrong:
     python scripts/stage-tpp-release.py <bundle.zip> --version 1.2.0 \
-        --atak-display 5.4+ --public-name TWCoord
+        --atak-display 5.5+ --public-name TWCoord
 
 What it produces in build/release-v<VERSION>/ (5 assets, matching Stage 6):
 
@@ -125,7 +125,7 @@ def detect_from_apk_name(bundle_basenames: list[str]) -> tuple[Optional[str], Op
 
 
 def atak_display_from_version(atak_version: str) -> str:
-    """5.4.0 -> 5.4+ (the user-facing 'works on ATAK X.Y and up' convention)."""
+    """5.5.0 -> 5.5+ (the user-facing 'works on ATAK X.Y and up' convention)."""
     parts = atak_version.split(".")
     return ".".join(parts[:2]) + "+"
 
@@ -184,7 +184,7 @@ def main() -> int:
                     help="Plugin version X.Y.Z (default: auto-detect from the "
                          "bundle APK name, then app/build.gradle PLUGIN_VERSION).")
     ap.add_argument("--atak-display", default=None,
-                    help="User-facing ATAK target string, e.g. '5.4+' (default: "
+                    help="User-facing ATAK target string, e.g. '5.5+' (default: "
                          "derived from the bundle APK's ATAK version).")
     ap.add_argument("--public-name", default=DEFAULT_PUBLIC_NAME,
                     help=f"Public short name in the APK filename (default: {DEFAULT_PUBLIC_NAME}).")
@@ -213,7 +213,7 @@ def main() -> int:
     elif det_atak:
         atak_display = atak_display_from_version(det_atak)
     else:
-        sys.exit("ERROR: could not determine ATAK target — pass --atak-display 5.4+")
+        sys.exit("ERROR: could not determine ATAK target — pass --atak-display 5.5+")
 
     name = repo_name(root)
     out_dir = args.out or (root / "build" / f"release-v{version}")

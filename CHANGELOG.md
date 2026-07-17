@@ -5,6 +5,14 @@ loosely based on [Keep a Changelog](https://keepachangelog.com/); the project
 follows Semantic Versioning. Per-feature design records live under
 [`docs/adr/`](docs/adr/); per-feature specs under [`specs/`](specs/).
 
+## [Unreleased]
+
+### Changed
+- **Minimum ATAK-CIV runtime is now 5.5.0.** The build declares
+  `com.atakmap.app@5.5.0.CIV`; ATAK 5.4 is no longer supported. The compile SDK
+  remains ATAK-CIV 5.7.0.3. See ADR-0022.
+
+
 ## [1.3.3] — 2026-06-06 — Hotfix: TW Offline Addr Import button could be pushed off-screen
 
 ### Fixed
