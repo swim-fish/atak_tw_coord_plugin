@@ -1,8 +1,9 @@
 <!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
-at `specs/010-goto-ui-redesign/plan.md` along with its companion
-docs (`research.md`, `data-model.md`, `contracts/*.md`, `quickstart.md`).
+Resolve the active feature directory from `.specify/feature.json`; then read
+that directory's `plan.md` and companion documents (`research.md`,
+`data-model.md`, `contracts/*.md`, `quickstart.md`). Do not infer the active
+feature from the newest numeric directory. Project-wide non-negotiable rules
+live in `.specify/memory/constitution.md` and override feature guidance.
 <!-- SPECKIT END -->
 
 Shipped feature: **006-county-forward-search** — adds offline **forward**
@@ -59,8 +60,8 @@ Builds on the shipped:
   006 composes unchanged.
 
 Sibling generator project: `atak-tw-address-generator` at
-`C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator`.
-Its [data-contract.md v2](file:///c/Users/hhhnr/source/tak/atak_vns_offline_routing/atak-tw-address-generator/docs/data-contract.md)
+`C:\Users\<user>\source\tak\atak_vns_offline_routing\atak-tw-address-generator`.
+Its [data-contract.md v2](file:///c/Users/<user>/source/tak/atak_vns_offline_routing/atak-tw-address-generator/docs/data-contract.md)
 defines the `townships.sqlite` (§3.2, MOI release 1140318) + per-county
 `places-*.sqlite` shapes feature 006 consumes — no generator changes
 required by this feature.

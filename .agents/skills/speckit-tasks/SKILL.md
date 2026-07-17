@@ -1,13 +1,10 @@
 ---
 name: "speckit-tasks"
 description: "Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts."
-argument-hint: "Optional task generation constraints"
 compatibility: "Requires spec-kit project structure with .specify/ directory"
 metadata:
   author: "github-spec-kit"
   source: "templates/commands/tasks.md"
-user-invocable: true
-disable-model-invocation: false
 ---
 
 
@@ -52,6 +49,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
     Wait for the result of the hook command before proceeding to the Outline.
     ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
 ## Outline
@@ -61,6 +59,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 2. **Load design documents**: Read from FEATURE_DIR:
    - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
    - **Optional**: data-model.md (entities), contracts/ (interface contracts), research.md (decisions), quickstart.md (test scenarios)
+   - **IF EXISTS**: Load `.specify/memory/constitution.md` for project principles and governance constraints
    - Note: Not all projects have all documents. Generate tasks based on what's available.
 
 3. **Execute task generation workflow**:
@@ -79,7 +78,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Phase 1: Setup tasks (project initialization)
    - Phase 2: Foundational tasks (blocking prerequisites for all user stories)
    - Phase 3+: One phase per user story (in priority order from spec.md)
-   - Each phase includes: story goal, independent test criteria, tests (if requested), implementation tasks
+   - Each phase includes: story goal, independent test criteria, test-first tasks for behaviour changes, implementation tasks
    - Final Phase: Polish & cross-cutting concerns
    - All tasks must follow the strict checklist format (see Task Generation Rules below)
    - Clear file paths for each task
@@ -87,43 +86,50 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Parallel execution examples per story
    - Implementation strategy section (MVP first, incremental delivery)
 
-5. **Report**: Output path to generated tasks.md and summary:
-   - Total task count
-   - Task count per user story
-   - Parallel opportunities identified
-   - Independent test criteria for each story
-   - Suggested MVP scope (typically just User Story 1)
-   - Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
+## Mandatory Post-Execution Hooks
 
-6. **Check for extension hooks**: After tasks.md is generated, check if `.specify/extensions.yml` exists in the project root.
-   - If it exists, read it and look for entries under the `hooks.after_tasks` key
-   - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
-   - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
-   - For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
-     - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
-     - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
-   - When constructing slash commands from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
-   - For each executable hook, output the following based on its `optional` flag:
-     - **Optional hook** (`optional: true`):
-       ```
-       ## Extension Hooks
+**You MUST complete this section before reporting completion to the user.**
 
-       **Optional Hook**: {extension}
-       Command: `/{command}`
-       Description: {description}
+Check if `.specify/extensions.yml` exists in the project root.
+- If it does not exist, or no hooks are registered under `hooks.after_tasks`, skip to the Completion Report.
+- If it exists, read it and look for entries under the `hooks.after_tasks` key.
+- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue to the Completion Report.
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing slash commands from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Mandatory hook** (`optional: false`) — **You MUST emit `EXECUTE_COMMAND:` for each mandatory hook**:
+    ```
+    ## Extension Hooks
 
-       Prompt: {prompt}
-       To execute: `/{command}`
-       ```
-     - **Mandatory hook** (`optional: false`):
-       ```
-       ## Extension Hooks
+    **Automatic Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
 
-       **Automatic Hook**: {extension}
-       Executing: `/{command}`
-       EXECUTE_COMMAND: {command}
-       ```
-   - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+    **Optional Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+
+## Completion Report
+
+Output path to generated tasks.md and summary:
+- Total task count
+- Task count per user story
+- Parallel opportunities identified
+- Independent test criteria for each story
+- Suggested MVP scope (typically just User Story 1)
+- Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
 
 Context for task generation: $ARGUMENTS
 
@@ -133,7 +139,10 @@ The tasks.md should be immediately executable - each task must be specific enoug
 
 **CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
 
-**Tests are OPTIONAL**: Only generate test tasks if explicitly requested in the feature specification or if user requests TDD approach.
+**Behaviour tests are REQUIRED**: Generate test-first tasks for every behaviour
+change. Documentation-only, configuration-only, or demonstrably device-only
+work may omit an automated test only when the task records the reason and an
+applicable validation or on-device acceptance step.
 
 ### Checklist Format (REQUIRED)
 
@@ -175,12 +184,12 @@ Every task MUST strictly follow this format:
      - Models needed for that story
      - Services needed for that story
      - Interfaces/UI needed for that story
-     - If tests requested: Tests specific to that story
+     - Test-first tasks for behaviour specific to that story
    - Mark story dependencies (most stories should be independent)
 
 2. **From Contracts**:
    - Map each interface contract → to the user story it serves
-   - If tests requested: Each interface contract → contract test task [P] before implementation in that story's phase
+   - Each behavioural interface contract → contract test task [P] before implementation in that story's phase
 
 3. **From Data Model**:
    - Map each entity to the user story(ies) that need it
@@ -200,3 +209,9 @@ Every task MUST strictly follow this format:
   - Within each story: Tests (if requested) → Models → Services → Endpoints → Integration
   - Each phase should be a complete, independently testable increment
 - **Final Phase**: Polish & Cross-Cutting Concerns
+
+## Done When
+
+- [ ] tasks.md generated with all phases, task IDs, and file paths
+- [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
+- [ ] Completion reported to user with task count, story breakdown, and MVP scope

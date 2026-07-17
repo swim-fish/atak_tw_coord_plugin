@@ -8,9 +8,10 @@ ADRs exist because:
 - **Decisions evaporate, code does not.** The code shows *what* exists;
   the ADR shows *why* it was chosen over the alternatives that did not
   survive.
-- **Constitution Principle V requires it.** An ADR MUST be appended
-  after every successful `/speckit-analyze` and every
-  `/speckit-implement` run that resulted in a non-trivial change.
+- **Constitution Principle V requires decision traceability.** An ADR MUST be
+  added when work selects or reverses an architecture, external contract,
+  compatibility strategy, data format, privacy/security posture, or material
+  operational trade-off. Routine command execution is not itself a decision.
 
 ## Filing convention
 
@@ -77,3 +78,9 @@ maintenance burden, security/privacy implications.
 Do not edit a historical ADR's *Decision* or *Context* after it lands
 except to fix typos. If you want to change the decision, write a new
 ADR that supersedes it.
+
+`/speckit-analyze` is strictly read-only and does not create an ADR merely
+because analysis ran. If a later remediation accepts an architectural
+decision, record that decision separately and link the relevant finding ID.
+Likewise, `/speckit-implement` and `/speckit-converge` require an ADR only when
+their resulting work meets the significance test above.

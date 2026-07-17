@@ -1,8 +1,9 @@
 <!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
-at `specs/010-goto-ui-redesign/plan.md` along with its companion
-docs (`research.md`, `data-model.md`, `contracts/*.md`, `quickstart.md`).
+Resolve the active feature directory from `.specify/feature.json`; then read
+that directory's `plan.md` and companion documents (`research.md`,
+`data-model.md`, `contracts/*.md`, `quickstart.md`). Do not infer the active
+feature from the newest numeric directory. Project-wide non-negotiable rules
+live in `.specify/memory/constitution.md` and override feature guidance.
 <!-- SPECKIT END -->
 
 Shipped feature: **006-county-forward-search** — adds offline **forward**

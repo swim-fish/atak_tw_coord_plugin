@@ -27,14 +27,20 @@ Get the current branch name:
 git rev-parse --abbrev-ref HEAD
 ```
 
-The branch name must match one of these patterns:
+Before validation, remove one slash-separated integration prefix when the
+branch contains exactly two segments. For example,
+`codex/011-native-tw-coordinate-entry` is validated as
+`011-native-tw-coordinate-entry`. Branches with more than one slash are not
+rewritten.
 
-1. **Sequential**: `^[0-9]{3,}-` (e.g., `001-feature-name`, `042-fix-bug`, `1000-big-feature`)
-2. **Timestamp**: `^[0-9]{8}-[0-9]{6}-` (e.g., `20260319-143022-feature-name`)
+The effective branch name must match one of these patterns:
+
+1. **Sequential**: `^[0-9]{3,}-` (e.g., `001-feature-name`, `codex/042-fix-bug`, `1000-big-feature`)
+2. **Timestamp**: `^[0-9]{8}-[0-9]{6}-` (e.g., `20260319-143022-feature-name`, `codex/20260319-143022-feature-name`)
 
 ## Execution
 
-If on a feature branch (matches either pattern):
+If the effective name matches either pattern:
 - Output: `✓ On feature branch: <branch-name>`
 - Check if the corresponding spec directory exists under `specs/`:
   - For sequential branches, look for `specs/<prefix>-*` where prefix matches the numeric portion

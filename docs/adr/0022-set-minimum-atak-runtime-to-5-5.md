@@ -22,7 +22,7 @@ Keeping the 5.4 declaration would advertise a compatibility boundary that the na
 
 ## Decision
 
-Set `ext.ATAK_VERSION` to `5.5.0`, making `com.atakmap.app@5.5.0.CIV` the minimum declared runtime compatibility. Keep ATAK-CIV 5.7.0.3 as the compile SDK.
+Set `ext.ATAK_VERSION` to `5.5.0`, making `com.atakmap.app@5.5.0.CIV` the minimum declared ATAK runtime compatibility. Keep ATAK-CIV 5.7.0.3 as the ATAK compile SDK; this decision does not change Android compile SDK 36 or Android minimum SDK 26.
 
 New code may use the public ATAK 5.5 coordinate-entry seam directly and does not require a reflection-based ATAK 5.4 fallback.
 
@@ -49,7 +49,7 @@ New code may use the public ATAK 5.5 coordinate-entry seam directly and does not
 
 ### Raise the Minimum Runtime to ATAK 5.7
 
-- **ALT-003**: **Description**: Match the minimum runtime exactly to the 5.7.0.3 compile SDK.
+- **ALT-003**: **Description**: Match the minimum ATAK runtime exactly to the 5.7.0.3 ATAK compile SDK.
 - **ALT-004**: **Rejection Reason**: This unnecessarily excludes ATAK 5.5 and 5.6 installations from the supported range.
 
 ## Implementation Notes

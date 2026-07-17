@@ -78,6 +78,18 @@
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
 
+### Failure & Recovery Scenarios
+
+<!--
+  Define user-visible safe behaviour for unsupported ATAK versions, plugin
+  lifecycle interruption, malformed external data, unavailable locations,
+  coordinate out-of-range input, and any device-only failure mode relevant to
+  this feature. Remove irrelevant examples rather than leaving N/A entries.
+-->
+
+- **FS-001**: Given [failure condition], when [trigger], then [safe user-visible outcome].
+- **FS-002**: Given [recovery condition], when [retry/reload], then [state restoration outcome].
+
 ## Requirements *(mandatory)*
 
 <!--
@@ -87,16 +99,44 @@
 
 ### Functional Requirements
 
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+- **FR-001**: Plugin MUST [specific capability, e.g., "open the tool from ATAK's Tools menu"]
+- **FR-002**: Plugin MUST [selection rule, e.g., "accept the selected CoT MapItem"]
+- **FR-003**: Operators MUST be able to [key interaction, e.g., "enter and validate a Taiwan coordinate"]
+- **FR-004**: Plugin MUST [state rule, e.g., "restore the last valid preference after lifecycle recreation"]
+- **FR-005**: Plugin MUST [host-safety rule, e.g., "show a recoverable error when an ATAK resource is unavailable"]
 
 *Example of marking unclear requirements:*
 
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
+- **FR-006**: Plugin MUST register the ATAK integration on [NEEDS CLARIFICATION: lifecycle owner and unregister/dispose point not specified]
+- **FR-007**: Plugin MUST handle invalid TWD97/TWD67/Taipower input by [NEEDS CLARIFICATION: rejection, correction, and user-visible error behaviour not specified]
+
+### Project-Wide Quality Requirements
+
+<!--
+  Include the applicable requirements below. Keep the specification focused on
+  observable outcomes and constraints; implementation evidence belongs in the
+  plan. Every omission should be intentional and explainable during the
+  Constitution Check.
+-->
+
+- **QR-001 Compatibility**: Define the minimum supported ATAK runtime and the
+  observable behaviour when the host is unsupported or an integration is
+  unavailable.
+- **QR-002 Host safety**: Define the safe outcome for malformed input, missing
+  resources, lifecycle interruption, and other failures that must not terminate
+  the ATAK host process.
+- **QR-003 UX and localisation**: Define required languages, accessibility,
+  reachable controls, loading/empty/error states, and field-use constraints.
+- **QR-004 Performance and offline operation**: Define user-facing latency or
+  scale targets for critical journeys and whether the feature must function
+  without network access.
+- **QR-005 Geospatial correctness** *(when coordinates or boundaries are
+  involved)*: Define supported coordinate systems, coverage, zone selection,
+  accepted input/output precision, out-of-range behaviour, and measurable
+  accuracy expectations.
+- **QR-006 Migration** *(when replacing an existing workflow)*: Define which
+  existing entry points remain available, how preferences or recent data are
+  preserved, and what rollback or fallback the operator experiences.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -116,6 +156,9 @@
 - **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
 - **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
 - **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+- **SC-005**: [Compatibility outcome observable on the minimum and current ATAK lines]
+- **SC-006**: [Failure-containment or recovery outcome that can be reproduced]
+- **SC-007**: [Coordinate accuracy/round-trip outcome, or remove when not applicable]
 
 ## Assumptions
 
@@ -125,7 +168,8 @@
   chosen when the feature description did not specify certain details.
 -->
 
-- [Assumption about target users, e.g., "Users have stable internet connectivity"]
-- [Assumption about scope boundaries, e.g., "Mobile support is out of scope for v1"]
-- [Assumption about data/environment, e.g., "Existing authentication system will be reused"]
-- [Dependency on existing system/service, e.g., "Requires access to the existing user profile API"]
+- [Assumption about target operators, devices, and ATAK runtime range]
+- [Assumption about scope boundaries and existing plugin workflows reused]
+- [Assumption about offline data, permissions, and location availability]
+- [Assumption about coordinate datum, coverage, zones, or accuracy references]
+- [Dependency on an existing ATAK SDK capability, imported dataset, or plugin service]

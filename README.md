@@ -187,8 +187,9 @@ sdk.path=<path to ATAK-CIV-5.7.0.3-SDK>
 takdev.plugin=<path to ATAK-CIV-5.7.0.3-SDK>/atak-gradle-takdev.jar
 ```
 
-The plugin's compile target is the 5.7.0.3 SDK; minimum runtime compatibility
-is declared as `com.atakmap.app@5.5.0.CIV`. ATAK 5.4 is no longer supported;
+The Android build uses compile SDK 36 and minimum SDK 26. ATAK APIs compile
+against the ATAK-CIV 5.7.0.3 SDK, while minimum ATAK runtime compatibility is
+declared as `com.atakmap.app@5.5.0.CIV`. ATAK 5.4 is no longer supported;
 see ADR-0022.
 
 ### Common commands
@@ -259,7 +260,7 @@ spec / plan / tasks / contracts live under `specs/NNN-<short-name>/`:
 - [`specs/008-search-settings-ui/`](specs/008-search-settings-ui/) — search/storage page UI redesign (v1.3.0)
 - [`specs/010-goto-ui-redesign/`](specs/010-goto-ui-redesign/) — GoTo input page UI redesign (v1.3.2)
 
-Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty-one ADRs
+Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty-two ADRs
 under [`docs/adr/`](docs/adr/) cover every architecturally significant decision
 (ADR-0001 is the entry point and carries the 2026-05-23 Taipower letter-table
 correction follow-up; ADR-0014/0015 the offline-address reconnaissance +
@@ -277,7 +278,23 @@ storage-page localisation, and the on-map address direction arrow; and
 [ADR-0021](docs/adr/0021-goto-ui-redesign.md) the v1.3.2 GoTo input-page
 compact-stacked redesign — segmented tabs, single header Auto Fill, primary /
 ghost submit hierarchy, glove-friendly marker grid, and drawable-driven
-selection).
+selection; and
+[ADR-0022](docs/adr/0022-set-minimum-atak-runtime-to-5-5.md) the ATAK 5.5
+minimum-runtime decision for native CoordinateEntryPane integration research).
+
+The active feature is resolved from `.specify/feature.json`; agent guidance
+must not infer it from the newest directory. The required lifecycle is:
+
+```text
+specify -> clarify -> plan -> checklist (optional) -> tasks -> analyze -> implement -> converge
+```
+
+`checklist` is an optional post-plan requirements-quality review. `analyze` is
+read-only. If `converge` appends remaining tasks, run `implement` and
+`converge` again until no actionable gaps remain. Behaviour changes use
+test-first tasks; ATAK SDK seams additionally require public-API evidence and
+minimum/current-line device scenarios. See
+[the constitution](.specify/memory/constitution.md) for the full gates.
 
 ## References
 
