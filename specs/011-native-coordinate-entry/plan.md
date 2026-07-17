@@ -54,8 +54,8 @@ GoTo controls.
 
 **Android Minimum SDK**: 26.
 
-**ATAK Compile SDK**: ATAK-CIV 5.7.0.9, pinned at
-`C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK\main.jar`; SHA-256
+**ATAK Compile SDK**: ATAK-CIV 5.7.0.9, configured outside Git through
+`ATAK_SDK_5_7_0_9`; its `main.jar` SHA-256 is
 `8AE6CA6028F72A99537FC2CE9436A4E4964356CB90C7934C35ABE7A7CB065B70`.
 
 **Minimum ATAK Runtime**: ATAK-CIV 5.5.0, as accepted by

@@ -38,11 +38,13 @@ The implementation run repeated the minimum-runtime audit before making any
 source or Android resource change:
 
 ```powershell
-rg --files C:\Users\<user>\source\tak |
+$takWorkspace = $env:TAK_WORKSPACE
+$atakSource = Join-Path $takWorkspace 'atak-civ'
+rg --files $takWorkspace |
     Select-String '5[._-]5[._-]0|main\.jar$|\.apk$'
-git -C C:\Users\<user>\source\tak\atak-civ tag -l '5.5*'
+git -C $atakSource tag -l '5.5*'
 git ls-remote --tags https://github.com/TAK-Product-Center/atak-civ.git 'refs/tags/5.5*'
-C:\Users\<user>\AppData\Local\Android\Sdk\platform-tools\adb.exe devices -l
+adb devices -l
 ```
 
 Results:
@@ -60,14 +62,16 @@ Results:
 
 ### T001 implementation-gate resolution — PASS with split version axes
 
-The user selected `C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK` as the
-replacement baseline. The connected reference device supplies the matching
-runtime evidence:
+The user selected a locally configured ATAK-CIV 5.7.0.9 SDK as the replacement
+baseline. Its path is supplied outside Git through `ATAK_SDK_5_7_0_9`. The
+connected reference device supplies the matching runtime evidence:
 
 ```powershell
-Get-FileHash C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK\main.jar -Algorithm SHA256
-javap -classpath C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK\main.jar -public com.atakmap.android.gui.coordinateentry.CoordinateEntryPane
-javap -classpath C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK\main.jar -public com.atakmap.android.gui.coordinateentry.CoordinateEntryCapability
+$atakSdk = $env:ATAK_SDK_5_7_0_9
+$jar = Join-Path $atakSdk 'main.jar'
+Get-FileHash $jar -Algorithm SHA256
+javap -classpath $jar -public com.atakmap.android.gui.coordinateentry.CoordinateEntryPane
+javap -classpath $jar -public com.atakmap.android.gui.coordinateentry.CoordinateEntryCapability
 adb -s <DEVICE_SERIAL> shell dumpsys package com.atakmap.app.civ
 ```
 

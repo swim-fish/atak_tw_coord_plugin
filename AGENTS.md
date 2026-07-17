@@ -6,6 +6,19 @@ feature from the newest numeric directory. Project-wide non-negotiable rules
 live in `.specify/memory/constitution.md` and override feature guidance.
 <!-- SPECKIT END -->
 
+## Sensitive Information Hygiene
+
+- Never commit real usernames, home-directory paths, email-derived filenames,
+  device-owner identifiers, credentials, or other personal workstation data.
+- Use portable placeholders such as `<USER_HOME>` and `<TAK_WORKSPACE>`, or
+  documented environment variables such as `TAK_WORKSPACE`,
+  `ATAK_CIV_SOURCE`, and `ATAK_SDK_5_7_0_9`.
+- Before committing documentation, scripts, logs, generated evidence, or Spec
+  Kit artifacts, scan the reviewed diff for `C:\Users\`, `/Users/`,
+  `/home/`, `file:///`, and known local usernames.
+- Local history-backup branches that retain unsanitized commits must never be
+  pushed and must be deleted after the rewritten branch is verified.
+
 Shipped feature: **006-county-forward-search** — adds offline **forward**
 address search (text/pick → coordinate) as a county-first funnel, and now
 consumes `townships.sqlite` (the MOI authoritative boundary layer that
@@ -59,9 +72,9 @@ Builds on the shipped:
   (TwCoordWidget, DropDownReceiver, TwCoordGotoView GoTo plumbing) feature
   006 composes unchanged.
 
-Sibling generator project: `atak-tw-address-generator` at
-`C:\Users\<user>\source\tak\atak_vns_offline_routing\atak-tw-address-generator`.
-Its [data-contract.md v2](file:///c/Users/<user>/source/tak/atak_vns_offline_routing/atak-tw-address-generator/docs/data-contract.md)
+Sibling generator project: `atak-tw-address-generator`; configure its local
+checkout outside Git through `ATAK_TW_ADDRESS_GENERATOR`. Its
+`docs/data-contract.md` v2
 defines the `townships.sqlite` (§3.2, MOI release 1140318) + per-county
 `places-*.sqlite` shapes feature 006 consumes — no generator changes
 required by this feature.

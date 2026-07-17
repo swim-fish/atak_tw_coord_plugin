@@ -26,8 +26,12 @@ Expected:
 ## 2. Reproduce ATAK public-API evidence
 
 ```powershell
-$jar = 'C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK\main.jar'
-$javap = 'C:\Program Files\Eclipse Adoptium\jdk-25.0.3.9-hotspot\bin\javap.exe'
+$atakSdk = $env:ATAK_SDK_5_7_0_9
+if ([string]::IsNullOrWhiteSpace($atakSdk)) {
+    throw 'Set ATAK_SDK_5_7_0_9 to the ATAK-CIV 5.7.0.9 SDK directory.'
+}
+$jar = Join-Path $atakSdk 'main.jar'
+$javap = (Get-Command javap -ErrorAction Stop).Source
 & $javap -classpath $jar -public 'com.atakmap.android.gui.coordinateentry.CoordinateEntryPane'
 & $javap -classpath $jar -public 'com.atakmap.android.gui.coordinateentry.CoordinateEntryCapability'
 Get-FileHash $jar -Algorithm SHA256
@@ -40,8 +44,12 @@ Required methods are all pane callbacks plus `getInstance`, `registerPane`, and
 Against the local ATAK source checkout:
 
 ```powershell
-git -C C:\Users\<user>\source\tak\atak-civ show 5.5.1.1:atak/ATAK/app/src/main/java/com/atakmap/android/gui/coordinateentry/CoordinateEntryPane.java
-git -C C:\Users\<user>\source\tak\atak-civ grep -n "public synchronized void registerPane\|public synchronized void unregisterPane" 5.5.1.1 -- atak/ATAK/app/src/main/java/com/atakmap/android/gui/coordinateentry/CoordinateEntryCapability.java
+$atakSource = $env:ATAK_CIV_SOURCE
+if ([string]::IsNullOrWhiteSpace($atakSource)) {
+    throw 'Set ATAK_CIV_SOURCE to the local atak-civ checkout.'
+}
+git -C $atakSource show 5.5.1.1:atak/ATAK/app/src/main/java/com/atakmap/android/gui/coordinateentry/CoordinateEntryPane.java
+git -C $atakSource grep -n "public synchronized void registerPane\|public synchronized void unregisterPane" 5.5.1.1 -- atak/ATAK/app/src/main/java/com/atakmap/android/gui/coordinateentry/CoordinateEntryCapability.java
 ```
 
 The 5.5.1.1 source is the earliest public implementation anchor for the 5.5
