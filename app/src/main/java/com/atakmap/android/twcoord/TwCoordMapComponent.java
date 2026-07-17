@@ -38,6 +38,7 @@ import com.atakmap.android.twcoord.coord.Wgs84;
 import com.atakmap.android.twcoord.gotopage.TwCoordGotoIntents;
 import com.atakmap.android.twcoord.gotopage.TwCoordGotoReceiver;
 import com.atakmap.android.twcoord.i18n.LocaleOverride;
+import com.atakmap.android.twcoord.nativeentry.NativeCoordinateEntryRegistrar;
 import com.atakmap.android.twcoord.plugin.R;
 import com.atakmap.android.twcoord.prefs.PreferenceStore;
 import com.atakmap.android.twcoord.prefs.UserPreference;
@@ -76,6 +77,7 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private SelfMarkerSubscriber selfSub;
   private Handler ui;
   private TwCoordGotoReceiver gotoReceiver;
+  private NativeCoordinateEntryRegistrar nativeEntryRegistrar;
 
   // Feature 004 — Offline Address subsystem owns the importer (one per process), a
   // single-thread import executor, the page receiver, plus the runtime per-row resolver
@@ -253,6 +255,16 @@ public class TwCoordMapComponent extends AbstractMapComponent {
         if (widget != null && prefs != null) widget.setVisible(prefs.isReadoutVisible());
         if (languageChanged) {
           rebuildLocalisedContext();
+          if (nativeEntryRegistrar != null) {
+            try {
+              nativeEntryRegistrar.refreshLocale();
+            } catch (NoClassDefFoundError | NoSuchMethodError e) {
+              android.util.Log.w(
+                  "TwCoordMapComponent", "native entry locale refresh unavailable", e);
+            } catch (RuntimeException e) {
+              android.util.Log.w("TwCoordMapComponent", "native entry locale refresh failed", e);
+            }
+          }
           if (widget != null && localisedPluginContext != null) {
             widget.setAddressStrings(
                 localisedPluginContext.getString(R.string.widget_address_loading),
@@ -437,6 +449,25 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     AtakBroadcast.DocumentedIntentFilter gotoFilter = new AtakBroadcast.DocumentedIntentFilter();
     gotoFilter.addAction(TwCoordGotoIntents.ACTION_SHOW_GOTO);
     AtakBroadcast.getInstance().registerReceiver(gotoReceiver, gotoFilter);
+
+    // Feature 011 — additive native Taiwan coordinate entry. Start only after the existing
+    // custom GoTo receiver is available so any native seam/version failure leaves the advanced
+    // workflow intact. Registration itself is UI-dispatched and failure-contained by the
+    // registrar; linkage errors here are limited to the documented version-skew boundary.
+    try {
+      nativeEntryRegistrar =
+          NativeCoordinateEntryRegistrar.create(
+              view,
+              () -> localisedPluginContext != null ? localisedPluginContext : pluginContext,
+              prefs);
+      nativeEntryRegistrar.start();
+    } catch (NoClassDefFoundError | NoSuchMethodError e) {
+      android.util.Log.w("TwCoordMapComponent", "native entry unavailable on this ATAK", e);
+      nativeEntryRegistrar = null;
+    } catch (RuntimeException e) {
+      android.util.Log.w("TwCoordMapComponent", "native entry setup failed", e);
+      nativeEntryRegistrar = null;
+    }
 
     // Feature 004 — Offline Address page. Third Tools-menu icon (OfflineAddressTool) fires
     // SHOW_OFFLINE_ADDRESS which this receiver consumes. The importer + executor are owned
@@ -683,6 +714,14 @@ public class TwCoordMapComponent extends AbstractMapComponent {
 
   @Override
   protected void onDestroyImpl(Context context, MapView view) {
+    if (nativeEntryRegistrar != null) {
+      try {
+        nativeEntryRegistrar.stop();
+      } catch (RuntimeException e) {
+        android.util.Log.w("TwCoordMapComponent", "native entry stop failed", e);
+      }
+      nativeEntryRegistrar = null;
+    }
     try {
       AtakBroadcast.getInstance().unregisterReceiver(toggleReceiver);
     } catch (IllegalArgumentException ignored) {

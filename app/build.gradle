@@ -8,10 +8,10 @@
 buildscript {
     ext.PLUGIN_VERSION = "1.3.3"
     // ATAK_VERSION drives the plugin-api meta-data string in AndroidManifest.xml.
-    // ATAK 5.5.0 is the minimum supported runtime family. The native coordinate-entry
-    // integration relies on the public CoordinateEntryPane / CoordinateEntryCapability seam
-    // available in the 5.5 source line. Compile-time SDK stays at 5.7.0.3 via sdk.path in
-    // local.properties; only the runtime compatibility declaration is 5.5.0. See ADR-0022.
+    // ATAK 5.5.0 remains the minimum supported runtime family. Feature 011 uses the public
+    // CoordinateEntryPane / CoordinateEntryCapability seam evidenced in the 5.5 source line.
+    // Compile-time SDK is 5.7.0.9 via sdk.path; the manifest compatibility token remains 5.5.0.
+    // See ADR-0022 and ADR-0024.
     ext.ATAK_VERSION = "5.5.0"
 
     def takdevVersion = "3.+"
@@ -40,7 +40,7 @@ buildscript {
     ext.takrepoUser = getProperty('takrepo.user', 'invalid')
     ext.takrepoPassword = getProperty('takrepo.password', 'invalid')
     ext.takdevPlugin = getProperty('takdev.plugin',
-            "${rootDir}/../ATAK-CIV-5.7.0.3-SDK/atak-gradle-takdev.jar")
+            "${rootDir}/../ATAK-CIV-5.7.0.9-SDK/atak-gradle-takdev.jar")
 
     repositories {
         google()
@@ -141,6 +141,9 @@ android {
         // Robolectric. Required for tests that touch Android types they don't fully mock — e.g.
         // any code path calling `com.atakmap.coremap.log.Log.w(...)` inside the code under test.
         unitTests.returnDefaultValues = true
+        // Feature 011's CoordinateEntryPane contract inflates the real plugin layout under
+        // Robolectric; expose merged Android resources to JVM unit tests.
+        unitTests.includeAndroidResources = true
     }
 
     // Debug variant uses Android's default debug keystore (~/.android/debug.keystore,

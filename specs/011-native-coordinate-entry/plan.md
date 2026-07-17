@@ -21,7 +21,7 @@ marker workflow, Recent list, and stored values remain unchanged.
 **Language/Version**: Java 17-compatible Android sources and Android resource
 XML.
 
-**Primary Dependencies**: ATAK-CIV SDK 5.7.0.3; Android framework; existing
+**Primary Dependencies**: ATAK-CIV SDK 5.7.0.9; Android framework; existing
 Proj4J 1.3.0, `CoordinateParser`, `CoordinateConverter`, and coordinate value
 objects. A new native-entry-only formatter adapter supplies the stricter Copy
 shape without changing the existing widget/custom-page `Formatter`. No new
@@ -34,12 +34,13 @@ defaults to `TAIPOWER`, tolerates corrupt values, and is separate from all
 
 **Testing**: Test-first JVM controller, formatting, preference, and lifecycle
 contract tests; existing coordinate golden-vector and round-trip suites;
-Spotless, Android lint, unit test, and package gates; ATAK 5.5 and 5.7.0.3
+Spotless, Android lint, unit test, and package gates; ATAK 5.5 and 5.7.0.9
 on-device acceptance for host-owned dialog behaviour.
 
 **Target Platform**: ATAK-CIV Android plugin on phone and tablet native
-coordinate-entry dialogs; reference device Galaxy Tab S10+ (SM-X826B), plus an
-available device or emulator running the oldest supported ATAK 5.5 line.
+coordinate-entry dialogs; reference device Galaxy Tab S10+ (SM-X826B) running
+ATAK-CIV 5.7.0.9, plus an available ATAK 5.5 device or emulator for the
+minimum-runtime release matrix.
 
 **UI Size Baseline**: Equivalent controls match the shipped custom GoTo layout
 in `app/src/main/res/layout/tw_coord_goto.xml`: 20 sp input text, 14 dp
@@ -53,25 +54,23 @@ GoTo controls.
 
 **Android Minimum SDK**: 26.
 
-**ATAK Compile SDK**: ATAK-CIV 5.7.0.3, pinned at
-`C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.3-SDK\main.jar`; SHA-256
-`C847ADF2992D623E256AFBAC76489CB203AE1D6831D56F9DCC6B5E9D9F280763`.
+**ATAK Compile SDK**: ATAK-CIV 5.7.0.9, pinned at
+`C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK\main.jar`; SHA-256
+`8AE6CA6028F72A99537FC2CE9436A4E4964356CB90C7934C35ABE7A7CB065B70`.
 
 **Minimum ATAK Runtime**: ATAK-CIV 5.5.0, as accepted by
-[ADR-0022](../../docs/adr/0022-set-minimum-atak-runtime-to-5-5.md); ATAK 5.4
-and earlier are unsupported.
+[ADR-0022](../../docs/adr/0022-set-minimum-atak-runtime-to-5-5.md). ADR-0024
+updates the compile SDK to 5.7.0.9 without changing the manifest compatibility
+token; ATAK 5.4 and earlier remain unsupported.
 
-**ATAK API Evidence**: `javap -public` against the pinned 5.7.0.3 `main.jar`
+**ATAK API Evidence**: `javap -public` against the pinned 5.7.0.9 `main.jar`
 shows every `CoordinateEntryPane` callback and
 `CoordinateEntryCapability.getInstance`, `registerPane`, and `unregisterPane`
-as public. The earliest available 5.5 source tag, `5.5.1.1` at commit
-`0d22ae5da3918271a16ff7d7a85846b62dc04bb0`, exposes the same interface and
-registration methods: [CoordinateEntryPane](https://github.com/TAK-Product-Center/atak-civ/blob/0d22ae5da3918271a16ff7d7a85846b62dc04bb0/atak/ATAK/app/src/main/java/com/atakmap/android/gui/coordinateentry/CoordinateEntryPane.java)
-and [CoordinateEntryCapability](https://github.com/TAK-Product-Center/atak-civ/blob/0d22ae5da3918271a16ff7d7a85846b62dc04bb0/atak/ATAK/app/src/main/java/com/atakmap/android/gui/coordinateentry/CoordinateEntryCapability.java).
-The local `5.5.1.10` checkout at commit
-`9f6893dd657feacc35ec5de03dad721c2e44170e` confirms the host behaviour used by
-this plan. This does not prove an exact ATAK 5.5.0 binary; exact-binary or
-on-device evidence remains a mandatory compatibility gate.
+as public. The matching physical runtime on `SM-X826B` reports
+`versionName=5.7.0.9 (7a0f6f29)` and `versionCode=1782294331`. The earliest
+available 5.5 source tag, 5.5.1.1, exposes the same public seam. ADR-0024
+accepts that source as the implementation anchor while retaining exact 5.5
+physical validation as a release gate.
 
 **Project Type**: Single-module Android ATAK plugin (`app/`).
 
@@ -100,8 +99,8 @@ three locale files, four focused production classes plus tests.
 
 | ATAK Line | Evidence Required | Planned Validation | Status |
 |-----------|-------------------|--------------------|--------|
-| 5.5 minimum runtime | Manifest declares the accepted `com.atakmap.app@5.5.0.CIV` compatibility token; earliest available source is later `5.5.1.1` and exposes the seam, so exact 5.5.0 binary/API evidence is still required | Obtain exact 5.5.0 SDK/binary evidence and run install/lifecycle/user scenarios on exact 5.5.0; also exercise the 55%-height portrait dialog on 5.5.1.1. If exact evidence cannot be obtained, create a superseding compatibility ADR and update the declared minimum before release; do not rewrite accepted ADR-0022 | 5.5.1.1 SOURCE PASS; EXACT 5.5.0 PENDING |
-| 5.7.0.3 current/compile line | `javap -public` against the pinned and hashed 5.7.0.3 `main.jar` confirms matching signatures | Run the same lifecycle and user scenarios on the Galaxy Tab S10+ with ATAK 5.7.0.3 | API PASS; DEVICE PENDING |
+| 5.5 minimum runtime | Manifest declares `com.atakmap.app@5.5.0.CIV`; earliest available 5.5.1.1 source exposes the seam | Run install/lifecycle/user scenarios on an available ATAK 5.5 runtime; do not infer device PASS from source | SOURCE/API PASS; DEVICE PENDING |
+| 5.7.0.9 current/compile line | `javap -public` against the pinned and hashed 5.7.0.9 `main.jar` confirms matching signatures; the connected Galaxy Tab S10+ reports the same exact runtime | Run the same lifecycle and user scenarios on the Galaxy Tab S10+ with ATAK 5.7.0.9 | API/RUNTIME VERSION PASS; FEATURE DEVICE JOURNEYS PENDING |
 
 Device status remains pending until the implementation exists and the scenarios
 are actually executed; a successful compile is not runtime evidence.
@@ -116,9 +115,9 @@ are actually executed; a successful compile is not runtime evidence.
 | II. Test-First Development & Verification | Controller, formatter, preference fallback, registration idempotency, and disposed-pane behaviour receive failing JVM tests before production code; ATAK-owned visuals/lifecycle remain explicit device checks | PASS |
 | III. UX, Accessibility & Localisation | One internal selector, visible zone, inline states, exactly one non-nested pane `ScrollView`, custom-GoTo-parity field dimensions, paired reachability at the same device/orientation/font scale, content descriptions/labels, and complete `values`, `values-zh-rTW`, `values-ja` resources | PASS |
 | IV. Performance & Offline Operation | No I/O/network in pane callbacks; pane activation/rendering and every applicable operation/system/zone combination have a measured <100 ms worst/p95 budget over at least 20 iterations; manifest remains without `INTERNET` | PASS |
-| V. Documentation & Decision Traceability | This artifact set, user guide/CHANGELOG tasks, accepted ADR-0022, and a required native-entry architecture ADR before merge preserve the decision trail | PASS |
+| V. Documentation & Decision Traceability | This artifact set, user guide/CHANGELOG tasks, ADR-0022 plus compile-SDK ADR-0024, and a required native-entry architecture ADR before merge preserve the decision trail | PASS |
 | VI. Host-Process Isolation | Registrar is idempotent/UI-thread confined with rollback; every host callback contains failures; plugin resources use plugin/localised context; disposed panes stay safe if retained by an already-open host dialog | PASS |
-| VII. ATAK SDK Compatibility | Compile/minimum versions are distinct; 5.7 `javap` and earliest 5.5.1.1 source anchors are recorded; no reflection/non-public API; exact 5.5.0 binary/device proof is an explicit release blocker rather than an inferred pass | PASS |
+| VII. ATAK SDK Compatibility | Compile/minimum version axes are distinct; 5.7.0.9 SDK `javap` and 5.5.1.1 source anchors are recorded; exact 5.5 device validation remains pending; no reflection or non-public API is used | PASS |
 | VIII. Geospatial Correctness & Provenance | Existing parser/converter/constants are reused unchanged; WGS84 is the host interchange; datum, zone, units, national vectors, Taipower quantisation, and 0.5/5/20 m acceptance budgets remain tested | PASS |
 
 **Result**: No non-negotiable violation and no complexity exception. The two
@@ -137,7 +136,7 @@ device evidence, and ADR-0023.
 | FR-017–FR-018; FS-001–FS-004 | R4, R9, registration state model | 100-cycle fake-registry harness, partial rollback/late-callback tests, device unload/re-enable cases |
 | FR-019–FR-020; SC-009 | R10 and coexistence UI contract | Upgrade fixture with at least 10 Recent entries and non-default marker mode; byte-preservation assertion/device check |
 | FR-021–FR-023; QR-003–QR-004; SC-001, SC-003, SC-006, SC-008 | R7–R9 and UI contract | Three-locale resource parity, custom-GoTo-parity dimensions/reachability, timed pane activation plus per-operation/system/zone traces, offline traffic capture |
-| FR-024; FS-005; QR-001; SC-005 | R1, compatibility matrix, ADR-0022 | Exact 5.5.0 evidence gate and completed 5.5/current device matrix |
+| FR-024; FS-005; QR-001; SC-005 | R1, compatibility matrix, ADR-0022/ADR-0024 | 5.5 source/API evidence, exact 5.7.0.9 SDK evidence, and completed minimum/current device matrix |
 | FR-025–FR-027; QR-005; SC-002, SC-007 | R6, R11, resolved-coordinate model | Unchanged national/golden suites, native adapter equivalence, built-in → Taiwan → built-in round trip, host-owned action checks |
 | QR-002; QR-006 | R4, R9, R10 and both contracts | Boundary failure tests, fallback availability, no migration, ADR/user documentation |
 

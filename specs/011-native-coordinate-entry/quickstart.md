@@ -21,12 +21,12 @@ Expected:
 - ATAK minimum runtime metadata: `5.5.0`
 - Android compile/minimum SDK: 36/26
 - Java compatibility: 17
-- ATAK compile SDK path in `local.properties`: 5.7.0.3
+- ATAK compile SDK path or Gradle project property: 5.7.0.9
 
 ## 2. Reproduce ATAK public-API evidence
 
 ```powershell
-$jar = 'C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.3-SDK\main.jar'
+$jar = 'C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK\main.jar'
 $javap = 'C:\Program Files\Eclipse Adoptium\jdk-25.0.3.9-hotspot\bin\javap.exe'
 & $javap -classpath $jar -public 'com.atakmap.android.gui.coordinateentry.CoordinateEntryPane'
 & $javap -classpath $jar -public 'com.atakmap.android.gui.coordinateentry.CoordinateEntryCapability'
@@ -35,7 +35,7 @@ Get-FileHash $jar -Algorithm SHA256
 
 Required methods are all pane callbacks plus `getInstance`, `registerPane`, and
 `unregisterPane`. Expected jar SHA-256:
-`C847ADF2992D623E256AFBAC76489CB203AE1D6831D56F9DCC6B5E9D9F280763`.
+`8AE6CA6028F72A99537FC2CE9436A4E4964356CB90C7934C35ABE7A7CB065B70`.
 
 Against the local ATAK source checkout:
 
@@ -44,12 +44,165 @@ git -C C:\Users\<user>\source\tak\atak-civ show 5.5.1.1:atak/ATAK/app/src/main/j
 git -C C:\Users\<user>\source\tak\atak-civ grep -n "public synchronized void registerPane\|public synchronized void unregisterPane" 5.5.1.1 -- atak/ATAK/app/src/main/java/com/atakmap/android/gui/coordinateentry/CoordinateEntryCapability.java
 ```
 
-This proves the earliest available 5.5.1.1 source, not an exact 5.5.0 binary.
-Before release, obtain exact 5.5.0 SDK/binary or device evidence; if it cannot
-be obtained, create a superseding compatibility ADR and update the declared
-minimum rather than rewriting ADR-0022 or marking the matrix complete.
+The 5.5.1.1 source is the earliest public implementation anchor for the 5.5
+runtime family. ADR-0024 upgrades the compile/current-device SDK to 5.7.0.9
+without changing ADR-0022's `5.5.0` runtime compatibility token.
+
+**T001 implementation status (2026-07-17): PASS via compatibility ADR.** The connected
+`SM-X826B` (`<DEVICE_SERIAL>`) reports ATAK-CIV `5.7.0.9 (7a0f6f29)`,
+`versionCode=1782294331`. SDK signatures and the `main.jar` hash above match
+the selected compile/current baseline. Exact ATAK 5.5 and current feature
+device journeys remain pending until run.
 
 ## 3. Run test-first focused tests
+
+### US1 Red evidence (2026-07-17)
+
+Command (with `sdk.path` and `takdev.plugin` supplied as Gradle project
+properties pointing to ATAK-CIV 5.7.0.9):
+
+```powershell
+.\gradlew.bat :app:testCivDebugUnitTest `
+  --tests "com.atakmap.android.twcoord.nativeentry.*" `
+  --tests "com.atakmap.android.twcoord.prefs.PreferenceStoreNativeEntryTest"
+```
+
+Result: **RED as intended** at `compileCivDebugUnitTestJavaWithJavac`. After
+removing an unrelated test-harness import, the rerun reported only the missing
+feature 011 production surface: `KEY_NATIVE_ENTRY_LAST_UNIT`,
+`TaiwanEntryFormatter`, `TaiwanEntryController`,
+`TaiwanCoordinateEntryPane`, layout IDs, and
+`NativeCoordinateEntryRegistrar`. This is the retained T004–T008 Red baseline.
+
+US1 Green rerun: **PASS**, 19 focused tests, after enabling Robolectric merged
+Android resources for the real pane layout. A second Green run after
+`TwCoordMapComponent` lifecycle integration also passed. The T015 physical
+ATAK journey remains pending.
+
+US2 Red run: **RED as intended** at test compilation. The new TWD97/TWD67
+controller methods and layout IDs for easting, northing, zones, panes, and the
+zone-119 advisory were absent from the US1 implementation. This is the retained
+T016/T017 Red baseline.
+
+US2 Green run: **PASS** for the focused controller/pane suites. The combined
+native-entry, unchanged `coord.*` golden-vector, and
+`CoordinateParserRoundTripTest` regression run also passed. T021's ATAK-owned
+dialog/device portion remains pending.
+
+US3 Red run: **RED as intended** at test compilation because
+`TaiwanEntryController.format(Wgs84, TaiwanEntryFormatter)` did not yet exist.
+The new pane tests also cover host Auto Fill/Clear/Copy, horizontal-only output,
+programmatic event suppression, and disposed late controls (T022/T023).
+
+US3 Green run: **PASS** (22 focused controller/pane tests) after pure formatter
+delegation and host Auto Fill/Clear callback completion. Host-owned clipboard
+dispatch and map-movement evidence remain device-only under T026.
+
+US4 baseline and Red/Green runs: the upgrade fixture preserving ten Recent
+entries and every `pref_goto_*` value passed against the already-isolated
+preference implementation. Registrar lookup/register/partial-register,
+rollback, unregister, documented linkage-error, and fatal-error tests passed;
+the added dispose-time `NoClassDefFoundError` case first failed as intended and
+passed after the narrow failure-containment fix. T031 device fallback remains
+pending.
+
+US5 Red/Green runs: locale refresh first failed at compilation because
+`refreshLocale()` was absent, then passed for detached immediate replacement,
+attached defer-until-detach, stale generation invalidation, and exactly-one-tab
+invariants. Supplied-point/read-only controller and pane suites pass, including
+disabled controls, no listener/result mutation, horizontal-only metadata, and
+canonical read-only format. T038 real ATAK dialog/configuration evidence remains
+pending.
+
+Cross-cutting source/UI audit: **PASS**. The native pane has one outer
+`ScrollView`; 20 sp input text; 14 dp Taipower and 13 dp TWD field padding;
+52/50 dp selectors; 10 dp TWD field gap; and 12 dp content inset. A state-aware
+segment text selector provides white unselected, black selected, and muted
+read-only labels. All 29 `native_entry_*` keys have exact English/zh-rTW/Japanese
+parity, XML parsing passed, status uses a polite accessibility live region, the
+manifest has no `INTERNET` permission, and native code has no `CoordinateFormat`
+or `pref_goto_*` mutation.
+
+Final local quality gate against `ATAK-CIV-5.7.0.9-SDK`: **PASS** on
+2026-07-17 for `:app:spotlessCheck`, `:app:lint`,
+`:app:testCivDebugUnitTest`, and `:app:assembleCivDebug`. The generated APK is
+`ATAK-Plugin-atak_tw_coord_plugin-1.3.3-68337b12-5.5.0-civ-debug.apk`, size
+4,070,778 bytes, SHA-256
+`6EE293FA8C4853979633CF765285DFE4994D65D09E60928C49A6C23999CFA293`.
+
+Current-device attempt: `adb install -r` succeeded on SM-X826B
+`<DEVICE_SERIAL>`. The device was at the Android lock screen, so ATAK could not be
+opened and no host-dialog scenario was converted to PASS. Exact ATAK 5.5 device
+validation also remains unavailable and pending under T045.
+
+## Requirement evidence reconciliation
+
+`PASS` means the named source/JVM gate is complete. `PARTIAL` keeps required
+host/device evidence explicit; it is not a release pass.
+
+| ID | Status | Evidence or remaining gate |
+|---|---|---|
+| FS-001 | PASS | Registrar failure/rollback/linkage tests; custom receiver registered first |
+| FS-002 | PARTIAL | Idempotent stop/dispose tests pass; real unload/re-enable is T031/T045 |
+| FS-003 | PASS | Checked invalid/out-of-coverage controller and pane tests |
+| FS-004 | PARTIAL | Generation/disposed callback tests pass; active-dialog recreation is T038/T045 |
+| FS-005 | PARTIAL | 5.5.0 metadata and 5.5.1.1 source anchor pass; exact 5.5 runtime is T045 |
+| FR-001 | PARTIAL | Exactly-one registrar tests pass; host tab observation is T015/T045 |
+| FR-002 | PASS | One pane exposes three mutually exclusive controller/UI systems |
+| FR-003 | PASS | Active segmented selection and separate-draft tests |
+| FR-004 | PASS | Existing Taipower parser reused with regression suite |
+| FR-005 | PASS | Separate integer easting/northing fields and strict parser tests |
+| FR-006 | PASS | Explicit 121/119 controls and visibility tests |
+| FR-007 | PASS | TWD67 zone-119 advisory layout and pane test |
+| FR-008 | PASS | Existing converter/golden-vector regression suite |
+| FR-009 | PASS | Invalid states clear resolved output and throw checked host error |
+| FR-010 | PASS | Localised validation-state messages and status tests |
+| FR-011 | PARTIAL | Auto Fill replacement tests pass; ATAK button dispatch is T026 |
+| FR-012 | PARTIAL | Clear state tests pass; ATAK button dispatch is T026 |
+| FR-013 | PARTIAL | Pure canonical formatter tests pass; ATAK clipboard is T026 |
+| FR-014 | PASS | Supplied-point activation and replacement tests |
+| FR-015 | PARTIAL | Read-only controller/View tests pass; additional host flow is T038 |
+| FR-016 | PASS | Exactly-once human listener and programmatic suppression tests |
+| FR-017 | PASS | 100-cycle, stale generation, locale refresh, and max-live-one tests |
+| FR-018 | PASS | Ordinary/version-skew containment and fatal JVM rethrow tests |
+| FR-019 | PARTIAL | Independent custom receiver lifecycle retained; device fallback is T031 |
+| FR-020 | PASS | Ten-entry upgrade fixture proves every `pref_goto_*` value unchanged |
+| FR-021 | PARTIAL | Three-locale parity and locale registrar tests pass; visual refresh is T038 |
+| FR-022 | PARTIAL | Source dimensions/contrast/accessibility pass; paired device reachability is T042/T045 |
+| FR-023 | PARTIAL | No `INTERNET` permission/network code; packet-capture proof is T043 |
+| FR-024 | PARTIAL | Compile/current SDK 5.7.0.9 passes; exact 5.5 runtime is T045 |
+| FR-025 | PASS | Android min/compile SDK values were not changed |
+| FR-026 | PASS | No global `CoordinateFormat` or host preference mutation |
+| FR-027 | PASS | Horizontal metadata only; no marker/map/elevation action in pane |
+| QR-001 | PASS | ADR-0022/0024 split minimum-runtime and compile/current axes |
+| QR-002 | PASS | Narrow host catches, listener isolation, lint, and registrar tests |
+| QR-003 | PARTIAL | One scroll owner, parity, and a11y source pass; screenshots/reachability are T040/T042 |
+| QR-004 | PARTIAL | Offline architecture passes; Perfetto/network capture is T043 |
+| QR-005 | PASS | Existing WGS84/golden-vector regressions pass unchanged |
+| QR-006 | PASS | Additive lifecycle and independent preference fixture pass |
+| SC-001 | PARTIAL | Implementation complete; native-dialog discovery time is T015/T045 |
+| SC-002 | PASS | Authoritative coordinate regression suites pass |
+| SC-003 | PARTIAL | Functional JVM tests pass; device timing/host controls are T026/T043 |
+| SC-004 | PARTIAL | 100 registrar cycles pass; real 100 reload/unload evidence is T031/T045 |
+| SC-005 | PARTIAL | Requires exact ATAK 5.5 and 5.7.0.9 device matrix T045 |
+| SC-006 | PASS | 29/29 keys match across English, zh-rTW, and Japanese |
+| SC-007 | PARTIAL | Horizontal conversion tests pass; built-in pane round trip is T038 |
+| SC-008 | PARTIAL | No network capability; airplane-mode host journey/capture is T043/T045 |
+| SC-009 | PARTIAL | Ten-entry byte-preservation fixture passes; seeded device upgrade is T031 |
+
+Convergence Phase 9 Red/Green: the new safety/trace suite first failed because
+the trace seam and callback guards were absent. It now passes with ordinary
+resource/conversion/listener failures contained, documented linkage errors
+contained, fatal JVM errors rethrown, disposal continuing step-by-step, and
+balanced named `TWCoord.native.{activate,render,switch,validate,autofill,clear,format}`
+sections. The full Gradle quality gate passed again after T049/T050.
+
+Final source-scope audit: `git diff --check` passed, all local Markdown links
+in README, changelog, user guide, ADR-0023, and the native UI document resolve,
+and the working tree changes are confined to feature 011 implementation,
+tests, resources, compatibility configuration, Spec Kit artifacts, and their
+canonical documentation. Pre-existing staged feature changes were preserved;
+no unrelated file was reverted or staged by this audit.
 
 After each focused test has first failed for the intended missing behaviour:
 
@@ -113,29 +266,27 @@ Expected:
 
 ## 6. On-device compatibility matrix
 
-Install the built plugin separately on exact ATAK 5.5.0, the earliest sourced
-5.5.1.1 line, and the current ATAK 5.7.0.3 reference device. Record exact ATAK
-build, plugin APK hash, device, screen size/orientation, Android font scale,
-date, operator, and pass/fail evidence. The 5.5.1.1 portrait run must exercise
-its smaller 55%-of-screen dialog height. At each configuration, compare the
-native pane with the existing custom GoTo page at the same orientation and font
-scale.
+Install the built plugin separately on an ATAK-CIV 5.5 runtime and the exact
+ATAK-CIV 5.7.0.9 reference runtime. Record exact ATAK build, plugin APK hash,
+device, screen size/orientation, Android font scale, date, operator, and
+pass/fail evidence. Compare the native pane with the existing custom GoTo page
+at the same orientation and font scale.
 
-| Scenario | Exact ATAK 5.5.0 | ATAK 5.5.1.1 / 55% portrait | ATAK 5.7.0.3 |
-|----------|------------------|------------------------------|----------------|
-| Plugin start shows exactly one Taiwan tab | PENDING | PENDING | PENDING |
-| Valid Taipower native Go To | PENDING | PENDING | PENDING |
-| Valid TWD97 zone 121 and zone 119 | PENDING | PENDING | PENDING |
-| Valid TWD67 zone 121 and zone 119 advisory | PENDING | PENDING | PENDING |
-| Invalid/out-of-range confirm and Copy remain in dialog | PENDING | PENDING | PENDING |
-| Native Auto Fill, Clear, and Copy | PENDING | PENDING | PENDING |
-| Native field sizes match custom GoTo and are no less reachable | PENDING | PENDING | PENDING |
-| Editable point-details flow | PENDING | PENDING | PENDING |
-| Read-only/additional native location flow | PENDING | PENDING | PENDING |
-| Active-dialog Activity/configuration recreation recovers safely | PENDING | PENDING | PENDING |
-| Disable/unload removes Taiwan tab without host crash | PENDING | PENDING | PENDING |
-| Custom TW Coord GoTo remains unchanged | PENDING | PENDING | PENDING |
-| Airplane-mode native journey | PENDING | PENDING | PENDING |
+| Scenario | ATAK-CIV 5.5 | ATAK-CIV 5.7.0.9 / SM-X826B |
+|----------|---------------|-------------------------------|
+| Plugin start shows exactly one Taiwan tab | PENDING | PENDING |
+| Valid Taipower native Go To | PENDING | PENDING |
+| Valid TWD97 zone 121 and zone 119 | PENDING | PENDING |
+| Valid TWD67 zone 121 and zone 119 advisory | PENDING | PENDING |
+| Invalid/out-of-range confirm and Copy remain in dialog | PENDING | PENDING |
+| Native Auto Fill, Clear, and Copy | PENDING | PENDING |
+| Native field sizes match custom GoTo and are no less reachable | PENDING | PENDING |
+| Editable point-details flow | PENDING | PENDING |
+| Read-only/additional native location flow | PENDING | PENDING |
+| Active-dialog Activity/configuration recreation recovers safely | PENDING | PENDING |
+| Disable/unload removes Taiwan tab without host crash | PENDING | PENDING |
+| Custom TW Coord GoTo remains unchanged | PENDING | PENDING |
+| Airplane-mode native journey | PENDING | PENDING |
 
 Do not convert PENDING to PASS from build output or source inspection.
 
@@ -233,5 +384,5 @@ Before merge:
 - Update `docs/user-guide.md`, `README.md` if its entry-point table changes,
   and `CHANGELOG.md`.
 - Preserve the custom page as the documented advanced/fallback path.
-- Attach the completed device matrix; do not claim ATAK 5.5 runtime validation
-  without the actual run.
+- Attach the completed 5.5/current device matrix; do not convert build or
+  source inspection into device PASS evidence.

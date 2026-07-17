@@ -21,10 +21,10 @@ modify ATAK core.
   `9f6893dd657feacc35ec5de03dad721c2e44170e` registers all built-in panes
   through the same method, attaches `pane.getView()`, calls `onActivate`, and
   delegates native Auto Fill, Clear, and Copy to the active pane.
-- `javap -public` against the pinned ATAK-CIV 5.7.0.3 `main.jar` confirms the
+- `javap -public` against the pinned ATAK-CIV 5.7.0.9 `main.jar` confirms the
   same eight pane methods plus public `getInstance`, `registerPane`, and
   `unregisterPane`. The inspected jar SHA-256 is
-  `C847ADF2992D623E256AFBAC76489CB203AE1D6831D56F9DCC6B5E9D9F280763`.
+  `8AE6CA6028F72A99537FC2CE9436A4E4964356CB90C7934C35ABE7A7CB065B70`.
 
 The repository has no 5.5.0 source tag or SDK. The `5.5.0` value accepted in
 ADR-0022 is the plugin compatibility token, while the earliest inspected app
@@ -32,8 +32,61 @@ source is 5.5.1.1. The plan therefore treats exact 5.5.0 binary/API validation
 as pending: it must be obtained and tested, or the accepted minimum must be
 revised before release.
 
-**Rationale**: This is the supported SDK hook and meets the 5.5 minimum accepted
-in ADR-0022 without a compatibility bridge.
+### T001 initial execution status — BLOCKED (2026-07-17)
+
+The implementation run repeated the minimum-runtime audit before making any
+source or Android resource change:
+
+```powershell
+rg --files C:\Users\<user>\source\tak |
+    Select-String '5[._-]5[._-]0|main\.jar$|\.apk$'
+git -C C:\Users\<user>\source\tak\atak-civ tag -l '5.5*'
+git ls-remote --tags https://github.com/TAK-Product-Center/atak-civ.git 'refs/tags/5.5*'
+C:\Users\<user>\AppData\Local\Android\Sdk\platform-tools\adb.exe devices -l
+```
+
+Results:
+
+- Local ATAK SDKs are 5.7.0.3, 5.7.0.5, and 5.7.0.9. Local downloaded ATAK
+  APKs are 5.6.0.18, 5.6.0.20, and 5.7.0.9. No exact 5.5.0 SDK, `main.jar`,
+  APK, or archive was found in the inspected source/download locations.
+- The local clone and the official remote tag listing both begin the 5.5 line
+  at `5.5.1.1`; neither exposes an exact 5.5.0 tag.
+- `adb devices -l` reported no connected runtime, so physical 5.5.0 evidence
+  could not be collected.
+- Exact-artifact SHA-256 and method signatures are unavailable because no exact
+  artifact was found. The separately recorded 5.7.0.3 hash/signatures and
+  5.5.1.1 source remain valid but do not satisfy T001.
+
+### T001 implementation-gate resolution — PASS with split version axes
+
+The user selected `C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK` as the
+replacement baseline. The connected reference device supplies the matching
+runtime evidence:
+
+```powershell
+Get-FileHash C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK\main.jar -Algorithm SHA256
+javap -classpath C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK\main.jar -public com.atakmap.android.gui.coordinateentry.CoordinateEntryPane
+javap -classpath C:\Users\<user>\source\tak\ATAK-CIV-5.7.0.9-SDK\main.jar -public com.atakmap.android.gui.coordinateentry.CoordinateEntryCapability
+adb -s <DEVICE_SERIAL> shell dumpsys package com.atakmap.app.civ
+```
+
+- SDK `main.jar` SHA-256:
+  `8AE6CA6028F72A99537FC2CE9436A4E4964356CB90C7934C35ABE7A7CB065B70`.
+- Runtime: ATAK-CIV `5.7.0.9 (7a0f6f29)`, `versionCode=1782294331`, on
+  `SM-X826B` (`<DEVICE_SERIAL>`).
+- `javap -public` exposes all eight `CoordinateEntryPane` callbacks plus public
+  `CoordinateEntryCapability.getInstance`, `registerPane`, and
+  `unregisterPane`.
+
+ADR-0024 adopts ATAK-CIV 5.7.0.9 as the compile/current-device SDK while
+retaining ADR-0022's `5.5.0` runtime compatibility token. The earliest public
+5.5.1.1 source is accepted as the implementation-time 5.5 family API anchor.
+This unblocks T002, but exact 5.5 physical-runtime journeys remain an explicit
+release gate and must not be inferred from 5.7.0.9 evidence.
+
+**Rationale**: This is the supported SDK hook, anchored to public 5.5.1.1
+source and exact 5.7.0.9 compile/runtime evidence without a reflection bridge.
 
 **Alternatives considered**: Fork ATAK core (rejected: deployment and upgrade
 coupling); reflection (rejected: unnecessary and unverified); continue only the

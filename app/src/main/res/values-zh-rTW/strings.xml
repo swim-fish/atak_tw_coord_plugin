@@ -262,4 +262,35 @@
     <string name="offline_address_action_retry">重新選擇檔案</string>
     <string name="offline_address_action_dismiss">關閉</string>
 
+    <!-- ===== 功能 011：ATAK 原生台灣座標輸入 ===== -->
+    <string name="native_entry_taiwan">台灣</string>
+    <string name="native_entry_system_taipower">台電座標</string>
+    <string name="native_entry_system_twd97">TWD97</string>
+    <string name="native_entry_system_twd67">TWD67</string>
+    <string name="native_entry_taipower_hint">例：B8146CC1454</string>
+    <string name="native_entry_taipower_help">請輸入 9 或 11 碼台電座標。</string>
+    <string name="native_entry_easting">東向座標</string>
+    <string name="native_entry_northing">北向座標</string>
+    <string name="native_entry_metres">公尺</string>
+    <string name="native_entry_zone">TM2 分帶</string>
+    <string name="native_entry_zone_121">121</string>
+    <string name="native_entry_zone_119">119</string>
+    <string name="native_entry_outer_island_advisory">TWD67 的 119 分帶在外島誤差較大；重要座標請再次確認。</string>
+    <string name="native_entry_error_empty">請輸入座標。</string>
+    <string name="native_entry_error_incomplete">請完整輸入東向與北向座標。</string>
+    <string name="native_entry_error_malformed">請檢查座標格式，並使用 ASCII 整數公尺。</string>
+    <string name="native_entry_error_bad_zone">請選擇 TM2 的 121 或 119 分帶。</string>
+    <string name="native_entry_error_out_of_coverage">此座標超出台灣支援範圍。</string>
+    <string name="native_entry_error_unrepresentable">此位置無法用目前選擇的台灣座標系統表示。</string>
+    <string name="native_entry_read_only">唯讀</string>
+    <string name="native_entry_a11y_system_selector">台灣座標系統</string>
+    <string name="native_entry_a11y_taipower_input">台電座標代碼</string>
+    <string name="native_entry_a11y_twd97_easting">TWD97 東向座標，單位公尺</string>
+    <string name="native_entry_a11y_twd97_northing">TWD97 北向座標，單位公尺</string>
+    <string name="native_entry_a11y_twd97_zone">TWD97 TM2 分帶</string>
+    <string name="native_entry_a11y_twd67_easting">TWD67 東向座標，單位公尺</string>
+    <string name="native_entry_a11y_twd67_northing">TWD67 北向座標，單位公尺</string>
+    <string name="native_entry_a11y_twd67_zone">TWD67 TM2 分帶</string>
+    <string name="native_entry_a11y_status">台灣座標驗證狀態</string>
+
 </resources>

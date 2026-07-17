@@ -41,6 +41,10 @@ public final class PreferenceStore {
   public static final String KEY_GOTO_LAST_TWD67_ZONE = "pref_goto_last_twd67_zone";
   public static final String KEY_GOTO_RECENT_JSON = "pref_goto_recent_json";
 
+  // Feature 011: ATAK native coordinate-entry pane selection. This is intentionally separate
+  // from KEY_GOTO_LAST_UNIT so native entry never changes the advanced custom GoTo workflow.
+  public static final String KEY_NATIVE_ENTRY_LAST_UNIT = "pref_native_entry_last_unit";
+
   // Feature 003: marker-mode is durable across plugin restarts (changes feature 002's prior
   // in-session-only behaviour — ADR-0010 D5). MOVE_ONLY is the install-time default so a fresh
   // install never auto-drops markers. The Option B refactor (ADR-0011 D8) removed the
@@ -209,6 +213,21 @@ public final class PreferenceStore {
   public void setGotoLastUnit(CoordinateUnit unit) {
     Objects.requireNonNull(unit, "unit");
     sp.edit().putString(KEY_GOTO_LAST_UNIT, unit.name()).apply();
+  }
+
+  public CoordinateUnit getNativeEntryLastUnit() {
+    String value = sp.getString(KEY_NATIVE_ENTRY_LAST_UNIT, CoordinateUnit.TAIPOWER.name());
+    try {
+      return CoordinateUnit.valueOf(value);
+    } catch (IllegalArgumentException | NullPointerException e) {
+      Log.w(TAG, "Unknown native-entry unit '" + value + "', falling back to TAIPOWER");
+      return CoordinateUnit.TAIPOWER;
+    }
+  }
+
+  public void setNativeEntryLastUnit(CoordinateUnit unit) {
+    Objects.requireNonNull(unit, "unit");
+    sp.edit().putString(KEY_NATIVE_ENTRY_LAST_UNIT, unit.name()).apply();
   }
 
   public String getGotoLastTaipower() {

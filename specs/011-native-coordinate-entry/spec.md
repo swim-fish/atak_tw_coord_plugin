@@ -9,8 +9,9 @@
 **Input**: User description: "Integrate Taiwan coordinate entry into ATAK's
 native coordinate-entry experience so operators can use familiar ATAK Go To
 controls while retaining support for Taipower, TWD97, and TWD67 coordinates.
-Support ATAK-CIV 5.5 and later, and keep the existing custom GoTo page during
-the migration."
+Support ATAK-CIV 5.5 and later while compiling with the locally available
+ATAK-CIV 5.7.0.9 SDK, and keep the existing custom GoTo page during the
+migration."
 
 ## Scope
 
@@ -313,9 +314,9 @@ the built-in formats.
 ### Project-Wide Quality Requirements
 
 - **QR-001 Compatibility**: Planning and release validation MUST distinguish
-  Android compile SDK 36, Android minimum SDK 26, ATAK compile SDK 5.7.0.3,
+  Android compile SDK 36, Android minimum SDK 26, ATAK compile SDK 5.7.0.9,
   and ATAK minimum runtime 5.5.0. Native entry must be exercised on ATAK 5.5
-  and the current supported ATAK line before release.
+  and the current supported ATAK 5.7.0.9 line before release.
 - **QR-002 Host safety**: Registration, activation, human edits, conversion,
   formatting, and unload failures must remain contained within the plugin and
   must not terminate or destabilise ATAK.
@@ -375,8 +376,8 @@ the built-in formats.
   disabled, with no duplicate choice and no uncaught plugin failure.
 - **SC-005**: The primary Go To, invalid-input, Auto Fill, read-only display,
   and unload scenarios complete successfully on both ATAK-CIV **5.5** and the
-  current supported ATAK line before release; device-only results remain
-  explicitly incomplete until actually run.
+  current supported ATAK 5.7.0.9 line before release; device-only results
+  remain explicitly incomplete until actually run.
 - **SC-006**: **100%** of strings introduced by this feature resolve in
   English, Traditional Chinese (Taiwan), and Japanese, with no missing or
   mismatched format arguments.
@@ -395,11 +396,13 @@ the built-in formats.
 ## Assumptions
 
 - ATAK-CIV 5.5 is the minimum supported runtime established by ADR-0022;
-  ATAK-CIV 5.4 compatibility is not part of this feature.
+  ATAK-CIV 5.4 compatibility is not part of this feature. ADR-0024 updates the
+  compile SDK to 5.7.0.9 without raising this minimum.
 - The feature depends on ATAK's supported ability to accept plugin-provided
   native coordinate-entry choices and to remove them during plugin unload.
-  Planning must verify the public contract on ATAK 5.5 and the pinned current
-  ATAK SDK before implementation.
+  Planning must verify the public contract against the 5.5 source line and the
+  pinned ATAK-CIV 5.7.0.9 SDK before implementation. Physical 5.5 and current
+  runtime journeys remain release validation.
 - One top-level **Taiwan** choice with an internal three-system selector is the
   chosen product shape. Three separate top-level Taipower, TWD97, and TWD67
   choices are intentionally rejected to limit host-tab crowding.

@@ -18,6 +18,9 @@ later polish pass.
 - `input-page.md` — the TW Coord GoTo input page (feature 002 + the
   feature 003 ATAK-picker delegation button + the feature 010 / v1.3.2
   compact-stacked redesign).
+- `native-taiwan-coordinate-entry.md` — the feature 011 pane registered in
+  ATAK's shared coordinate-entry dialog, including native-versus-advanced
+  workflow selection, host controls, read-only state, and locale lifecycle.
 - `offline-address-page.md` — the Offline Address `DropDownReceiver`
   (feature 004): State A (empty) / State B (active dataset), the
   Import / Replace / Remove flows, and the inline-error matrix; the

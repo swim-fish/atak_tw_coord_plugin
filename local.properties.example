@@ -9,8 +9,8 @@ sdk.dir=C\:\\path\\to\\Android\\Sdk
 
 # ATAK CIV SDK — the takdev plugin jar shipped inside the SDK zip, plus the
 # SDK root directory. Required for the build to pull in `main.jar`.
-takdev.plugin=C\:\\path\\to\\ATAK-CIV-5.7.0.3-SDK\\atak-gradle-takdev.jar
-sdk.path=C\:\\path\\to\\ATAK-CIV-5.7.0.3-SDK
+takdev.plugin=C\:\\path\\to\\ATAK-CIV-5.7.0.9-SDK\\atak-gradle-takdev.jar
+sdk.path=C\:\\path\\to\\ATAK-CIV-5.7.0.9-SDK
 
 # Release signing — see keystore/README.md for how to generate. When these are
 # absent the build still works but produces an UNSIGNED release APK (which is
