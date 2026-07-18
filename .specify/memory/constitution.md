@@ -1,287 +1,356 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.1.0 → 1.2.0
-Rationale: Add a "Scrollable by default" rule to Principle III (User
-Experience Consistency) in response to a real layout defect: the TW Offline
-Addr page used a non-scrolling LinearLayout root with the Import button placed
-below an unweighted wrap_content inner ScrollView, so a long county list could
-push the Import button (and the boundary row) off the bottom edge with no way
-to reach them. The rule makes tool pages scrollable by default and forbids
-placing fixed actions below an unbounded inner scroller. Bump type: MINOR
-(new normative rule added under an existing principle; no removals or
-incompatible redefinitions).
-
-Prior amendment (1.0.0 → 1.1.0): added Principle VI "Host-Process Isolation
-(NON-NEGOTIABLE)" after a Resources.NotFoundException in a view-rendering path
-crashed the whole ATAK-CIV process.
+Version change: 1.2.0 -> 2.1.0
+Rationale: Replace inherited Flutter-centric and tool-runtime-specific rules
+with enforceable Android/ATAK plugin governance; add explicit ATAK SDK and
+geospatial correctness principles; clarify the four independent Android/ATAK
+compatibility versions; and add a safe Git-hook policy. Bump type: MAJOR
+because existing contributor obligations are materially redefined. Version
+2.1.0 includes the compatible workflow guidance added during the same
+unreleased amendment.
 
 Modified principles:
-- III. User Experience Consistency — new "Scrollable by default" bullet.
+- I. Code Quality & Formatting Discipline -> Code Quality & Build Discipline.
+- II. Test-First Development -> Test-First Development & Verification.
+- III. User Experience Consistency -> UX, Accessibility & Localisation.
+- IV. Performance Requirements -> Performance & Offline Operation.
+- V. Documentation & Knowledge Preservation -> Documentation & Decision
+  Traceability.
+- VI. Host-Process Isolation -> Host-Process Isolation with boundary-oriented
+  exception handling and corrected Android resource rules.
+- Development Workflow & Quality Gates: add optional post-plan checklist
+  guidance, safe commit-hook rules, and an explicit implement/converge loop.
 
-Added sections: none (bullet added to an existing principle).
+Added principles:
+- VII. ATAK SDK Compatibility, including separate Android compile/minimum SDK
+  and ATAK compile SDK/minimum runtime contracts.
+- VIII. Geospatial Correctness & Provenance.
 
-Removed sections: none.
+Removed or replaced rules:
+- Removed mandatory subagent delegation from project governance.
+- Replaced Flutter/Dart formatter and analysis commands with Android/Gradle
+  gates used by this repository.
+- Replaced the universal outer ScrollView mandate with one vertical scroll
+  owner, allowing RecyclerView or another bounded scrolling container.
+- Removed host cold/warm-start targets that the plugin cannot control.
+- Removed mandatory ADR creation after every read-only speckit-analyze run.
+- Replaced blanket Throwable swallowing, per-call SDK try/catch, and universal
+  AtomicBoolean guards with boundary-scoped, failure-aware requirements.
+- Replaced ambiguous "compile SDK" wording with explicit Android and ATAK
+  version axes.
+- Disabled optional auto-commit hooks; mandatory repository initialization and
+  feature-branch creation hooks remain enabled.
 
-Templates requiring updates:
-- ✅ .specify/templates/plan-template.md — Constitution Check should evaluate
-  the scrollability rule for any feature that adds/edits a tool page layout;
-  no structural template change required.
-- ✅ .specify/templates/spec-template.md — no schema change.
-- ✅ .specify/templates/tasks-template.md — no schema change; a layout
-  "scrollability check" may be added to the Polish phase for UI features.
-- ⚠ Existing layouts: only newly added/modified tool pages must comply;
-  shipped pages are brought into compliance when next touched (the TW Offline
-  Addr fix in v1.3.x is the first application).
+Templates and guidance updated:
+- [x] .specify/templates/plan-template.md
+- [x] .specify/templates/spec-template.md
+- [x] .specify/templates/tasks-template.md
+- [x] AGENTS.md and CLAUDE.md
+- [x] README.md
+- [x] docs/adr/README.md
+- [x] ADR-0022 filename aligned to docs/adr/NNNN-title.md
+- [x] .specify/workflows/speckit/workflow.yml and workflow-registry.json
+- [x] .specify/extensions.yml
+- [x] Spec Kit Codex skills aligned to the installed PowerShell scripts
+- [x] .specify/init-options.json and .specify/integration.json
+- [x] .specify/scripts/powershell/check-prerequisites.ps1
 
-Follow-up TODOs: none.
+Follow-up TODOs:
+- Before any future `specify integration upgrade --force`, preserve and
+  reapply the project-specific skill, script, and template overrides. The
+  managed-files-modified integration warning is intentional.
 -->
 
 # atak_tw_power_plugin Constitution
 
 ## Core Principles
 
-### I. Code Quality & Formatting Discipline (NON-NEGOTIABLE)
+### I. Code Quality & Build Discipline (NON-NEGOTIABLE)
 
-Every code change MUST satisfy the following before it can be merged or
-declared "done":
+Every source or Android resource change MUST pass the repository's applicable
+quality gates before it is merged or declared complete:
 
-- Source is auto-formatted with the language-native formatter on every change
-  (Dart sources via `dart format .`; other languages via their canonical
-  formatter, e.g. `dart format`, `clang-format`, `prettier`). No commit may
-  contain unformatted code.
-- Static analysis (`flutter analyze` / `dart analyze`) MUST pass with zero
-  errors and zero new warnings introduced by the change.
-- Code MUST be self-explanatory; comments are reserved for non-obvious WHY
-  (constraints, invariants, workarounds), never WHAT.
-- Dead code, commented-out blocks, and TODOs without an owner or tracking
-  reference MUST NOT be merged.
+- Java and Android XML MUST follow the repository formatter configuration.
+  Run `./gradlew :app:spotlessApply` after modifying formatted sources and
+  `./gradlew :app:spotlessCheck` before completion.
+- `./gradlew :app:lint` MUST complete without errors. New warnings MUST be
+  fixed or explicitly justified in the feature plan or pull request.
+- Behavioural code changes MUST pass `./gradlew :app:testCivDebugUnitTest`.
+  Plugin packaging or resource changes MUST also pass
+  `./gradlew :app:assembleCivDebug`.
+- Comments MUST explain non-obvious constraints, invariants, provenance, or
+  workarounds rather than narrate the code.
+- Dead code, commented-out implementations, generated build artefacts, and
+  TODOs without an owner or tracking reference MUST NOT be merged.
+- Documentation-only changes MAY use proportionate validation, but
+  `git diff --check` and any format or link checks relevant to the changed
+  files remain mandatory.
 
-**Rationale**: Consistent formatting and analysis eliminate review noise,
-make diffs reviewable, and prevent latent defects from drifting into the
-codebase. The formatter is a contract — not a suggestion.
+**Rationale**: These are the actual Android/Gradle gates used by this plugin.
+Keeping the rule executable prevents governance from drifting into commands
+that do not exist in the repository.
 
-### II. Test-First Development (TDD) (NON-NEGOTIABLE)
+### II. Test-First Development & Verification (NON-NEGOTIABLE)
 
-Test-Driven Development is the default workflow for every change that
-modifies behaviour:
+Every behaviour change MUST be designed with executable verification:
 
-- Tests MUST be authored before the production code that satisfies them.
-- The Red → Green → Refactor cycle MUST be observable in commit history (or
-  in a single commit that demonstrably contains both failing-test
-  introduction and the implementation that makes them pass).
-- Each public API, business rule, or bug fix MUST be covered by at least one
-  automated test at the appropriate level (unit, widget, or integration).
-- Integration tests are REQUIRED for: new external contracts, cross-module
-  communication, persistence boundaries, and any platform-channel surface.
-- Pure refactors (no behaviour change) MUST keep the existing test suite
-  green without modification of test expectations.
+- Tests MUST be authored before or alongside the production change, and the
+  Red -> Green -> Refactor sequence MUST be recorded in the task notes, pull
+  request, or other review evidence. Separate red and green commits are not
+  required.
+- Pure coordinate maths, parsing, ranking, persistence rules, and other
+  host-independent logic MUST have JVM unit tests.
+- New public contracts, persistence boundaries, cross-module communication,
+  and ATAK SDK adapter seams MUST have contract or integration coverage at the
+  closest practical boundary.
+- Android resource, window-context, plugin lifecycle, and ATAK host behaviour
+  that cannot be represented faithfully on the JVM MUST have explicit
+  on-device acceptance steps in `quickstart.md` and `tasks.md`.
+- Bug fixes MUST include a regression test unless the failure is demonstrably
+  device-only. Device-only exceptions MUST include reproducible steps,
+  expected log evidence, and a reason automation is not practical.
+- Pure refactors MUST keep existing expectations green. Test changes that
+  alter behaviour require corresponding specification changes.
 
-**Rationale**: TDD locks behaviour into executable specifications, prevents
-regressions, and forces a design that is testable from day one. Skipping
-tests is technical debt with compounding interest.
+**Rationale**: ATAK plugins need both fast host-independent tests and real-host
+validation. Treating either layer as sufficient by itself leaves material
+failures uncovered.
 
-### III. User Experience Consistency
+### III. UX, Accessibility & Localisation
 
-Every user-facing change MUST preserve a coherent, predictable experience:
+Every user-facing change MUST preserve a coherent, field-usable experience:
 
-- Visual language (spacing, typography, color tokens, iconography) MUST
-  follow the shared design system; ad-hoc styling is prohibited.
-- Interaction patterns (navigation, gestures, feedback, error states,
-  loading states, empty states) MUST mirror existing flows. New patterns
-  require an explicit design decision recorded under `docs/ui/`.
-- **Scrollable by default.** When adding or modifying a tool page / DropDown
-  view, the page MUST be wrapped in a single outer `ScrollView` so no control
-  can be clipped or pushed off-screen on short panes or small devices. A
-  non-scrolling root (`LinearLayout` etc.) is permitted ONLY when the content
-  is provably short and fixed — a small, bounded set of fixed-height widgets
-  that cannot grow. Any variable-length content (per-item lists, optional
-  cards / banners, localised text that may wrap) makes the page scrollable.
-  Fixed actions (Submit, Import, etc.) MUST NOT be placed below an unweighted
-  `wrap_content` inner scroller, where a long list eats their space and pushes
-  them past the bottom edge. Avoid nested vertical scrollers — prefer one
-  outer `ScrollView` with plain inner containers.
-- Accessibility minimums MUST be met: semantic labels for interactive
-  widgets, sufficient contrast, scalable text, and keyboard / screen-reader
-  reachability where the platform supports it.
-- Localisation: user-visible strings MUST be externalised and translation-
-  ready; hard-coded English strings in production widgets are prohibited.
-- Any UI change (new screen, modified widget, altered flow) MUST be
-  accompanied by a corresponding update under `docs/ui/` describing the
-  change, the rationale, and screenshots or wireframes where helpful.
+- Visual language, navigation, feedback, loading, empty, and error states MUST
+  follow the existing plugin pages unless a new pattern is recorded under
+  `docs/ui/`.
+- A tool page MUST have exactly one primary vertical scroll owner whenever
+  content can grow or localised text can wrap. That owner MAY be a ScrollView,
+  RecyclerView, or another suitable bounded container. Nested unbounded
+  vertical scrollers and fixed actions placed below content that can consume
+  unlimited height are prohibited.
+- Interactive targets SHOULD be at least 48 dp and MUST remain reachable on
+  the supported ATAK drop-down sizes. Any exception MUST be justified by an
+  existing ATAK interaction pattern.
+- Interactive controls MUST have meaningful labels, sufficient contrast,
+  scalable text, and keyboard or screen-reader reachability where Android and
+  ATAK expose those capabilities.
+- User-visible strings MUST be externalised. New or materially changed strings
+  MUST be supplied in the default English resources and kept aligned with the
+  Traditional Chinese (Taiwan) and Japanese resource sets.
+- Material screen or workflow changes MUST update the corresponding
+  `docs/ui/` document. Small copy-only corrections MAY update the user guide
+  or changelog without creating a new UI design document.
 
-**Rationale**: Consistency reduces cognitive load for users and prevents
-the codebase from accumulating divergent UI dialects. Documenting UI in
-`docs/ui/` keeps designers, reviewers, and downstream contributors aligned.
+**Rationale**: Operators use ATAK on small panes, tablets, and field hardware.
+One clear scroll owner and consistent, localised interaction patterns prevent
+controls from becoming unreachable without forbidding appropriate list
+containers.
 
-### IV. Performance Requirements
+### IV. Performance & Offline Operation
 
-Performance is a first-class acceptance criterion, not an after-the-fact
-optimisation:
+Performance requirements MUST cover behaviour the plugin actually controls:
 
-- UI MUST maintain 60 fps (≤ 16 ms frame budget) under representative load
-  on the lowest supported target device; jank above this threshold is a
-  defect.
-- Cold start to first interactive frame MUST be ≤ 2 s on the reference
-  device; warm start MUST be ≤ 1 s.
-- Memory: steady-state footprint MUST stay within the budget recorded in the
-  feature plan; regressions > 10 % require an explicit justification entry
-  in `docs/adr/`.
-- Network and platform-channel calls MUST be batched, debounced, or
-  cancellable where appropriate; never perform blocking I/O on the UI
-  isolate.
-- Performance-critical paths MUST be measured (timeline, devtools, or
-  benchmark harness) before optimisation; commits MUST cite the measurement
-  that motivated the change.
+- Feature plans MUST define measurable budgets for performance-critical paths
+  they introduce, such as opening a drop-down, converting coordinates,
+  resolving an address, importing a dataset, or updating a map overlay.
+- UI work MUST avoid blocking file, database, archive, or network I/O on the
+  Android main thread. Long-running work MUST be cancellable or isolated from
+  host callbacks where practical.
+- Interactive UI SHOULD sustain the device refresh target under representative
+  plugin load. Claims about frame rate or latency MUST be backed by a named
+  device, dataset, and measurement method.
+- Memory-sensitive features MUST record a budget in the feature plan.
+  Regressions greater than 10 percent on the same scenario require an
+  explanation and, when architectural, an ADR.
+- The plugin MUST remain offline-capable and MUST NOT request Android INTERNET
+  permission or add telemetry unless a specification explicitly requires it
+  and an ADR records the privacy, operational, and fallback consequences.
+- ATAK process cold-start and warm-start times are host-owned and MUST NOT be
+  used as plugin acceptance criteria unless the feature demonstrably changes
+  plugin load time and isolates that contribution.
 
-**Rationale**: Power-user tooling lives or dies by responsiveness. Defining
-budgets up front turns "feels slow" into a falsifiable claim.
+**Rationale**: Plugin-owned, measured budgets are actionable. Host-wide targets
+that cannot be isolated create false gates and hide the paths the plugin can
+actually improve.
 
-### V. Documentation & Knowledge Preservation
+### V. Documentation & Decision Traceability
 
-The project's institutional memory MUST be captured in English and kept
-current:
+The project's institutional memory MUST remain current and reviewable:
 
-- All committed documentation (specs, ADRs, READMEs, code comments, commit
-  messages, PR descriptions) MUST be written in English. Bilingual content
-  is permitted only where English is also present and primary.
-- An Architecture Decision Record (ADR) MUST be appended under
-  `docs/adr/NNNN-title.md` after every successful `/speckit-analyze` and
-  every `/speckit-implement` run that resulted in a non-trivial change.
-  The ADR MUST capture: context, decision, alternatives considered,
-  consequences, and links to the originating spec / plan / tasks.
-- UI changes MUST additionally update `docs/ui/` (see Principle III).
-- README, quickstart, and contributor-facing docs MUST be updated in the
-  same change set that introduces breaking or surface-level changes — never
-  in a follow-up.
+- Technical documentation, specifications, plans, tasks, ADRs, code comments,
+  commit messages, and pull request descriptions MUST be written in English.
+  Localised user documentation is permitted when a canonical English
+  counterpart exists and both are updated together.
+- Architecturally significant decisions MUST be recorded as
+  `docs/adr/NNNN-kebab-case-title.md`. An ADR is required when a change
+  selects or reverses an architecture, external contract, compatibility
+  strategy, data format, security or privacy posture, or material operational
+  trade-off.
+- `/speckit-analyze` is strictly read-only and MUST NOT create an ADR merely
+  because analysis ran. If the team accepts a remediation that introduces an
+  architectural decision, that decision MUST be recorded in a separate change.
+- `/speckit-implement` or `/speckit-converge` requires an ADR only when the
+  resulting work meets the significance test above.
+- Breaking changes and user-visible workflow changes MUST update README,
+  quickstart, changelog, and user/UI documentation as applicable in the same
+  change set.
+- Specs, plans, tasks, code, tests, and ADRs MUST link to stable requirement or
+  decision identifiers where those identifiers exist.
 
-**Rationale**: Decisions evaporate; documentation persists. ADRs anchored
-to the spec-kit workflow give future contributors (and future you) a
-traceable narrative of *why* the system looks the way it does.
+**Rationale**: Decision-based ADRs preserve important context without turning
+read-only analysis or routine maintenance into noisy event logs.
 
 ### VI. Host-Process Isolation (NON-NEGOTIABLE)
 
-The plugin runs hosted inside ATAK-CIV's process. Any uncaught exception
-that escapes a plugin entry point crashes the entire ATAK application —
-not just the plugin. Every plugin code path MUST be designed so a fault
-within the plugin can NEVER take down the host.
+The plugin shares ATAK-CIV's process. Failures at host-to-plugin boundaries
+MUST be contained without hiding fatal runtime conditions:
 
-Mandatory rules:
+- Every host-callable entry point MUST route through an outer safety boundary
+  that logs ordinary plugin failures and returns a safe result. Shared helpers
+  are preferred over repeated per-call wrappers.
+- Safety boundaries MAY catch `Throwable` only when they immediately rethrow
+  fatal conditions such as `VirtualMachineError` and `ThreadDeath`.
+  Otherwise they MUST catch `Exception` plus only the specific `LinkageError`
+  subclasses needed for documented ATAK version-skew handling.
+- Listener fan-out owned by the plugin MUST isolate each listener so one
+  listener cannot prevent later listeners from running or propagate into ATAK.
+- Android dialogs MUST use an ATAK Activity context for the window while
+  plugin resource values are resolved through the plugin context before being
+  passed to the dialog. Plugin resource IDs MUST NOT be resolved by the host
+  resource table.
+- `findViewById` results and optional SDK objects MUST be null-checked.
+  Resource APIs such as `getString` that throw on invalid IDs MUST be guarded
+  at the rendering boundary; they MUST NOT be documented as nullable.
+- APIs expecting drawable resource IDs MUST NOT receive
+  `android.R.attr.*` values directly. Theme attributes MUST be resolved first
+  or replaced with concrete resources.
+- ATAK SDK interaction MUST be concentrated behind lifecycle, adapter, or
+  host-boundary seams where practical. It is not necessary to wrap every SDK
+  method call independently when an enclosing boundary already contains it.
+- Intent extras, preferences, JSON, database rows, archives, and imported
+  files MUST be validated before use and recover to a documented safe state.
+- Non-idempotent, asynchronous, or multi-step actions MUST prevent duplicate
+  execution. Simple synchronous selection controls do not require an
+  `AtomicBoolean` solely because they are click handlers.
 
-- **Wrap every plugin entry point.** Every callback the host calls into
-  the plugin — `BroadcastReceiver.onReceive`, `MapEventDispatcher.MapEventDispatchListener.onMapEvent`,
-  `OnClickListener.onClick`, `OnPointChangedListener.onPointChanged`,
-  preference change listeners, `AbstractMapComponent.onCreate` /
-  `onDestroyImpl`, `DropDownReceiver.onReceive` / `onDropDownClose` /
-  `onDropDownSizeChanged` and every other host→plugin boundary — MUST
-  catch `Throwable` (or at minimum `Exception`) at the entry-point
-  body's outer scope, log the exception via `com.atakmap.coremap.log.Log.w`,
-  and return without re-throwing. Native crashes are out of scope for this
-  rule but everything reachable from a JVM stack frame is in.
-- **Listener bodies short-circuit on listener-side faults.** When the
-  plugin fans an event out to its own listeners (e.g. `RecentEntryStore`
-  → `RecentEntry.Listener`), each listener invocation MUST be in its own
-  `try`/`catch` so a single buggy listener cannot abort the dispatch loop
-  or propagate up to the host. This rule is the reason
-  `RecentEntryStore.persist` already wraps each listener call;
-  *every* listener fan-out the plugin owns MUST do the same.
-- **View rendering paths degrade gracefully.** Code that constructs or
-  binds Android `View` instances MUST tolerate `Resources.NotFoundException`,
-  `NullPointerException` from `findViewById`, and inflate failures by
-  falling back to a "minimum viable" rendering (empty list, hidden
-  section, plain TextView) rather than letting the exception bubble.
-- **No attribute-id vs resource-id confusion.** APIs that consume a
-  drawable resource ID (`setBackgroundResource`, `setImageResource`,
-  `getDrawable`, etc.) MUST NOT be called with an `android.R.attr.*`
-  attribute id directly; attribute ids MUST be resolved via
-  `Context.getTheme().resolveAttribute(...)` first, OR the call site
-  MUST avoid the attribute altogether and use a concrete drawable.
-- **Resource lookups are nullable.** `findViewById`, `getDrawable`,
-  `getString` and friends MAY return null in deferred-inflation or
-  themed-context corner cases; code MUST null-check before dereferencing
-  rather than assume presence.
-- **External SDK calls are best-effort.** Calls into ATAK SDK classes
-  (`mapView.getRenderer3()`, `CameraController.panTo`, `Marker.setPoint`,
-  `AtakBroadcast.sendBroadcast`, etc.) MUST be in a `try`/`catch` because
-  the SDK is a moving target and version-skew faults must not propagate.
-- **Defensive validation at boundaries.** Inputs that originate from
-  outside the plugin (Intent extras, persisted preferences, JSON
-  payloads, file contents) MUST be validated before use. Corrupt input
-  MUST recover to a safe default (e.g. empty list, default unit)
-  rather than throw.
-- **`AtomicBoolean` guards for re-entrant click handlers.** Submit /
-  Auto Fill / Recent-row tap handlers MUST be guarded against rapid
-  double-tap re-entry (compare-and-set pattern) so a click in flight
-  cannot fire a second copy of the same code path.
+**Rationale**: Boundary-oriented containment protects ATAK while preserving
+fatal JVM semantics and keeping the code auditable instead of burying every SDK
+call in an unrelated catch block.
 
-**Rationale**: A plugin that crashes ATAK destroys operator trust faster
-than any feature gain restores it. This principle was added in response
-to a real 2026-05-16 incident where a single
-`Resources.NotFoundException` from a misused `android.R.attr.*` in a
-view-rendering path killed ATAK-CIV on a Galaxy Tab S10+ — caught only
-because the user was running with logcat open. The cost of a `try`/`catch`
-around every entry point is one line per callback; the cost of an ATAK
-crash in the field is a mission failure. Always wrap.
+### VII. ATAK SDK Compatibility (NON-NEGOTIABLE)
 
-**Definition of Done extension**: a task is incomplete if it adds a new
-plugin entry point (BroadcastReceiver action, listener, MapEvent
-subscriber, view binding, etc.) without the corresponding outer `Throwable`
-guard. Code review and `/speckit-analyze` MUST flag any unguarded entry
-point as a CRITICAL finding.
+The declared runtime range is a contract:
+
+- The minimum supported runtime is ATAK-CIV 5.5.0 unless superseded by an ADR
+  and matching manifest, README, changelog, and release-tooling changes.
+- Every feature plan that changes Android or ATAK compatibility MUST record
+  four independent values: Android compile SDK, Android minimum SDK, ATAK
+  compile SDK, and ATAK minimum runtime. A plan MAY mark an unchanged value as
+  inherited, but MUST NOT collapse Android and ATAK versions into one field.
+- New ATAK integrations MUST use public SDK APIs. Evidence MUST include
+  `javap -public` output from the pinned ATAK compile SDK and source or API
+  evidence for the ATAK minimum runtime. Repository research MUST cite stable
+  upstream source links when available.
+- A feature MUST NOT assume that compiling against the current SDK proves
+  compatibility with ATAK 5.5. API additions, method signatures, lifecycle
+  ordering, resource ownership, and unregister/dispose behaviour MUST be
+  checked explicitly.
+- Features that add or change ATAK SDK seams MUST include a compatibility
+  matrix covering ATAK 5.5 and the current ATAK runtime corresponding to the
+  pinned ATAK compile SDK. Required device checks MAY remain an explicit
+  incomplete task until hardware is available; they MUST NOT be silently
+  marked complete.
+- Reflection or private/internal ATAK APIs require an ADR documenting the
+  public alternative considered, version-skew failure mode, and removal plan.
+
+**Rationale**: The project currently uses Android compile SDK 36 and minimum
+SDK 26, while compiling ATAK APIs against ATAK-CIV 5.7.0.3 and supporting
+ATAK-CIV 5.5.0 at runtime. Explicit naming prevents Android API levels from
+being confused with ATAK API compatibility and prevents a successful build
+from masking a NoSuchMethodError or lifecycle incompatibility.
+
+### VIII. Geospatial Correctness & Provenance (NON-NEGOTIABLE)
+
+Coordinate and boundary behaviour is safety-relevant domain logic:
+
+- WGS84 latitude/longitude MUST remain the canonical internal interchange
+  representation at ATAK boundaries. Projected and grid coordinates MUST be
+  converted at explicit adapter boundaries.
+- TWD97, TWD67, and Taipower conversions MUST define datum, TM2 zone, axis
+  order, units, valid coverage, normalisation, and out-of-range behaviour.
+- Conversion changes MUST include authoritative or provenance-recorded golden
+  vectors, forward/inverse round-trip tests, zone 119 and 121 coverage where
+  applicable, and boundary or out-of-range cases.
+- Accuracy claims MUST state the reference source, transformation model,
+  representative locations, and error budget. A lower-accuracy fallback MUST
+  be visible in user documentation and must not be presented as equivalent to
+  the authoritative transform.
+- Imported boundary or address datasets MUST record source release, schema or
+  contract version, checksum where available, and generator provenance.
+- Coordinate formatting and parsing MUST be locale-safe, deterministic, and
+  round-trip compatible at the precision promised to the user.
+
+**Rationale**: Incorrect zone, datum, axis, or precision assumptions can move a
+marker by metres or kilometres while still producing plausible numbers.
+Provenance and golden vectors make those errors detectable.
 
 ## Development Workflow & Quality Gates
 
-The following workflow rules apply to every contributor (human or agent)
-working in this repository:
+The required feature workflow is:
 
-- **Subagent delegation**: long-running searches, multi-file audits,
-  cross-cutting consistency checks, and other parallelisable read-heavy
-  tasks MUST be delegated to subagents (e.g. `Explore`, `general-purpose`,
-  `Plan`) so the main conversation context is preserved. The orchestrating
-  agent reads only the subagent's summary, not its intermediate output.
-- **Formatter execution**: `dart format .` (or the language-equivalent
-  formatter) MUST be run after every code modification, before staging.
-  Pre-commit hooks or CI MUST enforce this; manual reliance is not
-  sufficient.
-- **Crash isolation (Principle VI)**: every code change that adds or
-  modifies a plugin entry point MUST include the outer `Throwable` guard.
-  Code review MUST refuse PRs that add unguarded host-callable callbacks.
-- **ADR cadence**: every `/speckit-analyze` and `/speckit-implement` run
-  produces or updates an ADR under `docs/adr/` (see Principle V). The
-  workflow is incomplete until the ADR exists and is committed.
-- **UI docs cadence**: any change touching the user interface produces or
-  updates a corresponding file under `docs/ui/` (see Principle III).
-- **Definition of Done**: a task is complete only when all of the following
-  hold — code formatted, static analysis clean, tests written and passing,
-  ADR / UI docs updated where applicable, performance budgets respected,
-  and every new plugin entry point wrapped per Principle VI.
-- **Gate sequencing**: `/speckit-plan` runs a Constitution Check before
-  Phase 0 and again after Phase 1; violations MUST either be eliminated or
-  justified in the plan's Complexity Tracking table with a Simpler
-  Alternative Rejected reason.
+`specify -> clarify -> plan -> checklist (optional) -> tasks -> analyze -> implement -> converge`
+
+- Feature branches SHOULD use `codex/NNN-short-name` for Codex work or
+  `NNN-short-name` for other integrations so Spec Kit can resolve the feature
+  number consistently.
+- `/speckit-plan` MUST run the Constitution Check before Phase 0 and again
+  after Phase 1. Any unresolved non-negotiable violation blocks implementation.
+  Other justified complexity belongs in the plan's Complexity Tracking table.
+- `/speckit-checklist` MAY run after planning when requirements quality needs
+  an additional review. It validates requirement wording and coverage; it does
+  not replace executable tests or the Constitution Check.
+- `/speckit-tasks` MUST create test tasks before the corresponding behaviour
+  tasks and MUST include applicable Gradle, device, compatibility,
+  documentation, and ADR decision checks.
+- `/speckit-analyze` remains read-only. It reports coverage and constitution
+  conflicts but does not change artifacts.
+- `/speckit-converge` MAY append a convergence phase after implementation.
+  If it appends tasks, `/speckit-implement` and convergence validation repeat
+  until no actionable gaps remain.
+- Mandatory initialization and feature-branch hooks MAY run automatically.
+  Hooks that stage or commit changes MUST remain disabled by default and MUST
+  NOT run around read-only commands such as `/speckit-analyze`. When a commit
+  command is explicitly requested, it MUST preserve unrelated work and stage
+  only the reviewed change scope; blanket `git add .` is prohibited in a dirty
+  worktree.
+- Parallel work MAY be used when the active runtime supports it and task/file
+  dependencies permit it. Project governance MUST NOT require a particular
+  agent orchestration capability.
+- A task is complete only when applicable formatting, lint, automated tests,
+  package build, on-device acceptance, compatibility evidence, documentation,
+  and decision records are complete or explicitly marked as blocked.
 
 ## Governance
 
-This constitution supersedes ad-hoc conventions, individual preferences,
-and undocumented tribal knowledge. Where this document and any other
-guidance conflict, this document wins until amended.
+This constitution supersedes ad-hoc conventions and conflicting runtime
+guidance until it is amended.
 
-- **Amendment procedure**: amendments are proposed by editing
-  `.specify/memory/constitution.md` via `/speckit-constitution`. Each
-  amendment MUST include a Sync Impact Report at the top of the file, a
-  version bump, and updated dependent templates / docs in the same change
-  set.
-- **Versioning policy** (semantic):
-  - MAJOR — backward-incompatible governance changes, principle removals,
-    or redefinitions that alter the contract with contributors.
-  - MINOR — new principle or materially expanded guidance added.
-  - PATCH — wording clarifications, typo fixes, non-semantic refinements.
-- **Compliance review**: every pull request MUST self-attest constitution
-  compliance in its description (a one-line checklist is sufficient).
-  Reviewers MUST verify the attestation against the diff; unjustified
-  violations block merge.
-- **Runtime guidance**: agent-facing runtime instructions live in
-  `CLAUDE.md` and the per-feature plan; they MUST NOT contradict this
-  constitution. When they drift, the constitution is the source of truth.
+- Amendments MUST use `/speckit-constitution`, include a Sync Impact Report,
+  update the semantic version and amendment date, and propagate changes to
+  dependent templates and guidance in the same change set.
+- Versioning follows semantic governance:
+  - MAJOR: backward-incompatible rule changes, principle removals, or material
+    redefinitions of contributor obligations.
+  - MINOR: a new principle or materially expanded compatible guidance.
+  - PATCH: non-semantic clarification, typo, or wording correction.
+- Pull requests MUST state constitution compliance and identify any remaining
+  device-only or compatibility tasks. Reviewers MUST compare that statement to
+  the diff and active feature artifacts.
+- Agent-facing runtime guidance lives in `AGENTS.md`, `CLAUDE.md`,
+  `.specify/feature.json`, and the active feature plan. Those files MUST
+  resolve the same active feature and MUST NOT contradict this constitution.
+- Historical ADR decisions are immutable except for typo or metadata fixes.
+  Reversals require a superseding ADR.
 
-**Version**: 1.2.0 | **Ratified**: 2026-05-16 | **Last Amended**: 2026-06-06
+**Version**: 2.1.0 | **Ratified**: 2026-05-16 | **Last Amended**: 2026-07-17

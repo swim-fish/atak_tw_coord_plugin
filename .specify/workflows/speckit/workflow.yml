@@ -2,14 +2,14 @@ schema_version: "1.0"
 workflow:
   id: "speckit"
   name: "Full SDD Cycle"
-  version: "1.0.0"
+  version: "2.1.0"
   author: "GitHub"
-  description: "Runs specify → plan → tasks → implement with review gates"
+  description: "Runs specify → clarify → plan → optional checklist → tasks → analyze → implement → converge with review gates"
 
 requires:
-  speckit_version: ">=0.7.2"
+  speckit_version: ">=0.12.17"
   integrations:
-    any: ["copilot", "claude", "gemini"]
+    any: ["codex", "copilot", "claude", "gemini"]
 
 inputs:
   spec:
@@ -18,16 +18,17 @@ inputs:
     prompt: "Describe what you want to build"
   integration:
     type: string
-    default: "copilot"
-    prompt: "Integration to use (e.g. claude, copilot, gemini)"
-  scope:
-    type: string
-    default: "full"
-    enum: ["full", "backend-only", "frontend-only"]
-
+    default: "codex"
+    prompt: "Integration to use (e.g. codex, claude, copilot, gemini)"
 steps:
   - id: specify
     command: speckit.specify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: clarify
+    command: speckit.clarify
     integration: "{{ inputs.integration }}"
     input:
       args: "{{ inputs.spec }}"
@@ -46,7 +47,7 @@ steps:
 
   - id: review-plan
     type: gate
-    message: "Review the plan before generating tasks."
+    message: "Review the plan before generating tasks. Run speckit.checklist first when an additional requirements-quality review is warranted."
     options: [approve, reject]
     on_reject: abort
 
@@ -56,8 +57,32 @@ steps:
     input:
       args: "{{ inputs.spec }}"
 
+  - id: analyze
+    command: speckit.analyze
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-analysis
+    type: gate
+    message: "Resolve critical analysis findings before implementation."
+    options: [approve, reject]
+    on_reject: abort
+
   - id: implement
     command: speckit.implement
     integration: "{{ inputs.integration }}"
     input:
       args: "{{ inputs.spec }}"
+
+  - id: converge
+    command: speckit.converge
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-convergence
+    type: gate
+    message: "Approve only when convergence reports no actionable gaps. If it appended tasks, reject this gate and rerun implement followed by converge."
+    options: [approve, reject]
+    on_reject: abort

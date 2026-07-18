@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6c8ebf"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b85450"/>
+    </marker>
+    <style>
+      text { font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif; fill: #1f2933; }
+      .title { font-size: 24px; font-weight: 700; text-anchor: middle; }
+      .lane-title { font-size: 18px; font-weight: 700; text-anchor: middle; }
+      .small { font-size: 12px; font-weight: 400; }
+      .node-label { font-size: 14px; text-anchor: middle; }
+      .bold { font-weight: 700; }
+      .note { font-size: 15px; }
+      .edge-blue { stroke: #6c8ebf; stroke-width: 2; fill: none; marker-end: url(#arrow-blue); }
+      .edge-red { stroke: #b85450; stroke-width: 2; fill: none; marker-end: url(#arrow-red); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1050" fill="#ffffff"/>
+  <text x="800" y="58" class="title">Boundary localityAt() 流程差異：目前 vs 快取 parsed BoundaryGeometry</text>
+
+  <rect x="60" y="90" width="660" height="850" rx="12" fill="none" stroke="#b85450" stroke-width="2" stroke-dasharray="8 6"/>
+  <rect x="880" y="90" width="660" height="850" rx="12" fill="none" stroke="#6c8ebf" stroke-width="2" stroke-dasharray="8 6"/>
+
+  <rect x="140" y="110" width="500" height="64" rx="8" fill="#f8cecc" stroke="#b85450" stroke-width="2"/>
+  <text x="390" y="136" class="lane-title">目前流程</text>
+  <text x="390" y="158" class="lane-title small">每次 localityAt() 都重新讀 WKB 並 parse</text>
+
+  <rect x="960" y="110" width="500" height="64" rx="8" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+  <text x="1210" y="136" class="lane-title">快取 parsed boundary geometry</text>
+  <text x="1210" y="158" class="lane-title small">WKB parse 只在 cache miss 發生</text>
+
+  <!-- Current flow -->
+  <rect x="190" y="200" width="400" height="56" rx="8" fill="#f5f5f5" stroke="#666666"/>
+  <text x="390" y="222" class="node-label">地圖中心更新</text>
+  <text x="390" y="242" class="node-label small">MAP row / camera event</text>
+
+  <rect x="190" y="280" width="400" height="62" rx="8" fill="#d5e8d4" stroke="#82b366"/>
+  <text x="390" y="304" class="node-label">AddressSubsystem.onCoord(MAP)</text>
+  <text x="390" y="324" class="node-label small">250ms debounce，仍會重新排 lookup</text>
+
+  <rect x="190" y="366" width="400" height="50" rx="8" fill="#d5e8d4" stroke="#82b366"/>
+  <text x="390" y="396" class="node-label">lookupScoped(lat, lon)</text>
+
+  <rect x="190" y="440" width="400" height="50" rx="8" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+  <text x="390" y="470" class="node-label bold">boundary.localityAt()</text>
+
+  <rect x="190" y="514" width="400" height="84" rx="28" fill="#fff2cc" stroke="#d6b656"/>
+  <text x="390" y="538" class="node-label">rowsInBbox() 查 SQLite</text>
+  <text x="390" y="558" class="node-label small">SELECT name_zh, county_zh, geometry_wkb</text>
+  <text x="390" y="578" class="node-label small">FROM townships JOIN townships_rtree</text>
+
+  <rect x="190" y="622" width="400" height="78" rx="8" fill="#f8cecc" stroke="#b85450" stroke-width="3"/>
+  <text x="390" y="646" class="node-label bold">WkbMultiPolygonParser.parseOrNull(wkb)</text>
+  <text x="390" y="666" class="node-label small">每次 lookup 都重做</text>
+  <text x="390" y="686" class="node-label small">配置 BoundaryGeometry / double[]</text>
+
+  <rect x="190" y="724" width="400" height="60" rx="8" fill="#d5e8d4" stroke="#82b366"/>
+  <text x="390" y="748" class="node-label">BoundaryGeometry.covers() / snap</text>
+  <text x="390" y="768" class="node-label small">point-in-polygon 或 nearest vertex</text>
+
+  <rect x="190" y="808" width="400" height="58" rx="8" fill="#fff2cc" stroke="#d6b656"/>
+  <text x="390" y="832" class="node-label">得到 county / district</text>
+  <text x="390" y="852" class="node-label small">邊界附近可能在兩縣市間跳動</text>
+
+  <rect x="190" y="890" width="400" height="58" rx="8" fill="#d5e8d4" stroke="#82b366"/>
+  <text x="390" y="914" class="node-label">查已開啟的 places facade</text>
+  <text x="390" y="934" class="node-label small">registry.snapshot().get(county)</text>
+
+  <!-- Cached flow -->
+  <rect x="1010" y="200" width="400" height="56" rx="8" fill="#f5f5f5" stroke="#666666"/>
+  <text x="1210" y="222" class="node-label">地圖中心更新</text>
+  <text x="1210" y="242" class="node-label small">MAP row / camera event</text>
+
+  <rect x="1010" y="280" width="400" height="62" rx="8" fill="#d5e8d4" stroke="#82b366"/>
+  <text x="1210" y="304" class="node-label">AddressSubsystem.onCoord(MAP)</text>
+  <text x="1210" y="324" class="node-label small">查詢次數本身不變</text>
+
+  <rect x="1010" y="366" width="400" height="50" rx="8" fill="#d5e8d4" stroke="#82b366"/>
+  <text x="1210" y="396" class="node-label">lookupScoped(lat, lon)</text>
+
+  <rect x="1010" y="440" width="400" height="50" rx="8" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+  <text x="1210" y="470" class="node-label bold">boundary.localityAt()</text>
+
+  <rect x="1010" y="514" width="400" height="84" rx="28" fill="#fff2cc" stroke="#d6b656"/>
+  <text x="1210" y="538" class="node-label">rowsInBbox() 查候選 row</text>
+  <text x="1210" y="558" class="node-label small">SELECT id, name_zh, county_zh</text>
+  <text x="1210" y="578" class="node-label small">FROM townships JOIN townships_rtree</text>
+
+  <rect x="1010" y="622" width="400" height="72" rx="8" fill="#dae8fc" stroke="#6c8ebf" stroke-width="3"/>
+  <text x="1210" y="646" class="node-label bold">geometryCache.computeIfAbsent(id)</text>
+  <text x="1210" y="668" class="node-label small">key = townships.id；value = parsed geometry 或失敗標記</text>
+
+  <rect x="1010" y="718" width="400" height="82" rx="8" fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/>
+  <text x="1210" y="742" class="node-label">Cache hit：直接重用 parsed geometry</text>
+  <text x="1210" y="762" class="node-label">Cache miss：才 SELECT geometry_wkb WHERE id = ?</text>
+  <text x="1210" y="782" class="node-label">parse 一次後寫入 cache</text>
+
+  <rect x="1010" y="824" width="400" height="60" rx="8" fill="#d5e8d4" stroke="#82b366"/>
+  <text x="1210" y="848" class="node-label">BoundaryGeometry.covers() / snap</text>
+  <text x="1210" y="868" class="node-label small">同樣支援 MultiPolygon、飛地、hole</text>
+
+  <rect x="1010" y="908" width="400" height="58" rx="8" fill="#d5e8d4" stroke="#82b366"/>
+  <text x="1210" y="932" class="node-label">得到 county / district</text>
+  <text x="1210" y="952" class="node-label small">結果語意不變，只少掉重複 parse</text>
+
+  <!-- Difference note -->
+  <rect x="520" y="780" width="560" height="116" rx="8" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+  <text x="544" y="810" class="note">差異重點：</text>
+  <text x="544" y="835" class="note">目前：WKB 解析在每次 localityAt() hot path。</text>
+  <text x="544" y="860" class="note">快取後：SQLite bbox 查詢仍會發生，但 polygon parse / double[]</text>
+  <text x="544" y="885" class="note">配置只在第一次命中該 townships.id 時發生。</text>
+
+  <!-- Edges -->
+  <path d="M390 256 L390 280" class="edge-blue"/>
+  <path d="M390 342 L390 366" class="edge-blue"/>
+  <path d="M390 416 L390 440" class="edge-blue"/>
+  <path d="M390 490 L390 514" class="edge-blue"/>
+  <path d="M390 598 L390 622" class="edge-red"/>
+  <path d="M390 700 L390 724" class="edge-red"/>
+  <path d="M390 784 L390 808" class="edge-blue"/>
+  <path d="M390 866 L390 890" class="edge-blue"/>
+
+  <path d="M1210 256 L1210 280" class="edge-blue"/>
+  <path d="M1210 342 L1210 366" class="edge-blue"/>
+  <path d="M1210 416 L1210 440" class="edge-blue"/>
+  <path d="M1210 490 L1210 514" class="edge-blue"/>
+  <path d="M1210 598 L1210 622" class="edge-blue"/>
+  <path d="M1210 694 L1210 718" class="edge-blue"/>
+  <path d="M1210 800 L1210 824" class="edge-blue"/>
+  <path d="M1210 884 L1210 908" class="edge-blue"/>
+</svg>

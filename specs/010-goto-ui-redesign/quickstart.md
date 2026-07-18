@@ -4,7 +4,7 @@
 
 - Local `local.properties` with `sdk.dir`, `sdk.path` (ATAK-CIV 5.7.0.3 SDK),
   `takdev.plugin` (already configured in this repo).
-- A connected device/emulator running ATAK 5.4+ (`adb devices` shows one).
+- A connected device/emulator running ATAK 5.5+ (`adb devices` shows one).
 
 ## What changes (developer view)
 

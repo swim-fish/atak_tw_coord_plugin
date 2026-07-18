@@ -8,7 +8,7 @@
 > See the Taiwan street address of any point on the map, **fully offline**. No
 > network, no Google.
 
-**Feature:** 004 Offline Address · 008 storage-page redesign | **Versions:** v1.1.0 → **v1.3.0** | **Targets:** ATAK-CIV 5.4.0 – 5.7.x | **Language:** English · [中文](tw-offline-addr_zh.md)
+**Feature:** 004 Offline Address · 008 storage-page redesign | **Versions:** v1.1.0 → **v1.3.0** | **Targets:** ATAK-CIV 5.5.0 – 5.7.x | **Language:** English · [中文](tw-offline-addr_zh.md)
 
 ---
 

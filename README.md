@@ -1,6 +1,6 @@
 # Taiwan Coordinate Display + Input Plugin for ATAK (`atak_tw_coord_plugin`)
 
-An [ATAK-CIV](https://tak.gov/products/atak-civ) plugin that does two
+An [ATAK-CIV](https://tak.gov/products/atak-civ) plugin that does three
 things in Taiwan-flavoured coordinate units:
 
 1. **Display** — shows the map-centre, the device's own position, and
@@ -9,6 +9,10 @@ things in Taiwan-flavoured coordinate units:
    (Taipower / TWD97 / TWD67) and pans the ATAK map there. The page
    also has Auto Fill (read current map centre → fill the field) and
    a Recent list (up to 10 prior submissions).
+3. **Native entry** — adds one **Taiwan** pane to ATAK's shared
+   coordinate-entry dialog, so ordinary Go To, Auto Fill, Clear, and Copy use
+   the host workflow operators already know. The advanced plugin GoTo page
+   remains available for marker modes, Recent entries, and icon-palette use.
 
 Both features support the same three Taiwan coordinate systems:
 
@@ -48,6 +52,7 @@ captured under `docs/ui/` (`readout-widget.md`, `settings-fragment.md`).
 | Offline, no telemetry | Zero outbound network. Manifest deliberately omits `INTERNET` permission. No analytics or crash-reporting SDKs |
 | Settings advisory | Built-in accuracy notice explaining TWD67 main-island ±3-5 m vs outer-island ±10-20 m |
 | **Coordinate input page** ("GoTo") | Second Tools-menu icon opens a DropDown with three tabs (Taipower / TWD97 / TWD67), submit pans the camera to the resolved location (X/Y only — operator's zoom is preserved). **v1.3.2 (feature 010)** restyles the page into the compact-stacked layout shared with the other pages — a segmented system selector + carded fields, a single header **Use map centre** button, a glove-friendly marker grid, and a primary **Submit & go** vs ghost **Use ATAK icon palette…** hierarchy; coordinate behaviour unchanged |
+| **ATAK native Taiwan entry** | ATAK's shared coordinate-entry dialog gains one **Taiwan** pane with Taipower, TWD97, and TWD67; explicit zones 121/119; host Auto Fill/Clear/Copy; and read-only support. Native entry is additive and stores its last system independently from the advanced GoTo page. See [`docs/ui/native-taiwan-coordinate-entry.md`](docs/ui/native-taiwan-coordinate-entry.md) |
 | **Auto Fill** | One-tap fill of the active tab from the current map centre, with zone toggle (TWD97/TWD67) auto-set from longitude; disabled in real time when the centre is unrepresentable in the active tab |
 | **Recent list** | Up to 10 prior successful submissions, deduped on (unit, value), persisted across ATAK restarts; tap any row to re-fill, per-row delete |
 | **In-page marker-mode picker** | 9 radios under Submit (Move only + 7 affiliation/spot-map types + **Custom Icon**). Selecting non-Move-only drops a marker of that type at the resolved coord; selection persists across plugin restarts |
@@ -84,7 +89,7 @@ just like any other ATAK extension.
 
 ### Prerequisites
 
-- ATAK-CIV **5.4.0 or later** installed on the target Android device
+- ATAK-CIV **5.5.0 or later** installed on the target Android device
 - USB debugging or another sideload mechanism
 
 ### Install
@@ -175,7 +180,7 @@ mode show `OUT OF RANGE` with the WGS84 fallback line.
 - **Android Studio** (Hedgehog or later) with:
   - Android SDK platforms `android-34` and `android-36`
   - Build-tools `34.0.0` or newer
-- **ATAK-CIV 5.7.0.3 SDK** unpacked locally
+- **ATAK-CIV 5.7.0.9 SDK** unpacked locally
 - **Git**
 
 ### Configure
@@ -183,13 +188,15 @@ mode show `OUT OF RANGE` with the WGS84 fallback line.
 In `local.properties` (not committed), set both:
 ```properties
 sdk.dir=<path to your Android SDK>
-sdk.path=<path to ATAK-CIV-5.7.0.3-SDK>
-takdev.plugin=<path to ATAK-CIV-5.7.0.3-SDK>/atak-gradle-takdev.jar
+sdk.path=<path to ATAK-CIV-5.7.0.9-SDK>
+takdev.plugin=<path to ATAK-CIV-5.7.0.9-SDK>/atak-gradle-takdev.jar
 ```
 
-The plugin's compile target is the 5.7.0.3 SDK; runtime compatibility
-is declared as `com.atakmap.app@5.4.0.CIV` (works on every ATAK-CIV
-version we have tested, 5.4 through 5.7.0.3).
+The Android build uses compile SDK 36 and minimum SDK 26. ATAK APIs compile
+against the ATAK-CIV 5.7.0.9 SDK, while minimum ATAK runtime compatibility is
+declared as `com.atakmap.app@5.5.0.CIV`. ATAK 5.4 is no longer supported;
+see ADR-0022 and ADR-0024. Exact ATAK 5.5 device acceptance is required before
+release and is not implied by a successful 5.7.0.9 build.
 
 ### Common commands
 
@@ -201,7 +208,7 @@ version we have tested, 5.4 through 5.7.0.3).
 ```
 
 The build outputs an APK at
-`app/build/outputs/apk/civ/debug/ATAK-Plugin-atak_tw_coord_plugin-<version>-<gitHash>-5.4.0-civ-debug.apk`.
+`app/build/outputs/apk/civ/debug/ATAK-Plugin-atak_tw_coord_plugin-<version>-<gitHash>-5.5.0-civ-debug.apk`.
 
 ## Project layout
 
@@ -258,8 +265,9 @@ spec / plan / tasks / contracts live under `specs/NNN-<short-name>/`:
 - [`specs/007-settings-ux-tweaks/`](specs/007-settings-ux-tweaks/) — settings page + search/storage UX tweaks
 - [`specs/008-search-settings-ui/`](specs/008-search-settings-ui/) — search/storage page UI redesign (v1.3.0)
 - [`specs/010-goto-ui-redesign/`](specs/010-goto-ui-redesign/) — GoTo input page UI redesign (v1.3.2)
+- [`specs/011-native-coordinate-entry/`](specs/011-native-coordinate-entry/) — ATAK native Taiwan coordinate entry
 
-Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty-one ADRs
+Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty-two ADRs
 under [`docs/adr/`](docs/adr/) cover every architecturally significant decision
 (ADR-0001 is the entry point and carries the 2026-05-23 Taipower letter-table
 correction follow-up; ADR-0014/0015 the offline-address reconnaissance +
@@ -277,7 +285,27 @@ storage-page localisation, and the on-map address direction arrow; and
 [ADR-0021](docs/adr/0021-goto-ui-redesign.md) the v1.3.2 GoTo input-page
 compact-stacked redesign — segmented tabs, single header Auto Fill, primary /
 ghost submit hierarchy, glove-friendly marker grid, and drawable-driven
-selection).
+selection; and
+[ADR-0022](docs/adr/0022-set-minimum-atak-runtime-to-5-5.md) the ATAK 5.5
+minimum-runtime decision;
+[ADR-0023](docs/adr/0023-native-taiwan-coordinate-entry.md) the one-pane native
+integration, lifecycle, and advanced-page coexistence decision; and
+[ADR-0024](docs/adr/0024-use-atak-5-7-0-9-compile-sdk.md) the split compile SDK
+5.7.0.9 / minimum runtime 5.5 validation decision).
+
+The active feature is resolved from `.specify/feature.json`; agent guidance
+must not infer it from the newest directory. The required lifecycle is:
+
+```text
+specify -> clarify -> plan -> checklist (optional) -> tasks -> analyze -> implement -> converge
+```
+
+`checklist` is an optional post-plan requirements-quality review. `analyze` is
+read-only. If `converge` appends remaining tasks, run `implement` and
+`converge` again until no actionable gaps remain. Behaviour changes use
+test-first tasks; ATAK SDK seams additionally require public-API evidence and
+minimum/current-line device scenarios. See
+[the constitution](.specify/memory/constitution.md) for the full gates.
 
 ## References
 

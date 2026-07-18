@@ -1,0 +1,138 @@
+<mxfile host="app.diagrams.net" modified="2026-06-28T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="boundary-geometry-cache-flow" name="Boundary Geometry Cache Flow">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Boundary localityAt() 流程差異：目前 vs 快取 parsed BoundaryGeometry" style="text;html=1;strokeColor=none;fillColor=none;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="120" y="30" width="1360" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lane-current" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#b85450;strokeWidth=2;dashed=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="60" y="90" width="660" height="850" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-cached" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#6c8ebf;strokeWidth=2;dashed=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="880" y="90" width="660" height="850" as="geometry" />
+        </mxCell>
+
+        <mxCell id="current-title" value="目前流程&lt;br&gt;&lt;font style=&quot;font-size: 13px&quot;&gt;每次 localityAt() 都重新讀 WKB 並 parse&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;arcSize=8;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="110" width="500" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="cached-title" value="快取 parsed boundary geometry&lt;br&gt;&lt;font style=&quot;font-size: 13px&quot;&gt;WKB parse 只在 cache miss 發生&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;arcSize=8;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="110" width="500" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="l1" value="地圖中心更新&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;MAP row / camera event&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="190" y="200" width="400" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="l2" value="AddressSubsystem.onCoord(MAP)&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;250ms debounce，仍會重新排 lookup&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="190" y="280" width="400" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="l3" value="lookupScoped(lat, lon)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="190" y="366" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l4" value="boundary.localityAt()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;arcSize=8;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="190" y="440" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l5" value="rowsInBbox() 查 SQLite&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;SELECT name_zh, county_zh, geometry_wkb&lt;br&gt;FROM townships JOIN townships_rtree&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="190" y="514" width="400" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="l6" value="WkbMultiPolygonParser.parseOrNull(wkb)&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;每次 lookup 都重做&lt;br&gt;配置 BoundaryGeometry / double[]&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;arcSize=8;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="190" y="622" width="400" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="l7" value="BoundaryGeometry.covers() / snap&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;point-in-polygon 或 nearest vertex&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="190" y="724" width="400" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="l8" value="得到 county / district&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;邊界附近可能在兩縣市間跳動&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="190" y="808" width="400" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="l9" value="查已開啟的 places facade&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;registry.snapshot().get(county)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="190" y="890" width="400" height="58" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r1" value="地圖中心更新&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;MAP row / camera event&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="200" width="400" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="AddressSubsystem.onCoord(MAP)&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;查詢次數本身不變&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="280" width="400" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="lookupScoped(lat, lon)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="366" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" value="boundary.localityAt()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;arcSize=8;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="440" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r5" value="rowsInBbox() 查候選 row&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;SELECT id, name_zh, county_zh&lt;br&gt;FROM townships JOIN townships_rtree&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="514" width="400" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="r6" value="geometryCache.computeIfAbsent(id)&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;key = townships.id；value = parsed BoundaryGeometry 或失敗標記&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;arcSize=8;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="622" width="400" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="r7" value="Cache hit：直接重用 parsed geometry&lt;br&gt;Cache miss：才 SELECT geometry_wkb WHERE id = ?&lt;br&gt;parse 一次後寫入 cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="718" width="400" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="r8" value="BoundaryGeometry.covers() / snap&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;同樣支援 MultiPolygon、飛地、hole&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="824" width="400" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="r9" value="得到 county / district&lt;br&gt;&lt;font style=&quot;font-size: 12px&quot;&gt;結果語意不變，只少掉重複 parse&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;arcSize=8;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="908" width="400" height="58" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note" value="差異重點：&lt;br&gt;目前：WKB 解析在每次 localityAt() hot path。&lt;br&gt;快取後：SQLite bbox 查詢仍會發生，但 polygon parse / double[] 配置只在第一次命中該 townships.id 時發生。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;arcSize=8;fontSize=15;align=left;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="520" y="780" width="560" height="116" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-l1-l2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="l1" target="l2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-l2-l3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="l2" target="l3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-l3-l4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="l3" target="l4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-l4-l5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="l4" target="l5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-l5-l6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#b85450;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="l5" target="l6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-l6-l7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#b85450;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="l6" target="l7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-l7-l8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="l7" target="l8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-l8-l9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="l8" target="l9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-r1-r2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="r1" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-r2-r3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="r2" target="r3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-r3-r4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="r3" target="r4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-r4-r5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="r4" target="r5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-r5-r6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="r5" target="r6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-r6-r7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="r6" target="r7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-r7-r8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="r7" target="r8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-r8-r9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="r8" target="r9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

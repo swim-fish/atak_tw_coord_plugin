@@ -327,4 +327,36 @@
     <string name="offline_address_action_retry">Choose file again</string>
     <string name="offline_address_action_dismiss">Dismiss</string>
 
+    <!-- ===== Feature 011: ATAK native Taiwan coordinate entry ===== -->
+    <string name="native_entry_taiwan">Taiwan</string>
+    <string name="native_entry_system_taipower">Taipower</string>
+    <string name="native_entry_system_twd97">TWD97</string>
+    <string name="native_entry_system_twd67">TWD67</string>
+    <string name="native_entry_taipower_hint">e.g. B8146CC1454</string>
+    <string name="native_entry_taipower_help">Enter a 9- or 11-character Taipower grid code.</string>
+    <string name="native_entry_easting">Easting</string>
+    <string name="native_entry_northing">Northing</string>
+    <string name="native_entry_metres">metres</string>
+    <string name="native_entry_zone">TM2 zone</string>
+    <string name="native_entry_zone_121">121</string>
+    <string name="native_entry_zone_119">119</string>
+    <string name="native_entry_outer_island_advisory">TWD67 zone 119 is less accurate on outer islands; verify critical coordinates.</string>
+    <string name="native_entry_error_empty">Enter a coordinate.</string>
+    <string name="native_entry_error_incomplete">Enter both easting and northing.</string>
+    <string name="native_entry_error_malformed">Check the coordinate format and use ASCII whole metres.</string>
+    <string name="native_entry_error_bad_zone">Select TM2 zone 121 or 119.</string>
+    <string name="native_entry_error_out_of_coverage">This coordinate is outside supported Taiwan coverage.</string>
+    <string name="native_entry_error_unrepresentable">This point cannot be represented in the selected Taiwan system.</string>
+    <string name="native_entry_error_disposed">Taiwan coordinate entry is no longer available.</string>
+    <string name="native_entry_read_only">Read only</string>
+    <string name="native_entry_a11y_system_selector">Taiwan coordinate system</string>
+    <string name="native_entry_a11y_taipower_input">Taipower grid code</string>
+    <string name="native_entry_a11y_twd97_easting">TWD97 easting in metres</string>
+    <string name="native_entry_a11y_twd97_northing">TWD97 northing in metres</string>
+    <string name="native_entry_a11y_twd97_zone">TWD97 TM2 zone</string>
+    <string name="native_entry_a11y_twd67_easting">TWD67 easting in metres</string>
+    <string name="native_entry_a11y_twd67_northing">TWD67 northing in metres</string>
+    <string name="native_entry_a11y_twd67_zone">TWD67 TM2 zone</string>
+    <string name="native_entry_a11y_status">Taiwan coordinate validation status</string>
+
 </resources>

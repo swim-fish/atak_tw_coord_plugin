@@ -5,6 +5,26 @@ loosely based on [Keep a Changelog](https://keepachangelog.com/); the project
 follows Semantic Versioning. Per-feature design records live under
 [`docs/adr/`](docs/adr/); per-feature specs under [`specs/`](specs/).
 
+## [Unreleased]
+
+### Added
+
+- **ATAK's shared coordinate-entry dialog now includes one Taiwan pane.** It
+  supports Taipower, TWD97, and TWD67; explicit TM2 zones 121/119; ATAK-owned
+  Auto Fill, Clear, and Copy controls; horizontal-only results; read-only host
+  dialogs; and English, Taiwan Traditional Chinese, and Japanese strings.
+- **Native entry is additive.** The advanced **TW Coord GoTo** page remains
+  available for marker modes, ATAK icon-palette delegation, and ten Recent
+  entries. Its `pref_goto_*` state is independent from the native pane.
+
+### Changed
+- **Minimum ATAK-CIV runtime is now 5.5.0.** The build declares
+  `com.atakmap.app@5.5.0.CIV`; ATAK 5.4 is no longer supported. The compile SDK
+  is ATAK-CIV 5.7.0.9. Exact ATAK 5.5 device acceptance remains a release gate;
+  a successful current-SDK build is not minimum-runtime proof. See ADR-0022,
+  ADR-0023, and ADR-0024.
+
+
 ## [1.3.3] — 2026-06-06 — Hotfix: TW Offline Addr Import button could be pushed off-screen
 
 ### Fixed

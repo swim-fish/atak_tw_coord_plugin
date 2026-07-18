@@ -59,8 +59,10 @@ EXAMPLES:
 # Get feature paths and validate branch
 $paths = Get-FeaturePathsEnv
 
-if (-not (Test-FeatureBranch -Branch $paths.CURRENT_BRANCH -HasGit:$paths.HAS_GIT)) { 
-    exit 1 
+if (-not (Test-FeatureJsonMatchesFeatureDir -RepoRoot $paths.REPO_ROOT -ActiveFeatureDir $paths.FEATURE_DIR)) {
+    if (-not (Test-FeatureBranch -Branch $paths.CURRENT_BRANCH -HasGit:$paths.HAS_GIT)) {
+        exit 1
+    }
 }
 
 # If paths-only mode, output paths and exit (support combined -Json -PathsOnly)
