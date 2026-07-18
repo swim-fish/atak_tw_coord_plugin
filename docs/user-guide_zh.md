@@ -2,7 +2,7 @@
 
 > **English version:** [user-guide.md](user-guide.md)
 
-**對應版本：** v1.4.0 ｜ **對應 ATAK-CIV：** 5.5.0 — 5.7.x
+**對應版本：** v1.4.1 ｜ **對應 ATAK-CIV：** 5.5.0 — 5.7.x
 **最新發行：** <https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest>
 
 這是精簡版。若你只是想把外掛裝起來用，看這份就夠了。需要更深入的背景知識（精度資訊、基準轉換內部原理、MIL-STD-2525 標記說明），請參閱 `docs/` 目錄下的其他原始文件。

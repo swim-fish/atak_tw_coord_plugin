@@ -11,21 +11,23 @@ container is allowed, and at most one coordinate field group is visible.
 
 | Control role | Required behaviour |
 |--------------|--------------------|
-| System selector | Three mutually exclusive 52 dp-high choices: Taipower, TWD97, TWD67; active choice always visible |
-| Taipower group | One 20 sp text field with 14 dp vertical padding and format hint; supports paste, case, and spacing accepted by the existing parser |
-| TWD97 group | Two 20 sp ASCII integer-metre fields with 13 dp padding and a 10 dp gap plus explicit 121/119 selector |
-| TWD67 group | Two 20 sp ASCII integer-metre fields with 13 dp padding and a 10 dp gap plus explicit 121/119 selector |
-| Zone selector | Two 50 dp-high values labelled with central-meridian/area meaning; selected zone visible in editable and read-only states |
+| System selector | Three mutually exclusive choices bounded to 48 dp: Taipower, TWD97, TWD67; active choice always visible |
+| Taipower group | One compact 30/70 label/input row with native underline field, `wrap_content` height, a format hint, and parser-compatible paste/case/spacing |
+| TWD97 group | Two compact 30/65/5 label/input/unit rows with native underline fields plus an explicit 121/119 selector |
+| TWD67 group | Two compact 30/65/5 label/input/unit rows with native underline fields plus an explicit 121/119 selector |
+| Zone selector | Two values in a 48 dp bounded row labelled with central-meridian/area meaning; selected zone visible in editable and read-only states |
 | Advisory | TWD67 zone 119 shows the existing outer-island accuracy advisory inline |
 | Error/status | One live-region-capable localised text area; visible only for corrective/advisory state; never overlays a field |
 
 The pane must not add its own Go/Confirm, Auto Fill, Clear, Copy, elevation,
 marker, or affiliation controls. ATAK owns those controls.
 
-The vertical content inset is 12 dp. These dimensions intentionally match
-`res/layout/tw_coord_goto.xml`. On every compatibility-matrix device,
-orientation, and font scale, equivalent native controls must be no smaller and
-no less reachable than the custom GoTo controls under the same configuration.
+The vertical content inset is 2 dp. Title/input text mirrors ATAK's
+`draper_title_font` at 13 sp normally and 17 sp on large screens; helper text
+mirrors `draper_font` at 10 sp / 14 sp. Inputs use ATAK-style underline fields
+without card backgrounds or fixed vertical padding. Empty status text is
+`GONE`. On every compatibility-matrix device, orientation, and font scale, the
+pane must remain above ATAK's elevation and action controls without overlap.
 
 ## Visual and interaction states
 

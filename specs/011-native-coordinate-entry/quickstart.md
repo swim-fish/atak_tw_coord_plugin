@@ -123,13 +123,23 @@ canonical read-only format. T038 real ATAK dialog/configuration evidence remains
 pending.
 
 Cross-cutting source/UI audit: **PASS**. The native pane has one outer
-`ScrollView`; 20 sp input text; 14 dp Taipower and 13 dp TWD field padding;
-52/50 dp selectors; 10 dp TWD field gap; and 12 dp content inset. A state-aware
+`ScrollView`; DD-style compact 30/65/5 label/input/unit rows; native underline
+inputs at `wrap_content` height; 13 sp normal / 17 sp large title text; 48 dp
+system/zone selectors; a 2 dp top inset; and no empty status-area height. A state-aware
 segment text selector provides white unselected, black selected, and muted
-read-only labels. All 30 `native_entry_*` keys have exact English/zh-rTW/Japanese
+read-only labels. All 31 `native_entry_*` keys have exact English/zh-rTW/Japanese
 parity, XML parsing passed, status uses a polite accessibility live region, the
 manifest has no `INTERNET` permission, and native code has no `CoordinateFormat`
 or `pref_goto_*` mutation.
+
+v1.4.1 compact-layout regression (2026-07-18): **RED as intended** at test
+compilation because the DD-style row ID and ATAK-equivalent font dimensions did
+not yet exist. After replacing card-style fields with weighted underline rows,
+the focused native-entry/preference run passed 49 tests. The complete
+`:app:spotlessCheck :app:lint :app:testCivDebugUnitTest :app:assembleCivDebug`
+gate then passed 373 tests with zero failures and two existing skips, producing
+a debug APK whose generated filename contains `1.4.1`. Device screenshots for
+Taipower/TWD97/TWD67 no-overlap acceptance remain pending under T053.
 
 Final local quality gate against `ATAK-CIV-5.7.0.9-SDK`: **PASS** on
 2026-07-17 for `:app:spotlessCheck`, `:app:lint`,
@@ -288,7 +298,7 @@ at the same orientation and font scale.
 | Valid TWD67 zone 121 and zone 119 advisory | PENDING | PENDING |
 | Invalid/out-of-range confirm and Copy remain in dialog | PENDING | PENDING |
 | Native Auto Fill, Clear, and Copy | PENDING | PENDING |
-| Native field sizes match custom GoTo and are no less reachable | PENDING | PENDING |
+| Native field geometry matches DD and does not overlap host controls | PENDING | PENDING |
 | Editable point-details flow | PENDING | PENDING |
 | Read-only/additional native location flow | PENDING | PENDING |
 | Active-dialog Activity/configuration recreation recovers safely | PENDING | PENDING |
@@ -300,15 +310,14 @@ Do not convert PENDING to PASS from build output or source inspection.
 
 ### Paired field-size and reachability baseline
 
-Inspect both `tw_coord_goto.xml` and the native pane on the same device,
-orientation, and Android font scale. The native layout must retain the shipped
-custom GoTo dimensions: 20 sp input text, 14 dp Taipower vertical padding,
-13 dp TWD field padding, 52 dp system selectors, 50 dp zone selectors, a 10 dp
-TWD field gap, and 12 dp content inset. Run the comparison at the default font
-scale and the largest configured font scale at which the custom GoTo page is
-accepted as usable; record the numeric font scale. Every native field and zone
-control must remain at least as large and reachable through the pane's single
-scroll owner.
+Inspect ATAK's DD pane and the Taiwan pane on the same device, orientation, and
+Android font scale. The Taiwan layout must retain compact horizontal rows,
+native underline inputs at `wrap_content` height, 13 sp normal / 17 sp large
+title text, 48 dp system/zone selectors, a 2 dp top inset, and a `GONE` empty
+status area. Run the comparison at the default font scale and the largest
+configured font scale accepted as usable; record the numeric font scale. Every
+Taiwan field and zone control must remain reachable through the pane's single
+scroll owner and must not overlap ATAK's elevation or action controls.
 
 ## 7. Device scenario details
 

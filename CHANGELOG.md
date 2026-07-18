@@ -7,6 +7,15 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-07-18 — Compact native Go To fields
+
+### Fixed
+
+- **The Taiwan pane no longer overlaps ATAK's elevation and action controls.**
+  Its fields now follow ATAK's compact DD layout: horizontal label/input/unit
+  rows, native underline inputs, bounded 48 dp selectors, ATAK-equivalent
+  normal/large text dimensions, and no empty status-area height.
+
 ## [1.4.0] — 2026-07-18 — Native Taiwan coordinates in ATAK Go To
 
 ### Added

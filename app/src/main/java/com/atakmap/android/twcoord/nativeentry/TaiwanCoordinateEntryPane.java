@@ -381,9 +381,11 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     TaiwanEntryController.Validation validation = controller.validation();
     if (!checked && validation != TaiwanEntryController.Validation.UNREPRESENTABLE) {
       status.setText("");
+      status.setVisibility(View.GONE);
       return;
     }
     status.setText(messageFor(validation));
+    status.setVisibility(View.VISIBLE);
   }
 
   private CoordinateException coordinateException(TaiwanEntryController.Validation validation) {

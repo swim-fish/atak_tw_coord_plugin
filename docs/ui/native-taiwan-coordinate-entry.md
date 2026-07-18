@@ -48,8 +48,11 @@ ATAK-owned controls: Auto Fill · Clear · Copy · action/confirm
 ```
 
 The pane owns one outer `ScrollView`; no nested vertical scroller competes with
-ATAK's dialog. Inputs use the same 20 sp text, field padding, selector height,
-and TWD field gap as the advanced GoTo page.
+ATAK's dialog. Its geometry mirrors ATAK's DD pane: compact horizontal
+label/input/unit rows, native underline inputs at `wrap_content` height,
+13 sp normal / 17 sp large title text, a 2 dp top inset, and 48 dp bounded
+system/zone selectors. Empty status text consumes no height, so the pane stays
+above ATAK's elevation and action controls.
 
 ## Coordinate systems
 

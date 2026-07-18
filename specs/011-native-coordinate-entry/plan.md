@@ -42,10 +42,11 @@ coordinate-entry dialogs; reference device Galaxy Tab S10+ (SM-X826B) running
 ATAK-CIV 5.7.0.9, plus an available ATAK 5.5 device or emulator for the
 minimum-runtime release matrix.
 
-**UI Size Baseline**: Equivalent controls match the shipped custom GoTo layout
-in `app/src/main/res/layout/tw_coord_goto.xml`: 20 sp input text, 14 dp
-Taipower vertical padding, 13 dp TWD field padding, 52 dp system selectors,
-50 dp zone selectors, a 10 dp TWD field gap, and 12 dp content inset. Device
+**UI Size Baseline**: Field geometry follows ATAK's native DD pane in
+`coordinate_pane_dd.xml`: compact 30/65/5 label/input/unit rows, native
+underline fields at `wrap_content` height, 13 sp normal / 17 sp large title
+text, a 2 dp top inset, and no card-style field padding. Plugin-owned system
+and zone selectors are bounded to 48 dp and empty status text is `GONE`. Device
 acceptance uses a paired comparison at the same device, orientation, and font
 scale; the native pane must be no smaller and no less reachable than the custom
 GoTo controls.
