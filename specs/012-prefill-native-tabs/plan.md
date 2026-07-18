@@ -23,8 +23,9 @@ change is expected.
 existing `CoordinateConverter`, `CoordinateParser`, coordinate value objects,
 `TaiwanEntryController`, and `TaiwanCoordinateEntryPane`. No new dependency.
 
-**Release Version**: Advance `PLUGIN_VERSION` from 1.4.1 to 1.4.2 and align
-the root changelog plus English/Traditional Chinese guide headers.
+**Release Version**: Ship the unreleased compact-layout baseline and this
+prefill fix together as 1.4.2, then align the root changelog plus
+English/Traditional Chinese guide headers.
 
 **Storage**: No new storage. The existing `pref_native_entry_last_unit`
 preference still stores only the last human-selected system. Draft snapshots

@@ -159,8 +159,9 @@ still formats the supplied location.
   English, Traditional Chinese (Taiwan), and Japanese user-visible states.
 - **FR-015**: The active pane MUST render after all three preparation attempts
   without exposing a partially updated mixture of old and new drafts.
-- **FR-016**: The shipped plugin version MUST advance from 1.4.1 to 1.4.2,
-  with matching English/Traditional Chinese guide and changelog labels.
+- **FR-016**: The shipped plugin version MUST be 1.4.2, with matching
+  English/Traditional Chinese guide and changelog labels; the unreleased
+  compact-layout work MUST NOT appear as a separate 1.4.1 release.
 
 ### Project-Wide Quality Requirements
 
@@ -215,8 +216,9 @@ still formats the supplied location.
 
 ## Assumptions
 
-- This feature branches from the v1.4.1 compact native-pane baseline, does not
-  change PR #9's layout decisions, and ships as v1.4.2.
+- This feature includes the unreleased compact native-pane work originally
+  labelled v1.4.1 in closed PR #9, does not change its layout decisions, and
+  ships both fixes as v1.4.2.
 - "All tabs" means the three internal Taiwan systems: Taipower, TWD97, and
   TWD67; ATAK's built-in MGRS/DD/DM/DMS/UTM/Address panes are host-owned.
 - The rule applies to every non-null `CoordinateEntryPane` activation because

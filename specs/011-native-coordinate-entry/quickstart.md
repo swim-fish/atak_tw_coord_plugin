@@ -132,14 +132,17 @@ parity, XML parsing passed, status uses a polite accessibility live region, the
 manifest has no `INTERNET` permission, and native code has no `CoordinateFormat`
 or `pref_goto_*` mutation.
 
-v1.4.1 compact-layout regression (2026-07-18): **RED as intended** at test
-compilation because the DD-style row ID and ATAK-equivalent font dimensions did
-not yet exist. After replacing card-style fields with weighted underline rows,
-the focused native-entry/preference run passed 49 tests. The complete
+Unreleased compact-layout regression (originally labelled v1.4.1,
+2026-07-18): **RED as intended** at test compilation because the DD-style row
+ID and ATAK-equivalent font dimensions did not yet exist. After replacing
+card-style fields with weighted underline rows, the focused
+native-entry/preference run passed 49 tests. The complete
 `:app:spotlessCheck :app:lint :app:testCivDebugUnitTest :app:assembleCivDebug`
 gate then passed 373 tests with zero failures and two existing skips, producing
-a debug APK whose generated filename contains `1.4.1`. Device screenshots for
-Taipower/TWD97/TWD67 no-overlap acceptance remain pending under T053.
+an intermediate debug APK whose generated filename contains `1.4.1`. This
+layout work is not released separately; it is included in v1.4.2. Device
+screenshots for Taipower/TWD97/TWD67 no-overlap acceptance remain pending under
+T053.
 
 Final local quality gate against `ATAK-CIV-5.7.0.9-SDK`: **PASS** on
 2026-07-17 for `:app:spotlessCheck`, `:app:lint`,
