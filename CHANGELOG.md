@@ -7,6 +7,8 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-07-18 — Native Taiwan coordinates in ATAK Go To
+
 ### Added
 
 - **ATAK's shared coordinate-entry dialog now includes one Taiwan pane.** It
@@ -18,11 +20,12 @@ follows Semantic Versioning. Per-feature design records live under
   entries. Its `pref_goto_*` state is independent from the native pane.
 
 ### Changed
+
 - **Minimum ATAK-CIV runtime is now 5.5.0.** The build declares
   `com.atakmap.app@5.5.0.CIV`; ATAK 5.4 is no longer supported. The compile SDK
-  is ATAK-CIV 5.7.0.9. Exact ATAK 5.5 device acceptance remains a release gate;
-  a successful current-SDK build is not minimum-runtime proof. See ADR-0022,
-  ADR-0023, and ADR-0024.
+  is ATAK-CIV 5.7.0.9. The exact ATAK 5.5 device matrix remains pending in the
+  checked-in feature evidence and is not implied by a successful current-SDK
+  or TPP build. See ADR-0022, ADR-0023, and ADR-0024.
 
 
 ## [1.3.3] — 2026-06-06 — Hotfix: TW Offline Addr Import button could be pushed off-screen

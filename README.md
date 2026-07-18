@@ -195,8 +195,8 @@ takdev.plugin=<path to ATAK-CIV-5.7.0.9-SDK>/atak-gradle-takdev.jar
 The Android build uses compile SDK 36 and minimum SDK 26. ATAK APIs compile
 against the ATAK-CIV 5.7.0.9 SDK, while minimum ATAK runtime compatibility is
 declared as `com.atakmap.app@5.5.0.CIV`. ATAK 5.4 is no longer supported;
-see ADR-0022 and ADR-0024. Exact ATAK 5.5 device acceptance is required before
-release and is not implied by a successful 5.7.0.9 build.
+see ADR-0022 and ADR-0024. The checked-in exact ATAK 5.5 device matrix remains
+pending and is not implied by a successful 5.7.0.9 or TPP build.
 
 ### Common commands
 

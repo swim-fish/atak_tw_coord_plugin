@@ -102,5 +102,6 @@ advanced **TW Coord GoTo** page remain usable.
 ## Compatibility
 
 The plugin declares ATAK 5.5.0 as its minimum runtime. It compiles and is
-currently validated with the ATAK-CIV 5.7.0.9 SDK. Exact ATAK 5.5 device
-acceptance remains required before the compatibility claim can be released.
+currently validated with the ATAK-CIV 5.7.0.9 SDK. The checked-in exact ATAK
+5.5 device matrix remains pending and is not implied by the successful SDK or
+TPP build.
