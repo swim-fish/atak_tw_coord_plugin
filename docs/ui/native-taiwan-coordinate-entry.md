@@ -55,7 +55,8 @@ and TWD field gap as the advanced GoTo page.
 
 ### Taipower
 
-- Enter the canonical 11-character code, for example `H7509 DB4016`.
+- Enter a 9-character (10 m) or 11-character (1 m) code. Auto Fill and Copy use
+  the canonical 11-character form, for example `H7509 DB4016`.
 - Coverage is the Taiwan main island. An outer-island Auto Fill clears the old
   draft and reports that the selected system cannot represent the supplied
   point.

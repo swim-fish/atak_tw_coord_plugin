@@ -13,7 +13,7 @@
 
 1. [下載與安裝](#1-下載與安裝)
 2. [確認載入成功](#2-確認載入成功)
-3. [從 Tools 選單操作](#3-從-tools-選單操作)
+3. [在 ATAK 中使用](#3-在-atak-中使用)
 4. [設定](#4-設定)
 5. [常見問題](#5-常見問題)
 
@@ -57,7 +57,11 @@ adb shell am force-stop com.atakmap.app.civ
 
 ---
 
-## 3. 從 Tools 選單操作
+## 3. 在 ATAK 中使用
+
+外掛會把台灣座標輸入整合到 ATAK 原生的 **Go To** 對話框，並在
+**Tools** 選單加入兩個項目。只需要快速跳到指定座標時使用原生對話框；
+需要進階 GoTo 或地圖讀值功能時，再使用 Tools 項目。
 
 <table>
 <tr>
@@ -66,14 +70,51 @@ adb shell am force-stop com.atakmap.app.civ
 
 打開 ATAK 的 **Tools** 選單（右下角工具列按鈕，或從邊緣滑入）。外掛新增了 **兩個** 項目：
 
-- <img src="images/08b-tools-icon-tw-coord-goto.png" alt="TW Coord GoTo 圖示" width="24"> **TW Coord GoTo** — 從右側滑出側面板，輸入台灣座標後地圖會跳過去（§3.1）。
-- <img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates 圖示" width="24"> **TW Coordinates** — 開啟本外掛的設定頁，在那裡選擇地圖讀值小工具的座標系統並切換顯示／隱藏（§3.2）。_（v1.1.0 以前點此圖示會循環切換 台電 → TWD97 → TWD67 → 關閉；自 v1.2.0 起改為開啟設定頁，詳見 §3.2。）_
+- <img src="images/08b-tools-icon-tw-coord-goto.png" alt="TW Coord GoTo 圖示" width="24"> **TW Coord GoTo** — 開啟具備 Marker mode、Recent 紀錄與 ATAK 圖示盤的進階側面板（§3.2）。
+- <img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates 圖示" width="24"> **TW Coordinates** — 開啟本外掛的設定頁，在那裡選擇地圖讀值小工具的座標系統並切換顯示／隱藏（§3.3）。_（v1.1.0 以前點此圖示會循環切換 台電 → TWD97 → TWD67 → 關閉；自 v1.2.0 起改為開啟設定頁，詳見 §3.3。）_
 
 </td>
 </tr>
 </table>
 
-### 3.1 TW Coord GoTo — 跳到指定座標
+### 3.1 ATAK Go To — 使用原生 Taiwan 座標輸入
+
+自 v1.4.0 起，台灣座標系統會直接出現在 ATAK 標準座標輸入對話框中：
+
+1. 開啟 ATAK 的 **Go To** 對話框，選擇 **Taiwan** 分頁。
+2. 選擇 **Taipower（台電）**、**TWD97** 或 **TWD67**。
+3. 輸入座標，或按 ATAK 的 **Auto Fill**，把 ATAK 目前提供的位置轉成所選格式。
+4. 按 **OK**，由 ATAK 執行原本的 Go To 動作。
+
+<p align="center">
+<img src="images/20-atak-native-goto-taipower.jpg" alt="ATAK 原生 Go To 對話框中的 Taiwan 台電座標頁面" width="900"><br>
+<sub>ATAK Go To → Taiwan → Taipower。Taiwan 分頁直接使用 ATAK 原生對話框與動作按鈕。</sub>
+</p>
+
+- 台電座標接受 9 碼（10 m）或 11 碼（1 m）的本島格式。Auto Fill 與 Copy
+  會產生標準化的 11 碼格式，例如 `H7509 DB4016`。
+- TWD97 與 TWD67 使用整數公尺的 Easting、Northing。台灣本島選 **121**；
+  外島選 **119**。
+- **Clear** 只會清除目前選取的 Taiwan 草稿；**Copy** 會把標準化字串複製到
+  剪貼簿，不會改變草稿。
+- 最後的 Go To 或其他位置動作由 ATAK 負責。外掛只回傳水平 WGS84 座標，
+  不會自行產生高度。
+- 在 ATAK 的唯讀對話框中，座標仍可檢視與複製，但輸入欄位、座標系統與
+  zone 選擇器都會停用。
+
+<p align="center">
+<img src="images/21-atak-native-goto-twd97.jpg" alt="ATAK 原生 Go To 對話框中的 TWD97 Easting、Northing 與 TM2 zone 控制項" width="900"><br>
+<sub>TWD97 使用分開的 Easting、Northing 欄位，並明確選擇 TM2 zone；TWD67 使用相同版面。</sub>
+</p>
+
+若只需要熟悉且快速的操作路徑，建議使用這個原生分頁。若需要 Marker
+affiliation、ATAK 圖示盤或最近 10 筆輸入紀錄，請改用 **TW Coord GoTo**。
+原生分頁與進階頁面的選項及草稿會分開保存，互不覆寫。
+
+TWD67 zone 119 會顯示精度提醒。台電座標無法表示外島位置；此時 Auto Fill
+會清除先前的台電草稿並回報涵蓋範圍限制，避免畫面留下過期座標。
+
+### 3.2 TW Coord GoTo — 進階座標操作
 
 <table>
 <tr>
@@ -99,7 +140,7 @@ adb shell am force-stop com.atakmap.app.civ
 </tr>
 </table>
 
-### 3.2 TW Coordinates — 地圖讀值小工具
+### 3.3 TW Coordinates — 地圖讀值小工具
 
 <table>
 <tr>
@@ -130,7 +171,7 @@ adb shell am force-stop com.atakmap.app.civ
 
 你可以調整以下項目，再加一個捷徑按鈕：
 
-- **Display unit** — 決定地圖讀值小工具使用的座標系統：台電 / TWD97 / TWD67。這現在是切換格式的唯一入口——點擊 **TW Coordinates** Tools 圖示會開啟此頁，而非循環切換格式（§3.2）。
+- **Display unit** — 決定地圖讀值小工具使用的座標系統：台電 / TWD97 / TWD67。這現在是切換格式的唯一入口——點擊 **TW Coordinates** Tools 圖示會開啟此頁，而非循環切換格式（§3.3）。
 - **Show on-map readout（顯示地圖讀值）** — 顯示或隱藏地圖上的座標讀值小工具。取代了舊版「持續點擊 Tools 圖示直到 *Off*」的做法。
 - **Address search result order（位址搜尋結果排序）** — 將 TW Addr Search 的結果依 *距離* 或 *最相似（文字比對）* 排序（也可在搜尋頁面上直接切換）。
 - **UI language** — 強制此外掛的介面字串使用 *系統語系* / *英文* / *中文（正體）* / *日文*。只影響本外掛，不會動到 ATAK 其他部分。

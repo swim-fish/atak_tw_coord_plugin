@@ -13,7 +13,7 @@ This is the short version. If you just want to install the plugin and use it, re
 
 1. [Download & install](#1-download--install)
 2. [Confirm it loaded](#2-confirm-it-loaded)
-3. [Use it from the Tools menu](#3-use-it-from-the-tools-menu)
+3. [Use it in ATAK](#3-use-it-in-atak)
 4. [Settings](#4-settings)
 5. [FAQ](#5-faq)
 
@@ -57,7 +57,12 @@ adb shell am force-stop com.atakmap.app.civ
 
 ---
 
-## 3. Use it from the Tools menu
+## 3. Use it in ATAK
+
+The plugin integrates Taiwan coordinate entry into ATAK's native **Go To**
+dialog and adds two entries to the **Tools** menu. Use the native dialog for a
+quick coordinate jump; use the Tools entries for the plugin's advanced GoTo
+workflow and on-map readout.
 
 <table>
 <tr>
@@ -75,28 +80,44 @@ Open ATAK's **Tools** menu (the toolbar button in the bottom-right, or edge-swip
 
 ### 3.1 ATAK Go To — use native Taiwan entry
 
-For the standard ATAK workflow, open ATAK's **Go To** dialog and select the
-**Taiwan** pane. Choose **Taipower**, **TWD97**, or **TWD67**, then enter the
-coordinate using the same field sizes and segmented controls as the plugin's
-advanced page.
+Starting with v1.4.0, Taiwan coordinate systems appear directly in ATAK's
+standard coordinate-entry dialog:
 
-- Taipower accepts the canonical 11-character main-island form, such as
+1. Open ATAK's **Go To** dialog and select the **Taiwan** pane.
+2. Choose **Taipower**, **TWD97**, or **TWD67**.
+3. Enter the coordinate, or tap ATAK's **Auto Fill** button to convert the
+   current point supplied by ATAK into the selected format.
+4. Tap **OK** to let ATAK perform the normal Go To action.
+
+<p align="center">
+<img src="images/20-atak-native-goto-taipower.jpg" alt="ATAK native Go To dialog showing the Taiwan pane with Taipower selected" width="900"><br>
+<sub>ATAK Go To → Taiwan → Taipower. The Taiwan pane uses ATAK's native dialog and action buttons.</sub>
+</p>
+
+- Taipower accepts 9-character (10 m) and 11-character (1 m) main-island
+  codes. Auto Fill and Copy use the canonical 11-character form, such as
   `H7509 DB4016`.
 - TWD97 and TWD67 accept integer easting/northing values in metres. Select zone
   **121** for the main island or **119** for outer islands.
-- Use ATAK's surrounding **Auto Fill**, **Clear**, and **Copy** controls. ATAK
-  owns the final Go To or details action; the plugin returns horizontal WGS84
-  coordinates and does not invent altitude.
+- **Clear** clears the active Taiwan draft. **Copy** writes a canonical string
+  to the clipboard without changing the draft.
+- ATAK owns the final Go To or other location action. The plugin returns horizontal
+  WGS84 coordinates and does not invent altitude.
 - In read-only ATAK dialogs, the point remains visible and copyable while the
   fields and selectors are disabled.
+
+<p align="center">
+<img src="images/21-atak-native-goto-twd97.jpg" alt="ATAK native Go To dialog showing TWD97 easting, northing, and TM2 zone controls" width="900"><br>
+<sub>TWD97 uses separate easting and northing fields with an explicit TM2 zone. TWD67 uses the same layout.</sub>
+</p>
 
 Use this native pane for the quickest familiar path. Use **TW Coord GoTo** when
 you need marker affiliation, the ATAK icon palette, or one of the ten Recent
 entries. Native selection and advanced-page drafts are stored independently.
 
-TWD67 zone 119 displays an accuracy advisory. Taipower cannot represent outer
-island points; Auto Fill clears any previous Taipower draft and reports the
-coverage limitation.
+TWD67 zone 119 displays an accuracy advisory. Taipower cannot represent an
+outer-island point; Auto Fill clears the previous Taipower draft and reports
+the coverage limitation instead of leaving a stale coordinate on screen.
 
 ### 3.2 TW Coord GoTo — advanced coordinate workflow
 

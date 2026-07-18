@@ -16,7 +16,7 @@ ATAK-sanctioned jump-to-a-plugin's-Tool-Preferences pattern, mirrored from the
 meshtastic `MeshtasticDropDownReceiver.openPluginPreferences` sample). Merely
 opening the page does NOT change the active format (FR-007). The format is now
 chosen via `pref_coord_unit`, and the readout's show/hide moved to the new
-`pref_readout_visible` toggle. See `docs/user-guide.md` §3.2 + §4 for the
+`pref_readout_visible` toggle. See `docs/user-guide.md` §3.3 + §4 for the
 operator-facing description.
 
 ## Anatomy
