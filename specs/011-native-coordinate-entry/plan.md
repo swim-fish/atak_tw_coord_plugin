@@ -46,10 +46,11 @@ minimum-runtime release matrix.
 `coordinate_pane_dd.xml`: compact 30/65/5 label/input/unit rows, native
 underline fields at `wrap_content` height, 13 sp normal / 17 sp large title
 text, a 2 dp top inset, and no card-style field padding. Plugin-owned system
-and zone selectors are bounded to 48 dp and empty status text is `GONE`. Device
-acceptance uses a paired comparison at the same device, orientation, and font
-scale; the native pane must be no smaller and no less reachable than the custom
-GoTo controls.
+and zone selectors have a 48 dp outer height and full-height hit targets while
+empty status text is `GONE`. Device acceptance uses a paired comparison with
+ATAK's DD pane on the same device, orientation, and font scale; the Taiwan pane
+must retain the DD pane's compact vertical scale without making its controls
+less reachable.
 
 **Android Compile SDK**: 36.
 
@@ -114,7 +115,7 @@ are actually executed; a successful compile is not runtime evidence.
 |-----------|------------------------|--------|
 | I. Code Quality & Build Discipline | Implementation gate is `spotlessApply`, `spotlessCheck`, `lint`, `testCivDebugUnitTest`, and `assembleCivDebug`; new code stays in a cohesive `nativeentry` package and introduces no dependency | PASS |
 | II. Test-First Development & Verification | Controller, formatter, preference fallback, registration idempotency, and disposed-pane behaviour receive failing JVM tests before production code; ATAK-owned visuals/lifecycle remain explicit device checks | PASS |
-| III. UX, Accessibility & Localisation | One internal selector, visible zone, inline states, exactly one non-nested pane `ScrollView`, custom-GoTo-parity field dimensions, paired reachability at the same device/orientation/font scale, content descriptions/labels, and complete `values`, `values-zh-rTW`, `values-ja` resources | PASS |
+| III. UX, Accessibility & Localisation | One internal selector, visible zone, inline states, exactly one non-nested pane `ScrollView`, ATAK-DD-parity field dimensions, 48 dp full-height selector hit targets, paired reachability at the same device/orientation/font scale, content descriptions/labels, and complete `values`, `values-zh-rTW`, `values-ja` resources | PASS |
 | IV. Performance & Offline Operation | No I/O/network in pane callbacks; pane activation/rendering and every applicable operation/system/zone combination have a measured <100 ms worst/p95 budget over at least 20 iterations; manifest remains without `INTERNET` | PASS |
 | V. Documentation & Decision Traceability | This artifact set, user guide/CHANGELOG tasks, ADR-0022 plus compile-SDK ADR-0024, and a required native-entry architecture ADR before merge preserve the decision trail | PASS |
 | VI. Host-Process Isolation | Registrar is idempotent/UI-thread confined with rollback; every host callback contains failures; plugin resources use plugin/localised context; disposed panes stay safe if retained by an already-open host dialog | PASS |

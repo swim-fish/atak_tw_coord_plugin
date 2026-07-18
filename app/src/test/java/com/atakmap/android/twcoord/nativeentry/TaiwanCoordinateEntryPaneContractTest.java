@@ -53,9 +53,11 @@ public final class TaiwanCoordinateEntryPaneContractTest {
     View root = pane.getView();
     LinearLayout content = root.findViewById(R.id.native_entry_content);
     RadioGroup systemGroup = root.findViewById(R.id.native_entry_system_group);
+    RadioButton taipowerButton = root.findViewById(R.id.native_entry_system_taipower);
     LinearLayout taipowerRow = root.findViewById(R.id.native_entry_taipower_row);
     EditText taipowerInput = root.findViewById(R.id.native_entry_input_taipower);
     RadioGroup twd97ZoneGroup = root.findViewById(R.id.native_entry_twd97_zone_group);
+    RadioGroup twd67ZoneGroup = root.findViewById(R.id.native_entry_twd67_zone_group);
     TextView status = root.findViewById(R.id.native_entry_status);
 
     assertThat(content.getPaddingLeft()).isZero();
@@ -63,7 +65,22 @@ public final class TaiwanCoordinateEntryPaneContractTest {
     assertThat(content.getPaddingRight()).isZero();
     assertThat(content.getPaddingBottom()).isZero();
     assertThat(systemGroup.getLayoutParams().height).isEqualTo(dp(context, 48));
+    assertThat(systemGroup.getPaddingTop()).isZero();
+    assertThat(systemGroup.getPaddingBottom()).isZero();
+    assertThat(systemGroup.getPaddingLeft()).isEqualTo(dp(context, 2));
+    assertThat(systemGroup.getPaddingRight()).isEqualTo(dp(context, 2));
+    assertThat(taipowerButton.getLayoutParams().height)
+        .isEqualTo(ViewGroup.LayoutParams.MATCH_PARENT);
+    systemGroup.measure(
+        View.MeasureSpec.makeMeasureSpec(dp(context, 600), View.MeasureSpec.EXACTLY),
+        View.MeasureSpec.makeMeasureSpec(dp(context, 48), View.MeasureSpec.EXACTLY));
+    assertThat(taipowerButton.getMeasuredHeight()).isEqualTo(dp(context, 48));
     assertThat(twd97ZoneGroup.getLayoutParams().height).isEqualTo(dp(context, 48));
+    assertThat(twd97ZoneGroup.getPaddingTop()).isZero();
+    assertThat(twd97ZoneGroup.getPaddingBottom()).isZero();
+    assertThat(twd67ZoneGroup.getLayoutParams().height).isEqualTo(dp(context, 48));
+    assertThat(twd67ZoneGroup.getPaddingTop()).isZero();
+    assertThat(twd67ZoneGroup.getPaddingBottom()).isZero();
     assertThat(taipowerInput.getLayoutParams().height)
         .isEqualTo(ViewGroup.LayoutParams.WRAP_CONTENT);
     assertThat(taipowerInput.getTextSize())

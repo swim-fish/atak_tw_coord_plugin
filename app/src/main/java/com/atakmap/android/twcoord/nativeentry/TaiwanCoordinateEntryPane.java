@@ -245,6 +245,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       renderControllerState();
     } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
       Log.w(TAG, "CoordinateEntryPane activation failed", e);
+      invalidateActivationState(editable);
       renderFailedOperationState("activation");
     } finally {
       endTrace(tracing);
@@ -385,6 +386,14 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError renderFailure) {
       Log.w(
           TAG, "CoordinateEntryPane failed to render safe state after " + operation, renderFailure);
+    }
+  }
+
+  private void invalidateActivationState(boolean editable) {
+    try {
+      controller.invalidateActivation(editable);
+    } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError invalidationFailure) {
+      Log.w(TAG, "CoordinateEntryPane failed to invalidate activation state", invalidationFailure);
     }
   }
 

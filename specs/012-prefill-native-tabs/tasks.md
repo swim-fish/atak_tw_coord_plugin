@@ -115,6 +115,16 @@ cannot escape after failure or disposal.
 
 ---
 
+## Phase 7: Pull Request Review Remediation
+
+- [X] T026 Add focused RED regressions for host metadata failure retaining a stale coordinate and selector padding shrinking the 48 dp hit area
+- [X] T027 Invalidate every draft when activation fails before or during controller preparation, then render the invalid safe state
+- [X] T028 Keep each selector group's outer height at 48 dp while moving vertical visual spacing into the option drawable so each RadioButton owns the full 48 dp hit height
+- [X] T029 Align feature 011/012 plans, compatibility contract, and requirements checklist with the combined layout/resource scope and ATAK-specific host context
+- [X] T030 Run focused GREEN verification and the complete Spotless, lint, JVM, and Civ debug assembly gates
+
+---
+
 ## Dependencies and Execution Order
 
 ### Phase Dependencies
@@ -177,3 +187,11 @@ cannot escape after failure or disposal.
 - T024 pending: no interactive activation timing trace was collected from the
   locked reference device; the plan's `<100 ms` device measurement is not
   claimed as complete.
+- T026 RED (2026-07-18): focused pane verification completed 20 tests with the
+  two expected failures: stale state survived a host metadata read exception,
+  and 2 dp vertical group padding reduced the effective selector content
+  height below 48 dp while the outer group remained 48 dp.
+- T030 GREEN (2026-07-18): focused pane verification passed after invalidating
+  all drafts on activation failure and moving visual vertical spacing into the
+  selector drawable. Full Spotless, lint, JVM, and Civ debug assembly gates
+  passed 384 tests with zero failures/errors and two existing skips.

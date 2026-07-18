@@ -73,5 +73,7 @@ existing contract.
   is introduced.
 - Android compile/minimum remain API 36/26.
 - ATAK compile/minimum remain 5.7.0.9/5.5.0.
-- No layout, resource key, permission, storage schema, or third-party
-  dependency change is required.
+- The prefill behaviour needs no additional layout or resource key. Combined
+  v1.4.2 also carries the unreleased compact-layout baseline and its localised
+  metres unit; permissions, storage schema, and third-party dependencies stay
+  unchanged.

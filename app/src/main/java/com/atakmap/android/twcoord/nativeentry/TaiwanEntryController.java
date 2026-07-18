@@ -150,6 +150,12 @@ public final class TaiwanEntryController {
     populateAllFromHost(point);
   }
 
+  void invalidateActivation(boolean editable) {
+    if (disposed) return;
+    this.editable = editable;
+    drafts = emptyDrafts(Validation.UNREPRESENTABLE);
+  }
+
   public void autofill(Wgs84 point) {
     if (disposed) return;
     if (point == null) {

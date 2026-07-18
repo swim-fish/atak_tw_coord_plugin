@@ -50,9 +50,11 @@ ATAK-owned controls: Auto Fill · Clear · Copy · action/confirm
 The pane owns one outer `ScrollView`; no nested vertical scroller competes with
 ATAK's dialog. Its geometry mirrors ATAK's DD pane: compact horizontal
 label/input/unit rows, native underline inputs at `wrap_content` height,
-13 sp normal / 17 sp large title text, a 2 dp top inset, and 48 dp bounded
-system/zone selectors. Empty status text consumes no height, so the pane stays
-above ATAK's elevation and action controls.
+13 sp normal / 17 sp large title text, a 2 dp top inset, and system/zone
+selectors whose outer and clickable heights both remain 48 dp. Their visual
+vertical inset is drawable-owned, so it does not enlarge the pane. Empty status
+text consumes no height, so the pane stays above ATAK's elevation and action
+controls.
 
 When ATAK opens the pane with a map-item or shared-dialog point, the plugin
 prepares Taipower, TWD97, and TWD67 from that same WGS84 point before the pane

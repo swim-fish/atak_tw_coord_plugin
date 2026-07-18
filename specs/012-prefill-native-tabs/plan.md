@@ -16,8 +16,9 @@ and ATAK continues to consume only the active draft.
 
 ## Technical Context
 
-**Language/Version**: Java 17-compatible Android sources; no Android resource
-change is expected.
+**Language/Version**: Java 17-compatible Android sources plus the compact
+native-pane layout, dimensions, drawables, and localised unit resources that
+this combined v1.4.2 branch carries from the unreleased layout baseline.
 
 **Primary Dependencies**: ATAK-CIV SDK 5.7.0.9, Android framework, and the
 existing `CoordinateConverter`, `CoordinateParser`, coordinate value objects,
@@ -65,11 +66,13 @@ draft within 100 ms at p95 and worst-case on the reference device, with at
 least 20 measured main-island and zone-119 activations. No I/O, allocation of
 large collections, or network activity in the host callback.
 
-**Constraints**: Fully offline; no permission, telemetry, layout, parser,
-projection constant, precision, or locale-string change; WGS84 remains the
-host interchange; ordinary per-system out-of-range results are isolated;
-unexpected activation failure must not expose stale or partially updated
-drafts; read-only and host-owned actions remain unchanged.
+**Constraints**: Fully offline; no permission, telemetry, parser, projection
+constant, precision, or unrelated user-visible wording change. The combined
+release may change only the native pane's compact geometry and matching
+localised unit resource; WGS84 remains the host interchange; ordinary
+per-system out-of-range results are isolated; unexpected activation failure
+must not expose stale or partially updated drafts; read-only and host-owned
+actions remain unchanged.
 
 **Scale/Scope**: One existing ATAK callback, one controller, one pane adapter,
 three coordinate systems, two TM2 zones, focused JVM/contract tests, and one
@@ -93,7 +96,7 @@ runtime check.
 |-----------|------------------------|--------|
 | I. Code Quality & Build Discipline | Run `spotlessApply`, `spotlessCheck`, `lint`, `testCivDebugUnitTest`, and `assembleCivDebug`; change remains inside the existing `nativeentry` package | PASS |
 | II. Test-First Development & Verification | Add failing controller/pane tests before production changes; split JVM correctness from ATAK-owned device journeys | PASS |
-| III. UX, Accessibility & Localisation | No geometry or string change; existing DD-style sizing, three locales, status region, accessibility, and read-only rules remain regression gates | PASS |
+| III. UX, Accessibility & Localisation | Combined v1.4.2 carries the DD-style compact geometry and localised metres unit; 48 dp outer selector height and full-height hit targets, three locales, status region, accessibility, and read-only rules remain regression gates | PASS |
 | IV. Performance & Offline Operation | Three pure in-memory conversions, no I/O/network/dependency, named activation trace, and measured <100 ms p95/worst-case budget | PASS |
 | V. Documentation & Decision Traceability | This artifact set plus native-entry UI/user documentation and changelog updates; no ADR because the accepted public seam and architecture are unchanged | PASS |
 | VI. Host-Process Isolation | Atomic staging, full stale-state invalidation on unexpected failure, no programmatic human callback, and existing pane boundary containment | PASS |

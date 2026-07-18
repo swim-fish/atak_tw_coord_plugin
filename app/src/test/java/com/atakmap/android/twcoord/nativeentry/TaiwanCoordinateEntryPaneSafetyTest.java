@@ -86,6 +86,28 @@ public final class TaiwanCoordinateEntryPaneSafetyTest {
   }
 
   @Test
+  public void failedHostMetadataReadClearsPreviouslyRenderedHostPoint() {
+    TaiwanCoordinateEntryPane pane =
+        new TaiwanCoordinateEntryPane(
+            RuntimeEnvironment.getApplication(),
+            new TaiwanEntryController(CoordinateUnit.TAIPOWER, ignored -> {}),
+            new TaiwanEntryFormatter(),
+            new RecordingTrace());
+    pane.onActivate(point(), true);
+    android.widget.EditText taipower =
+        pane.getView().findViewById(R.id.native_entry_input_taipower);
+    assertThat(taipower.getText().toString()).isNotEmpty();
+
+    GeoPointMetaData unreadable = mock(GeoPointMetaData.class);
+    when(unreadable.get()).thenThrow(new IllegalStateException("metadata unavailable"));
+    pane.onActivate(unreadable, true);
+
+    assertThat(taipower.getText().toString()).isEmpty();
+    assertThatThrownBy(pane::getGeoPointMetaData)
+        .isInstanceOf(CoordinateEntryPane.CoordinateException.class);
+  }
+
+  @Test
   public void resourceFailureUsesStableFallbackName() {
     TaiwanCoordinateEntryPane pane =
         new TaiwanCoordinateEntryPane(

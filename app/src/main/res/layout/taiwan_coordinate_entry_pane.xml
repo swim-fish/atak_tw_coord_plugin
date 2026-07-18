@@ -20,7 +20,8 @@
             android:background="@drawable/native_entry_segment_track"
             android:contentDescription="@string/native_entry_a11y_system_selector"
             android:orientation="horizontal"
-            android:padding="2dp">
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp">
 
             <RadioButton
                 android:id="@+id/native_entry_system_taipower"
@@ -233,7 +234,8 @@
                     android:background="@drawable/native_entry_segment_track"
                     android:contentDescription="@string/native_entry_a11y_twd97_zone"
                     android:orientation="horizontal"
-                    android:padding="2dp">
+                    android:paddingStart="2dp"
+                    android:paddingEnd="2dp">
 
                     <RadioButton
                         android:id="@+id/native_entry_twd97_zone_121"
@@ -372,7 +374,8 @@
                     android:background="@drawable/native_entry_segment_track"
                     android:contentDescription="@string/native_entry_a11y_twd67_zone"
                     android:orientation="horizontal"
-                    android:padding="2dp">
+                    android:paddingStart="2dp"
+                    android:paddingEnd="2dp">
 
                     <RadioButton
                         android:id="@+id/native_entry_twd67_zone_121"
