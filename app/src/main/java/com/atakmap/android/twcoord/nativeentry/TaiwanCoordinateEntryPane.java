@@ -245,6 +245,8 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       renderControllerState();
     } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
       Log.w(TAG, "CoordinateEntryPane activation failed", e);
+      invalidateActivationState(editable);
+      renderFailedOperationState("activation");
     } finally {
       endTrace(tracing);
     }
@@ -280,6 +282,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       renderControllerState();
     } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
       Log.w(TAG, "CoordinateEntryPane Auto Fill failed", e);
+      renderFailedOperationState("Auto Fill");
     } finally {
       endTrace(tracing);
     }
@@ -377,13 +380,32 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     twd67Zone119.setEnabled(editable);
   }
 
+  private void renderFailedOperationState(String operation) {
+    try {
+      renderControllerState();
+    } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError renderFailure) {
+      Log.w(
+          TAG, "CoordinateEntryPane failed to render safe state after " + operation, renderFailure);
+    }
+  }
+
+  private void invalidateActivationState(boolean editable) {
+    try {
+      controller.invalidateActivation(editable);
+    } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError invalidationFailure) {
+      Log.w(TAG, "CoordinateEntryPane failed to invalidate activation state", invalidationFailure);
+    }
+  }
+
   private void renderStatus(boolean checked) {
     TaiwanEntryController.Validation validation = controller.validation();
     if (!checked && validation != TaiwanEntryController.Validation.UNREPRESENTABLE) {
       status.setText("");
+      status.setVisibility(View.GONE);
       return;
     }
     status.setText(messageFor(validation));
+    status.setVisibility(View.VISIBLE);
   }
 
   private CoordinateException coordinateException(TaiwanEntryController.Validation validation) {

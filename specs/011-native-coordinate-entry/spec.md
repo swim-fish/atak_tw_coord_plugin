@@ -291,13 +291,13 @@ the built-in formats.
   Chinese (Taiwan), and Japanese.
 - **FR-022**: The internal system selector and input controls MUST remain
   reachable in supported ATAK dialog sizes, with meaningful accessibility
-  labels and field-usable touch targets. Their field geometry MUST match the
-  existing `tw_coord_goto.xml` baseline: 20 sp input text, 14 dp Taipower field
-  vertical padding, 13 dp TWD field padding, 52 dp system selectors, 50 dp zone
-  selectors, a 10 dp TWD field gap, and 12 dp content inset. On every
-  compatibility-matrix device, orientation, and font scale, the native fields
-  MUST be no smaller and no less reachable than the corresponding custom GoTo
-  fields under the same configuration.
+  labels and field-usable touch targets. Their geometry MUST follow ATAK's
+  native DD pane: compact horizontal label/input/unit rows, native underline
+  fields at `wrap_content` height, ATAK-equivalent 13 sp normal and 17 sp large
+  title text, a 2 dp top inset, and no card-style field padding. System and zone
+  selectors MUST be bounded to 48 dp. Empty status text MUST consume no layout
+  height. On every compatibility-matrix device, orientation, and font scale,
+  the native fields MUST remain above ATAK's elevation and action controls.
 - **FR-023**: The feature MUST operate fully offline and MUST NOT add network
   permission, telemetry, or an online conversion dependency.
 - **FR-024**: Native Taiwan entry MUST be supported on ATAK-CIV 5.5 and the

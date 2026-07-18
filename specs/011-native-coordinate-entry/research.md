@@ -197,11 +197,13 @@ sensor, drawing, and range-and-bearing consumers.
 **Decision**: Build one root `ScrollView` with one vertical child containing the
 system selector, one active field group, zone selector where applicable, and
 one inline advisory/error area. This is the pane's only vertical scroll owner;
-no nested scroll container is allowed. Equivalent field geometry matches the
-shipped custom GoTo layout: 20 sp input text, 14 dp Taipower vertical padding,
-13 dp TWD field padding, 52 dp system selectors, 50 dp zone selectors, a 10 dp
-TWD field gap, and 12 dp content inset. Controls use numeric keyboards for TM2
-fields, descriptive labels/content descriptions, and visible read-only state.
+no nested scroll container is allowed. Field geometry mirrors ATAK's DD pane:
+compact horizontal label/input/unit rows, native underline inputs at
+`wrap_content` height, 13 sp normal / 17 sp large title text, and a 2 dp top
+inset. System and zone selectors are bounded to 48 dp, card-style input
+backgrounds and fixed vertical field padding are omitted, and an empty status
+area is `GONE`. Controls use numeric keyboards for TM2 fields, descriptive
+labels/content descriptions, and visible read-only state.
 
 **Rationale**: ATAK 5.5's `coordinate_panel.xml` places `currentCoordPane` in a
 plain `FrameLayout`; only the tab strips scroll. The pane must therefore own one
@@ -211,8 +213,8 @@ the absence of a nested container avoids gesture conflicts. The oldest
 inspected 5.5.1.1 portrait dialog uses only 55% of screen height (5.5.1.10 uses
 65%), so the device matrix must include that smaller host viewport. At each
 recorded device, orientation, and font scale, acceptance compares the native
-pane directly with the existing custom GoTo page; equivalent native controls
-must be no smaller and no less reachable.
+pane directly with ATAK's DD pane; Taiwan controls must remain above ATAK's
+elevation and action controls without overlap.
 
 **Alternatives considered**: Embed the custom GoTo layout (rejected: it carries
 advanced controls and side effects irrelevant to a native pane); omit scrolling

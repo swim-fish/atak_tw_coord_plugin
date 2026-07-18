@@ -337,6 +337,7 @@
     <string name="native_entry_easting">Easting</string>
     <string name="native_entry_northing">Northing</string>
     <string name="native_entry_metres">metres</string>
+    <string name="native_entry_metres_short">m</string>
     <string name="native_entry_zone">TM2 zone</string>
     <string name="native_entry_zone_121">121</string>
     <string name="native_entry_zone_119">119</string>

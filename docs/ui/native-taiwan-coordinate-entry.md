@@ -1,6 +1,6 @@
 # UI — Native Taiwan coordinate entry
 
-**Feature**: 011-native-coordinate-entry
+**Features**: 011-native-coordinate-entry, 012-prefill-native-tabs
 
 **Source**: `app/src/main/res/layout/taiwan_coordinate_entry_pane.xml` and
 `app/src/main/java/com/atakmap/android/twcoord/nativeentry/`
@@ -20,27 +20,54 @@ GoTo** page.
 The two workflows persist their selections independently. The native pane never
 changes advanced GoTo drafts, Recent entries, or marker mode.
 
+## Host entry paths
+
+### Enter Coordinate / Go To
+
+Open ATAK's standard coordinate-entry dialog, choose **Taiwan**, then choose
+Taipower, TWD97, or TWD67. The pane remains compact enough to leave the
+ATAK-owned elevation, Auto Fill, Clear, Copy, and confirmation controls
+reachable.
+
+<p align="center">
+<img src="../images/22-atak-enter-coordinate.jpg" alt="ATAK Enter Coordinate dialog showing the compact Taiwan pane with Taipower selected" width="900"><br>
+<sub>The current compact Taiwan pane inside ATAK's Enter Coordinate dialog.</sub>
+</p>
+
+### Map item / Convert Coordinate
+
+Open a map item's details and tap its **Coordinate** value. ATAK opens
+**Convert Coordinate**, where **Taiwan** appears beside the built-in coordinate
+pane. Selecting Taiwan projects the same source point into all representable
+Taiwan drafts before rendering, so switching systems does not require Auto
+Fill.
+
+<p align="center">
+<img src="../images/20-atak-point-detail-coordinate.jpg" alt="ATAK point details with the Coordinate field highlighted" width="420"><br>
+<sub>The map-item Coordinate value is the Convert Coordinate entry point.</sub>
+</p>
+
+<p align="center">
+<img src="../images/21-atak-convert-coordinate.jpg" alt="ATAK Convert Coordinate dialog with the Taiwan pane beside MGRS" width="900"><br>
+<sub>Select Taiwan in Convert Coordinate to inspect the prepared Taiwan representations.</sub>
+</p>
+
 ## Anatomy
 
 ```text
 ┌────────────────────────────────────────┐
 │ [ Taipower ] [ TWD97 ] [ TWD67 ]       │
 │                                        │
-│ ┌────────────────────────────────────┐ │
-│ │ H7509 DB4016                       │ │
-│ └────────────────────────────────────┘ │
-│ 11 characters · main island only       │
+│ Taipower         H7509 DB4016           │
+│                  ────────────           │
+│                  11 chars · main island │
 │                                        │
 │ — when TWD97 or TWD67 is selected —    │
-│ Easting (m)                             │
-│ ┌────────────────────────────────────┐ │
-│ │ 306963                             │ │
-│ └────────────────────────────────────┘ │
-│ Northing (m)                            │
-│ ┌────────────────────────────────────┐ │
-│ │ 2769619                            │ │
-│ └────────────────────────────────────┘ │
-│ TM2 zone  [ 121 ] [ 119 ]              │
+│ Easting          306963             m   │
+│                  ──────                 │
+│ Northing         2769619            m   │
+│                  ───────                │
+│ TM2 zone         [ 121 ] [ 119 ]        │
 │ [119 accuracy advisory when applicable]│
 │ [validation status]                    │
 └────────────────────────────────────────┘
@@ -48,8 +75,20 @@ ATAK-owned controls: Auto Fill · Clear · Copy · action/confirm
 ```
 
 The pane owns one outer `ScrollView`; no nested vertical scroller competes with
-ATAK's dialog. Inputs use the same 20 sp text, field padding, selector height,
-and TWD field gap as the advanced GoTo page.
+ATAK's dialog. Its geometry mirrors ATAK's DD pane: compact horizontal
+label/input/unit rows, native underline inputs at `wrap_content` height,
+13 sp normal / 17 sp large title text, a 2 dp top inset, and system/zone
+selectors whose outer and clickable heights both remain 48 dp. Their visual
+vertical inset is drawable-owned, so it does not enlarge the pane. Empty status
+text consumes no height, so the pane stays above ATAK's elevation and action
+controls.
+
+When ATAK opens the pane with a map-item or shared-dialog point, the plugin
+prepares Taipower, TWD97, and TWD67 from that same WGS84 point before the pane
+renders. Switching the internal system therefore reveals an already prepared
+draft without using Auto Fill. A system that cannot represent the point is
+cleared and marked unavailable independently; for example, a zone-119 point
+still prepares TWD97 and TWD67 while Taipower remains unavailable.
 
 ## Coordinate systems
 
@@ -75,7 +114,8 @@ and TWD field gap as the advanced GoTo page.
 The surrounding dialog owns its buttons and resulting action:
 
 - **Auto Fill** calls the pane with ATAK's current point and replaces the active
-  draft.
+  draft. It intentionally remains active-only; it is distinct from the
+  all-system preparation performed when ATAK activates the pane with a point.
 - **Clear** supplies no point and clears only the active Taiwan draft.
 - **Copy** requests a canonical string without mutating the draft.
 - The dialog's action consumes horizontal WGS84 metadata. The plugin does not

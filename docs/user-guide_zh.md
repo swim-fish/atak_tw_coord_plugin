@@ -2,7 +2,7 @@
 
 > **English version:** [user-guide.md](user-guide.md)
 
-**對應版本：** v1.4.0 ｜ **對應 ATAK-CIV：** 5.5.0 — 5.7.x
+**對應版本：** v1.4.2 ｜ **對應 ATAK-CIV：** 5.5.0 — 5.7.x
 **最新發行：** <https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest>
 
 這是精簡版。若你只是想把外掛裝起來用，看這份就夠了。需要更深入的背景知識（精度資訊、基準轉換內部原理、MIL-STD-2525 標記說明），請參閱 `docs/` 目錄下的其他原始文件。
@@ -79,6 +79,8 @@ adb shell am force-stop com.atakmap.app.civ
 
 ### 3.1 ATAK Go To — 使用原生 Taiwan 座標輸入
 
+#### 輸入台灣座標或執行 Go To
+
 自 v1.4.0 起，台灣座標系統會直接出現在 ATAK 標準座標輸入對話框中：
 
 1. 開啟 ATAK 的 **Go To** 對話框，選擇 **Taiwan** 分頁。
@@ -87,9 +89,33 @@ adb shell am force-stop com.atakmap.app.civ
 4. 按 **OK**，由 ATAK 執行原本的 Go To 動作。
 
 <p align="center">
-<img src="images/20-atak-native-goto-taipower.jpg" alt="ATAK 原生 Go To 對話框中的 Taiwan 台電座標頁面" width="900"><br>
-<sub>ATAK Go To → Taiwan → Taipower。Taiwan 分頁直接使用 ATAK 原生對話框與動作按鈕。</sub>
+<img src="images/22-atak-enter-coordinate.jpg" alt="ATAK Enter Coordinate 對話框中的緊湊 Taiwan 台電座標頁面" width="900"><br>
+<sub>Enter Coordinate → Taiwan → Taipower。緊湊版面不會遮住 ATAK 的高度與動作控制項。</sub>
 </p>
+
+#### 轉換地圖圖標的既有座標
+
+若要查看既有地圖圖標的各種台灣座標表示方式：
+
+1. 開啟圖標的詳細資料，點選 **Coordinate** 座標值。
+2. 進入 **Convert Coordinate** 後選擇 **Taiwan** 分頁。
+3. 直接切換 Taipower（台電）、TWD97 與 TWD67，不需要按 Auto Fill；v1.4.2
+   已依選取圖標的位置預先準備所有可表示的台灣座標。
+
+<p align="center">
+<img src="images/20-atak-point-detail-coordinate.jpg" alt="ATAK 圖標詳細資料中作為 Convert Coordinate 入口的 Coordinate 欄位" width="420"><br>
+<sub>點選地圖圖標詳細資料中的 Coordinate 座標值。</sub>
+</p>
+
+<p align="center">
+<img src="images/21-atak-convert-coordinate.jpg" alt="ATAK Convert Coordinate 對話框中位於 MGRS 旁的 Taiwan 分頁" width="900"><br>
+<sub>Convert Coordinate 會在 ATAK 內建座標分頁旁顯示 Taiwan。</sub>
+</p>
+
+當 ATAK 從地圖圖標的座標或其他共用座標對話框開啟此分頁時，v1.4.2
+會先用 ATAK 提供的同一個位置準備台電、TWD97 與 TWD67。切換三種座標
+系統時不必再按 Auto Fill。若其中一種座標無法表示該位置，只會清除並
+提示該座標系統，其他已準備的座標仍可使用。
 
 - 台電座標接受 9 碼（10 m）或 11 碼（1 m）的本島格式。Auto Fill 與 Copy
   會產生標準化的 11 碼格式，例如 `H7509 DB4016`。
@@ -102,17 +128,13 @@ adb shell am force-stop com.atakmap.app.civ
 - 在 ATAK 的唯讀對話框中，座標仍可檢視與複製，但輸入欄位、座標系統與
   zone 選擇器都會停用。
 
-<p align="center">
-<img src="images/21-atak-native-goto-twd97.jpg" alt="ATAK 原生 Go To 對話框中的 TWD97 Easting、Northing 與 TM2 zone 控制項" width="900"><br>
-<sub>TWD97 使用分開的 Easting、Northing 欄位，並明確選擇 TM2 zone；TWD67 使用相同版面。</sub>
-</p>
-
 若只需要熟悉且快速的操作路徑，建議使用這個原生分頁。若需要 Marker
 affiliation、ATAK 圖示盤或最近 10 筆輸入紀錄，請改用 **TW Coord GoTo**。
 原生分頁與進階頁面的選項及草稿會分開保存，互不覆寫。
 
-TWD67 zone 119 會顯示精度提醒。台電座標無法表示外島位置；此時 Auto Fill
-會清除先前的台電草稿並回報涵蓋範圍限制，避免畫面留下過期座標。
+TWD67 zone 119 會顯示精度提醒。台電座標無法表示外島位置；此時頁面啟用
+或 Auto Fill 會清除對應的台電草稿並回報涵蓋範圍限制，避免畫面留下過期
+座標。
 
 ### 3.2 TW Coord GoTo — 進階座標操作
 

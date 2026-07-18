@@ -270,6 +270,7 @@
     <string name="native_entry_easting">東距</string>
     <string name="native_entry_northing">北距</string>
     <string name="native_entry_metres">メートル</string>
+    <string name="native_entry_metres_short">m</string>
     <string name="native_entry_zone">TM2 ゾーン</string>
     <string name="native_entry_zone_121">121</string>
     <string name="native_entry_zone_119">119</string>

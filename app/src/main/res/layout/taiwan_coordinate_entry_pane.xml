@@ -3,7 +3,7 @@
     android:id="@+id/native_entry_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:fillViewport="true"
+    android:fillViewport="false"
     android:scrollbars="vertical">
 
     <LinearLayout
@@ -11,16 +11,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:paddingTop="2dp">
 
         <RadioGroup
             android:id="@+id/native_entry_system_group"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="48dp"
             android:background="@drawable/native_entry_segment_track"
             android:contentDescription="@string/native_entry_a11y_system_selector"
             android:orientation="horizontal"
-            android:padding="3dp">
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp">
 
             <RadioButton
                 android:id="@+id/native_entry_system_taipower"
@@ -33,7 +34,7 @@
                 android:gravity="center"
                 android:text="@string/native_entry_system_taipower"
                 android:textColor="@color/native_entry_segment_text"
-                android:textSize="16sp" />
+                android:textSize="@dimen/native_entry_title_font" />
 
             <RadioButton
                 android:id="@+id/native_entry_system_twd97"
@@ -46,7 +47,7 @@
                 android:gravity="center"
                 android:text="@string/native_entry_system_twd97"
                 android:textColor="@color/native_entry_segment_text"
-                android:textSize="16sp" />
+                android:textSize="@dimen/native_entry_title_font" />
 
             <RadioButton
                 android:id="@+id/native_entry_system_twd67"
@@ -59,282 +60,384 @@
                 android:gravity="center"
                 android:text="@string/native_entry_system_twd67"
                 android:textColor="@color/native_entry_segment_text"
-                android:textSize="16sp" />
+                android:textSize="@dimen/native_entry_title_font" />
         </RadioGroup>
 
         <LinearLayout
             android:id="@+id/native_entry_pane_taipower"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:orientation="vertical">
 
-            <TextView
+            <LinearLayout
+                android:id="@+id/native_entry_taipower_row"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:labelFor="@id/native_entry_input_taipower"
-                android:text="@string/native_entry_system_taipower"
-                android:textColor="#FFFFFFFF"
-                android:textSize="16sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="10">
 
-            <EditText
-                android:id="@+id/native_entry_input_taipower"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:autofillHints=""
-                android:background="@drawable/native_entry_input_bg"
-                android:contentDescription="@string/native_entry_a11y_taipower_input"
-                android:hint="@string/native_entry_taipower_hint"
-                android:imeOptions="actionDone"
-                android:inputType="textCapCharacters|textNoSuggestions"
-                android:maxLines="1"
-                android:paddingStart="14dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="14dp"
-                android:textColor="#FFFFFFFF"
-                android:textColorHint="#99FFFFFF"
-                android:textSize="20sp" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:gravity="center"
+                    android:labelFor="@id/native_entry_input_taipower"
+                    android:text="@string/native_entry_system_taipower"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
 
-            <TextView
+                <EditText
+                    android:id="@+id/native_entry_input_taipower"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:autofillHints=""
+                    android:contentDescription="@string/native_entry_a11y_taipower_input"
+                    android:hint="@string/native_entry_taipower_hint"
+                    android:imeOptions="actionDone"
+                    android:inputType="textCapCharacters|textNoSuggestions"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFFFF"
+                    android:textColorHint="#99FFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="@string/native_entry_taipower_help"
-                android:textColor="#B3FFFFFF"
-                android:textSize="14sp" />
+                android:orientation="horizontal"
+                android:weightSum="10">
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="3" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:text="@string/native_entry_taipower_help"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="@dimen/native_entry_help_font" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/native_entry_pane_twd97"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:orientation="vertical"
             android:visibility="gone">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:labelFor="@id/native_entry_twd97_easting"
-                android:text="@string/native_entry_easting"
-                android:textColor="#FFFFFFFF"
-                android:textSize="16sp" />
-
-            <EditText
-                android:id="@+id/native_entry_twd97_easting"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:autofillHints=""
-                android:background="@drawable/native_entry_input_bg"
-                android:contentDescription="@string/native_entry_a11y_twd97_easting"
-                android:inputType="number"
-                android:maxLines="1"
-                android:paddingStart="13dp"
-                android:paddingTop="13dp"
-                android:paddingEnd="13dp"
-                android:paddingBottom="13dp"
-                android:textColor="#FFFFFFFF"
-                android:textSize="20sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:labelFor="@id/native_entry_twd97_northing"
-                android:text="@string/native_entry_northing"
-                android:textColor="#FFFFFFFF"
-                android:textSize="16sp" />
-
-            <EditText
-                android:id="@+id/native_entry_twd97_northing"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:autofillHints=""
-                android:background="@drawable/native_entry_input_bg"
-                android:contentDescription="@string/native_entry_a11y_twd97_northing"
-                android:inputType="number"
-                android:maxLines="1"
-                android:paddingStart="13dp"
-                android:paddingTop="13dp"
-                android:paddingEnd="13dp"
-                android:paddingBottom="13dp"
-                android:textColor="#FFFFFFFF"
-                android:textSize="20sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="@string/native_entry_zone"
-                android:textColor="#FFFFFFFF"
-                android:textSize="16sp" />
-
-            <RadioGroup
-                android:id="@+id/native_entry_twd97_zone_group"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="5dp"
-                android:background="@drawable/native_entry_segment_track"
-                android:contentDescription="@string/native_entry_a11y_twd97_zone"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="3dp">
+                android:weightSum="10">
 
-                <RadioButton
-                    android:id="@+id/native_entry_twd97_zone_121"
+                <TextView
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="@drawable/native_entry_segment_option"
-                    android:button="@null"
-                    android:checked="true"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
                     android:gravity="center"
-                    android:text="@string/native_entry_zone_121"
-                    android:textColor="@color/native_entry_segment_text"
-                    android:textSize="16sp" />
+                    android:labelFor="@id/native_entry_twd97_easting"
+                    android:text="@string/native_entry_easting"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
 
-                <RadioButton
-                    android:id="@+id/native_entry_twd97_zone_119"
+                <EditText
+                    android:id="@+id/native_entry_twd97_easting"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="@drawable/native_entry_segment_option"
-                    android:button="@null"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="6.5"
+                    android:autofillHints=""
+                    android:contentDescription="@string/native_entry_a11y_twd97_easting"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.5"
+                    android:text="@string/native_entry_metres_short"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="10">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
                     android:gravity="center"
-                    android:text="@string/native_entry_zone_119"
-                    android:textColor="@color/native_entry_segment_text"
-                    android:textSize="16sp" />
-            </RadioGroup>
+                    android:labelFor="@id/native_entry_twd97_northing"
+                    android:text="@string/native_entry_northing"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+
+                <EditText
+                    android:id="@+id/native_entry_twd97_northing"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="6.5"
+                    android:autofillHints=""
+                    android:contentDescription="@string/native_entry_a11y_twd97_northing"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.5"
+                    android:text="@string/native_entry_metres_short"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="10">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:gravity="center"
+                    android:text="@string/native_entry_zone"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+
+                <RadioGroup
+                    android:id="@+id/native_entry_twd97_zone_group"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="7"
+                    android:background="@drawable/native_entry_segment_track"
+                    android:contentDescription="@string/native_entry_a11y_twd97_zone"
+                    android:orientation="horizontal"
+                    android:paddingStart="2dp"
+                    android:paddingEnd="2dp">
+
+                    <RadioButton
+                        android:id="@+id/native_entry_twd97_zone_121"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@drawable/native_entry_segment_option"
+                        android:button="@null"
+                        android:checked="true"
+                        android:gravity="center"
+                        android:text="@string/native_entry_zone_121"
+                        android:textColor="@color/native_entry_segment_text"
+                        android:textSize="@dimen/native_entry_title_font" />
+
+                    <RadioButton
+                        android:id="@+id/native_entry_twd97_zone_119"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@drawable/native_entry_segment_option"
+                        android:button="@null"
+                        android:gravity="center"
+                        android:text="@string/native_entry_zone_119"
+                        android:textColor="@color/native_entry_segment_text"
+                        android:textSize="@dimen/native_entry_title_font" />
+                </RadioGroup>
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/native_entry_pane_twd67"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:orientation="vertical"
             android:visibility="gone">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:labelFor="@id/native_entry_twd67_easting"
-                android:text="@string/native_entry_easting"
-                android:textColor="#FFFFFFFF"
-                android:textSize="16sp" />
-
-            <EditText
-                android:id="@+id/native_entry_twd67_easting"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:autofillHints=""
-                android:background="@drawable/native_entry_input_bg"
-                android:contentDescription="@string/native_entry_a11y_twd67_easting"
-                android:inputType="number"
-                android:maxLines="1"
-                android:paddingStart="13dp"
-                android:paddingTop="13dp"
-                android:paddingEnd="13dp"
-                android:paddingBottom="13dp"
-                android:textColor="#FFFFFFFF"
-                android:textSize="20sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:labelFor="@id/native_entry_twd67_northing"
-                android:text="@string/native_entry_northing"
-                android:textColor="#FFFFFFFF"
-                android:textSize="16sp" />
-
-            <EditText
-                android:id="@+id/native_entry_twd67_northing"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:autofillHints=""
-                android:background="@drawable/native_entry_input_bg"
-                android:contentDescription="@string/native_entry_a11y_twd67_northing"
-                android:inputType="number"
-                android:maxLines="1"
-                android:paddingStart="13dp"
-                android:paddingTop="13dp"
-                android:paddingEnd="13dp"
-                android:paddingBottom="13dp"
-                android:textColor="#FFFFFFFF"
-                android:textSize="20sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="@string/native_entry_zone"
-                android:textColor="#FFFFFFFF"
-                android:textSize="16sp" />
-
-            <RadioGroup
-                android:id="@+id/native_entry_twd67_zone_group"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="5dp"
-                android:background="@drawable/native_entry_segment_track"
-                android:contentDescription="@string/native_entry_a11y_twd67_zone"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="3dp">
+                android:weightSum="10">
 
-                <RadioButton
-                    android:id="@+id/native_entry_twd67_zone_121"
+                <TextView
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="@drawable/native_entry_segment_option"
-                    android:button="@null"
-                    android:checked="true"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
                     android:gravity="center"
-                    android:text="@string/native_entry_zone_121"
-                    android:textColor="@color/native_entry_segment_text"
-                    android:textSize="16sp" />
+                    android:labelFor="@id/native_entry_twd67_easting"
+                    android:text="@string/native_entry_easting"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
 
-                <RadioButton
-                    android:id="@+id/native_entry_twd67_zone_119"
+                <EditText
+                    android:id="@+id/native_entry_twd67_easting"
                     android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="@drawable/native_entry_segment_option"
-                    android:button="@null"
-                    android:gravity="center"
-                    android:text="@string/native_entry_zone_119"
-                    android:textColor="@color/native_entry_segment_text"
-                    android:textSize="16sp" />
-            </RadioGroup>
+                    android:layout_height="wrap_content"
+                    android:layout_weight="6.5"
+                    android:autofillHints=""
+                    android:contentDescription="@string/native_entry_a11y_twd67_easting"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
 
-            <TextView
-                android:id="@+id/native_entry_twd67_advisory"
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.5"
+                    android:text="@string/native_entry_metres_short"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/native_entry_advisory_bg"
-                android:padding="10dp"
-                android:text="@string/native_entry_outer_island_advisory"
-                android:textColor="#FFFFD699"
-                android:textSize="14sp"
-                android:visibility="gone" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="10">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:gravity="center"
+                    android:labelFor="@id/native_entry_twd67_northing"
+                    android:text="@string/native_entry_northing"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+
+                <EditText
+                    android:id="@+id/native_entry_twd67_northing"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="6.5"
+                    android:autofillHints=""
+                    android:contentDescription="@string/native_entry_a11y_twd67_northing"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.5"
+                    android:text="@string/native_entry_metres_short"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="10">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:gravity="center"
+                    android:text="@string/native_entry_zone"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+
+                <RadioGroup
+                    android:id="@+id/native_entry_twd67_zone_group"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="7"
+                    android:background="@drawable/native_entry_segment_track"
+                    android:contentDescription="@string/native_entry_a11y_twd67_zone"
+                    android:orientation="horizontal"
+                    android:paddingStart="2dp"
+                    android:paddingEnd="2dp">
+
+                    <RadioButton
+                        android:id="@+id/native_entry_twd67_zone_121"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@drawable/native_entry_segment_option"
+                        android:button="@null"
+                        android:checked="true"
+                        android:gravity="center"
+                        android:text="@string/native_entry_zone_121"
+                        android:textColor="@color/native_entry_segment_text"
+                        android:textSize="@dimen/native_entry_title_font" />
+
+                    <RadioButton
+                        android:id="@+id/native_entry_twd67_zone_119"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@drawable/native_entry_segment_option"
+                        android:button="@null"
+                        android:gravity="center"
+                        android:text="@string/native_entry_zone_119"
+                        android:textColor="@color/native_entry_segment_text"
+                        android:textSize="@dimen/native_entry_title_font" />
+                </RadioGroup>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="10">
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="3" />
+
+                <TextView
+                    android:id="@+id/native_entry_twd67_advisory"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:background="@drawable/native_entry_advisory_bg"
+                    android:padding="4dp"
+                    android:text="@string/native_entry_outer_island_advisory"
+                    android:textColor="#FFFFD699"
+                    android:textSize="@dimen/native_entry_help_font"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
 
         <TextView
             android:id="@+id/native_entry_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
             android:accessibilityLiveRegion="polite"
             android:contentDescription="@string/native_entry_a11y_status"
-            android:minHeight="24dp"
+            android:gravity="center_horizontal"
             android:textColor="#FFFFB34D"
-            android:textSize="14sp" />
+            android:textSize="@dimen/native_entry_help_font"
+            android:visibility="gone" />
     </LinearLayout>
 </ScrollView>
