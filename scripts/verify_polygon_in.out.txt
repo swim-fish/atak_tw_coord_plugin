@@ -1,5 +1,5 @@
 ############ Hand-rolled WKB MultiPolygon + PIP — Tier-1 proof ############
-  zip: C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator\output\tw-central-full.zip  exists=True
+  zip: <ATAK_TW_ADDRESS_GENERATOR>\output\tw-central-full.zip  exists=True
   台中車站       (24.1417,120.6736) -> county=台中市 district=西區 lvl=7 rtree_cand=1  exp=(台中市,None)  PASS
   一中商圈       (24.1505,120.684) -> county=台中市 district=北區 lvl=7 rtree_cand=2  exp=(台中市,None)  PASS
   彰化市中心      (24.0809,120.5386) -> county=彰化縣 district=彰化市 lvl=8 rtree_cand=2  exp=(彰化縣,彰化市)  PASS

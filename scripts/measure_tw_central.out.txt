@@ -1,4 +1,4 @@
-ZIP: C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator\output\tw-central-full.zip
+ZIP: <ATAK_TW_ADDRESS_GENERATOR>\output\tw-central-full.zip
 ZIP exists: True  size: 148.97 MB
 
 === ZIP entries ===

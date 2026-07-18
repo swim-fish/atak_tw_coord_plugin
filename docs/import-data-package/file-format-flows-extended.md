@@ -4,7 +4,7 @@
 >
 > **Format list source.** The project's resolver enumeration of the ATAK-CIV **5.7.0.5** `main.jar` (`com.atakmap.android.importfiles.sort.Import*Sort` classes).
 >
-> **Evidence sources.** *Authoritative (disassembled) bytecode:* ATAK-CIV **5.7.0.5** SDK `main.jar` (`/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar`). *Readable cross-reference:* the local upstream clone `TAK-Product-Center/atak-civ` at tag **5.5.1.10**, commit `9f6893dd657feacc35ec5de03dad721c2e44170e`.
+> **Evidence sources.** *Authoritative (disassembled) bytecode:* ATAK-CIV **5.7.0.5** SDK `main.jar` (`<ATAK_SDK_5_7_0_5>/main.jar`). *Readable cross-reference:* the local upstream clone `TAK-Product-Center/atak-civ` at tag **5.5.1.10**, commit `9f6893dd657feacc35ec5de03dad721c2e44170e`.
 >
 > **Date:** 2026-06-17.
 
@@ -370,7 +370,7 @@ A bare `.p12` is the simple case (above). The real-world enrollment artifact is 
 **Disassembly command pattern.** Every behavioral claim was verified by disassembling the authoritative 5.7.0.5 SDK jar:
 
 ```
-javap -p -c -classpath /c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar \
+javap -p -c -classpath <ATAK_SDK_5_7_0_5>/main.jar \
   com.atakmap.android.importfiles.sort.ImportGeoJsonSort   # …per class
 javap -p -constants -classpath …/main.jar \
   com.atakmap.coremap.filesystem.FileSystemUtils           # for inlined string constants

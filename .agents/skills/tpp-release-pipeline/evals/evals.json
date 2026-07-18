@@ -1,0 +1,7 @@
+{
+  "skill": "tpp-release-pipeline",
+  "evals": [
+    {"prompt": "Stage this completed TPP response for release.", "expected": "Uses dist, verifies source/version/signer, and does not expose the raw response filename."},
+    {"prompt": "Move the published v1.4.2 tag to include a docs fix.", "expected": "Refuses tag mutation and recommends a new version."}
+  ]
+}

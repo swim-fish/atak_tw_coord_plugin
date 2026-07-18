@@ -4,10 +4,17 @@ source: "https://tak.gov/user_builds"
 author:
 published:
 created: 2026-05-16
+last_verified: 2026-05-16
 description:
 tags:
   - "clippings"
 ---
+
+> **Archived source snapshot.** This file preserves the TPP documentation as
+> captured on the verification date above. It is not the project's release
+> runbook. Follow `docs/release/tpp-runbook.md` and ADR-0025 for current commands
+> and release gates.
+
 ## Source Archive Requirements
 
 Welcome to the TAK third party pipeline, an ephemeral build service which also signs third-party plugins, enabling operational baseline functionality. Information submitted though the third-party signing service is not monitored nor is it stored by the government. A visual indicator informs the end user that a plugin was signed using the third-party signing service rather than the official TAK Product Center build pipeline. The TAK Configuration Steering Board has open sourced ATAK-CIV and the Standard SDK on DoD GitHub and approved the public release of additional binaries on TAK.gov to support IRAD development. Access to these resources does not imply development support or operational transition.

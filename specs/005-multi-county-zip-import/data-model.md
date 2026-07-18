@@ -2,7 +2,7 @@
 
 **Branch**: `005-multi-county-zip-import` | **Date**: 2026-05-26
 
-This document captures the on-disk layout, in-memory entities, and per-county lifecycle states that feature 005 introduces. The schema of `places-<county>.sqlite` itself is owned by the generator's [data-contract.md v2](file:///c/Users/hhhnr/source/tak/atak_vns_offline_routing/atak-tw-address-generator/docs/data-contract.md) and not duplicated here — feature 005 consumes that schema unchanged.
+This document captures the on-disk layout, in-memory entities, and per-county lifecycle states that feature 005 introduces. The schema of `places-<county>.sqlite` itself is owned by the sibling generator's `docs/data-contract.md` v2 at `<ATAK_TW_ADDRESS_GENERATOR>` and not duplicated here — feature 005 consumes that schema unchanged.
 
 ---
 

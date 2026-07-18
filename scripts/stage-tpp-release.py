@@ -19,13 +19,14 @@ naming convention, drops everything else, and prints the ready-to-run
     python scripts/stage-tpp-release.py <bundle.zip> --version 1.2.0 \
         --atak-display 5.5+ --public-name TWCoord
 
-What it produces in build/release-v<VERSION>/ (5 assets, matching Stage 6):
+What it produces in dist/release-v<VERSION>/ (6 assets):
 
     ATAK-Plugin-<PUBLIC_NAME>-v<VERSION>-ATAK-<ATAK_DISPLAY>.apk   (from *-unsigned.apk)
     mapping-v<VERSION>.txt                                          (from civRelease-app-mapping.txt)
     security-scan-v<VERSION>.pdf                                    (from fortify_scan_results.pdf)
     dependency-check-v<VERSION>.html                               (from dependency-check-report.html)
     source-archive-v<VERSION>.zip                                  (from build/<repo>-source-tpp-v<VERSION>.zip, if present)
+    provenance-v<VERSION>.json                                     (source/APK/signer SHA provenance)
 
 Exit codes: 0 = staged OK, 1 = a required bundle file was missing, 2 = script error.
 """
@@ -34,10 +35,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 from typing import Optional
@@ -138,12 +141,29 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def portable_path(path: Path, root: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(root.resolve()))
+    except ValueError:
+        return f"<EXTERNAL_PATH>/{path.name}"
+
+
+def read_source_provenance(source_zip: Path) -> dict[str, object]:
+    with zipfile.ZipFile(source_zip, "r") as archive:
+        matches = [name for name in archive.namelist()
+                   if name.endswith("/TPP_SOURCE_PROVENANCE.json")]
+        if len(matches) != 1:
+            raise ValueError("source archive must contain exactly one "
+                             "TPP_SOURCE_PROVENANCE.json")
+        return json.loads(archive.read(matches[0]).decode("utf-8"))
+
+
 def verify_signer(apk: Path) -> Optional[str]:
     """Best-effort signer-cert SHA-256 (lowercase hex, no colons). Tries
     apksigner first (Android build-tools — also validates the signature), then
     falls back to keytool, which ships with the JDK and is therefore present on
     any box that can build this plugin. Returns None only if neither tool is
-    available or the APK carries no signer cert. Never fatal."""
+    available or the APK carries no signer cert."""
     # apksigner (Android build-tools): "SHA-256 digest: <64 hex>"
     exe = shutil.which("apksigner") or shutil.which("apksigner.bat")
     if exe:
@@ -193,7 +213,7 @@ def main() -> int:
                          "source-archive-v<VERSION>.zip (default: "
                          "build/<repo>-source-tpp-v<VERSION>.zip if it exists).")
     ap.add_argument("--out", type=Path, default=None,
-                    help="Staging directory (default: build/release-v<VERSION>/).")
+                    help="Staging directory (default: dist/release-v<VERSION>/).")
     args = ap.parse_args()
 
     if not args.bundle.is_file():
@@ -215,16 +235,44 @@ def main() -> int:
     else:
         sys.exit("ERROR: could not determine ATAK target — pass --atak-display 5.5+")
 
+    configured_version = read_plugin_version(root)
+    if det_ver and version != det_ver:
+        sys.exit(f"ERROR: requested version {version} does not match TPP APK {det_ver}")
+    if configured_version and version != configured_version:
+        sys.exit("ERROR: staged version does not match app/build.gradle "
+                 f"({version} != {configured_version})")
+
     name = repo_name(root)
-    out_dir = args.out or (root / "build" / f"release-v{version}")
+    out_dir = args.out or (root / "dist" / f"release-v{version}")
+
+    src_zip = args.source_zip or (root / "build" / f"{name}-source-tpp-v{version}.zip")
+    if not src_zip.is_file():
+        sys.exit("ERROR: required source archive not found; run "
+                 "scripts/build-tpp-source-zip.py or pass --source-zip")
+    if out_dir.exists():
+        if not out_dir.is_dir() or any(out_dir.iterdir()):
+            sys.exit(f"ERROR: staging destination must be an empty directory: "
+                     f"{portable_path(out_dir, root)}")
+
+    try:
+        source_provenance = read_source_provenance(src_zip)
+    except (OSError, ValueError, json.JSONDecodeError, zipfile.BadZipFile) as error:
+        sys.exit(f"ERROR: invalid source archive provenance: {error}")
+    source_commit = str(source_provenance.get("source_commit", ""))
+    if source_provenance.get("plugin_version") != version:
+        sys.exit("ERROR: source archive provenance version does not match bundle")
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root,
+                          capture_output=True, text=True, check=False)
+    if head.returncode != 0 or source_commit != head.stdout.strip():
+        sys.exit("ERROR: source archive provenance commit does not match current HEAD")
 
     print("=== Stage TPP release bundle (ADR-0013 Stage 4) ===")
-    print(f"Bundle:       {args.bundle}")
+    print(f"Bundle:       <TPP_BUNDLE> ({args.bundle.stat().st_size:,} bytes)")
     print(f"Repo:         {name}")
     print(f"Version:      {version}{'  (auto)' if not args.version else '  (--version)'}")
     print(f"ATAK display: {atak_display}{'  (auto)' if not args.atak_display else '  (--atak-display)'}")
     print(f"Public name:  {args.public_name}")
-    print(f"Staging dir:  {out_dir}")
+    print(f"Staging dir:  {portable_path(out_dir, root)}")
     print()
 
     fmt = {"ver": version, "name": args.public_name, "atak": atak_display}
@@ -246,6 +294,32 @@ def main() -> int:
             print(f"  - {b}")
         return 1
 
+    # Verify the APK before creating the durable staging directory. A signer
+    # failure must not leave a partial directory that looks release-ready.
+    apk_src = next(src for label, src, _ in plan if label == "apk")
+    apk_name = next(dst for label, _, dst in plan if label == "apk")
+    with tempfile.TemporaryDirectory() as temp:
+        apk_preflight = Path(temp) / apk_name
+        with zipfile.ZipFile(args.bundle, "r") as archive:
+            apk_preflight.write_bytes(archive.read(apk_src))
+        apk_sha = sha256_file(apk_preflight)
+        signer = verify_signer(apk_preflight)
+
+    print("--- APK integrity preflight ---")
+    print(f"  file:    {apk_name}")
+    print(f"  SHA-256: {apk_sha}")
+    if signer is None:
+        print("  signer:  ✗ could not verify signer with apksigner or keytool")
+        print(f"           verify the TPP APK signer before staging {apk_name}")
+        return 1
+    if signer != EXPECTED_SIGNER_SHA256:
+        print(f"  signer:  ✗ UNEXPECTED cert {signer}")
+        print(f"           expected {EXPECTED_SIGNER_SHA256}")
+        print("           A changed signer forces every end user to uninstall before updating.")
+        return 1
+    print(f"  signer:  ✓ TAK Untrusted Plugin Release cert ({signer[:16]}…)")
+    print()
+
     # --- extract + rename the essentials, drop the rest ---
     out_dir.mkdir(parents=True, exist_ok=True)
     print("--- Essential files (extracted + renamed) ---")
@@ -263,38 +337,30 @@ def main() -> int:
         print(f"  [drop] {b}")
 
     # --- include Stage-2 source archive if available ---
-    src_zip = args.source_zip or (root / "build" / f"{name}-source-tpp-v{version}.zip")
     src_dst = out_dir / f"source-archive-v{version}.zip"
     print()
     print("--- Source archive (Stage 2) ---")
-    if src_zip.is_file():
-        shutil.copy2(src_zip, src_dst)
-        print(f"  [keep] {src_zip.name:<48} -> {src_dst.name}")
-    else:
-        print(f"  [MISS] {src_zip} not found — run scripts/build-tpp-source-zip.py,")
-        print(f"         or pass --source-zip. (Release needs {src_dst.name}.)")
+    shutil.copy2(src_zip, src_dst)
+    print(f"  [keep] <SOURCE_ARCHIVE>{'':<32} -> {src_dst.name}")
 
-    # --- integrity: SHA-256 + signer cert check ---
-    apk_dst = out_dir / next(dst for label, _, dst in plan if label == "apk")
-    apk_sha = sha256_file(apk_dst)
-    print()
-    print("--- APK integrity ---")
-    print(f"  file:    {apk_dst.name}")
-    print(f"  SHA-256: {apk_sha}")
-    signer = verify_signer(apk_dst)
-    if signer is None:
-        print("  signer:  (neither apksigner nor keytool found, or APK unsigned —")
-        print(f"           verify manually: keytool -printcert -jarfile {apk_dst.name})")
-    elif signer == EXPECTED_SIGNER_SHA256:
-        print(f"  signer:  ✓ TAK Untrusted Plugin Release cert ({signer[:16]}…)")
-    else:
-        print(f"  signer:  ✗ UNEXPECTED cert {signer}")
-        print(f"           expected {EXPECTED_SIGNER_SHA256}")
-        print("           A changed signer forces every end user to uninstall before")
-        print("           updating — confirm this is intended (ADR-0013 Stage 3).")
+    provenance_name = f"provenance-v{version}.json"
+    provenance_path = out_dir / provenance_name
+    public_provenance = {
+        "schema_version": 1,
+        "plugin_version": version,
+        "atak_display": atak_display,
+        "source_commit": source_commit,
+        "source_archive_sha256": sha256_file(src_dst),
+        "apk_sha256": apk_sha,
+        "apk_signer_sha256": signer,
+    }
+    provenance_path.write_text(
+        json.dumps(public_provenance, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    print(f"  provenance: {provenance_name}")
 
     # --- ready-to-run gh release create ---
-    assets = [dst for _, _, dst in plan] + [src_dst.name]
+    assets = [dst for _, _, dst in plan] + [src_dst.name, provenance_name]
     print()
     print("--- Next: GitHub Release (ADR-0013 Stage 6) ---")
     print(f"  Staged {len(assets)} assets in {out_dir}")

@@ -13,6 +13,10 @@ ADRs exist because:
   compatibility strategy, data format, privacy/security posture, or material
   operational trade-off. Routine command execution is not itself a decision.
 
+ADRs record durable decisions; living command sequences belong in `docs/release/`
+or `docs/contributing/`. When a procedure changes, add a successor ADR for the
+decision and update the runbook instead of rewriting historical evidence.
+
 ## Filing convention
 
 ```

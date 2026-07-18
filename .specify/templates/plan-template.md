@@ -86,6 +86,7 @@ record evidence for:
 | VI. Host-Process Isolation | Host entry boundaries, context/resource ownership, validation, and re-entrancy | [PASS/N/A/FAIL] |
 | VII. ATAK SDK Compatibility | Android compile/minimum SDKs, ATAK compile/minimum versions, public API anchors, lifecycle and device matrix | [PASS/N/A/FAIL] |
 | VIII. Geospatial Correctness & Provenance | Datum/zone/units, vectors, error budget, or justified N/A | [PASS/N/A/FAIL] |
+| IX. Release Integrity & Provenance | Candidate version/ref, `[RELEASE-GATE]` evidence, artifact/signing provenance, or justified N/A | [PASS/N/A/FAIL] |
 
 Non-negotiable failures MUST be resolved before implementation. Other
 complexity exceptions MUST be recorded below.

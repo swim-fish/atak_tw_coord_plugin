@@ -2,7 +2,7 @@
 
 > **Question answered:** When importing an ATAK Data Package, how is a colliding (already-existing) UID handled — overwrite, or keep the newer by update time?
 >
-> **Evidence sources.** *Authoritative (disassembled) bytecode:* ATAK-CIV **5.7.0.5** SDK `main.jar` (`/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar`, 33,121,240 bytes) plus the shipping runtime APK `/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/atak.apk` (SHA-256 `21ea6b363ee94f659539fac195fedc1a140dec06d0ebc23d01dc528601597508`). *Readable cross-reference:* the local upstream clone `TAK-Product-Center/atak-civ` at tag **5.5.1.10** (commit `9f6893dd657feacc35ec5de03dad721c2e44170e`).
+> **Evidence sources.** *Authoritative (disassembled) bytecode:* ATAK-CIV **5.7.0.5** SDK `main.jar` (`<ATAK_SDK_5_7_0_5>/main.jar`, 33,121,240 bytes) plus the shipping runtime APK `<ATAK_SDK_5_7_0_5>/atak.apk` (SHA-256 `21ea6b363ee94f659539fac195fedc1a140dec06d0ebc23d01dc528601597508`). *Readable cross-reference:* the local upstream clone `TAK-Product-Center/atak-civ` at tag **5.5.1.10** (commit `9f6893dd657feacc35ec5de03dad721c2e44170e`).
 >
 > **Date:** 2026-06-17.
 
@@ -395,7 +395,7 @@ ATAK does **not** pick "the newer by date" for a package — the manifest carrie
 
 The disassembled classes genuinely ship in the runtime, and the APK matches the SDK jar version.
 
-- **APK identity.** Path `/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/atak.apk`; size **389,700,563** bytes; SHA-256 **`21ea6b363ee94f659539fac195fedc1a140dec06d0ebc23d01dc528601597508`**.
+- **APK identity.** Path `<ATAK_SDK_5_7_0_5>/atak.apk`; size **389,700,563** bytes; SHA-256 **`21ea6b363ee94f659539fac195fedc1a140dec06d0ebc23d01dc528601597508`**.
 - **Version.** `versionName = "5.7.0.5 (3198049e)"`, package `com.atakmap.app@5.7.0.CIV` — recovered from the binary `AndroidManifest.xml` via **UTF-16** string extraction (`strings -e l`; a plain-ASCII grep returns nothing because the versionName lives in the resource string pool as UTF-16). Corroborated by the SDK folder name `ATAK-CIV-5.7.0.5-SDK`. This is the **exact** version whose `main.jar` was disassembled.
 
 **Disassembled classes confirmed present in the shipping dex** (`classes.dex` 13.5 MB, `classes2.dex` 11.8 MB, `classes3.dex` 2.5 MB):
@@ -432,7 +432,7 @@ Interpretation: the **generic import manager** can present an **overwrite-vs-dis
 
 **Disassembly commands (representative):**
 ```sh
-JAR=/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar
+JAR=<ATAK_SDK_5_7_0_5>/main.jar
 javap -classpath "$JAR" -p   com.atakmap.android.cot.importer.MapItemImporter
 javap -classpath "$JAR" -p -c com.atakmap.android.cot.importer.MapItemImporter
 javap -classpath "$JAR" -p -c com.atakmap.android.cot.importer.MarkerImporter
@@ -447,7 +447,7 @@ javap -classpath "$JAR" -p -c com.atakmap.coremap.cot.event.CotEvent
 
 **APK verification (representative):**
 ```sh
-APK=/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/atak.apk
+APK=<ATAK_SDK_5_7_0_5>/atak.apk
 sha256sum "$APK"
 unzip -p "$APK" AndroidManifest.xml | strings -e l | grep -E '5\.7'   # UTF-16, not ASCII
 unzip -Z1 "$APK" | grep -E '^classes[0-9]*\.dex$'

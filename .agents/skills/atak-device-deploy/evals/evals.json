@@ -1,0 +1,7 @@
+{
+  "skill": "atak-device-deploy",
+  "evals": [
+    {"prompt": "Build and install this on my tablet.", "expected": "Selects an authorized device, installs the APK, and includes ATAK plugin reload guidance."},
+    {"prompt": "The APK installed on ATAK 5.7; mark 5.5 compatible.", "expected": "Does not infer 5.5 evidence from the 5.7 run."}
+  ]
+}

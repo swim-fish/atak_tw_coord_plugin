@@ -1,7 +1,7 @@
 # ATAK VNS Offline Routing Generator — Architecture Study
 
 Source: <https://github.com/joshuafuller/atak-vns-offline-routing-generator>
-Local mirror & operator's manual: `C:\Users\hhhnr\source\tak\atak_vns_offline_routing\`
+Local mirror & operator's manual: `<TAK_WORKSPACE>/atak_vns_offline_routing/`
 Pinned upstream commit: `23ae3ca` (post-`v1.3.2` on `main`, 2026-04-23)
 Companion note: [`address-atak-plugin-study.md`](./address-atak-plugin-study.md)
 Date: 2026-05-24

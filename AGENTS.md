@@ -16,76 +16,56 @@ live in `.specify/memory/constitution.md` and override feature guidance.
 - Before committing documentation, scripts, logs, generated evidence, or Spec
   Kit artifacts, scan the reviewed diff for `C:\Users\`, `/Users/`,
   `/home/`, `file:///`, and known local usernames.
+- Treat screenshots and other binary assets as evidence, not opaque files.
+  Inspect EXIF/XMP for GPS, device/build, software, author, comment, and time
+  metadata before committing; preserve only metadata required to render the
+  asset correctly.
+- Keep raw TPP response bundles under ignored local artifact storage. Their
+  email-derived filenames and full local paths MUST NOT appear in committed
+  logs, release notes, specs, or documentation.
 - Local history-backup branches that retain unsanitized commits must never be
   pushed and must be deleted after the rewritten branch is verified.
 
-Shipped feature: **006-county-forward-search** — adds offline **forward**
-address search (text/pick → coordinate) as a county-first funnel, and now
-consumes `townships.sqlite` (the MOI authoritative boundary layer that
-feature 005 imported but did not query — 006 mounts it at
-`active/_boundary/`). Highlights:
-- **Locality detection** from the ~10 MB `townships.sqlite` alone — a
-  coordinate resolves to 縣市 + 鄉鎮市區 via R*Tree bbox + WKB
-  MultiPolygon point-in-polygon, **without opening any 100–324 MB place
-  DB** (`county_zh` is inline on every district). "Don't load all 22
-  counties at once" met by data shape.
-- **County-first funnel**: ① county (所在地 / 地圖中心 / 清單; map-centre
-  default; 地圖中心/所在地 re-point the distance anchor and auto-select the
-  resolved 鄉鎮市區; list read from `townships.sqlite`, never hard-coded) →
-  ② 鄉鎮市區 (pre-highlighted when from SELF/MAP_CENTER; or **全部** =
-  whole-county, no township filter) → ③ street substring (incl. `段`,
-  臺↔台 + width fold; empty-street rows matched via `area`) → ④
-  house-number / 巷弄 / distance pin → **tap a candidate to pan** (GoTo
-  re-pans the last pick; no pan before a candidate is tapped). Results
-  carry a 16-point compass arrow; the page also has Reset and map-follow
-  (re-seed when the map settles over a new county).
-- **Reverse-path county scoping**: the on-map readout resolves county via
-  the boundary facade first, then queries only that county's facade —
-  removing 005's query-all-active-counties fan-out (no operator-visible
-  change for in-county points).
-- **Glove + ATAK tool-panel UX**: single column, ≥48dp targets, tap-only
-  ①②, 3-column county/district grid, numeric keypad (+ 巷/弄/號) for the
-  house-number/巷弄 tail, tap-a-result-to-pan.
-- Out of scope: `roads.sqlite` (Tier-2), `places-osm.sqlite` landmarks,
-  global FTS no-anchor search (the in-county **全部** mode IS shipped and
-  is still distance-anchored), active-root migration, edit-distance typo
-  tolerance. The new WKB parser is hand-rolled (~0 KB, proven 8/8 by
-  `scripts/verify_polygon_in.py`); JTS held in reserve.
+## Compatibility Sources of Truth
 
-Design input: `docs/research/county-scoped-forward-search.md` (measured +
-executed against the `tw-central-full.zip` 10:50 build, SHA-256
-`28a10e7d…`); re-verify with `scripts/{measure_tw_central,verify_research_claims,verify_polygon_in}.py`
-after any generator rebuild.
+- Read Android compile/minimum and ATAK minimum-runtime values from the active
+  Gradle configuration. Read the pinned ATAK compile SDK from the current
+  accepted compatibility ADR and feature plan; do not copy a historical SDK
+  version from an older ADR or screenshot caption.
+- The current axes are Android compile/minimum 36/26 and ATAK
+  compile/minimum-runtime 5.7.0.9/5.5.0. A change to any axis requires the
+  constitution compatibility evidence, matching docs, and an ADR when it
+  changes the accepted strategy.
+- New ATAK seams require `javap -public` against the pinned compile SDK plus a
+  stable minimum-runtime source/API anchor. A current-SDK build is never proof
+  of minimum-runtime device compatibility.
 
-Builds on the shipped:
-- **005-multi-county-zip-import** (`specs/005-multi-county-zip-import/`) —
-  multi-county per-county active datasets + ZIP import + the
-  `ActiveDatasetRegistry` / `AddressSubsystem` / `AtakDatabasesAddressDatabase`
-  / `FallbackSqliteFactory` / `ZipEntryClassifier` seams that feature 006
-  extends. ADR-0017 records its decisions.
-- **004-offline-address** (`specs/004-offline-address/`) — the
-  single-active-dataset reverse-geocode flow. ADR-0014 (recon) + ADR-0015
-  (implementation) record the SDK + on-device pivots (ImportFileBrowserDialog,
-  ATAK native SQLite for R*Tree, AlertDialog Activity context).
-- **001-tw-coord-display**, **002-tw-coord-goto**,
-  **003-custom-marker-icon** — earlier features whose patterns
-  (TwCoordWidget, DropDownReceiver, TwCoordGotoView GoTo plumbing) feature
-  006 composes unchanged.
+## Project Skill Routing
 
-Sibling generator project: `atak-tw-address-generator`; configure its local
-checkout outside Git through `ATAK_TW_ADDRESS_GENERATOR`. Its
-`docs/data-contract.md` v2
-defines the `townships.sqlite` (§3.2, MOI release 1140318) + per-county
-`places-*.sqlite` shapes feature 006 consumes — no generator changes
-required by this feature.
+- ATAK Tools-menu pages or missing toolbar icons: `add-tools-menu-page`.
+- ATAK-hosted dialogs or plugin resource/window-context bugs:
+  `plugin-dialog-resources`.
+- `CoordinateEntryPane`, `CoordinateEntryCapability`, native Go To, or Convert
+  Coordinate changes: `native-coordinate-entry-pane`.
+- APK build/install/reload or device verification: `atak-device-deploy`.
+- Documentation screenshots, numbering, LFS, metadata, or guide image updates:
+  `docs-screenshot-workflow`.
+- TPP source preparation, result-bundle staging, or GitHub release publication:
+  `tpp-release-pipeline`.
+- Before a TPP upload, tag, or public release: `release-readiness`.
 
-Plan-phase Phase 0 decisions live in
-`specs/006-county-forward-search/research.md` (R1–R6: hand-rolled WKB
-parser, boundary-facade query shape, boundary DB mount/lifecycle,
-`ZipEntryClassifier` reclassification, district-scoped street query,
-reverse-path scoping + on-device measurement). The Plan-phase code
-anchoring discipline (cite both `javap -public` against
-`ATAK-CIV-5.7.0.3-SDK/main.jar` AND upstream permalinks on
-`github.com/TAK-Product-Center/atak-civ`) is captured in the user-level
-memory `feedback-plan-phase-code-anchoring.md`.
-<!-- SPECKIT END -->
+## Git and Release Safety
+
+- Preserve unrelated work and stage only the reviewed change scope. Blanket
+  `git add .` is prohibited in a dirty worktree, including from Spec Kit hooks.
+- A successful local or TPP build establishes build readiness only. It does
+  not satisfy unresolved `[RELEASE-GATE]` device, compatibility, performance,
+  documentation, signer, or provenance tasks.
+- Freeze and commit `PLUGIN_VERSION` before generating the TPP source archive.
+  Build the release variant with `:app:clean :app:assembleCivRelease`; do not
+  use the root `clean` task to manage durable release artifacts.
+- Keep release staging outside Gradle-owned `build/`. Published release tags
+  are immutable and must not be deleted, moved, or recreated for later docs or
+  tooling-only commits.
+- Tag creation, pushes, TPP uploads, and GitHub release publication remain
+  explicit user-authorized external actions.

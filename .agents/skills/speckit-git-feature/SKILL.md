@@ -39,6 +39,11 @@ Determine the branch numbering strategy by checking configuration in this order:
 2. Check `.specify/init-options.json` for `branch_numbering` value (backward compatibility)
 3. Default to `sequential` if neither exists
 
+Generated names also honor `branch_prefix` in
+`.specify/extensions/git/git-config.yml`. This project sets `codex/`, so a
+generated sequential branch is `codex/013-short-name`. An explicit
+`GIT_BRANCH_NAME` remains exact and is never prefixed a second time.
+
 ## Execution
 
 Generate a concise short name (2-4 words) for the branch:

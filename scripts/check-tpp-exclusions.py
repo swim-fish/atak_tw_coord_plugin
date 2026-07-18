@@ -42,7 +42,7 @@ def main() -> int:
     root = tpp.repo_root()
 
     print("=== TPP exclusion-safety check ===")
-    print(f"Repo:              {root}")
+    print("Repo:              <REPO_ROOT>")
     print(f"Excluded prefixes: {', '.join(tpp.EXCLUDE_PREFIXES)}")
     print(f"Excluded files:    {', '.join(sorted(tpp.EXCLUDE_EXACT))}")
     print()

@@ -1,46 +1,30 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.2.0 -> 2.1.0
-Rationale: Replace inherited Flutter-centric and tool-runtime-specific rules
-with enforceable Android/ATAK plugin governance; add explicit ATAK SDK and
-geospatial correctness principles; clarify the four independent Android/ATAK
-compatibility versions; and add a safe Git-hook policy. Bump type: MAJOR
-because existing contributor obligations are materially redefined. Version
-2.1.0 includes the compatible workflow guidance added during the same
-unreleased amendment.
+Version change: 2.1.0 -> 2.2.0
+Rationale: Add release integrity and provenance as an explicit project
+principle; distinguish TPP build readiness from public release readiness;
+make release-gate evidence, version freeze, durable artifact storage, and
+immutable signed tags enforceable; and align the pinned ATAK compile SDK with
+ADR-0024. Bump type: MINOR because contributor and release obligations are
+materially expanded without removing an existing principle.
 
 Modified principles:
-- I. Code Quality & Formatting Discipline -> Code Quality & Build Discipline.
-- II. Test-First Development -> Test-First Development & Verification.
-- III. User Experience Consistency -> UX, Accessibility & Localisation.
-- IV. Performance Requirements -> Performance & Offline Operation.
-- V. Documentation & Knowledge Preservation -> Documentation & Decision
-  Traceability.
-- VI. Host-Process Isolation -> Host-Process Isolation with boundary-oriented
-  exception handling and corrected Android resource rules.
-- Development Workflow & Quality Gates: add optional post-plan checklist
-  guidance, safe commit-hook rules, and an explicit implement/converge loop.
+- VII. ATAK SDK Compatibility: update the accepted compile SDK from 5.7.0.3
+  to 5.7.0.9 while retaining the 5.5.0 minimum runtime.
+- Development Workflow & Quality Gates: add release-gate task semantics and
+  a release-readiness handoff after convergence.
+- Governance: require immutable signed release tags and explicit disposition
+  of unresolved release gates.
 
 Added principles:
-- VII. ATAK SDK Compatibility, including separate Android compile/minimum SDK
-  and ATAK compile SDK/minimum runtime contracts.
-- VIII. Geospatial Correctness & Provenance.
+- IX. Release Integrity & Provenance.
 
 Removed or replaced rules:
-- Removed mandatory subagent delegation from project governance.
-- Replaced Flutter/Dart formatter and analysis commands with Android/Gradle
-  gates used by this repository.
-- Replaced the universal outer ScrollView mandate with one vertical scroll
-  owner, allowing RecyclerView or another bounded scrolling container.
-- Removed host cold/warm-start targets that the plugin cannot control.
-- Removed mandatory ADR creation after every read-only speckit-analyze run.
-- Replaced blanket Throwable swallowing, per-call SDK try/catch, and universal
-  AtomicBoolean guards with boundary-scoped, failure-aware requirements.
-- Replaced ambiguous "compile SDK" wording with explicit Android and ATAK
-  version axes.
-- Disabled optional auto-commit hooks; mandatory repository initialization and
-  feature-branch creation hooks remain enabled.
+- Root Gradle `clean` is no longer a release requirement; app compilation uses
+  `:app:clean` so durable release artifacts are not Gradle-owned outputs.
+- Moving or recreating a published release tag is prohibited.
+- TPP success no longer implies public release readiness.
 
 Templates and guidance updated:
 - [x] .specify/templates/plan-template.md
@@ -49,17 +33,21 @@ Templates and guidance updated:
 - [x] AGENTS.md and CLAUDE.md
 - [x] README.md
 - [x] docs/adr/README.md
-- [x] ADR-0022 filename aligned to docs/adr/NNNN-title.md
+- [x] ADR-0025 and docs/release/tpp-runbook.md
+- [x] docs/contributing/release-readiness.md and docs/images/README.md
 - [x] .specify/workflows/speckit/workflow.yml and workflow-registry.json
-- [x] .specify/extensions.yml
-- [x] Spec Kit Codex skills aligned to the installed PowerShell scripts
-- [x] .specify/init-options.json and .specify/integration.json
-- [x] .specify/scripts/powershell/check-prerequisites.ps1
+- [x] .specify/extensions.yml reviewed; no hook change required
+- [x] Spec Kit and project skills aligned to release-gate semantics
+- [x] .specify/init-options.json and .specify/integration.json reviewed; Codex
+  integration remains authoritative and branch prefixing lives in git-config
 
 Follow-up TODOs:
 - Before any future `specify integration upgrade --force`, preserve and
   reapply the project-specific skill, script, and template overrides. The
   managed-files-modified integration warning is intentional.
+- Exact ATAK 5.5 device acceptance for feature 012 remains an unresolved
+  release gate until executed or explicitly dispositioned without claiming
+  device compatibility.
 -->
 
 # atak_tw_power_plugin Constitution
@@ -265,7 +253,7 @@ The declared runtime range is a contract:
   public alternative considered, version-skew failure mode, and removal plan.
 
 **Rationale**: The project currently uses Android compile SDK 36 and minimum
-SDK 26, while compiling ATAK APIs against ATAK-CIV 5.7.0.3 and supporting
+SDK 26, while compiling ATAK APIs against ATAK-CIV 5.7.0.9 and supporting
 ATAK-CIV 5.5.0 at runtime. Explicit naming prevents Android API levels from
 being confused with ATAK API compatibility and prevents a successful build
 from masking a NoSuchMethodError or lifecycle incompatibility.
@@ -295,11 +283,45 @@ Coordinate and boundary behaviour is safety-relevant domain logic:
 marker by metres or kilometres while still producing plausible numbers.
 Provenance and golden vectors make those errors detectable.
 
+### IX. Release Integrity & Provenance (NON-NEGOTIABLE)
+
+Build completion, TPP completion, and public release readiness are separate
+states and MUST be reported separately:
+
+- `PLUGIN_VERSION` and its matching changelog/user documentation MUST be
+  committed before a TPP source archive is generated. The archive MUST identify
+  the exact Git commit and version from which it was produced.
+- TPP source preparation MUST start from a clean, committed candidate. A dirty
+  working tree is a failure unless an explicit diagnostic-only override is
+  used; an override artifact MUST NOT be published.
+- Release compilation MUST clean the Android app module with `:app:clean`
+  rather than treating durable release artifacts as Gradle-owned root build
+  output. Public release staging MUST live outside `build/`.
+- Device, compatibility, performance, signer, documentation, and provenance
+  work that blocks release MUST be labelled `[RELEASE-GATE]`. A public release
+  MUST NOT proceed while such a task is incomplete unless the user explicitly
+  accepts a documented disposition that narrows the corresponding claim.
+- TPP output MUST be checked for the expected signer, matched to the candidate
+  version and source archive, and published with SHA-256 provenance. TPP build
+  success does not satisfy feature acceptance or minimum-runtime evidence.
+- Release tags MUST be signed annotated tags and are immutable after
+  publication. Later docs or tooling changes MUST use a new commit and, when a
+  release artifact changes, a new version; published tags MUST NOT be moved or
+  recreated.
+- Raw TPP response bundles, workstation paths, email-derived filenames,
+  credentials, device identifiers, and image metadata unrelated to rendering
+  MUST NOT enter committed history or public release assets.
+
+**Rationale**: A reproducible build is only one part of a trustworthy release.
+Separating build, acceptance, signing, and publication prevents a successful
+pipeline from masking incomplete compatibility evidence or mismatched source,
+and immutable signed tags preserve the audit trail users rely on.
+
 ## Development Workflow & Quality Gates
 
 The required feature workflow is:
 
-`specify -> clarify -> plan -> checklist (optional) -> tasks -> analyze -> implement -> converge`
+`specify -> clarify -> plan -> checklist (optional) -> tasks -> analyze -> implement -> converge -> release-readiness (before publication)`
 
 - Feature branches SHOULD use `codex/NNN-short-name` for Codex work or
   `NNN-short-name` for other integrations so Spec Kit can resolve the feature
@@ -312,12 +334,15 @@ The required feature workflow is:
   not replace executable tests or the Constitution Check.
 - `/speckit-tasks` MUST create test tasks before the corresponding behaviour
   tasks and MUST include applicable Gradle, device, compatibility,
-  documentation, and ADR decision checks.
+  documentation, and ADR decision checks. Tasks that block a public release
+  MUST carry the `[RELEASE-GATE]` label.
 - `/speckit-analyze` remains read-only. It reports coverage and constitution
   conflicts but does not change artifacts.
 - `/speckit-converge` MAY append a convergence phase after implementation.
   If it appends tasks, `/speckit-implement` and convergence validation repeat
-  until no actionable gaps remain.
+  until no actionable gaps remain. A clean convergence result means the
+  implementation matches its artifacts; it does not close unchecked release
+  gates.
 - Mandatory initialization and feature-branch hooks MAY run automatically.
   Hooks that stage or commit changes MUST remain disabled by default and MUST
   NOT run around read-only commands such as `/speckit-analyze`. When a commit
@@ -330,6 +355,9 @@ The required feature workflow is:
 - A task is complete only when applicable formatting, lint, automated tests,
   package build, on-device acceptance, compatibility evidence, documentation,
   and decision records are complete or explicitly marked as blocked.
+- Before a TPP upload, tag, or GitHub release, the project release-readiness
+  check MUST report the exact candidate commit, version, pending release gates,
+  artifact hashes, and whether the requested phase may proceed.
 
 ## Governance
 
@@ -347,10 +375,13 @@ guidance until it is amended.
 - Pull requests MUST state constitution compliance and identify any remaining
   device-only or compatibility tasks. Reviewers MUST compare that statement to
   the diff and active feature artifacts.
+- A release publication MUST identify the exact source commit and signed tag.
+  Any accepted release-gate disposition MUST be visible in the release notes
+  and MUST NOT claim evidence that was not executed.
 - Agent-facing runtime guidance lives in `AGENTS.md`, `CLAUDE.md`,
   `.specify/feature.json`, and the active feature plan. Those files MUST
   resolve the same active feature and MUST NOT contradict this constitution.
 - Historical ADR decisions are immutable except for typo or metadata fixes.
   Reversals require a superseding ADR.
 
-**Version**: 2.1.0 | **Ratified**: 2026-05-16 | **Last Amended**: 2026-07-17
+**Version**: 2.2.0 | **Ratified**: 2026-05-16 | **Last Amended**: 2026-07-18

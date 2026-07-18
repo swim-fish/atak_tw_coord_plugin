@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "依照 docs\design\search_settings 修改 UI 設計。但是必須要依照 SDK samples 的範例改 不然會 debug 很久。也可以參考 C:\Users\hhhnr\source\tak\ATAK-CIV-5.7.0.3-SDK\samples\meshtastic_atak 的範例"
+**Input**: User description: "依照 `docs/design/search_settings` 修改 UI 設計，但是必須依照 SDK samples 範例修改，避免重複除錯；也可以參考 `<ATAK_SDK_5_7_0_3>/samples/meshtastic_atak`。"
 
 ## Overview
 

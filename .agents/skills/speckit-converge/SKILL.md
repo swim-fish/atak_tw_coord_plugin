@@ -233,8 +233,11 @@ Append to the **end** of `tasks.md`, per the append contract:
 - On `tasks_appended`: state how many tasks were appended under which phase, and recommend
   running `/speckit-implement` to complete them; note that a follow-up converge
   run will find fewer or no remaining items.
-- On `converged`: recommend proceeding to review / opening a PR. No further implement pass
-  is needed for this feature's specified scope.
+- On `converged`: recommend proceeding to review / opening a PR. State
+  explicitly that implementation convergence is not public-release readiness.
+  Report every unchecked `[RELEASE-GATE]` separately and hand off to the
+  `release-readiness` skill before publication. No further implement pass is
+  needed for the feature's buildable scope.
 
 ### 9. Check for extension hooks
 

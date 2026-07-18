@@ -15,10 +15,13 @@ test only when the task records the reason and an applicable validation step.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
-## Format: `[ID] [P?] [Story] Description`
+## Format: `[ID] [P?] [Story?] [RELEASE-GATE?] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
+- **[RELEASE-GATE]**: Evidence that must be completed or explicitly
+  dispositioned before public release. TPP preparation may report it as
+  pending, but must not silently close it.
 - Include exact file paths in descriptions
 
 ## Path Conventions
@@ -164,6 +167,19 @@ Examples of foundational tasks (adjust based on your project):
 
 ---
 
+## Phase N+1: Release Readiness
+
+**Purpose**: Separate implementation convergence from TPP and public-release
+evidence. Include only gates that are applicable to this feature.
+
+- [ ] TXXX [RELEASE-GATE] Record the exact candidate commit and committed `PLUGIN_VERSION`
+- [ ] TXXX [RELEASE-GATE] Complete the ATAK minimum/current-runtime device matrix or record an explicitly narrowed compatibility claim
+- [ ] TXXX [RELEASE-GATE] Complete the plan's device-only performance and lifecycle evidence
+- [ ] TXXX [RELEASE-GATE] Confirm English/localised docs, changelog, and screenshots match the candidate
+- [ ] TXXX [RELEASE-GATE] Run the project release-readiness check before TPP upload and again before public release
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -252,6 +268,7 @@ With multiple developers:
 - Each user story should be independently completable and testable
 - Verify behaviour tests fail before implementing and pass afterward
 - Keep device-only checks explicitly incomplete until executed on the named ATAK line
+- Mark public-release blockers with `[RELEASE-GATE]`; never infer completion from build or TPP success
 - Treat `/speckit-analyze` as read-only and use `/speckit-converge` after implementation
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently

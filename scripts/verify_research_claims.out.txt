@@ -1,5 +1,5 @@
 ############ V1 — zip freshness ############
-  path   : C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator\output\tw-central-full.zip
+  path   : <ATAK_TW_ADDRESS_GENERATOR>\output\tw-central-full.zip
   size   : 148.97 MB
   mtime  : 1780109437.1833775  (epoch)
   sha256 : 28a10e7d30bdd5d98316a8a84e1fe0321091d50d64232f760e2fd9b1833a9821

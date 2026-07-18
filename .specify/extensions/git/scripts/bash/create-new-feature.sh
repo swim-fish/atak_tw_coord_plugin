@@ -377,6 +377,16 @@ elif [ "$BRANCH_BYTE_LEN" -gt $MAX_BRANCH_LENGTH ]; then
     >&2 echo "[specify] Truncated to: $BRANCH_NAME (${#BRANCH_NAME} bytes)"
 fi
 
+if [ -z "${GIT_BRANCH_NAME:-}" ]; then
+    GIT_CONFIG="$REPO_ROOT/.specify/extensions/git/git-config.yml"
+    if [ -f "$GIT_CONFIG" ]; then
+        BRANCH_PREFIX=$(sed -n 's/^branch_prefix:[[:space:]]*["'\'']*\([^"'\'']*\)["'\'']*[[:space:]]*$/\1/p' "$GIT_CONFIG" | head -1)
+        if [ -n "$BRANCH_PREFIX" ]; then
+            BRANCH_NAME="${BRANCH_PREFIX}${BRANCH_NAME}"
+        fi
+    fi
+fi
+
 if [ "$DRY_RUN" != true ]; then
     if [ "$HAS_GIT" = true ]; then
         branch_create_error=""

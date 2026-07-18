@@ -4,6 +4,10 @@
 # Branch numbering strategy: "sequential" (001, 002, ...) or "timestamp" (YYYYMMDD-HHMMSS)
 branch_numbering: sequential
 
+# Prefix generated feature branches for Codex-managed worktrees. Explicit
+# GIT_BRANCH_NAME overrides remain exact and are never prefixed.
+branch_prefix: codex/
+
 # Commit message used by `git commit` during repository initialization
 init_commit_message: "[Spec Kit] Initial commit"
 

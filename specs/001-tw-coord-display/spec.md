@@ -390,7 +390,7 @@ previously selected unit is restored.
 - A reference plugin similar in scope is the public BNG plugin
   (`com.atakmap.android.bng.plugin`); its UX (HUD readout + settings entry)
   is the implicit visual / interaction baseline.
-- The pwa_map repository (`C:\Users\hhhnr\source\repos\pwa_map`) and the
+- The pwa_map repository (`<PWA_MAP_CHECKOUT>`) and the
   ATAK SDK / `meshtastic_atak` sample are accessible at planning time for
   reference but are not run-time dependencies of the shipped plugin.
 - The reference BNG plugin (`com.atakmap.android.bng.plugin`) is in fact

@@ -13,10 +13,10 @@ A plugin runs with **two contexts**:
   **window token**, so it is the one a dialog must be built with, but its
   `Resources` belong to the **ATAK host APK**, not the plugin.
 
-These two are easy to mix up, and mixing them fails **silently** because every
-host→plugin entry point here is wrapped in a swallow-all guard (`safeRun`,
-`try/catch(Throwable)→Log.w`, Constitution VI). A thrown exception during dialog
-construction is logged and discarded — the button just looks dead.
+These two are easy to mix up. Host-boundary guards log recoverable integration
+failures and contain them at the ATAK callback boundary; fatal VM errors must be
+re-thrown rather than swallowed. A resource exception during dialog construction
+can therefore appear to the operator as a dead button while remaining in logcat.
 
 ## The rule
 
@@ -60,15 +60,15 @@ window, the other needs `pluginContext` for the resources — supply both.
 
 1. Confirm the press registers (ripple) but no dialog — that points at an
    exception during dialog construction, not a missing OnClickListener.
-2. Grep the handler for a plugin id passed to a builder method:
+2. Search the handler for a plugin id passed to a builder method:
    ```
-   grep -nE "setTitle\(R\.|setMessage\(R\.|setItems\(R\." app/src/main/java/com/atakmap/android/twcoord/**/*.java
+   rg -n "setTitle\(R\.|setMessage\(R\.|setItems\(R\." app/src/main/java/com/atakmap/android/twcoord
    ```
    Any hit on a `Builder` made with `getMapView().getContext()` is the bug.
 3. Confirm from the device log — the swallowed throwable is logged at the
    receiver's TAG:
    ```
-   adb -s <serial> logcat -s OfflineAddressReceiver:*
+   adb -s <DEVICE_SERIAL> logcat -s OfflineAddressReceiver:*
    ```
    Look for `safeRun threw … android.content.res.Resources$NotFoundException`.
 
@@ -87,7 +87,7 @@ has historically been deferred, so this class of bug ships unless checked by han
 ## Verify before claiming done
 
 - No `setTitle(R.`/`setMessage(R.`/`setItems(R.` with a plugin id on any
-  Activity-context builder (grep above returns nothing for plugin ids).
+  Activity-context builder (the `rg` command above returns nothing for plugin ids).
 - Builder context is `getMapView().getContext()` (window token), resource values
   come from `pluginContext.getString(...)`.
 - `./gradlew :app:assembleCivDebug`; `adb install -r`; then **disable→enable the

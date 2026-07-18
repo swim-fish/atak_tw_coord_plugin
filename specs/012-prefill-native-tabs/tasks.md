@@ -109,8 +109,8 @@ cannot escape after failure or disposal.
 - [X] T020 [P] Set `PLUGIN_VERSION` to 1.4.2 in `app/build.gradle` and update behaviour/version guidance in `docs/ui/native-taiwan-coordinate-entry.md`, `docs/user-guide.md`, `docs/user-guide_zh.md`, and `CHANGELOG.md`
 - [X] T021 Run `./gradlew :app:spotlessApply` followed by `./gradlew :app:spotlessCheck :app:lint :app:testCivDebugUnitTest :app:assembleCivDebug`
 - [X] T022 Verify existing coordinate golden-vector, zone-119, and round-trip suites under `app/src/test/java/com/atakmap/android/twcoord/coord/` and `app/src/test/java/com/atakmap/android/twcoord/gotopage/` pass without changed constants or tolerances
-- [ ] T023 Check connected devices and execute the ATAK 5.7.0.9 quickstart journey when available; keep exact ATAK 5.5 physical evidence explicitly pending unless actually run, per `specs/012-prefill-native-tabs/quickstart.md`
-- [ ] T024 Record activation timing evidence when a reference device is available; otherwise retain the `<100 ms` device measurement as pending in `specs/012-prefill-native-tabs/plan.md`
+- [ ] T023 [RELEASE-GATE] Check connected devices and execute the ATAK 5.7.0.9 quickstart journey when available; keep exact ATAK 5.5 physical evidence explicitly pending unless actually run, per `specs/012-prefill-native-tabs/quickstart.md`
+- [ ] T024 [RELEASE-GATE] Record activation timing evidence when a reference device is available; otherwise retain the `<100 ms` device measurement as pending in `specs/012-prefill-native-tabs/plan.md`
 - [X] T025 Scan the reviewed diff for sensitive workstation paths/identifiers and run `git diff --check`
 
 ---

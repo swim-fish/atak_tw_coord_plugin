@@ -22,12 +22,16 @@ Re-run after any generator rebuild; see the fixtures README.
 """
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 import zipfile
 import tempfile
 
-GEN = Path(r"C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator")
+GENERATOR_ENV = "ATAK_TW_ADDRESS_GENERATOR"
+if not os.environ.get(GENERATOR_ENV):
+    raise SystemExit(f"Set {GENERATOR_ENV} to the sibling generator checkout")
+GEN = Path(os.environ[GENERATOR_ENV]).expanduser()
 ZIP = GEN / "output" / "tw-central-full.zip"
 OUT = Path(__file__).resolve().parent.parent / "app" / "src" / "test" / "resources" / "fixtures"
 

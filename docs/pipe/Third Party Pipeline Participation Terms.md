@@ -4,10 +4,16 @@ source: "https://tak.gov/user_builds/agreement"
 author:
 published:
 created: 2026-05-16
+last_verified: 2026-05-16
 description:
 tags:
   - "clippings"
 ---
+
+> **Archived source snapshot.** Reconfirm the current participation terms in
+> the authorized TPP portal before submission. Do not treat this captured copy
+> as current legal or policy guidance.
+
 1. [Home](/ "Return home")
 2. [Resources](/documentation/resources "Resources")
 3. [Third Party Pipeline](/user_builds "Third Party Pipeline")

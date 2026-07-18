@@ -3,11 +3,12 @@
 # Automatically commit changes after a Spec Kit command completes.
 # Checks per-command config keys in git-config.yml before committing.
 #
-# Usage: auto-commit.ps1 <event_name>
-#   e.g.: auto-commit.ps1 after_specify
+# Usage: auto-commit.ps1 <event_name> <reviewed-path> [<reviewed-path> ...]
 param(
     [Parameter(Position = 0, Mandatory = $true)]
-    [string]$EventName
+    [string]$EventName,
+    [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
+    [string[]]$Paths
 )
 $ErrorActionPreference = 'Stop'
 
@@ -140,6 +141,11 @@ if ($d1 -eq 0 -and $d2 -eq 0 -and -not $untracked) {
     exit 0
 }
 
+if (-not $Paths -or $Paths.Count -eq 0) {
+    Write-Warning "[specify] Refusing auto-commit without reviewed pathspecs; blanket staging is prohibited"
+    exit 1
+}
+
 # Derive a human-readable command name from the event
 $commandName = $EventName -replace '^after_', '' -replace '^before_', ''
 $phase = if ($EventName -match '^before_') { 'before' } else { 'after' }
@@ -155,7 +161,7 @@ if (-not $commitMsg) {
 $savedEAP = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
-    $out = git add . 2>&1 | Out-String
+    $out = git add -- $Paths 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { throw "git add failed: $out" }
     $out = git commit -q -m $commitMsg 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { throw "git commit failed: $out" }

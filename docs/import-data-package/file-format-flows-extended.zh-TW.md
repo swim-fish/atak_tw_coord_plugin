@@ -4,7 +4,7 @@
 >
 > **格式清單來源。** 本專案對 ATAK-CIV **5.7.0.5** `main.jar`（`com.atakmap.android.importfiles.sort.Import*Sort` 類別）的 resolver 列舉。
 >
-> **證據來源。** *權威（反組譯）bytecode：* ATAK-CIV **5.7.0.5** SDK `main.jar`（`/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar`）。*可閱讀的交叉參照：* 本機 upstream clone `TAK-Product-Center/atak-civ`，tag **5.5.1.10**，commit `9f6893dd657feacc35ec5de03dad721c2e44170e`。
+> **證據來源。** *權威（反組譯）bytecode：* ATAK-CIV **5.7.0.5** SDK `main.jar`（`<ATAK_SDK_5_7_0_5>/main.jar`）。*可閱讀的交叉參照：* 本機 upstream clone `TAK-Product-Center/atak-civ`，tag **5.5.1.10**，commit `9f6893dd657feacc35ec5de03dad721c2e44170e`。
 >
 > **日期：** 2026-06-17。
 
@@ -370,7 +370,7 @@
 **反組譯指令模式。** 每一項行為主張都透過反組譯權威的 5.7.0.5 SDK jar 驗證：
 
 ```
-javap -p -c -classpath /c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar \
+javap -p -c -classpath <ATAK_SDK_5_7_0_5>/main.jar \
   com.atakmap.android.importfiles.sort.ImportGeoJsonSort   # …每個類別
 javap -p -constants -classpath …/main.jar \
   com.atakmap.coremap.filesystem.FileSystemUtils           # 取內聯的字串常數

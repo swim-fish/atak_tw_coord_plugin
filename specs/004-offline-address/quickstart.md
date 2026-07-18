@@ -16,7 +16,7 @@ acceptance flows from [spec.md](./spec.md) pass on the reference device.
     `Building index…` finishes in ~10–15 s on the reference device.
   - `places-taichung.sqlite` (~526 MB; ~1.3 M rows) — required for SC-003 measurement (T057);
     R*Tree build is ~30–45 s on the reference device.
-  Both live under `C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator\output\`.
+  Both live under `<ATAK_TW_ADDRESS_GENERATOR>/output/`.
 - **v1 only accepts bare `.sqlite`.** If you only have the generator's `.zip` bundle
   (`places-<county>.zip`, `base.zip`, or `tw-central-full.zip`), extract on the host first:
   ```powershell

@@ -74,4 +74,4 @@ Concretely:
 - [ADR-0014 § R10](./0014-offline-address-reconnaissance.md) — Constitution VI entry-point audit, also driven by reading what existing ATAK callbacks expect.
 - `feedback-plan-phase-code-anchoring` (user-level memory) — companion discipline: cite both `javap -public` against `main.jar` AND upstream permalinks.
 - `feedback-prefer-sdk-samples-before-implementing` (user-level memory) — companion to this ADR, cross-session.
-- SDK samples directory: `C:\Users\hhhnr\source\tak\ATAK-CIV-5.7.0.3-SDK\samples\` — local mirror; the upstream is `github.com/TAK-Product-Center/atak-civ`.
+- SDK samples directory: `<ATAK_SDK_5_7_0_3>/samples/` — local mirror; the upstream is `github.com/TAK-Product-Center/atak-civ`.

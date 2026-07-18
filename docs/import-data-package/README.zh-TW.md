@@ -2,7 +2,7 @@
 
 > **本文回答的問題：** 匯入 ATAK 資料包時，遇到 UID 衝突（已存在）會如何處理——是覆寫，還是依更新時間（update time）保留較新者？
 >
-> **證據來源。** *權威（反組譯）bytecode：* ATAK-CIV **5.7.0.5** SDK `main.jar`（`/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar`，33,121,240 bytes），以及實際出貨的執行期 APK `/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/atak.apk`（SHA-256 `21ea6b363ee94f659539fac195fedc1a140dec06d0ebc23d01dc528601597508`）。*可讀交叉參照：* 本機上游 clone `TAK-Product-Center/atak-civ`，tag **5.5.1.10**（commit `9f6893dd657feacc35ec5de03dad721c2e44170e`）。
+> **證據來源。** *權威（反組譯）bytecode：* ATAK-CIV **5.7.0.5** SDK `main.jar`（`<ATAK_SDK_5_7_0_5>/main.jar`，33,121,240 bytes），以及實際出貨的執行期 APK `<ATAK_SDK_5_7_0_5>/atak.apk`（SHA-256 `21ea6b363ee94f659539fac195fedc1a140dec06d0ebc23d01dc528601597508`）。*可讀交叉參照：* 本機上游 clone `TAK-Product-Center/atak-civ`，tag **5.5.1.10**（commit `9f6893dd657feacc35ec5de03dad721c2e44170e`）。
 >
 > **日期：** 2026-06-17。
 
@@ -395,7 +395,7 @@ ATAK **不會**為套件挑選「日期較新者」——manifest 不帶任何�
 
 被反組譯的類別確實出貨於執行期，且 APK 與 SDK jar 版本相符。
 
-- **APK 識別。** 路徑 `/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/atak.apk`；大小 **389,700,563** bytes；SHA-256 **`21ea6b363ee94f659539fac195fedc1a140dec06d0ebc23d01dc528601597508`**。
+- **APK 識別。** 路徑 `<ATAK_SDK_5_7_0_5>/atak.apk`；大小 **389,700,563** bytes；SHA-256 **`21ea6b363ee94f659539fac195fedc1a140dec06d0ebc23d01dc528601597508`**。
 - **版本。** `versionName = "5.7.0.5 (3198049e)"`，package `com.atakmap.app@5.7.0.CIV`——由二進位 `AndroidManifest.xml` 透過 **UTF-16** 字串擷取（`strings -e l`）取得；純 ASCII grep 取不到，因為 versionName 以 UTF-16 存於 resource string pool。並由 SDK 資料夾名 `ATAK-CIV-5.7.0.5-SDK` 佐證。這正是被反組譯的 `main.jar` 對應的**確切**版本。
 
 **被反組譯的類別確認存在於出貨 dex 中**（`classes.dex` 13.5 MB、`classes2.dex` 11.8 MB、`classes3.dex` 2.5 MB）：
@@ -432,7 +432,7 @@ Path Manipulation: Zip Entry Overwrite       Skipping duplicate wizard event
 
 **反組譯指令（代表性）：**
 ```sh
-JAR=/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar
+JAR=<ATAK_SDK_5_7_0_5>/main.jar
 javap -classpath "$JAR" -p   com.atakmap.android.cot.importer.MapItemImporter
 javap -classpath "$JAR" -p -c com.atakmap.android.cot.importer.MapItemImporter
 javap -classpath "$JAR" -p -c com.atakmap.android.cot.importer.MarkerImporter
@@ -449,7 +449,7 @@ javap -classpath "$JAR" -p -c gov.tak.api.importfiles.ImportResolver
 
 **APK 驗證（代表性）：**
 ```sh
-APK=/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/atak.apk
+APK=<ATAK_SDK_5_7_0_5>/atak.apk
 sha256sum "$APK"
 unzip -p "$APK" AndroidManifest.xml | strings -e l | grep -E '5\.7'   # UTF-16，非 ASCII
 unzip -Z1 "$APK" | grep -E '^classes[0-9]*\.dex$'

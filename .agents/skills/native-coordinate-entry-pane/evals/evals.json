@@ -1,0 +1,7 @@
+{
+  "skill": "native-coordinate-entry-pane",
+  "evals": [
+    {"prompt": "Convert Coordinates opens Taiwan but only the current tab is filled.", "expected": "Requires atomic all-tab preparation while preserving active-only host output."},
+    {"prompt": "Make the Taiwan fields match the native DD page.", "expected": "Uses DD sizing and 48 dp hit targets without changing coordinate behavior."}
+  ]
+}

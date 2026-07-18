@@ -1,10 +1,12 @@
 # ADR-0013: Release pipeline — TAK TPP submission → GitHub Releases
 
-**Status**: Accepted
+**Status**: Partially superseded by ADR-0025
 **Date**: 2026-05-17
 **Origin**: Four end-to-end TPP submissions (v1.0.0 × 2, v1.0.1, v1.0.3 — v1.0.2 was committed + tagged but rolled into v1.0.3 before reaching TPP). Captures the keystore migration (`chore/release-keystore` branch, commit `2aceae6`), the source-zip preflight script that lived through three iterations, and the GitHub Releases distribution conventions.
 
-This ADR is the canonical reference for cutting a new release. Anyone shipping a new version should be able to follow it end-to-end without consulting this conversation history.
+This ADR preserves the original pipeline decision and historical evidence.
+ADR-0025 supersedes its ordering, staging-directory, readiness-gate, and tag
+mutation rules. The living procedure is `docs/release/tpp-runbook.md`.
 
 ## Context
 

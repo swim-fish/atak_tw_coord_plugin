@@ -6,6 +6,8 @@
 
 set -e
 
+PATHS=("$@")
+
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Find project root
@@ -46,9 +48,14 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     exit 0
 fi
 
+if [ "${#PATHS[@]}" -eq 0 ]; then
+    echo "[specify] Refusing initial commit without reviewed pathspecs" >&2
+    exit 1
+fi
+
 # Initialize
 _git_out=$(git init -q 2>&1) || { echo "[specify] Error: git init failed: $_git_out" >&2; exit 1; }
-_git_out=$(git add . 2>&1) || { echo "[specify] Error: git add failed: $_git_out" >&2; exit 1; }
+_git_out=$(git add -- "${PATHS[@]}" 2>&1) || { echo "[specify] Error: git add failed: $_git_out" >&2; exit 1; }
 _git_out=$(git commit --allow-empty -q -m "$COMMIT_MSG" 2>&1) || { echo "[specify] Error: git commit failed: $_git_out" >&2; exit 1; }
 
 echo "✓ Git repository initialized" >&2

@@ -9,7 +9,7 @@
 Ship an offline reverse-address lookup feature on top of the existing on-map coordinate readout
 (`TwCoordWidget`). The operator side-loads a `places-<county>.sqlite` file produced by the
 companion data-generator project (`atak-tw-address-generator`, local sibling repo at
-`C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator`) through a new
+`<ATAK_TW_ADDRESS_GENERATOR>`) through a new
 Tools-menu entry **Offline Address**. The file is validated against the generator's schema
 (`metadata` table with `schema_version` / `county` / `data_date`; `places` table with the expected
 column set); the plugin then builds an R*Tree spatial index into the same file (one-shot,

@@ -137,6 +137,11 @@
 - **QR-006 Migration** *(when replacing an existing workflow)*: Define which
   existing entry points remain available, how preferences or recent data are
   preserved, and what rollback or fallback the operator experiences.
+- **QR-007 Release evidence** *(when the feature changes shipped behaviour,
+  compatibility, performance, packaging, or user documentation)*: Identify
+  the device, compatibility, performance, signer, documentation, and
+  provenance evidence that blocks public release. Do not treat a successful
+  build or TPP result as equivalent evidence.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -159,6 +164,8 @@
 - **SC-005**: [Compatibility outcome observable on the minimum and current ATAK lines]
 - **SC-006**: [Failure-containment or recovery outcome that can be reproduced]
 - **SC-007**: [Coordinate accuracy/round-trip outcome, or remove when not applicable]
+- **SC-008**: [Release-gate outcome, including the minimum/current ATAK device
+  evidence or explicit narrowed claim required before publication]
 
 ## Assumptions
 

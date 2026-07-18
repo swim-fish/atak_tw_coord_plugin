@@ -48,7 +48,7 @@ page's receiver is registered (it listens) but no icon shows, seam #2 is missing
 Check first:
 
 ```
-grep -n "IToolbarItem\[\]" -A12 app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordLifecycle.java
+rg -n -A12 "IToolbarItem\[\]" app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordLifecycle.java
 ```
 
 Every `*Tool` under `plugin/` must appear in that array. A `FooTool.java` that

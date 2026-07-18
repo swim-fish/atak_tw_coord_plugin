@@ -165,6 +165,12 @@ Every task MUST strictly follow this format:
    - Polish phase: NO story label
 5. **Description**: Clear action with exact file path
 
+6. **`[RELEASE-GATE]` marker**: Add after the task ID for evidence automation
+   cannot infer, such as exact ATAK-version physical-device compatibility,
+   interactive acceptance, device performance, signer verification, or external
+   compliance disposition. Release-gate tasks remain unchecked until evidence
+   exists and are not satisfied by a build, source inspection, or TPP success.
+
 **Examples**:
 
 - ✅ CORRECT: `- [ ] T001 Create project structure per implementation plan`

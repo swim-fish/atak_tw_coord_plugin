@@ -25,6 +25,8 @@ Exit codes: 0 = ready to upload, 1 = at least one FAIL, 2 = script error.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import os
 import re
 import shutil
@@ -132,6 +134,19 @@ SECRET_SUFFIXES: tuple[str, ...] = (
     ".p12",                    # PKCS#12
 )
 
+SENSITIVE_TEXT_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("Windows home path", re.compile(r"[A-Za-z]:[\\/]Users[\\/][^\\/\s]+", re.I)),
+    ("macOS home path", re.compile(r"/Users/[^/\s]+")),
+    ("Linux home path", re.compile(r"/home/[^/\s]+")),
+    ("local file URI", re.compile(r"file:///", re.I)),
+)
+TEXT_ENTRY_SUFFIXES = frozenset({
+    ".gradle", ".java", ".json", ".kts", ".md", ".properties", ".ps1",
+    ".py", ".sh", ".txt", ".xml", ".yml", ".yaml",
+})
+
+ALLOW_DIRTY = False
+
 
 # ---------- TPP requirement constants (from docs/pipe/...) ----------
 
@@ -215,14 +230,15 @@ def read_local_property(root: Path, key: str) -> Optional[str]:
 # ---------- Static checks ----------
 
 def check_git_clean(root: Path) -> Check:
-    """Warn (not fail) if working tree has uncommitted changes — `git archive
-    HEAD` will silently snapshot only what's committed."""
+    """Refuse a dirty release candidate unless diagnostic override is explicit."""
     out = run(["git", "status", "--porcelain"], root).stdout.strip()
     if not out:
         return Check("git working tree clean", Check.PASS, "")
     n = len(out.splitlines())
-    return Check("git working tree clean", Check.WARN,
-                 f"{n} uncommitted change(s) — git archive will snapshot HEAD only")
+    status = Check.WARN if ALLOW_DIRTY else Check.FAIL
+    suffix = " (diagnostic override active)" if ALLOW_DIRTY else ""
+    return Check("git working tree clean", status,
+                 f"{n} uncommitted change(s) — git archive snapshots HEAD only{suffix}")
 
 
 def check_manifest_activity(root: Path) -> Check:
@@ -459,7 +475,7 @@ def verify_build(root: Path) -> Check:
                      "request artifacts.tak.gov credentials first")
     gradlew = "gradlew.bat" if os.name == "nt" else "./gradlew"
     cmd = [
-        gradlew, "clean", ":app:assembleCivRelease",
+        gradlew, ":app:clean", ":app:assembleCivRelease",
         "-Ptakrepo.force=true",
         f"-Ptakrepo.url={url}",
         f"-Ptakrepo.user={user}",
@@ -570,6 +586,55 @@ def verify_safety(zip_path: Path) -> Check:
                  "no local.properties / *.keystore / *.jks entries")
 
 
+def verify_sensitive_content(zip_path: Path) -> Check:
+    """Scan text payloads, not only filenames, for workstation identifiers."""
+    hits: list[str] = []
+    with zipfile.ZipFile(zip_path, "r") as z:
+        for info in z.infolist():
+            if info.is_dir() or Path(info.filename).suffix.lower() not in TEXT_ENTRY_SUFFIXES:
+                continue
+            if info.file_size > 2 * 1024 * 1024:
+                continue
+            text = z.read(info).decode("utf-8", errors="replace")
+            for label, pattern in SENSITIVE_TEXT_PATTERNS:
+                if pattern.search(text):
+                    hits.append(f"{info.filename} ({label})")
+                    break
+    if hits:
+        return Check("archive text contains no local identity", Check.FAIL,
+                     f"matches: {hits[:3]}{'…' if len(hits) > 3 else ''}")
+    return Check("archive text contains no local identity", Check.PASS,
+                 "no home paths or local file URIs in text entries")
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def add_source_provenance(zip_path: Path, archive_root: str,
+                          version: Optional[str], source_commit: str) -> None:
+    payload = {
+        "schema_version": 1,
+        "plugin_version": version,
+        "source_commit": source_commit,
+    }
+    with zipfile.ZipFile(zip_path, "a", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(
+            f"{archive_root}/TPP_SOURCE_PROVENANCE.json",
+            json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+
+def portable_path(path: Path, root: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(root.resolve()))
+    except ValueError:
+        return f"<EXTERNAL_PATH>/{path.name}"
+
+
 def verify_single_root(zip_path: Path, expected_root: str) -> Check:
     with zipfile.ZipFile(zip_path, "r") as z:
         names = z.namelist()
@@ -603,6 +668,7 @@ def verify_gradle_wrapper(zip_path: Path, expected_root: str) -> Check:
 # ---------- Main ----------
 
 def main() -> int:
+    global ALLOW_DIRTY
     root = repo_root()
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -616,10 +682,14 @@ def main() -> int:
                     help="Git ref to archive (default: HEAD).")
     ap.add_argument("--check-only", action="store_true",
                     help="Run static checks only; don't build the zip.")
+    ap.add_argument("--allow-dirty", action="store_true",
+                    help="Diagnostic override: downgrade a dirty tree to WARN. "
+                         "Never use this for an uploaded release candidate.")
     ap.add_argument("--verify-build", action="store_true",
                     help="Also run the TPP-equivalent rebuild — requires "
                          "takrepo.url/user/password in local.properties.")
     args = ap.parse_args()
+    ALLOW_DIRTY = args.allow_dirty
 
     name = repo_name(root)
     version = read_plugin_version(root)
@@ -628,14 +698,15 @@ def main() -> int:
     out_path = args.out or (root / "build" / default_basename)
 
     print("=== TPP submission preflight ===")
-    print(f"Repo:        {root}")
+    print("Repo:        <REPO_ROOT>")
     print(f"Repo name:   {name}  (zip root + TPP APK name prefix)")
     print(f"Ref:         {args.ref}")
-    sha = run(["git", "rev-parse", "--short", args.ref], root, check=False)
+    sha = run(["git", "rev-parse", args.ref], root, check=False)
     if sha.returncode != 0:
         sys.exit(f"git rev-parse failed for '{args.ref}'")
-    print(f"SHA:         {sha.stdout.strip()}")
-    print(f"Output:      {out_path if not args.check_only else '(skipped — --check-only)'}")
+    source_commit = sha.stdout.strip()
+    print(f"SHA:         {source_commit}")
+    print(f"Output:      {portable_path(out_path, root) if not args.check_only else '(skipped — --check-only)'}")
     print()
 
     # Static checks always run.
@@ -655,15 +726,18 @@ def main() -> int:
             raw = Path(tmp) / "raw.zip"
             git_archive_to_file(root, args.ref, name, raw)
             kept, dropped = strip_dev_tooling(raw, out_path, name)
+        add_source_provenance(out_path, name, version, source_commit)
         print(f"  wrote {out_path} (kept {kept} files, "
               f"dropped {dropped} dev-tooling entries)")
         size = out_path.stat().st_size
         print(f"  size: {size:,} bytes ({size / 1024:.1f} KB)")
+        print(f"  SHA-256: {sha256_file(out_path)}")
         print()
         print("--- Archive shape checks ---")
         for c in (verify_single_root(out_path, name),
                   verify_gradle_wrapper(out_path, name),
-                  verify_safety(out_path)):
+                  verify_safety(out_path),
+                  verify_sensitive_content(out_path)):
             print(c.render())
             results.append(c)
 
@@ -685,12 +759,16 @@ def main() -> int:
     if fails:
         print("  → NOT ready to submit. Fix FAIL items above.")
         return 1
-    if warns:
+    dirty_override = ALLOW_DIRTY and any(
+        c.name == "git working tree clean" and c.status == Check.WARN for c in results)
+    if dirty_override:
+        print("  → DIAGNOSTIC ONLY. A dirty candidate is not uploadable.")
+    elif warns:
         print("  → Ready to upload, but review WARN items above first.")
     else:
         print("  → Ready to upload.")
-    if not args.check_only:
-        print(f"  → Upload: {out_path}")
+    if not args.check_only and not dirty_override:
+        print(f"  → Upload: {portable_path(out_path, root)}")
     return 0
 
 

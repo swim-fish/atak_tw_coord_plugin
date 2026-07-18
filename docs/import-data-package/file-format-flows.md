@@ -4,7 +4,7 @@
 >
 > **Format list source.** HackMD note *"TAK Mission Package Manifest — File Formats and Import Overview"* (ATAK 5.5).
 >
-> **Evidence sources.** *Authoritative (disassembled) bytecode:* ATAK-CIV **5.7.0.5** SDK `main.jar` (`/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar`). *Readable cross-reference:* the local upstream clone `TAK-Product-Center/atak-civ` at tag **5.5.1.10**, commit `9f6893dd657feacc35ec5de03dad721c2e44170e`.
+> **Evidence sources.** *Authoritative (disassembled) bytecode:* ATAK-CIV **5.7.0.5** SDK `main.jar` (`<ATAK_SDK_5_7_0_5>/main.jar`). *Readable cross-reference:* the local upstream clone `TAK-Product-Center/atak-civ` at tag **5.5.1.10**, commit `9f6893dd657feacc35ec5de03dad721c2e44170e`.
 >
 > **Date:** 2026-06-17.
 
@@ -219,7 +219,7 @@ Across all formats, "what happens on re-import" collapses to four patterns:
 
 **Disassembly command pattern.**
 ```sh
-JAR=/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar
+JAR=<ATAK_SDK_5_7_0_5>/main.jar
 javap -classpath "$JAR" -p        <fqcn>          # signatures (existence / @Deprecated / ctor shape)
 javap -classpath "$JAR" -p -c     <fqcn>          # bytecode (match/beginImport/getDestinationPath/onFileSorted)
 javap -classpath "$JAR" -constants <fqcn>         # string constants (folder names, MIME, content types)

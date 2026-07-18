@@ -1,0 +1,7 @@
+{
+  "skill": "release-readiness",
+  "evals": [
+    {"prompt": "TPP build succeeded; can I publish now?", "expected": "Runs the public gate and reports unchecked RELEASE-GATE tasks instead of inferring PASS."},
+    {"prompt": "Prepare the source ZIP for TPP while ATAK 5.5 testing is pending.", "expected": "Uses the tpp phase, permits a reported gate warning, and requires a clean committed version."}
+  ]
+}

@@ -324,6 +324,17 @@ if ($branchName.Length -gt $maxBranchLength) {
     Write-Warning "[specify] Truncated to: $branchName ($($branchName.Length) bytes)"
 }
 
+if (-not $env:GIT_BRANCH_NAME) {
+    $gitConfig = Join-Path $repoRoot '.specify/extensions/git/git-config.yml'
+    if (Test-Path $gitConfig) {
+        $prefixLine = Get-Content $gitConfig | Where-Object { $_ -match '^branch_prefix\s*:' } | Select-Object -First 1
+        if ($prefixLine) {
+            $branchPrefix = ($prefixLine -replace '^branch_prefix\s*:\s*', '').Trim('"', "'")
+            if ($branchPrefix) { $branchName = "$branchPrefix$branchName" }
+        }
+    }
+}
+
 if (-not $DryRun) {
     if ($hasGit) {
         $branchCreated = $false

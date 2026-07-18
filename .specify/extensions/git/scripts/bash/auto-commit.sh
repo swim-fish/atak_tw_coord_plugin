@@ -3,8 +3,7 @@
 # Automatically commit changes after a Spec Kit command completes.
 # Checks per-command config keys in git-config.yml before committing.
 #
-# Usage: auto-commit.sh <event_name>
-#   e.g.: auto-commit.sh after_specify
+# Usage: auto-commit.sh <event_name> <reviewed-path> [<reviewed-path> ...]
 
 set -e
 
@@ -13,6 +12,8 @@ if [ -z "$EVENT_NAME" ]; then
     echo "Usage: $0 <event_name>" >&2
     exit 1
 fi
+shift
+PATHS=("$@")
 
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -123,6 +124,11 @@ if git diff --quiet HEAD 2>/dev/null && git diff --cached --quiet 2>/dev/null &&
     exit 0
 fi
 
+if [ "${#PATHS[@]}" -eq 0 ]; then
+    echo "[specify] Refusing auto-commit without reviewed pathspecs; blanket staging is prohibited" >&2
+    exit 1
+fi
+
 # Derive a human-readable command name from the event
 # e.g., after_specify -> specify, before_plan -> plan
 _command_name=$(echo "$EVENT_NAME" | sed 's/^after_//' | sed 's/^before_//')
@@ -134,7 +140,7 @@ if [ -z "$_commit_msg" ]; then
 fi
 
 # Stage and commit
-_git_out=$(git add . 2>&1) || { echo "[specify] Error: git add failed: $_git_out" >&2; exit 1; }
+_git_out=$(git add -- "${PATHS[@]}" 2>&1) || { echo "[specify] Error: git add failed: $_git_out" >&2; exit 1; }
 _git_out=$(git commit -q -m "$_commit_msg" 2>&1) || { echo "[specify] Error: git commit failed: $_git_out" >&2; exit 1; }
 
 echo "[OK] Changes committed ${_phase} ${_command_name}" >&2

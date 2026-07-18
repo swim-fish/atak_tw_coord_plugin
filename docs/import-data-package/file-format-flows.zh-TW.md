@@ -4,7 +4,7 @@
 >
 > **格式清單來源。** HackMD 筆記《TAK Mission Package Manifest — File Formats and Import Overview》（ATAK 5.5）。
 >
-> **證據來源。** *權威（反組譯）bytecode：* ATAK-CIV **5.7.0.5** SDK `main.jar`（`/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar`）。*可讀交叉參照：* 本機上游 clone `TAK-Product-Center/atak-civ`，tag **5.5.1.10**，commit `9f6893dd657feacc35ec5de03dad721c2e44170e`。
+> **證據來源。** *權威（反組譯）bytecode：* ATAK-CIV **5.7.0.5** SDK `main.jar`（`<ATAK_SDK_5_7_0_5>/main.jar`）。*可讀交叉參照：* 本機上游 clone `TAK-Product-Center/atak-civ`，tag **5.5.1.10**，commit `9f6893dd657feacc35ec5de03dad721c2e44170e`。
 >
 > **日期：** 2026-06-17。
 
@@ -219,7 +219,7 @@
 
 **反組譯指令模式。**
 ```sh
-JAR=/c/Users/hhhnr/source/tak/ATAK-CIV-5.7.0.5-SDK/main.jar
+JAR=<ATAK_SDK_5_7_0_5>/main.jar
 javap -classpath "$JAR" -p        <fqcn>          # 簽章（存在性 / @Deprecated / 建構子形狀）
 javap -classpath "$JAR" -p -c     <fqcn>          # bytecode（match/beginImport/getDestinationPath/onFileSorted）
 javap -classpath "$JAR" -constants <fqcn>         # String 常數（資料夾名、MIME、content type）

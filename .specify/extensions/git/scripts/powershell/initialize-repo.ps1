@@ -3,6 +3,10 @@
 # Initialize a Git repository with an initial commit.
 # Customizable — replace this script to add .gitignore templates,
 # default branch config, git-flow, LFS, signing, etc.
+param(
+    [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
+    [string[]]$Paths
+)
 $ErrorActionPreference = 'Stop'
 
 # Find project root
@@ -53,11 +57,16 @@ try {
     }
 } catch { }
 
+if (-not $Paths -or $Paths.Count -eq 0) {
+    Write-Warning "[specify] Refusing initial commit without reviewed pathspecs"
+    exit 1
+}
+
 # Initialize
 try {
     $out = git init -q 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { throw "git init failed: $out" }
-    $out = git add . 2>&1 | Out-String
+    $out = git add -- $Paths 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { throw "git add failed: $out" }
     $out = git commit --allow-empty -q -m $commitMsg 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { throw "git commit failed: $out" }

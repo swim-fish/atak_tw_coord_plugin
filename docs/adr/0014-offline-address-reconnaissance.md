@@ -6,7 +6,7 @@
 
 ## Context
 
-Feature `004-offline-address` adds a new Tools-menu entry **Offline Address** that lets operators side-load a `places-<county>.sqlite` file produced by the companion generator `atak-tw-address-generator` (sibling repo at `C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator`). After import, three independent Settings toggles gate whether an address line appears under each coordinate row (ME / TGT / MAP) inside the existing `TwCoordWidget`.
+Feature `004-offline-address` adds a new Tools-menu entry **Offline Address** that lets operators side-load a `places-<county>.sqlite` file produced by the companion generator `atak-tw-address-generator` (sibling repo at `<ATAK_TW_ADDRESS_GENERATOR>`). After import, three independent Settings toggles gate whether an address line appears under each coordinate row (ME / TGT / MAP) inside the existing `TwCoordWidget`.
 
 Three constraints shaped Phase 0:
 
@@ -196,7 +196,7 @@ The decisions mirror R1–R15 one-to-one — research.md is the working document
   - `android.database.sqlite.SQLiteDatabase` — <https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase>
   - `android.preference.SwitchPreference` — <https://developer.android.com/reference/android/preference/SwitchPreference>
   - `androidx.activity.result.contract.ActivityResultContracts.OpenDocument` — <https://developer.android.com/reference/androidx/activity/result/contract/ActivityResultContracts.OpenDocument>
-- **Companion generator source**: `atak-tw-address-generator/scripts/ingest_tgos_csv.py` `SCHEMA_SQL` block (v1) + `docs/data-contract.md` v2 spec; sibling repo at `C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator`. The plugin's `MAX_SUPPORTED_SCHEMA_VERSION = 2` is the version pin (see `AddressBundleImporter.java`).
+- **Companion generator source**: `atak-tw-address-generator/scripts/ingest_tgos_csv.py` `SCHEMA_SQL` block (v1) + `docs/data-contract.md` v2 spec; sibling repo at `<ATAK_TW_ADDRESS_GENERATOR>`. The plugin's `MAX_SUPPORTED_SCHEMA_VERSION = 2` is the version pin (see `AddressBundleImporter.java`).
 - **Reference implementation in the SDK**: `samples/helloworld/.../HelloWorldDropDownReceiver.java` is the canonical DropDownReceiver shape; both feature 002 (`TwCoordGotoReceiver`) and feature 004 (`OfflineAddressReceiver`) mirror its lifecycle.
 - **SQLite R*Tree extension reference**: <https://www.sqlite.org/rtree.html>
 - **Haversine formula reference**: <https://en.wikipedia.org/wiki/Haversine_formula> (no external lib needed; the formula is six lines of Java in `AddressResolver`).

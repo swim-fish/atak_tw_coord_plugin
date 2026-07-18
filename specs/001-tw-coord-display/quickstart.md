@@ -12,7 +12,7 @@ the first time.
 - **Android Studio** Hedgehog (2023.1) or later, with Android SDK
   components: `platforms;android-34`, `platforms;android-36`,
   `build-tools;34.0.0` (or newer).
-- **ATAK-CIV 5.7.0.3 SDK** at `C:\Users\hhhnr\source\tak\ATAK-CIV-5.7.0.3-SDK`
+- **ATAK-CIV 5.7.0.3 SDK** at `<ATAK_SDK_5_7_0_3>`
   (path used by `gradle.properties`).
 - **ATAK-CIV 5.7.0.3 installed** on a physical Android device or
   emulator (USB debugging enabled).
@@ -21,7 +21,7 @@ the first time.
 ## 2. First build (no tests yet)
 
 ```powershell
-cd C:\Users\hhhnr\source\tak\atak_tw_coord_plugin
+cd <TAK_WORKSPACE>/atak_tw_coord_plugin
 .\gradlew :app:assembleCivDebug
 ```
 

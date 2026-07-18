@@ -1,0 +1,7 @@
+{
+  "skill": "docs-screenshot-workflow",
+  "evals": [
+    {"prompt": "Replace the native GoTo screenshots with these new images.", "expected": "Allocates unique numbered names, updates all relevant guides, and checks metadata/LFS."},
+    {"prompt": "Commit this screenshot named final.jpg.", "expected": "Renames it to the numbered convention and audits visible and embedded personal data."}
+  ]
+}

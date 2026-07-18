@@ -36,8 +36,9 @@ TDAL dependency):
 - **Top-right** — CoT target coordinate, appears when you tap any map
   item and disappears when you tap empty map.
 
-Screenshots from a Galaxy Tab S10+ running ATAK-CIV 5.7.0.3 are
-captured under `docs/ui/` (`readout-widget.md`, `settings-fragment.md`).
+Each UI guide records the ATAK runtime used for its screenshots. Current
+native-entry screenshots were captured on ATAK-CIV 5.7.0.9; older guides retain
+their historical runtime evidence.
 
 ## Features
 
@@ -80,7 +81,8 @@ Test coverage:
 - **9 golden vectors** in `GoldenVectors`: 4 pwa_map landmarks (Taipei 101 / Kaohsiung 85 / Taichung CH / Hualien Stn) + 5 cell-centroid regression vectors covering the L / E / D / O / T regions (added in v1.0.4 alongside the Taipower letter-table correction — see ADR-0001 follow-up note)
 - **Hualien Stn 11-char** (`H7509 DB4016`) pinned as the canonical 1-m precision regression
 - **3 real-world out-of-range points** (Naha Airport, Hong Kong IFC, Tokyo Tower)
-- **215 JVM unit tests** total; all green (2 ignored — JDK `ZipOutputStream` edge cases deferred to a device fixture)
+- The complete JVM suite is run for every release candidate; the exact count is
+  reported by Gradle instead of duplicated here because it changes with each feature.
 
 ## Installation
 
@@ -201,7 +203,7 @@ pending and is not implied by a successful 5.7.0.9 or TPP build.
 ### Common commands
 
 ```
-./gradlew :app:testCivDebugUnitTest      # 215 JVM unit tests
+./gradlew :app:testCivDebugUnitTest      # complete JVM unit-test suite
 ./gradlew :app:assembleCivDebug          # signed civ-debug APK
 ./gradlew :app:spotlessApply             # google-java-format the codebase
 ./gradlew :app:lint                      # Android lint
@@ -266,8 +268,9 @@ spec / plan / tasks / contracts live under `specs/NNN-<short-name>/`:
 - [`specs/008-search-settings-ui/`](specs/008-search-settings-ui/) — search/storage page UI redesign (v1.3.0)
 - [`specs/010-goto-ui-redesign/`](specs/010-goto-ui-redesign/) — GoTo input page UI redesign (v1.3.2)
 - [`specs/011-native-coordinate-entry/`](specs/011-native-coordinate-entry/) — ATAK native Taiwan coordinate entry
+- [`specs/012-prefill-native-tabs/`](specs/012-prefill-native-tabs/) — native Convert Coordinates all-tab prefill and safety polish
 
-Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty-two ADRs
+Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty-five ADRs
 under [`docs/adr/`](docs/adr/) cover every architecturally significant decision
 (ADR-0001 is the entry point and carries the 2026-05-23 Taipower letter-table
 correction follow-up; ADR-0014/0015 the offline-address reconnaissance +
@@ -291,20 +294,24 @@ minimum-runtime decision;
 [ADR-0023](docs/adr/0023-native-taiwan-coordinate-entry.md) the one-pane native
 integration, lifecycle, and advanced-page coexistence decision; and
 [ADR-0024](docs/adr/0024-use-atak-5-7-0-9-compile-sdk.md) the split compile SDK
-5.7.0.9 / minimum runtime 5.5 validation decision).
+5.7.0.9 / minimum runtime 5.5 validation decision; and
+[ADR-0025](docs/adr/0025-separate-release-readiness-from-tpp-staging.md) the
+separation of TPP staging, public-release gates, and immutable signed tags).
 
 The active feature is resolved from `.specify/feature.json`; agent guidance
 must not infer it from the newest directory. The required lifecycle is:
 
 ```text
-specify -> clarify -> plan -> checklist (optional) -> tasks -> analyze -> implement -> converge
+specify -> clarify -> plan -> checklist (optional) -> tasks -> analyze -> implement -> converge -> release-readiness
 ```
 
 `checklist` is an optional post-plan requirements-quality review. `analyze` is
 read-only. If `converge` appends remaining tasks, run `implement` and
 `converge` again until no actionable gaps remain. Behaviour changes use
 test-first tasks; ATAK SDK seams additionally require public-API evidence and
-minimum/current-line device scenarios. See
+minimum/current-line device scenarios. A converged implementation is not
+automatically public-release ready; unchecked `[RELEASE-GATE]` evidence is
+reported separately. See
 [the constitution](.specify/memory/constitution.md) for the full gates.
 
 ## References
@@ -318,7 +325,7 @@ minimum/current-line device scenarios. See
 - [ATAK-CIV upstream source](https://github.com/TAK-Product-Center/atak-civ) —
   the active upstream Java source for ATAK-CIV (default branch `main`).
   Use this when cross-checking SDK signatures the plugin compiles against
-  (`ATAK-CIV-5.7.0.3-SDK/main.jar`) — the SDK jar holds the pinned
+  (`ATAK-CIV-5.7.0.9-SDK/main.jar`) — the SDK jar holds the pinned
   contract, the upstream repo holds the implementation bodies for
   reading. The older `deptofdefense/AndroidTacticalAssaultKit-CIV`
   mirror is stale.

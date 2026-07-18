@@ -26,12 +26,16 @@ from __future__ import annotations
 
 import hashlib
 import math
+import os
 import sqlite3
 import tempfile
 import zipfile
 from pathlib import Path
 
-GEN = Path(r"C:\Users\hhhnr\source\tak\atak_vns_offline_routing\atak-tw-address-generator")
+GENERATOR_ENV = "ATAK_TW_ADDRESS_GENERATOR"
+if not os.environ.get(GENERATOR_ENV):
+    raise SystemExit(f"Set {GENERATOR_ENV} to the sibling generator checkout")
+GEN = Path(os.environ[GENERATOR_ENV]).expanduser()
 ZIP = GEN / "output" / "tw-central-full.zip"
 OUT = Path(__file__).resolve().parent / "verify_research_claims.out.txt"
 

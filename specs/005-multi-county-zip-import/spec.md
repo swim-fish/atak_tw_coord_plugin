@@ -6,13 +6,13 @@
 
 **Status**: Draft
 
-**Input**: User description: "離線地址 支援 多的檔案 zip 格式; 可以看 C:\\Users\\hhhnr\\source\\tak\\atak_vns_offline_routing\\atak-tw-address-generator\\output 這個專案產的檔案; 優先使用 有 R*Tree 格式的檔案 地區可以個別更新; 可以參考那個專案如何產出離線地址檔案的"
+**Input**: User description: "離線地址支援多檔案 ZIP 格式；可以看 `<ATAK_TW_ADDRESS_GENERATOR>/output` 這個專案產出的檔案；優先使用 R*Tree 格式的檔案，地區可以個別更新；可以參考該專案如何產出離線地址檔案。"
 
 ## Context
 
 Feature 004 (`specs/004-offline-address/`, shipped on branch `004-offline-address` through commit `7a75618`) added offline-address lookup with a **single active dataset**: the operator picks one `places-<county>.sqlite` at a time, the plugin atomically activates it at `tools/twcoord/offline-address/active/places.sqlite`, and reverse-lookup runs against that single SQLite. Spec 004 Assumption §4 explicitly committed to single-county scope and deferred multi-county to a follow-up. Spec 004 Assumption §1 (evening clarification) deferred ZIP import to a follow-up.
 
-This feature delivers both deferred items at once. The companion data-generator (`atak-tw-address-generator`) **already ships a multi-county-friendly layout** — see its [data-contract.md §2](file:///c/Users/hhhnr/source/tak/atak_vns_offline_routing/atak-tw-address-generator/docs/data-contract.md) — which the plugin can now align to:
+This feature delivers both deferred items at once. The companion data-generator (`atak-tw-address-generator`) **already ships a multi-county-friendly layout** — see `docs/data-contract.md` §2 in `<ATAK_TW_ADDRESS_GENERATOR>` — which the plugin can now align to:
 
 - Per-county ZIPs: `places-taichung.zip` (~81 MiB → 572 MiB sqlite), `places-changhua.zip` (~34 MiB → 196 MiB sqlite), each carrying one `places-<county>.sqlite` + a `timestamp.<county>` sidecar.
 - Consolidated ZIP: `tw-central-full.zip` (~165 MiB) containing all 5 sqlite (`places-taichung` + `places-changhua` + `townships` + `roads` + `places-osm`) plus 3 timestamp sidecars.
@@ -169,7 +169,7 @@ A field operator was running v1.0.5 with a single active dataset (e.g. 台中市
 
 ## Assumptions
 
-1. The companion generator's data-contract v2 (per [data-contract.md](file:///c/Users/hhhnr/source/tak/atak_vns_offline_routing/atak-tw-address-generator/docs/data-contract.md)) is the source of truth for ZIP layout and per-county `places-<county>.sqlite` shape. Feature 005 does not require any generator-side change.
+1. The companion generator's data-contract v2 (`<ATAK_TW_ADDRESS_GENERATOR>/docs/data-contract.md`) is the source of truth for ZIP layout and per-county `places-<county>.sqlite` shape. Feature 005 does not require any generator-side change.
 2. The supplementary files (`townships.sqlite`, `roads.sqlite`, `places-osm.sqlite`) inside ZIPs are silently skipped by v1.0.6. Their consumption (Tier-1 township polygon-in lookup, Tier-2 nearest-road lookup, Tier-3 OSM landmarks) is feature 006+ scope.
 3. The `*.manifest.txt` sidecars and `timestamp.<region>` files inside the ZIPs are informational and not consumed at runtime. Every piece of provenance the plugin needs (county / data_date / inserted / csv_sha256 / source) lives inside each `places-<county>.sqlite`'s `metadata` table.
 4. The Settings toggles (ME / TGT / MAP) from feature 004 keep their semantics. There is no per-county toggle in v1.0.6 — every active county participates in lookup whenever any of the three row toggles is on.

@@ -2,9 +2,9 @@ schema_version: "1.0"
 workflow:
   id: "speckit"
   name: "Full SDD Cycle"
-  version: "2.1.0"
+  version: "2.2.0"
   author: "GitHub"
-  description: "Runs specify → clarify → plan → optional checklist → tasks → analyze → implement → converge with review gates"
+  description: "Runs specify → clarify → plan → optional checklist → tasks → analyze → implement → converge, then hands off to release readiness"
 
 requires:
   speckit_version: ">=0.12.17"
@@ -83,6 +83,12 @@ steps:
 
   - id: review-convergence
     type: gate
-    message: "Approve only when convergence reports no actionable gaps. If it appended tasks, reject this gate and rerun implement followed by converge."
+    message: "Approve implementation convergence only when no actionable code/artifact gaps remain. Unchecked [RELEASE-GATE] tasks remain visible and still block publication."
     options: [approve, reject]
+    on_reject: abort
+
+  - id: release-readiness-handoff
+    type: gate
+    message: "Before a TPP upload, tag, or public release, run the project release-readiness skill. TPP preparation and public release are separate decisions."
+    options: [acknowledge, abort]
     on_reject: abort
