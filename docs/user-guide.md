@@ -80,6 +80,8 @@ Open ATAK's **Tools** menu (the toolbar button in the bottom-right, or edge-swip
 
 ### 3.1 ATAK Go To — use native Taiwan entry
 
+#### Enter or Go To a Taiwan coordinate
+
 Starting with v1.4.0, Taiwan coordinate systems appear directly in ATAK's
 standard coordinate-entry dialog:
 
@@ -89,16 +91,35 @@ standard coordinate-entry dialog:
    current point supplied by ATAK into the selected format.
 4. Tap **OK** to let ATAK perform the normal Go To action.
 
+<p align="center">
+<img src="images/22-atak-enter-coordinate.jpg" alt="ATAK Enter Coordinate dialog showing the compact Taiwan pane with Taipower selected" width="900"><br>
+<sub>Enter Coordinate → Taiwan → Taipower. The compact pane leaves ATAK's elevation and action controls unobstructed.</sub>
+</p>
+
+#### Convert a map item's coordinate
+
+To inspect the Taiwan representations of an existing map item:
+
+1. Open the map item's details and tap its **Coordinate** value.
+2. In **Convert Coordinate**, select the **Taiwan** pane.
+3. Switch among Taipower, TWD97, and TWD67. No Auto Fill is needed; v1.4.2 has
+   already prepared all representable Taiwan systems from the selected item.
+
+<p align="center">
+<img src="images/20-atak-point-detail-coordinate.jpg" alt="ATAK point details with the Coordinate field highlighted as the Convert Coordinate entry point" width="420"><br>
+<sub>Tap the Coordinate value in a map item's details.</sub>
+</p>
+
+<p align="center">
+<img src="images/21-atak-convert-coordinate.jpg" alt="ATAK Convert Coordinate dialog with the Taiwan pane available beside MGRS" width="900"><br>
+<sub>Convert Coordinate exposes Taiwan beside ATAK's built-in coordinate pane.</sub>
+</p>
+
 When ATAK opens this pane from a map item's coordinate or another shared
 coordinate dialog, v1.4.2 prepares all three Taiwan systems from the supplied
 point. You can switch between Taipower, TWD97, and TWD67 without tapping Auto
 Fill. If one system cannot represent the point, only that system is cleared;
 the other prepared systems remain available.
-
-<p align="center">
-<img src="images/20-atak-native-goto-taipower.jpg" alt="ATAK native Go To dialog showing the Taiwan pane with Taipower selected" width="900"><br>
-<sub>ATAK Go To → Taiwan → Taipower. The Taiwan pane uses ATAK's native dialog and action buttons.</sub>
-</p>
 
 - Taipower accepts 9-character (10 m) and 11-character (1 m) main-island
   codes. Auto Fill and Copy use the canonical 11-character form, such as
@@ -111,11 +132,6 @@ the other prepared systems remain available.
   WGS84 coordinates and does not invent altitude.
 - In read-only ATAK dialogs, the point remains visible and copyable while the
   fields and selectors are disabled.
-
-<p align="center">
-<img src="images/21-atak-native-goto-twd97.jpg" alt="ATAK native Go To dialog showing TWD97 easting, northing, and TM2 zone controls" width="900"><br>
-<sub>TWD97 uses separate easting and northing fields with an explicit TM2 zone. TWD67 uses the same layout.</sub>
-</p>
 
 Use this native pane for the quickest familiar path. Use **TW Coord GoTo** when
 you need marker affiliation, the ATAK icon palette, or one of the ten Recent
