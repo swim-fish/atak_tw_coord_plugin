@@ -40,8 +40,11 @@ from typing import Optional
 EXCLUDE_PREFIXES: tuple[str, ...] = (
     # Developer-tooling overhead that TPP's `./gradlew assembleCivRelease`
     # does not need. Stripping these shrinks the upload and avoids leaking
-    # internal Claude Code / Speckit state to a public-facing pipeline.
+    # internal agent / Claude Code / Codex / Speckit state to a public-facing
+    # pipeline.
+    ".agents/",
     ".claude/",
+    ".codex/",
     ".specify/",
     # All documentation. TPP only ever runs `assembleCivRelease`, which reads
     # nothing under docs/. The zip we attach to the GitHub Release as
@@ -77,6 +80,7 @@ EXCLUDE_PREFIXES: tuple[str, ...] = (
     "test-data/",
 )
 EXCLUDE_EXACT: frozenset[str] = frozenset({
+    "AGENTS.md",
     "CLAUDE.md",
 })
 
@@ -497,9 +501,25 @@ def repo_name(root: Path) -> str:
     return root.name
 
 
+def git_archive_args(ref: str, prefix: str) -> list[str]:
+    """Build a git-archive command that omits excluded paths up front.
+
+    Filtering before archive creation is more than an optimisation: historical
+    documentation images are regular Git blobs covered by newer Git LFS
+    attributes. Asking Git to archive those excluded blobs can invoke the LFS
+    smudge filter and fail before strip_dev_tooling() gets a chance to remove
+    them. Pathspec exclusions keep developer-only paths out of both the filter
+    pipeline and the temporary archive while preserving LFS expansion for any
+    future build input that genuinely needs it.
+    """
+    args = ["git", "archive", ref, "--format=zip", f"--prefix={prefix}/", "--", "."]
+    args.extend(f":(exclude,top){path}**" for path in EXCLUDE_PREFIXES)
+    args.extend(f":(exclude,top){path}" for path in sorted(EXCLUDE_EXACT))
+    return args
+
+
 def git_archive_bytes(root: Path, ref: str, prefix: str) -> bytes:
-    res = run(["git", "archive", ref, "--format=zip", f"--prefix={prefix}/"],
-              root, check=False)
+    res = run(git_archive_args(ref, prefix), root, check=False)
     if res.returncode != 0:
         sys.stderr.write(res.stderr)
         sys.exit(f"git archive failed for ref '{ref}'")
@@ -511,7 +531,7 @@ def git_archive_to_file(root: Path, ref: str, prefix: str, out: Path) -> None:
     accidental decoding."""
     with out.open("wb") as fh:
         res = subprocess.run(
-            ["git", "archive", ref, "--format=zip", f"--prefix={prefix}/"],
+            git_archive_args(ref, prefix),
             cwd=root, stdout=fh, stderr=subprocess.PIPE, check=False)
     if res.returncode != 0:
         sys.stderr.write(res.stderr.decode("utf-8", errors="replace"))
