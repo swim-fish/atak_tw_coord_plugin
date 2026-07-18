@@ -291,4 +291,5 @@
     <string name="native_entry_a11y_twd67_zone">TWD67 TM2 ゾーン</string>
     <string name="native_entry_a11y_status">台湾座標の検証状態</string>
 
+    <string name="native_entry_error_disposed">台湾座標入力は現在使用できません。</string>
 </resources>

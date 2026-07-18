@@ -78,14 +78,25 @@ public final class TaiwanCoordinateEntryPaneContractTest {
 
   @Test
   public void disposedLateCallbacksAreSafeAndIdempotent() {
+    RadioButton twd97Zone121 = pane.getView().findViewById(R.id.native_entry_twd97_zone_121);
+    RadioButton twd97Zone119 = pane.getView().findViewById(R.id.native_entry_twd97_zone_119);
+    RadioButton twd67Zone121 = pane.getView().findViewById(R.id.native_entry_twd67_zone_121);
+    RadioButton twd67Zone119 = pane.getView().findViewById(R.id.native_entry_twd67_zone_119);
+
     pane.dispose();
     pane.dispose();
     pane.onActivate(null, true);
     pane.autofill(null);
 
+    assertThat(twd97Zone121.isEnabled()).isFalse();
+    assertThat(twd97Zone119.isEnabled()).isFalse();
+    assertThat(twd67Zone121.isEnabled()).isFalse();
+    assertThat(twd67Zone119.isEnabled()).isFalse();
     assertThat(pane.format(null)).isNull();
     assertThatThrownBy(pane::getGeoPointMetaData)
-        .isInstanceOf(CoordinateEntryPane.CoordinateException.class);
+        .isInstanceOf(CoordinateEntryPane.CoordinateException.class)
+        .hasMessage(
+            RuntimeEnvironment.getApplication().getString(R.string.native_entry_error_disposed));
   }
 
   @Test

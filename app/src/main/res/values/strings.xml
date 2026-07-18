@@ -347,6 +347,7 @@
     <string name="native_entry_error_bad_zone">Select TM2 zone 121 or 119.</string>
     <string name="native_entry_error_out_of_coverage">This coordinate is outside supported Taiwan coverage.</string>
     <string name="native_entry_error_unrepresentable">This point cannot be represented in the selected Taiwan system.</string>
+    <string name="native_entry_error_disposed">Taiwan coordinate entry is no longer available.</string>
     <string name="native_entry_read_only">Read only</string>
     <string name="native_entry_a11y_system_selector">Taiwan coordinate system</string>
     <string name="native_entry_a11y_taipower_input">Taipower grid code</string>

@@ -321,6 +321,10 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     safeDisposeStep("Taipower selector", () -> taipowerButton.setEnabled(false));
     safeDisposeStep("TWD97 selector", () -> twd97Button.setEnabled(false));
     safeDisposeStep("TWD67 selector", () -> twd67Button.setEnabled(false));
+    safeDisposeStep("TWD97 zone 121", () -> twd97Zone121.setEnabled(false));
+    safeDisposeStep("TWD97 zone 119", () -> twd97Zone119.setEnabled(false));
+    safeDisposeStep("TWD67 zone 121", () -> twd67Zone121.setEnabled(false));
+    safeDisposeStep("TWD67 zone 119", () -> twd67Zone119.setEnabled(false));
   }
 
   private void renderControllerState() {
@@ -400,7 +404,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       case UNREPRESENTABLE:
         return strings.get(R.string.native_entry_error_unrepresentable);
       case DISPOSED:
-        return strings.get(R.string.native_entry_read_only);
+        return strings.get(R.string.native_entry_error_disposed);
       case MALFORMED:
       case VALID:
       default:

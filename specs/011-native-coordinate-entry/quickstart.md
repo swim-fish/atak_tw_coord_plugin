@@ -126,7 +126,7 @@ Cross-cutting source/UI audit: **PASS**. The native pane has one outer
 `ScrollView`; 20 sp input text; 14 dp Taipower and 13 dp TWD field padding;
 52/50 dp selectors; 10 dp TWD field gap; and 12 dp content inset. A state-aware
 segment text selector provides white unselected, black selected, and muted
-read-only labels. All 29 `native_entry_*` keys have exact English/zh-rTW/Japanese
+read-only labels. All 30 `native_entry_*` keys have exact English/zh-rTW/Japanese
 parity, XML parsing passed, status uses a polite accessibility live region, the
 manifest has no `INTERNET` permission, and native code has no `CoordinateFormat`
 or `pref_goto_*` mutation.
@@ -193,7 +193,7 @@ host/device evidence explicit; it is not a release pass.
 | SC-003 | PARTIAL | Functional JVM tests pass; device timing/host controls are T026/T043 |
 | SC-004 | PARTIAL | 100 registrar cycles pass; real 100 reload/unload evidence is T031/T045 |
 | SC-005 | PARTIAL | Requires exact ATAK 5.5 and 5.7.0.9 device matrix T045 |
-| SC-006 | PASS | 29/29 keys match across English, zh-rTW, and Japanese |
+| SC-006 | PASS | 30/30 keys match across English, zh-rTW, and Japanese |
 | SC-007 | PARTIAL | Horizontal conversion tests pass; built-in pane round trip is T038 |
 | SC-008 | PARTIAL | No network capability; airplane-mode host journey/capture is T043/T045 |
 | SC-009 | PARTIAL | Ten-entry byte-preservation fixture passes; seeded device upgrade is T031 |
