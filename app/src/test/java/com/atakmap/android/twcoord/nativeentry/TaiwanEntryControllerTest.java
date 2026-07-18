@@ -1,9 +1,12 @@
 package com.atakmap.android.twcoord.nativeentry;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.coord.Wgs84;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 
@@ -52,6 +55,77 @@ public final class TaiwanEntryControllerTest {
     assertThat(controller.taipowerText()).matches("[A-X]\\d{4} [A-J]{2}\\d{4}");
     assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.VALID);
     assertThat(changes).hasValue(0);
+  }
+
+  @Test
+  public void activationPrefillsEverySystemFromOneMainIslandPointWithoutNotification() {
+    AtomicInteger changes = new AtomicInteger();
+    AtomicInteger selections = new AtomicInteger();
+    TaiwanEntryController controller =
+        new TaiwanEntryController(CoordinateUnit.TAIPOWER, ignored -> selections.incrementAndGet());
+    controller.setOnHumanChange(changes::incrementAndGet);
+
+    controller.activate(point(25.033611, 121.564472), true);
+
+    assertThat(controller.taipowerText()).matches("[A-X]\\d{4} [A-J]{2}\\d{4}");
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.VALID);
+    controller.selectSystem(CoordinateUnit.TWD97, false);
+    assertThat(controller.eastingText(CoordinateUnit.TWD97)).isEqualTo("306963");
+    assertThat(controller.northingText(CoordinateUnit.TWD97)).isEqualTo("2769619");
+    assertThat(controller.zone(CoordinateUnit.TWD97)).isEqualTo(121);
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.VALID);
+    controller.selectSystem(CoordinateUnit.TWD67, false);
+    assertThat(controller.eastingText(CoordinateUnit.TWD67)).isEqualTo("306132");
+    assertThat(controller.northingText(CoordinateUnit.TWD67)).isEqualTo("2769823");
+    assertThat(controller.zone(CoordinateUnit.TWD67)).isEqualTo(121);
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.VALID);
+    assertThat(changes).hasValue(0);
+    assertThat(selections).hasValue(0);
+  }
+
+  @Test
+  public void zone119ActivationKeepsBothTwdDraftsAndMarksOnlyTaipowerUnavailable() {
+    TaiwanEntryController controller = controller(CoordinateUnit.TAIPOWER);
+
+    controller.activate(point(23.566, 119.566), true);
+
+    assertThat(controller.taipowerText()).isEmpty();
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.UNREPRESENTABLE);
+    controller.selectSystem(CoordinateUnit.TWD97, false);
+    assertThat(controller.eastingText(CoordinateUnit.TWD97)).isNotEmpty();
+    assertThat(controller.northingText(CoordinateUnit.TWD97)).isNotEmpty();
+    assertThat(controller.zone(CoordinateUnit.TWD97)).isEqualTo(119);
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.VALID);
+    controller.selectSystem(CoordinateUnit.TWD67, false);
+    assertThat(controller.eastingText(CoordinateUnit.TWD67)).isNotEmpty();
+    assertThat(controller.northingText(CoordinateUnit.TWD67)).isNotEmpty();
+    assertThat(controller.zone(CoordinateUnit.TWD67)).isEqualTo(119);
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.VALID);
+  }
+
+  @Test
+  public void alternatingActivationsReplaceEveryDraftWithoutStaleValues() {
+    TaiwanEntryController controller = controller(CoordinateUnit.TAIPOWER);
+    Wgs84[] points = {point(25.033611, 121.564472), point(23.9932, 121.6012)};
+
+    for (int i = 0; i < 100; i++) {
+      Wgs84 expected = points[i % points.length];
+      controller.activate(expected, true);
+      for (CoordinateUnit unit : CoordinateUnit.values()) {
+        controller.selectSystem(unit, false);
+        assertThat(controller.validation())
+            .as("activation %s unit %s", i, unit)
+            .isSameAs(TaiwanEntryController.Validation.VALID);
+        assertThat(controller.resolvedOrNull().latitudeDeg())
+            .as("activation %s unit %s latitude", i, unit)
+            .isCloseTo(
+                expected.latitudeDeg(), within(unit == CoordinateUnit.TAIPOWER ? 0.001 : 0.0001));
+        assertThat(controller.resolvedOrNull().longitudeDeg())
+            .as("activation %s unit %s longitude", i, unit)
+            .isCloseTo(
+                expected.longitudeDeg(), within(unit == CoordinateUnit.TAIPOWER ? 0.001 : 0.0001));
+      }
+    }
   }
 
   @Test
@@ -149,6 +223,71 @@ public final class TaiwanEntryControllerTest {
   }
 
   @Test
+  public void clearAndAutofillRemainActiveOnlyAfterAllSystemActivation() {
+    TaiwanEntryController controller = controller(CoordinateUnit.TWD97);
+    controller.activate(point(25.033611, 121.564472), true);
+    String taipower = controller.taipowerText();
+    String twd67Easting = controller.eastingText(CoordinateUnit.TWD67);
+
+    controller.clear();
+
+    assertThat(controller.eastingText(CoordinateUnit.TWD97)).isEmpty();
+    assertThat(controller.taipowerText()).isEqualTo(taipower);
+    assertThat(controller.eastingText(CoordinateUnit.TWD67)).isEqualTo(twd67Easting);
+
+    controller.autofill(point(23.9932, 121.6012));
+
+    assertThat(controller.eastingText(CoordinateUnit.TWD97)).isNotEmpty();
+    assertThat(controller.taipowerText()).isEqualTo(taipower);
+    assertThat(controller.eastingText(CoordinateUnit.TWD67)).isEqualTo(twd67Easting);
+  }
+
+  @Test
+  public void clearAndUnrepresentableAutofillPreserveTheActiveTwdZone() {
+    TaiwanEntryController controller = controller(CoordinateUnit.TWD97);
+    controller.setZone(CoordinateUnit.TWD97, 119, false);
+
+    controller.clear();
+
+    assertThat(controller.zone(CoordinateUnit.TWD97)).isEqualTo(119);
+    controller.autofill(point(0.0, 0.0));
+    assertThat(controller.zone(CoordinateUnit.TWD97)).isEqualTo(119);
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.UNREPRESENTABLE);
+  }
+
+  @Test
+  public void unexpectedPreparationFailureInvalidatesEveryPreviousDraft() {
+    CoordinateConverter delegate = new CoordinateConverter();
+    AtomicBoolean failTwd97 = new AtomicBoolean();
+    TaiwanEntryController controller =
+        new TaiwanEntryController(
+            CoordinateUnit.TAIPOWER,
+            ignored -> {},
+            (point, unit) -> {
+              if (failTwd97.get() && unit == CoordinateUnit.TWD97) {
+                throw new NoSuchMethodError("injected TWD97 linkage failure");
+              }
+              return delegate.convert(point, unit);
+            });
+    controller.activate(point(25.033611, 121.564472), true);
+    failTwd97.set(true);
+
+    assertThatThrownBy(() -> controller.activate(point(23.9932, 121.6012), true))
+        .isInstanceOf(NoSuchMethodError.class);
+
+    for (CoordinateUnit unit : CoordinateUnit.values()) {
+      controller.selectSystem(unit, false);
+      assertThat(controller.validation())
+          .as(unit.toString())
+          .isSameAs(TaiwanEntryController.Validation.UNREPRESENTABLE);
+      assertThat(controller.resolvedOrNull()).isNull();
+    }
+    assertThat(controller.taipowerText()).isEmpty();
+    assertThat(controller.eastingText(CoordinateUnit.TWD97)).isEmpty();
+    assertThat(controller.eastingText(CoordinateUnit.TWD67)).isEmpty();
+  }
+
+  @Test
   public void unrepresentableTaipowerAutofillClearsPriorDraft() {
     TaiwanEntryController controller = controller(CoordinateUnit.TAIPOWER);
     controller.setTaipowerText("H7509 DB4016", false);
@@ -194,6 +333,20 @@ public final class TaiwanEntryControllerTest {
     assertThat(controller.resolvedOrNull()).isSameAs(resolved);
     assertThat(changes).hasValue(0);
     assertThat(selections).hasValue(0);
+  }
+
+  @Test
+  public void readOnlyActivationStillPreparesEverySystemProgrammatically() {
+    TaiwanEntryController controller = controller(CoordinateUnit.TAIPOWER);
+
+    controller.activate(point(25.033611, 121.564472), false);
+
+    for (CoordinateUnit unit : CoordinateUnit.values()) {
+      controller.selectSystem(unit, false);
+      assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.VALID);
+      assertThat(controller.resolvedOrNull()).isNotNull();
+    }
+    assertThat(controller.isEditable()).isFalse();
   }
 
   private static TaiwanEntryController controller(CoordinateUnit initial) {

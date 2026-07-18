@@ -24,7 +24,6 @@ One independent session draft keyed by `CoordinateUnit`.
 | `zone` | 119 or 121 | Used only by TWD systems; derived independently per datum |
 | `validation` | `Validation` | Belongs to this draft, not globally to the controller |
 | `resolved` | optional `Wgs84` | Present only when this draft is valid |
-| `sourceGeneration` | monotonically increasing session number | Identifies the activation snapshot that produced the draft; not persisted |
 
 ### Invariants
 
@@ -32,8 +31,8 @@ One independent session draft keyed by `CoordinateUnit`.
 2. `UNREPRESENTABLE`, `EMPTY`, and `DISPOSED` imply no resolved point.
 3. An unavailable draft contains no coordinate text from an earlier
    generation.
-4. All drafts committed by one non-null activation share one generation and
-   one source WGS84 point.
+4. All drafts committed by one non-null activation share one atomic snapshot
+   and one source WGS84 point; an explicit generation counter is not required.
 5. A human edit validates only the edited draft and does not copy state across
    units.
 
@@ -44,13 +43,12 @@ Immutable staged result for one non-null activation.
 | Field | Type | Rule |
 |-------|------|------|
 | `source` | `Wgs84` | Exact point supplied by ATAK |
-| `generation` | long | New value for each accepted non-null activation |
 | `drafts` | exactly three `TaiwanSystemDraft` values | One for every unit |
 
 The controller does not expose the snapshot until every ordinary conversion
 attempt completes. `OutOfRange` is a successful attempt with an unavailable
 draft. An unexpected failure produces a fully cleared failure snapshot for
-the new generation before the exception reaches the pane safety boundary.
+the new activation before the exception reaches the pane safety boundary.
 
 ## 4. Controller Projection
 
@@ -78,11 +76,11 @@ allowing inactive drafts to retain correct availability.
 | `autofill(point)` | Replace only active draft from point or with unavailable/empty state | None |
 | Native Clear | Clear only active draft | None |
 | Confirm/Copy | Read active valid draft only | None from controller |
-| Unexpected all-system preparation failure | Replace every old draft with cleared failure state for new generation | None; pane logs/contains |
+| Unexpected all-system preparation failure | Replace every old draft with cleared failure state for the new activation | None; pane logs/contains |
 | Dispose | Mark all results unusable and detach listener | None |
 
 ## 6. Persistence and Migration
 
-No draft, snapshot, source point, generation, validation, or availability
-state is persisted. The existing `pref_native_entry_last_unit` format and all
-custom GoTo state remain unchanged; no migration exists.
+No draft, snapshot, source point, validation, or availability state is
+persisted. The existing `pref_native_entry_last_unit` format and all custom
+GoTo state remain unchanged; no migration exists.

@@ -23,6 +23,9 @@ change is expected.
 existing `CoordinateConverter`, `CoordinateParser`, coordinate value objects,
 `TaiwanEntryController`, and `TaiwanCoordinateEntryPane`. No new dependency.
 
+**Release Version**: Advance `PLUGIN_VERSION` from 1.4.1 to 1.4.2 and align
+the root changelog plus English/Traditional Chinese guide headers.
+
 **Storage**: No new storage. The existing `pref_native_entry_last_unit`
 preference still stores only the last human-selected system. Draft snapshots
 remain session-only and do not touch custom GoTo preferences or Recent data.
@@ -174,9 +177,8 @@ on the simplest testable implementation.
    sensitive-information scan.
 6. Install on the matching ATAK 5.7.0.9 device and execute quickstart evidence;
    keep ATAK 5.5 device evidence pending until actually run.
-7. Update native-entry documentation and the root changelog. Defer release
-   version selection until the release/PR decision; this plan does not bump a
-   version.
+7. Set `PLUGIN_VERSION` to 1.4.2 and update native-entry documentation, both
+   guide version labels, and the root changelog.
 
 ## Complexity Tracking
 

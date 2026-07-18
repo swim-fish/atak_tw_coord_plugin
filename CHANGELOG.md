@@ -7,6 +7,18 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+## [1.4.2] — 2026-07-18 — Prefill native Taiwan coordinate tabs
+
+### Fixed
+
+- **ATAK Convert Coordinate now prepares every Taiwan representation from the
+  selected map point.** Switching between Taipower, TWD97, and TWD67 no longer
+  reveals an empty or stale draft. Outer-island points prepare both zone-119
+  TWD systems while Taipower reports that the point is unavailable.
+- Native Clear and Auto Fill remain active-tab-only operations, and
+  programmatic preparation does not trigger a host action or human-change
+  notification.
+
 ## [1.4.1] — 2026-07-18 — Compact native Go To fields
 
 ### Fixed

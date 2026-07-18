@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.atakmap.android.gui.coordinateentry.CoordinateEntryPane;
+import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.plugin.R;
 import com.atakmap.coremap.maps.coords.GeoPoint;
@@ -18,6 +19,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -48,6 +50,39 @@ public final class TaiwanCoordinateEntryPaneSafetyTest {
 
     doThrow(new IllegalStateException("dispose")).when(controller).dispose();
     assertThatCode(pane::dispose).doesNotThrowAnyException();
+  }
+
+  @Test
+  public void failedBackgroundPreparationClearsPreviouslyRenderedHostPoint() {
+    CoordinateConverter delegate = new CoordinateConverter();
+    AtomicBoolean failTwd97 = new AtomicBoolean();
+    TaiwanEntryController controller =
+        new TaiwanEntryController(
+            CoordinateUnit.TAIPOWER,
+            ignored -> {},
+            (point, unit) -> {
+              if (failTwd97.get() && unit == CoordinateUnit.TWD97) {
+                throw new IllegalStateException("injected TWD97 failure");
+              }
+              return delegate.convert(point, unit);
+            });
+    TaiwanCoordinateEntryPane pane =
+        new TaiwanCoordinateEntryPane(
+            RuntimeEnvironment.getApplication(),
+            controller,
+            new TaiwanEntryFormatter(),
+            new RecordingTrace());
+    pane.onActivate(point(), true);
+    android.widget.EditText taipower =
+        pane.getView().findViewById(R.id.native_entry_input_taipower);
+    assertThat(taipower.getText().toString()).isNotEmpty();
+
+    failTwd97.set(true);
+    pane.onActivate(GeoPointMetaData.wrap(new GeoPoint(23.9932, 121.6012)), true);
+
+    assertThat(taipower.getText().toString()).isEmpty();
+    assertThatThrownBy(pane::getGeoPointMetaData)
+        .isInstanceOf(CoordinateEntryPane.CoordinateException.class);
   }
 
   @Test

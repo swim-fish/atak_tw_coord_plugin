@@ -87,6 +87,55 @@ public final class TaiwanCoordinateEntryPaneContractTest {
   }
 
   @Test
+  public void oneActivationPrefillsEverySystemWithoutAutofill() throws Exception {
+    GeoPointMetaData point = GeoPointMetaData.wrap(new GeoPoint(25.033611, 121.564472));
+
+    pane.onActivate(point, true);
+
+    EditText taipower = pane.getView().findViewById(R.id.native_entry_input_taipower);
+    assertThat(taipower.getText().toString()).matches("[A-X]\\d{4} [A-J]{2}\\d{4}");
+
+    pane.getView().findViewById(R.id.native_entry_system_twd97).performClick();
+    EditText twd97Easting = pane.getView().findViewById(R.id.native_entry_twd97_easting);
+    EditText twd97Northing = pane.getView().findViewById(R.id.native_entry_twd97_northing);
+    assertThat(twd97Easting.getText().toString()).isEqualTo("306963");
+    assertThat(twd97Northing.getText().toString()).isEqualTo("2769619");
+    assertThat(pane.format(point)).matches("TWD97 E=\\d+m N=\\d+m z121");
+    GeoPoint twd97Resolved = pane.getGeoPointMetaData().get();
+    assertThat(twd97Resolved.getLatitude()).isCloseTo(25.033611, within(0.00002));
+    assertThat(twd97Resolved.getLongitude()).isCloseTo(121.564472, within(0.00002));
+
+    pane.getView().findViewById(R.id.native_entry_system_twd67).performClick();
+    EditText twd67Easting = pane.getView().findViewById(R.id.native_entry_twd67_easting);
+    EditText twd67Northing = pane.getView().findViewById(R.id.native_entry_twd67_northing);
+    assertThat(twd67Easting.getText().toString()).isEqualTo("306132");
+    assertThat(twd67Northing.getText().toString()).isEqualTo("2769823");
+    assertThat(pane.format(point)).matches("TWD67 E=\\d+m N=\\d+m z121");
+  }
+
+  @Test
+  public void zone119ActivationShowsUnavailableTaipowerAndPreparedTwdTabs() {
+    pane.onActivate(GeoPointMetaData.wrap(new GeoPoint(23.566, 119.566)), true);
+
+    EditText taipower = pane.getView().findViewById(R.id.native_entry_input_taipower);
+    TextView status = pane.getView().findViewById(R.id.native_entry_status);
+    assertThat(taipower.getText().toString()).isEmpty();
+    assertThat(status.getVisibility()).isEqualTo(View.VISIBLE);
+
+    pane.getView().findViewById(R.id.native_entry_system_twd97).performClick();
+    EditText twd97Easting = pane.getView().findViewById(R.id.native_entry_twd97_easting);
+    assertThat(twd97Easting.getText().toString()).isNotEmpty();
+    RadioButton twd97Zone119 = pane.getView().findViewById(R.id.native_entry_twd97_zone_119);
+    assertThat(twd97Zone119.isChecked()).isTrue();
+
+    pane.getView().findViewById(R.id.native_entry_system_twd67).performClick();
+    EditText twd67Easting = pane.getView().findViewById(R.id.native_entry_twd67_easting);
+    assertThat(twd67Easting.getText().toString()).isNotEmpty();
+    RadioButton twd67Zone119 = pane.getView().findViewById(R.id.native_entry_twd67_zone_119);
+    assertThat(twd67Zone119.isChecked()).isTrue();
+  }
+
+  @Test
   public void invalidInputThrowsCheckedCoordinateException() {
     EditText input = pane.getView().findViewById(R.id.native_entry_input_taipower);
     input.setText("bad");

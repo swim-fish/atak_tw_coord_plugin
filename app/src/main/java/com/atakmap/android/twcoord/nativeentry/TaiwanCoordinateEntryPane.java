@@ -245,6 +245,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       renderControllerState();
     } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
       Log.w(TAG, "CoordinateEntryPane activation failed", e);
+      renderFailedOperationState("activation");
     } finally {
       endTrace(tracing);
     }
@@ -280,6 +281,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       renderControllerState();
     } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
       Log.w(TAG, "CoordinateEntryPane Auto Fill failed", e);
+      renderFailedOperationState("Auto Fill");
     } finally {
       endTrace(tracing);
     }
@@ -375,6 +377,15 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     twd97Zone119.setEnabled(editable);
     twd67Zone121.setEnabled(editable);
     twd67Zone119.setEnabled(editable);
+  }
+
+  private void renderFailedOperationState(String operation) {
+    try {
+      renderControllerState();
+    } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError renderFailure) {
+      Log.w(
+          TAG, "CoordinateEntryPane failed to render safe state after " + operation, renderFailure);
+    }
   }
 
   private void renderStatus(boolean checked) {

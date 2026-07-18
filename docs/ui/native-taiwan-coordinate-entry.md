@@ -1,6 +1,6 @@
 # UI — Native Taiwan coordinate entry
 
-**Feature**: 011-native-coordinate-entry
+**Features**: 011-native-coordinate-entry, 012-prefill-native-tabs
 
 **Source**: `app/src/main/res/layout/taiwan_coordinate_entry_pane.xml` and
 `app/src/main/java/com/atakmap/android/twcoord/nativeentry/`
@@ -54,6 +54,13 @@ label/input/unit rows, native underline inputs at `wrap_content` height,
 system/zone selectors. Empty status text consumes no height, so the pane stays
 above ATAK's elevation and action controls.
 
+When ATAK opens the pane with a map-item or shared-dialog point, the plugin
+prepares Taipower, TWD97, and TWD67 from that same WGS84 point before the pane
+renders. Switching the internal system therefore reveals an already prepared
+draft without using Auto Fill. A system that cannot represent the point is
+cleared and marked unavailable independently; for example, a zone-119 point
+still prepares TWD97 and TWD67 while Taipower remains unavailable.
+
 ## Coordinate systems
 
 ### Taipower
@@ -78,7 +85,8 @@ above ATAK's elevation and action controls.
 The surrounding dialog owns its buttons and resulting action:
 
 - **Auto Fill** calls the pane with ATAK's current point and replaces the active
-  draft.
+  draft. It intentionally remains active-only; it is distinct from the
+  all-system preparation performed when ATAK activates the pane with a point.
 - **Clear** supplies no point and clears only the active Taiwan draft.
 - **Copy** requests a canonical string without mutating the draft.
 - The dialog's action consumes horizontal WGS84 metadata. The plugin does not

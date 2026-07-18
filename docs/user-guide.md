@@ -2,7 +2,7 @@
 
 > **Traditional Chinese version:** [user-guide_zh.md](user-guide_zh.md)
 
-**Version:** v1.4.1 | **ATAK-CIV compatibility:** 5.5.0 — 5.7.x
+**Version:** v1.4.2 | **ATAK-CIV compatibility:** 5.5.0 — 5.7.x
 **Latest release:** <https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest>
 
 This is the short version. If you just want to install the plugin and use it, read this. For deeper background — accuracy notes, datum shift internals, MIL-STD-2525 marker reference — see the source files in `docs/`.
@@ -89,6 +89,12 @@ standard coordinate-entry dialog:
    current point supplied by ATAK into the selected format.
 4. Tap **OK** to let ATAK perform the normal Go To action.
 
+When ATAK opens this pane from a map item's coordinate or another shared
+coordinate dialog, v1.4.2 prepares all three Taiwan systems from the supplied
+point. You can switch between Taipower, TWD97, and TWD67 without tapping Auto
+Fill. If one system cannot represent the point, only that system is cleared;
+the other prepared systems remain available.
+
 <p align="center">
 <img src="images/20-atak-native-goto-taipower.jpg" alt="ATAK native Go To dialog showing the Taiwan pane with Taipower selected" width="900"><br>
 <sub>ATAK Go To → Taiwan → Taipower. The Taiwan pane uses ATAK's native dialog and action buttons.</sub>
@@ -116,8 +122,9 @@ you need marker affiliation, the ATAK icon palette, or one of the ten Recent
 entries. Native selection and advanced-page drafts are stored independently.
 
 TWD67 zone 119 displays an accuracy advisory. Taipower cannot represent an
-outer-island point; Auto Fill clears the previous Taipower draft and reports
-the coverage limitation instead of leaving a stale coordinate on screen.
+outer-island point; activation or Auto Fill clears the applicable Taipower
+draft and reports the coverage limitation instead of leaving a stale
+coordinate on screen.
 
 ### 3.2 TW Coord GoTo — advanced coordinate workflow
 

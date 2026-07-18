@@ -51,7 +51,8 @@ adb -s <DEVICE_SERIAL> install -r <DEBUG_APK>
 ```
 
 Confirm the installed package still declares ATAK compatibility 5.5.0 and the
-device actually runs ATAK-CIV 5.7.0.9. These are separate version axes.
+plugin reports 1.4.2 while the device actually runs ATAK-CIV 5.7.0.9. These
+are separate version axes.
 
 ## 4. Main-island Convert Coordinate journey
 
@@ -100,7 +101,7 @@ Review the final diff and generated evidence for local paths and identifiers:
 
 ```powershell
 git diff --check
-git diff -- . ':!*.png' ':!*.jpg' | Select-String -Pattern '[A-Za-z]:\\Users\\|/Users/|/home/|file:///|<known-local-username>'
+git diff -- . ':!*.png' ':!*.jpg' | Select-String -Pattern '[A-Za-z]:\\Users\\|/Users/|/home/|file:/{3}|<known-local-username>'
 ```
 
 Replace any match with `<USER_HOME>`, `<TAK_WORKSPACE>`, `<DEVICE_SERIAL>`, or

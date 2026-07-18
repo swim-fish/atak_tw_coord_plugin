@@ -9,7 +9,9 @@ import com.atakmap.android.twcoord.coord.Twd97Tm2;
 import com.atakmap.android.twcoord.coord.Wgs84;
 import com.atakmap.android.twcoord.gotopage.CoordinateParser;
 import com.atakmap.android.twcoord.gotopage.ParseResult;
+import java.util.EnumMap;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /** Host-independent session/controller for ATAK's native Taiwan coordinate pane. */
@@ -28,27 +30,27 @@ public final class TaiwanEntryController {
 
   private final Consumer<CoordinateUnit> selectionWriter;
   private final CoordinateParser parser = new CoordinateParser();
-  private final CoordinateConverter converter = new CoordinateConverter();
+  private final BiFunction<Wgs84, CoordinateUnit, ConversionResult> converter;
 
   private CoordinateUnit activeUnit;
-  private String taipowerText = "";
-  private String twd97Easting = "";
-  private String twd97Northing = "";
-  private int twd97Zone = 121;
-  private String twd67Easting = "";
-  private String twd67Northing = "";
-  private int twd67Zone = 121;
-  private Validation validation = Validation.EMPTY;
-  private Wgs84 resolved;
+  private EnumMap<CoordinateUnit, Draft> drafts;
   private Runnable onHumanChange;
   private boolean editable = true;
   private boolean disposed;
 
   public TaiwanEntryController(
       CoordinateUnit initialUnit, Consumer<CoordinateUnit> selectionWriter) {
-    this.activeUnit = initialUnit == null ? CoordinateUnit.TAIPOWER : initialUnit;
+    this(initialUnit, selectionWriter, new CoordinateConverter()::convert);
+  }
+
+  TaiwanEntryController(
+      CoordinateUnit initialUnit,
+      Consumer<CoordinateUnit> selectionWriter,
+      BiFunction<Wgs84, CoordinateUnit, ConversionResult> converter) {
+    activeUnit = initialUnit == null ? CoordinateUnit.TAIPOWER : initialUnit;
     this.selectionWriter = Objects.requireNonNull(selectionWriter, "selectionWriter");
-    validation = validateActive();
+    this.converter = Objects.requireNonNull(converter, "converter");
+    drafts = emptyDrafts(Validation.EMPTY);
   }
 
   public CoordinateUnit activeUnit() {
@@ -56,27 +58,30 @@ public final class TaiwanEntryController {
   }
 
   public Validation validation() {
-    return validation;
+    return disposed ? Validation.DISPOSED : activeDraft().validation;
   }
 
   public String taipowerText() {
-    return taipowerText;
+    return draft(CoordinateUnit.TAIPOWER).taipowerText;
   }
 
   public String eastingText(CoordinateUnit unit) {
-    return unit == CoordinateUnit.TWD97 ? twd97Easting : twd67Easting;
+    requireTwd(unit);
+    return draft(unit).eastingText;
   }
 
   public String northingText(CoordinateUnit unit) {
-    return unit == CoordinateUnit.TWD97 ? twd97Northing : twd67Northing;
+    requireTwd(unit);
+    return draft(unit).northingText;
   }
 
   public int zone(CoordinateUnit unit) {
-    return unit == CoordinateUnit.TWD97 ? twd97Zone : twd67Zone;
+    requireTwd(unit);
+    return draft(unit).zone;
   }
 
   public Wgs84 resolvedOrNull() {
-    return resolved;
+    return disposed ? null : activeDraft().resolved;
   }
 
   public boolean isEditable() {
@@ -94,7 +99,6 @@ public final class TaiwanEntryController {
   public void selectSystem(CoordinateUnit unit, boolean human) {
     if (disposed || unit == null || (human && !editable)) return;
     activeUnit = unit;
-    validation = validateActive();
     if (human) {
       selectionWriter.accept(unit);
       notifyHumanChange();
@@ -103,54 +107,75 @@ public final class TaiwanEntryController {
 
   public void setTaipowerText(String text, boolean human) {
     if (!acceptEdit(human)) return;
-    taipowerText = text == null ? "" : text;
-    if (activeUnit == CoordinateUnit.TAIPOWER) validation = validateActive();
+    Draft draft = draft(CoordinateUnit.TAIPOWER);
+    draft.taipowerText = safeText(text);
+    validateDraft(CoordinateUnit.TAIPOWER, draft);
     if (human) notifyHumanChange();
   }
 
   public void setTwdEasting(CoordinateUnit unit, String text, boolean human) {
     requireTwd(unit);
     if (!acceptEdit(human)) return;
-    if (unit == CoordinateUnit.TWD97) twd97Easting = safeText(text);
-    else twd67Easting = safeText(text);
-    if (activeUnit == unit) validation = validateActive();
+    Draft draft = draft(unit);
+    draft.eastingText = safeText(text);
+    validateDraft(unit, draft);
     if (human) notifyHumanChange();
   }
 
   public void setTwdNorthing(CoordinateUnit unit, String text, boolean human) {
     requireTwd(unit);
     if (!acceptEdit(human)) return;
-    if (unit == CoordinateUnit.TWD97) twd97Northing = safeText(text);
-    else twd67Northing = safeText(text);
-    if (activeUnit == unit) validation = validateActive();
+    Draft draft = draft(unit);
+    draft.northingText = safeText(text);
+    validateDraft(unit, draft);
     if (human) notifyHumanChange();
   }
 
   public void setZone(CoordinateUnit unit, int zone, boolean human) {
     requireTwd(unit);
     if (!acceptEdit(human)) return;
-    if (unit == CoordinateUnit.TWD97) twd97Zone = zone;
-    else twd67Zone = zone;
-    if (activeUnit == unit) validation = validateActive();
+    Draft draft = draft(unit);
+    draft.zone = zone;
+    validateDraft(unit, draft);
     if (human) notifyHumanChange();
   }
 
   public void activate(Wgs84 point, boolean editable) {
     if (disposed) return;
     this.editable = editable;
-    populateFromHost(point);
+    if (point == null) {
+      clear();
+      return;
+    }
+    populateAllFromHost(point);
   }
 
   public void autofill(Wgs84 point) {
     if (disposed) return;
-    populateFromHost(point);
+    if (point == null) {
+      clear();
+      return;
+    }
+    try {
+      Draft previous = activeDraft();
+      Draft replacement = draftFromHost(point, activeUnit);
+      preserveZoneWhenUnavailable(activeUnit, previous, replacement);
+      drafts.put(activeUnit, replacement);
+    } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
+      Draft previous = activeDraft();
+      Draft replacement = Draft.empty(activeUnit, Validation.UNREPRESENTABLE);
+      preserveZoneWhenUnavailable(activeUnit, previous, replacement);
+      drafts.put(activeUnit, replacement);
+      throw e;
+    }
   }
 
   public void clear() {
     if (disposed) return;
-    clearActiveDraft();
-    resolved = null;
-    validation = Validation.EMPTY;
+    Draft previous = activeDraft();
+    Draft replacement = Draft.empty(activeUnit, Validation.EMPTY);
+    preserveTwdZone(activeUnit, previous, replacement);
+    drafts.put(activeUnit, replacement);
   }
 
   public String format(Wgs84 point, TaiwanEntryFormatter formatter) {
@@ -161,8 +186,7 @@ public final class TaiwanEntryController {
   public void dispose() {
     if (disposed) return;
     disposed = true;
-    resolved = null;
-    validation = Validation.DISPOSED;
+    drafts = emptyDrafts(Validation.DISPOSED);
     onHumanChange = null;
   }
 
@@ -170,103 +194,142 @@ public final class TaiwanEntryController {
     return !disposed && (!human || editable);
   }
 
-  private void populateFromHost(Wgs84 point) {
-    clearActiveDraft();
-    resolved = null;
-    validation = Validation.EMPTY;
-    if (point == null) return;
-    ConversionResult result = converter.convert(point, activeUnit);
-    if (!result.isOk()) {
-      validation = Validation.UNREPRESENTABLE;
-      return;
+  private void populateAllFromHost(Wgs84 point) {
+    EnumMap<CoordinateUnit, Draft> staged = new EnumMap<>(CoordinateUnit.class);
+    try {
+      for (CoordinateUnit unit : CoordinateUnit.values()) {
+        staged.put(unit, draftFromHost(point, unit));
+      }
+    } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
+      drafts = emptyDrafts(Validation.UNREPRESENTABLE);
+      throw e;
     }
+    drafts = staged;
+  }
+
+  private Draft draftFromHost(Wgs84 point, CoordinateUnit unit) {
+    ConversionResult result = converter.apply(point, unit);
+    if (!result.isOk()) return Draft.empty(unit, Validation.UNREPRESENTABLE);
+
+    Draft draft = Draft.empty(unit, Validation.EMPTY);
     Object value = ((ConversionResult.Ok<?>) result).value();
-    switch (activeUnit) {
+    switch (unit) {
       case TAIPOWER:
-        taipowerText = TaiwanEntryFormatter.formatTaipower((TaipowerCode) value);
+        draft.taipowerText = TaiwanEntryFormatter.formatTaipower((TaipowerCode) value);
         break;
       case TWD97:
         Twd97Tm2 t97 = (Twd97Tm2) value;
-        twd97Easting = Long.toString(Math.round(t97.eastingMetres()));
-        twd97Northing = Long.toString(Math.round(t97.northingMetres()));
-        twd97Zone = t97.zone();
+        draft.eastingText = Long.toString(Math.round(t97.eastingMetres()));
+        draft.northingText = Long.toString(Math.round(t97.northingMetres()));
+        draft.zone = t97.zone();
         break;
       case TWD67:
         Twd67Tm2 t67 = (Twd67Tm2) value;
-        twd67Easting = Long.toString(Math.round(t67.eastingMetres()));
-        twd67Northing = Long.toString(Math.round(t67.northingMetres()));
-        twd67Zone = t67.zone();
+        draft.eastingText = Long.toString(Math.round(t67.eastingMetres()));
+        draft.northingText = Long.toString(Math.round(t67.northingMetres()));
+        draft.zone = t67.zone();
         break;
       default:
-        throw new IllegalStateException("Unhandled coordinate unit: " + activeUnit);
+        throw new IllegalStateException("Unhandled coordinate unit: " + unit);
     }
-    validation = validateActive();
+    validateDraft(unit, draft);
+    return draft;
   }
 
-  private Validation validateActive() {
-    resolved = null;
-    if (activeUnit == CoordinateUnit.TAIPOWER) return validateTaipower();
-    return validateTwd(activeUnit);
-  }
-
-  private Validation validateTaipower() {
-    if (taipowerText.trim().isEmpty()) return Validation.EMPTY;
-    return mapParseResult(parser.parseTaipower(taipowerText));
-  }
-
-  private Validation validateTwd(CoordinateUnit unit) {
-    String easting = eastingText(unit);
-    String northing = northingText(unit);
-    if (easting.isEmpty() && northing.isEmpty()) return Validation.EMPTY;
-    if (easting.isEmpty() || northing.isEmpty()) return Validation.INCOMPLETE;
-    int zone = zone(unit);
-    if (zone != 121 && zone != 119) return Validation.BAD_ZONE;
-    if (!isAsciiUnsignedInteger(easting) || !isAsciiUnsignedInteger(northing)) {
-      return Validation.MALFORMED;
+  private static void preserveZoneWhenUnavailable(
+      CoordinateUnit unit, Draft previous, Draft replacement) {
+    if (replacement.validation == Validation.UNREPRESENTABLE) {
+      preserveTwdZone(unit, previous, replacement);
     }
+  }
+
+  private static void preserveTwdZone(CoordinateUnit unit, Draft previous, Draft replacement) {
+    if (unit == CoordinateUnit.TWD97 || unit == CoordinateUnit.TWD67) {
+      replacement.zone = previous.zone;
+    }
+  }
+
+  private void validateDraft(CoordinateUnit unit, Draft draft) {
+    draft.resolved = null;
+    if (unit == CoordinateUnit.TAIPOWER) {
+      validateTaipower(draft);
+    } else {
+      validateTwd(unit, draft);
+    }
+  }
+
+  private void validateTaipower(Draft draft) {
+    if (draft.taipowerText.trim().isEmpty()) {
+      draft.validation = Validation.EMPTY;
+      return;
+    }
+    mapParseResult(draft, parser.parseTaipower(draft.taipowerText));
+  }
+
+  private void validateTwd(CoordinateUnit unit, Draft draft) {
+    if (draft.eastingText.isEmpty() && draft.northingText.isEmpty()) {
+      draft.validation = Validation.EMPTY;
+      return;
+    }
+    if (draft.eastingText.isEmpty() || draft.northingText.isEmpty()) {
+      draft.validation = Validation.INCOMPLETE;
+      return;
+    }
+    if (draft.zone != 121 && draft.zone != 119) {
+      draft.validation = Validation.BAD_ZONE;
+      return;
+    }
+    if (!isAsciiUnsignedInteger(draft.eastingText) || !isAsciiUnsignedInteger(draft.northingText)) {
+      draft.validation = Validation.MALFORMED;
+      return;
+    }
+
     final int eastingValue;
     final int northingValue;
     try {
-      eastingValue = Integer.parseInt(easting);
-      northingValue = Integer.parseInt(northing);
+      eastingValue = Integer.parseInt(draft.eastingText);
+      northingValue = Integer.parseInt(draft.northingText);
     } catch (NumberFormatException e) {
-      return Validation.MALFORMED;
+      draft.validation = Validation.MALFORMED;
+      return;
     }
     ParseResult result =
         unit == CoordinateUnit.TWD97
-            ? parser.parseTwd97(eastingValue, northingValue, zone)
-            : parser.parseTwd67(eastingValue, northingValue, zone);
-    return mapParseResult(result);
+            ? parser.parseTwd97(eastingValue, northingValue, draft.zone)
+            : parser.parseTwd67(eastingValue, northingValue, draft.zone);
+    mapParseResult(draft, result);
   }
 
-  private Validation mapParseResult(ParseResult result) {
+  private static void mapParseResult(Draft draft, ParseResult result) {
     if (result.isOk()) {
-      resolved = ((ParseResult.Ok) result).wgs84();
-      return Validation.VALID;
+      draft.resolved = ((ParseResult.Ok) result).wgs84();
+      draft.validation = Validation.VALID;
+      return;
     }
-    if (result.isOutOfRange()) return Validation.OUT_OF_COVERAGE;
+    if (result.isOutOfRange()) {
+      draft.validation = Validation.OUT_OF_COVERAGE;
+      return;
+    }
     ParseResult.Reason reason = ((ParseResult.Invalid) result).reason();
-    if (reason == ParseResult.Reason.EMPTY) return Validation.EMPTY;
-    if (reason == ParseResult.Reason.BAD_ZONE) return Validation.BAD_ZONE;
-    return Validation.MALFORMED;
+    if (reason == ParseResult.Reason.EMPTY) draft.validation = Validation.EMPTY;
+    else if (reason == ParseResult.Reason.BAD_ZONE) draft.validation = Validation.BAD_ZONE;
+    else draft.validation = Validation.MALFORMED;
   }
 
-  private void clearActiveDraft() {
-    switch (activeUnit) {
-      case TAIPOWER:
-        taipowerText = "";
-        break;
-      case TWD97:
-        twd97Easting = "";
-        twd97Northing = "";
-        break;
-      case TWD67:
-        twd67Easting = "";
-        twd67Northing = "";
-        break;
-      default:
-        throw new IllegalStateException("Unhandled coordinate unit: " + activeUnit);
+  private Draft activeDraft() {
+    return draft(activeUnit);
+  }
+
+  private Draft draft(CoordinateUnit unit) {
+    return drafts.get(unit);
+  }
+
+  private static EnumMap<CoordinateUnit, Draft> emptyDrafts(Validation validation) {
+    EnumMap<CoordinateUnit, Draft> result = new EnumMap<>(CoordinateUnit.class);
+    for (CoordinateUnit unit : CoordinateUnit.values()) {
+      result.put(unit, Draft.empty(unit, validation));
     }
+    return result;
   }
 
   private static boolean isAsciiUnsignedInteger(String value) {
@@ -291,5 +354,21 @@ public final class TaiwanEntryController {
   private void notifyHumanChange() {
     Runnable listener = onHumanChange;
     if (listener != null) listener.run();
+  }
+
+  private static final class Draft {
+    String taipowerText = "";
+    String eastingText = "";
+    String northingText = "";
+    int zone = 121;
+    Validation validation;
+    Wgs84 resolved;
+
+    static Draft empty(CoordinateUnit unit, Validation validation) {
+      Objects.requireNonNull(unit, "unit");
+      Draft draft = new Draft();
+      draft.validation = Objects.requireNonNull(validation, "validation");
+      return draft;
+    }
   }
 }

@@ -2,7 +2,7 @@
 
 > **English version:** [user-guide.md](user-guide.md)
 
-**對應版本：** v1.4.1 ｜ **對應 ATAK-CIV：** 5.5.0 — 5.7.x
+**對應版本：** v1.4.2 ｜ **對應 ATAK-CIV：** 5.5.0 — 5.7.x
 **最新發行：** <https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest>
 
 這是精簡版。若你只是想把外掛裝起來用，看這份就夠了。需要更深入的背景知識（精度資訊、基準轉換內部原理、MIL-STD-2525 標記說明），請參閱 `docs/` 目錄下的其他原始文件。
@@ -86,6 +86,11 @@ adb shell am force-stop com.atakmap.app.civ
 3. 輸入座標，或按 ATAK 的 **Auto Fill**，把 ATAK 目前提供的位置轉成所選格式。
 4. 按 **OK**，由 ATAK 執行原本的 Go To 動作。
 
+當 ATAK 從地圖圖標的座標或其他共用座標對話框開啟此分頁時，v1.4.2
+會先用 ATAK 提供的同一個位置準備台電、TWD97 與 TWD67。切換三種座標
+系統時不必再按 Auto Fill。若其中一種座標無法表示該位置，只會清除並
+提示該座標系統，其他已準備的座標仍可使用。
+
 <p align="center">
 <img src="images/20-atak-native-goto-taipower.jpg" alt="ATAK 原生 Go To 對話框中的 Taiwan 台電座標頁面" width="900"><br>
 <sub>ATAK Go To → Taiwan → Taipower。Taiwan 分頁直接使用 ATAK 原生對話框與動作按鈕。</sub>
@@ -111,8 +116,9 @@ adb shell am force-stop com.atakmap.app.civ
 affiliation、ATAK 圖示盤或最近 10 筆輸入紀錄，請改用 **TW Coord GoTo**。
 原生分頁與進階頁面的選項及草稿會分開保存，互不覆寫。
 
-TWD67 zone 119 會顯示精度提醒。台電座標無法表示外島位置；此時 Auto Fill
-會清除先前的台電草稿並回報涵蓋範圍限制，避免畫面留下過期座標。
+TWD67 zone 119 會顯示精度提醒。台電座標無法表示外島位置；此時頁面啟用
+或 Auto Fill 會清除對應的台電草稿並回報涵蓋範圍限制，避免畫面留下過期
+座標。
 
 ### 3.2 TW Coord GoTo — 進階座標操作
 
