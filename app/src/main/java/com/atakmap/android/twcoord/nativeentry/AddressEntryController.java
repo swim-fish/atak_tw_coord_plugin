@@ -123,6 +123,39 @@ public final class AddressEntryController {
     runListener(humanListener);
   }
 
+  public void editStructured(
+      String countyCity, String districtTownship, String roadLocality, String tail, boolean human) {
+    Runnable stateListener;
+    Runnable humanListener;
+    synchronized (this) {
+      if (disposed || (human && !editable)) return;
+      cancelPendingLocked();
+      long revision = draft.draftRevision() + 1L;
+      draft = parser.parseStructured(countyCity, districtTownship, roadLocality, tail, revision);
+      candidates = Collections.emptyList();
+      resolution = null;
+      currentIdentity = null;
+      if (draft.validation() == AddressValidation.READY_TO_LOOKUP) {
+        pendingDebounce = debouncer.schedule(this::dispatchForward, DEBOUNCE_MS);
+      }
+      stateListener = onStateChanged;
+      humanListener = human ? onHumanChange : null;
+    }
+    runListener(stateListener);
+    runListener(humanListener);
+  }
+
+  /** Switches only the visible projection; the semantic draft and lookup identity stay stable. */
+  public void switchMode(AddressInputMode mode) {
+    Runnable stateListener;
+    synchronized (this) {
+      if (disposed || mode == null || draft.mode() == mode) return;
+      draft = draft.withMode(mode);
+      stateListener = onStateChanged;
+    }
+    runListener(stateListener);
+  }
+
   public void selectCandidate(String candidateId, boolean human) {
     Runnable stateListener;
     Runnable humanListener;

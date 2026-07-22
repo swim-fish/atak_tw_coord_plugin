@@ -335,6 +335,14 @@
     <string name="native_entry_system_address">Address</string>
     <string name="native_entry_address_full_label">Address</string>
     <string name="native_entry_address_full_hint">e.g. Taichung City, Nantun District…</string>
+    <string name="native_entry_address_county_label">County / city</string>
+    <string name="native_entry_address_county_hint">e.g. Taichung City</string>
+    <string name="native_entry_address_district_label">District</string>
+    <string name="native_entry_address_district_hint">e.g. Nantun District</string>
+    <string name="native_entry_address_road_label">Road / locality</string>
+    <string name="native_entry_address_road_hint">e.g. Liming Rd., Sec. 2</string>
+    <string name="native_entry_address_tail_label">Number / floor</string>
+    <string name="native_entry_address_tail_hint">e.g. No. 130, 6F-4</string>
     <string name="native_entry_address_mode_structured">Structured fields</string>
     <string name="native_entry_address_mode_full">Single field</string>
     <string name="native_entry_address_choose_result">Choose result</string>
@@ -347,6 +355,10 @@
     <string name="native_entry_address_candidates_title">Address candidates</string>
     <string name="native_entry_address_candidate_format">%1$s · %2$s</string>
     <string name="native_entry_a11y_address_full">Full Taiwan address</string>
+    <string name="native_entry_a11y_address_county">Address county or city</string>
+    <string name="native_entry_a11y_address_district">Address district or township</string>
+    <string name="native_entry_a11y_address_road">Address road or locality</string>
+    <string name="native_entry_a11y_address_tail">Address lane, number, floor, and remaining text</string>
     <string name="native_entry_a11y_address_mode">Switch address input mode</string>
     <string name="native_entry_a11y_address_choose">Choose an address candidate</string>
     <string name="native_entry_taipower_hint">e.g. B8146CC1454</string>

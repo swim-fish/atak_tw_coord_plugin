@@ -268,6 +268,14 @@
     <string name="native_entry_system_address">住所</string>
     <string name="native_entry_address_full_label">住所</string>
     <string name="native_entry_address_full_hint">例：臺中市南屯區黎明路2段130號</string>
+    <string name="native_entry_address_county_label">県・市</string>
+    <string name="native_entry_address_county_hint">例：臺中市</string>
+    <string name="native_entry_address_district_label">区・郷・鎮</string>
+    <string name="native_entry_address_district_hint">例：南屯区</string>
+    <string name="native_entry_address_road_label">道路・地名</string>
+    <string name="native_entry_address_road_hint">例：黎明路2段</string>
+    <string name="native_entry_address_tail_label">番地・階</string>
+    <string name="native_entry_address_tail_hint">例：130号6階之4</string>
     <string name="native_entry_address_mode_structured">項目別入力</string>
     <string name="native_entry_address_mode_full">一括入力</string>
     <string name="native_entry_address_choose_result">候補を選択</string>
@@ -280,6 +288,10 @@
     <string name="native_entry_address_candidates_title">住所候補</string>
     <string name="native_entry_address_candidate_format">%1$s · %2$s</string>
     <string name="native_entry_a11y_address_full">台湾の完全な住所</string>
+    <string name="native_entry_a11y_address_county">住所の県または市</string>
+    <string name="native_entry_a11y_address_district">住所の区、郷または鎮</string>
+    <string name="native_entry_a11y_address_road">住所の道路または地名</string>
+    <string name="native_entry_a11y_address_tail">住所の路地、番地、階、および残りの文字</string>
     <string name="native_entry_a11y_address_mode">住所入力モードを切り替える</string>
     <string name="native_entry_a11y_address_choose">住所候補を選択する</string>
     <string name="native_entry_taipower_hint">例：B8146CC1454</string>

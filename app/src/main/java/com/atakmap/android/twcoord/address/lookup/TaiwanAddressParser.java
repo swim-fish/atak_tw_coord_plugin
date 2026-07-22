@@ -80,6 +80,18 @@ public final class TaiwanAddressParser {
     return new AddressDraft(raw, normalized, components, remainder, mode, revision, validation);
   }
 
+  /** Recombines the four visible structured fields and parses one canonical draft. */
+  public AddressDraft parseStructured(
+      String countyCity, String districtTownship, String roadLocality, String tail, long revision) {
+    return parse(
+        valueOrEmpty(countyCity)
+            + valueOrEmpty(districtTownship)
+            + valueOrEmpty(roadLocality)
+            + valueOrEmpty(tail),
+        revision,
+        AddressInputMode.STRUCTURED);
+  }
+
   public String normalize(String raw) {
     if (raw == null) return "";
     String value = Normalizer.normalize(raw, Normalizer.Form.NFKC).trim().replace('台', '臺');
@@ -171,6 +183,10 @@ public final class TaiwanAddressParser {
   private static String longestPrefix(String text, String[] values) {
     for (String value : values) if (text.startsWith(value)) return value;
     return "";
+  }
+
+  private static String valueOrEmpty(String value) {
+    return value != null ? value : "";
   }
 
   private static String districtPrefix(String remainder) {

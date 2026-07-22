@@ -121,17 +121,17 @@ same candidate set is produced.
 
 ### Tests first
 
-- [ ] T037 [P] [US2] Add failing 100-case lossless projection, edit/recombine, unclassified-text, no-duplicate, deterministic-order, and no-relookup-on-mode-switch tests in `app/src/test/java/com/atakmap/android/twcoord/address/lookup/AddressDraftProjectionTest.java`
-- [ ] T038 [P] [US2] Add failing rendering-guard, initial-full-mode, pure mode switch, read-only projection, repeated-switch-during-lookup, and accessibility-state tests in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/AddressEntryControllerTest.java`
-- [ ] T039 [P] [US2] Add failing Robolectric layout tests for four DD-sized rows, one scroll owner, 48 dp mode control, visibility switching, font scale, and host-control clearance in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanAddressLayoutTest.java`
+- [X] T037 [P] [US2] Add failing 100-case lossless projection, edit/recombine, unclassified-text, no-duplicate, deterministic-order, and no-relookup-on-mode-switch tests in `app/src/test/java/com/atakmap/android/twcoord/address/lookup/AddressDraftProjectionTest.java`
+- [X] T038 [P] [US2] Add failing rendering-guard, initial-full-mode, pure mode switch, read-only projection, repeated-switch-during-lookup, and accessibility-state tests in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/AddressEntryControllerTest.java`
+- [X] T039 [P] [US2] Add failing Robolectric layout tests for four DD-sized rows, one scroll owner, 48 dp mode control, visibility switching, font scale, and host-control clearance in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanAddressLayoutTest.java`
 
 ### Implementation
 
-- [ ] T040 [US2] Implement full/structured projection and deterministic recombination without changing draft revision on mode-only changes in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/AddressDraft.java`
-- [ ] T041 [US2] Implement rendering guards, four-field edit routing, mode-state rendering, and read-only pure projection in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/AddressEntryController.java`
-- [ ] T042 [US2] Add county/city, district/township, road/locality, and tail rows plus a 48 dp accessible split/join control to `app/src/main/res/layout/taiwan_coordinate_entry_pane.xml` and `app/src/main/res/values/dimens.xml`
-- [ ] T043 [P] [US2] Add aligned structured-field hints and mode-switch accessibility labels in `app/src/main/res/values/strings.xml`, `app/src/main/res/values-zh-rTW/strings.xml`, and `app/src/main/res/values-ja/strings.xml`
-- [ ] T044 [US2] Run the US2 projection, controller, layout, and full US1 regression suites via `app/build.gradle` and record the result in `specs/013-native-address-entry/quickstart.md`
+- [X] T040 [US2] Implement full/structured projection and deterministic recombination without changing draft revision on mode-only changes in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/AddressDraft.java`
+- [X] T041 [US2] Implement rendering guards, four-field edit routing, mode-state rendering, and read-only pure projection in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/AddressEntryController.java`
+- [X] T042 [US2] Add county/city, district/township, road/locality, and tail rows plus a 48 dp accessible split/join control to `app/src/main/res/layout/taiwan_coordinate_entry_pane.xml` and `app/src/main/res/values/dimens.xml`
+- [X] T043 [P] [US2] Add aligned structured-field hints and mode-switch accessibility labels in `app/src/main/res/values/strings.xml`, `app/src/main/res/values-zh-rTW/strings.xml`, and `app/src/main/res/values-ja/strings.xml`
+- [X] T044 [US2] Run the US2 projection, controller, layout, and full US1 regression suites via `app/build.gradle` and record the result in `specs/013-native-address-entry/quickstart.md`
 - [ ] T045 [RELEASE-GATE] [US2] Validate full/structured round trips, repeated switching, portrait/landscape reachability, DD-equivalent sizing, default and largest supported font scale on ATAK 5.5 and 5.7.0.9, then update `specs/013-native-address-entry/quickstart.md`
 
 **Checkpoint**: US1 and US2 together provide the complete forward-entry

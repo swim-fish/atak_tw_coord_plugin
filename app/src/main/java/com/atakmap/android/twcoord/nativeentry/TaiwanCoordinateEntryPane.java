@@ -12,6 +12,9 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import com.atakmap.android.gui.coordinateentry.CoordinateEntryPane;
+import com.atakmap.android.twcoord.address.lookup.AddressComponents;
+import com.atakmap.android.twcoord.address.lookup.AddressDraft;
+import com.atakmap.android.twcoord.address.lookup.AddressInputMode;
 import com.atakmap.android.twcoord.address.lookup.AddressLookupService;
 import com.atakmap.android.twcoord.address.lookup.AddressResolution;
 import com.atakmap.android.twcoord.address.lookup.AddressValidation;
@@ -89,6 +92,12 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
   private final EditText twd67Easting;
   private final EditText twd67Northing;
   private final EditText addressInput;
+  private final View addressFullRow;
+  private final View addressStructured;
+  private final EditText addressCounty;
+  private final EditText addressDistrict;
+  private final EditText addressRoad;
+  private final EditText addressTail;
   private final Button addressMode;
   private final Button addressChoose;
   private final RadioButton twd97Zone121;
@@ -213,6 +222,12 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     twd67Easting = requireView(R.id.native_entry_twd67_easting);
     twd67Northing = requireView(R.id.native_entry_twd67_northing);
     addressInput = requireView(R.id.native_entry_address_full);
+    addressFullRow = requireView(R.id.native_entry_address_full_row);
+    addressStructured = requireView(R.id.native_entry_address_structured);
+    addressCounty = requireView(R.id.native_entry_address_county);
+    addressDistrict = requireView(R.id.native_entry_address_district);
+    addressRoad = requireView(R.id.native_entry_address_road);
+    addressTail = requireView(R.id.native_entry_address_tail);
     addressMode = requireView(R.id.native_entry_address_mode);
     addressChoose = requireView(R.id.native_entry_address_choose);
     twd97Zone121 = requireView(R.id.native_entry_twd97_zone_121);
@@ -231,6 +246,10 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     addWatcher(
         twd67Northing, value -> controller.setTwdNorthing(CoordinateUnit.TWD67, value, true));
     addWatcher(addressInput, value -> addressController.editFull(value, true));
+    addWatcher(addressCounty, ignored -> editStructuredFromViews());
+    addWatcher(addressDistrict, ignored -> editStructuredFromViews());
+    addWatcher(addressRoad, ignored -> editStructuredFromViews());
+    addWatcher(addressTail, ignored -> editStructuredFromViews());
 
     systemGroup.setOnCheckedChangeListener(
         (group, checkedId) -> {
@@ -276,7 +295,16 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     addressController.setOnHumanChange(this::notifyHostChanged);
     addressController.setOnStateChanged(() -> root.post(this::renderControllerState));
     addressChoose.setOnClickListener(ignored -> candidateDialog.show());
-    addressMode.setEnabled(false);
+    addressMode.setOnClickListener(
+        ignored -> {
+          if (disposed) return;
+          AddressInputMode current = addressController.draft().mode();
+          addressController.switchMode(
+              current == AddressInputMode.FULL
+                  ? AddressInputMode.STRUCTURED
+                  : AddressInputMode.FULL);
+          renderControllerState();
+        });
     renderControllerState();
   }
 
@@ -456,6 +484,8 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     safeDisposeStep("TWD97 selector", () -> twd97Button.setEnabled(false));
     safeDisposeStep("TWD67 selector", () -> twd67Button.setEnabled(false));
     safeDisposeStep("Address selector", () -> addressButton.setEnabled(false));
+    safeDisposeStep("Address mode", () -> addressMode.setEnabled(false));
+    safeDisposeStep("Address chooser", () -> addressChoose.setEnabled(false));
     safeDisposeStep("TWD97 zone 121", () -> twd97Zone121.setEnabled(false));
     safeDisposeStep("TWD97 zone 119", () -> twd97Zone119.setEnabled(false));
     safeDisposeStep("TWD67 zone 121", () -> twd67Zone121.setEnabled(false));
@@ -481,7 +511,21 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       setText(twd97Northing, controller.northingText(CoordinateUnit.TWD97));
       setText(twd67Easting, controller.eastingText(CoordinateUnit.TWD67));
       setText(twd67Northing, controller.northingText(CoordinateUnit.TWD67));
-      setText(addressInput, addressController.draft().rawAddress());
+      AddressDraft addressDraft = addressController.draft();
+      AddressComponents components = addressDraft.components();
+      setText(addressInput, addressDraft.rawAddress());
+      setText(addressCounty, components.countyCity());
+      setText(addressDistrict, components.districtTownship());
+      setText(addressRoad, components.roadLocality());
+      setText(addressTail, addressDraft.structuredTail());
+      boolean fullAddressMode = addressDraft.mode() == AddressInputMode.FULL;
+      addressFullRow.setVisibility(fullAddressMode ? View.VISIBLE : View.GONE);
+      addressStructured.setVisibility(fullAddressMode ? View.GONE : View.VISIBLE);
+      addressMode.setText(
+          strings.get(
+              fullAddressMode
+                  ? R.string.native_entry_address_mode_structured
+                  : R.string.native_entry_address_mode_full));
       twd97ZoneGroup.check(
           controller.zone(CoordinateUnit.TWD97) == 119
               ? R.id.native_entry_twd97_zone_119
@@ -518,11 +562,25 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     twd67Easting.setEnabled(editable);
     twd67Northing.setEnabled(editable);
     addressInput.setEnabled(editable);
+    addressCounty.setEnabled(editable);
+    addressDistrict.setEnabled(editable);
+    addressRoad.setEnabled(editable);
+    addressTail.setEnabled(editable);
+    addressMode.setEnabled(!disposed);
     addressChoose.setEnabled(editable);
     twd97Zone121.setEnabled(editable);
     twd97Zone119.setEnabled(editable);
     twd67Zone121.setEnabled(editable);
     twd67Zone119.setEnabled(editable);
+  }
+
+  private void editStructuredFromViews() {
+    addressController.editStructured(
+        addressCounty.getText().toString(),
+        addressDistrict.getText().toString(),
+        addressRoad.getText().toString(),
+        addressTail.getText().toString(),
+        true);
   }
 
   private void renderFailedOperationState(String operation) {

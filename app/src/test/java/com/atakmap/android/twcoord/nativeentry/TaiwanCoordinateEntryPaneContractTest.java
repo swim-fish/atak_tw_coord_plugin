@@ -117,7 +117,9 @@ public final class TaiwanCoordinateEntryPaneContractTest {
     assertThat(address.getLayoutParams().height).isEqualTo(ViewGroup.LayoutParams.MATCH_PARENT);
     address.performClick();
     assertThat(addressPane.getVisibility()).isEqualTo(View.VISIBLE);
-    assertThat(countEditTexts(addressPane)).isEqualTo(1);
+    assertThat(countEditTexts(addressPane)).isEqualTo(5);
+    assertThat(root.findViewById(R.id.native_entry_address_structured).getVisibility())
+        .isEqualTo(View.GONE);
     LinearLayout row = root.findViewById(R.id.native_entry_address_full_row);
     EditText input = root.findViewById(R.id.native_entry_address_full);
     assertThat(((LinearLayout.LayoutParams) row.getChildAt(0).getLayoutParams()).weight)

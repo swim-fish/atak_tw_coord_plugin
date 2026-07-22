@@ -484,6 +484,151 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/native_entry_address_structured"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/native_entry_address_county_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:weightSum="10">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="3"
+                        android:gravity="center"
+                        android:labelFor="@id/native_entry_address_county"
+                        android:text="@string/native_entry_address_county_label"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="@dimen/native_entry_title_font" />
+
+                    <EditText
+                        android:id="@+id/native_entry_address_county"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="7"
+                        android:autofillHints="postalAddressRegion"
+                        android:contentDescription="@string/native_entry_a11y_address_county"
+                        android:hint="@string/native_entry_address_county_hint"
+                        android:inputType="textPostalAddress|textNoSuggestions"
+                        android:maxLines="1"
+                        android:singleLine="true"
+                        android:textColor="#FFFFFFFF"
+                        android:textColorHint="#99FFFFFF"
+                        android:textSize="@dimen/native_entry_title_font" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/native_entry_address_district_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:weightSum="10">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="3"
+                        android:gravity="center"
+                        android:labelFor="@id/native_entry_address_district"
+                        android:text="@string/native_entry_address_district_label"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="@dimen/native_entry_title_font" />
+
+                    <EditText
+                        android:id="@+id/native_entry_address_district"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="7"
+                        android:autofillHints="postalAddressLocality"
+                        android:contentDescription="@string/native_entry_a11y_address_district"
+                        android:hint="@string/native_entry_address_district_hint"
+                        android:inputType="textPostalAddress|textNoSuggestions"
+                        android:maxLines="1"
+                        android:singleLine="true"
+                        android:textColor="#FFFFFFFF"
+                        android:textColorHint="#99FFFFFF"
+                        android:textSize="@dimen/native_entry_title_font" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/native_entry_address_road_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:weightSum="10">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="3"
+                        android:gravity="center"
+                        android:labelFor="@id/native_entry_address_road"
+                        android:text="@string/native_entry_address_road_label"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="@dimen/native_entry_title_font" />
+
+                    <EditText
+                        android:id="@+id/native_entry_address_road"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="7"
+                        android:autofillHints="postalAddress"
+                        android:contentDescription="@string/native_entry_a11y_address_road"
+                        android:hint="@string/native_entry_address_road_hint"
+                        android:inputType="textPostalAddress|textNoSuggestions"
+                        android:maxLines="1"
+                        android:singleLine="true"
+                        android:textColor="#FFFFFFFF"
+                        android:textColorHint="#99FFFFFF"
+                        android:textSize="@dimen/native_entry_title_font" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/native_entry_address_tail_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:weightSum="10">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="3"
+                        android:gravity="center"
+                        android:labelFor="@id/native_entry_address_tail"
+                        android:text="@string/native_entry_address_tail_label"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="@dimen/native_entry_title_font" />
+
+                    <EditText
+                        android:id="@+id/native_entry_address_tail"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="7"
+                        android:autofillHints="postalAddress"
+                        android:contentDescription="@string/native_entry_a11y_address_tail"
+                        android:hint="@string/native_entry_address_tail_hint"
+                        android:imeOptions="actionSearch"
+                        android:inputType="textPostalAddress|textNoSuggestions"
+                        android:maxLines="1"
+                        android:singleLine="true"
+                        android:textColor="#FFFFFFFF"
+                        android:textColorHint="#99FFFFFF"
+                        android:textSize="@dimen/native_entry_title_font" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="end|center_vertical"
@@ -493,18 +638,18 @@
                     android:id="@+id/native_entry_address_mode"
                     style="?android:attr/borderlessButtonStyle"
                     android:layout_width="wrap_content"
-                    android:layout_height="48dp"
+                    android:layout_height="@dimen/native_entry_control_min_size"
                     android:contentDescription="@string/native_entry_a11y_address_mode"
-                    android:minHeight="48dp"
+                    android:minHeight="@dimen/native_entry_control_min_size"
                     android:text="@string/native_entry_address_mode_structured"
                     android:textAllCaps="false" />
 
                 <Button
                     android:id="@+id/native_entry_address_choose"
                     android:layout_width="wrap_content"
-                    android:layout_height="48dp"
+                    android:layout_height="@dimen/native_entry_control_min_size"
                     android:contentDescription="@string/native_entry_a11y_address_choose"
-                    android:minHeight="48dp"
+                    android:minHeight="@dimen/native_entry_control_min_size"
                     android:text="@string/native_entry_address_choose_result"
                     android:textAllCaps="false"
                     android:visibility="gone" />

@@ -131,6 +131,61 @@ public final class AddressEntryControllerTest {
     assertThat(controller.resolution()).isNull();
   }
 
+  @Test
+  public void modeSwitchIsPureProjectionAndDoesNotRelookupOrNotifyHost() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    AtomicInteger humanChanges = new AtomicInteger();
+    controller.setOnHumanChange(humanChanges::incrementAndGet);
+    controller.editFull("臺中市南屯區黎明路2段130號A棟", true);
+    long revision = controller.draft().draftRevision();
+    int schedules = debouncer.scheduleCount;
+    humanChanges.set(0);
+
+    for (int index = 0; index < 10; index++) {
+      controller.switchMode(index % 2 == 0 ? AddressInputMode.STRUCTURED : AddressInputMode.FULL);
+    }
+
+    assertThat(controller.draft().draftRevision()).isEqualTo(revision);
+    assertThat(controller.draft().composeStructured()).isEqualTo("臺中市南屯區黎明路2段130號A棟");
+    assertThat(debouncer.scheduleCount).isEqualTo(schedules);
+    assertThat(humanChanges).hasValue(0);
+  }
+
+  @Test
+  public void structuredEditRecombinesCanonicalDraftAndSchedulesOneLookup() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    controller.switchMode(AddressInputMode.STRUCTURED);
+
+    controller.editStructured("臺中市", "南屯區", "黎明路2段", "132號A棟", true);
+
+    assertThat(controller.draft().mode()).isEqualTo(AddressInputMode.STRUCTURED);
+    assertThat(controller.draft().rawAddress()).isEqualTo("臺中市南屯區黎明路2段132號A棟");
+    assertThat(controller.draft().structuredTail()).isEqualTo("132號A棟");
+    assertThat(debouncer.scheduleCount).isEqualTo(1);
+  }
+
+  @Test
+  public void readOnlyAllowsModeProjectionButRejectsTextMutation() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    controller.editFull("臺中市南屯區黎明路2段130號", false);
+    String before = controller.draft().rawAddress();
+    long revision = controller.draft().draftRevision();
+    controller.setEditable(false);
+
+    controller.switchMode(AddressInputMode.STRUCTURED);
+    controller.editStructured("臺北市", "信義區", "市府路", "1號", true);
+
+    assertThat(controller.draft().mode()).isEqualTo(AddressInputMode.STRUCTURED);
+    assertThat(controller.draft().rawAddress()).isEqualTo(before);
+    assertThat(controller.draft().draftRevision()).isEqualTo(revision);
+  }
+
   private static AddressEntryController controller(FakeService service, ManualDebouncer debouncer) {
     return new AddressEntryController(service, new TaiwanAddressParser(), debouncer, 20);
   }
@@ -162,11 +217,13 @@ public final class AddressEntryControllerTest {
   private static final class ManualDebouncer implements AddressEntryController.Debouncer {
     Runnable pending;
     long delayMs;
+    int scheduleCount;
 
     @Override
     public AddressEntryController.Cancellable schedule(Runnable runnable, long delayMs) {
       this.pending = runnable;
       this.delayMs = delayMs;
+      scheduleCount++;
       AtomicBoolean cancelled = new AtomicBoolean();
       return () -> cancelled.set(true);
     }

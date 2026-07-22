@@ -66,6 +66,11 @@ public final class AddressDraft {
     return components.compose() + unclassifiedText;
   }
 
+  /** Text shown in the fourth structured field, including text not safely classified. */
+  public String structuredTail() {
+    return components.tail() + unclassifiedText;
+  }
+
   public AddressDraft withMode(AddressInputMode nextMode) {
     return new AddressDraft(
         rawAddress,

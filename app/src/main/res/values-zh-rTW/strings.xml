@@ -270,6 +270,14 @@
     <string name="native_entry_system_address">地址</string>
     <string name="native_entry_address_full_label">地址</string>
     <string name="native_entry_address_full_hint">例如：臺中市南屯區黎明路2段130號</string>
+    <string name="native_entry_address_county_label">縣市</string>
+    <string name="native_entry_address_county_hint">例如：臺中市</string>
+    <string name="native_entry_address_district_label">鄉鎮市區</string>
+    <string name="native_entry_address_district_hint">例如：南屯區</string>
+    <string name="native_entry_address_road_label">道路地名</string>
+    <string name="native_entry_address_road_hint">例如：黎明路2段</string>
+    <string name="native_entry_address_tail_label">門牌樓層</string>
+    <string name="native_entry_address_tail_hint">例如：130號6樓之4</string>
     <string name="native_entry_address_mode_structured">分欄輸入</string>
     <string name="native_entry_address_mode_full">單欄輸入</string>
     <string name="native_entry_address_choose_result">選擇結果</string>
@@ -282,6 +290,10 @@
     <string name="native_entry_address_candidates_title">地址候選結果</string>
     <string name="native_entry_address_candidate_format">%1$s · %2$s</string>
     <string name="native_entry_a11y_address_full">完整台灣地址</string>
+    <string name="native_entry_a11y_address_county">地址縣市</string>
+    <string name="native_entry_a11y_address_district">地址鄉鎮市區</string>
+    <string name="native_entry_a11y_address_road">地址道路或地名</string>
+    <string name="native_entry_a11y_address_tail">地址巷弄、門牌、樓層及其餘文字</string>
     <string name="native_entry_a11y_address_mode">切換地址輸入模式</string>
     <string name="native_entry_a11y_address_choose">選擇地址候選結果</string>
     <string name="native_entry_taipower_hint">例：B8146CC1454</string>

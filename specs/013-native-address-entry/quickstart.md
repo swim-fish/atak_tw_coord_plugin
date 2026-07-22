@@ -166,6 +166,32 @@ separate red/green commits are not required.
 The physical ATAK 5.5 and 5.7.0.9 full-address/dialog journey remains PENDING
 under T036 and is not implied by the JVM/Robolectric result.
 
+### US2 Red-Green-Refactor (2026-07-22)
+
+- RED: the 100-row projection, mode-state controller, and layout suites failed
+  before the structured projection API, four compact rows, and active mode
+  control existed.
+- GREEN: all 100 corpus rows retained normalized and unclassified text exactly
+  once across full → structured → full; structured edits recombined in stable
+  field order, and the focused US2 plus US1 regression command passed.
+- REFACTOR: the mode switch is now a pure projection that keeps draft revision,
+  pending lookup, and host notification unchanged. Read-only text remains inert
+  while the display projection can still switch.
+
+```powershell
+.\gradlew.bat :app:spotlessApply :app:spotlessCheck `
+  :app:testCivDebugUnitTest `
+  --tests "com.atakmap.android.twcoord.address.lookup.AddressDraftProjectionTest" `
+  --tests "com.atakmap.android.twcoord.nativeentry.AddressEntryControllerTest" `
+  --tests "com.atakmap.android.twcoord.nativeentry.TaiwanAddressLayoutTest" `
+  --tests "com.atakmap.android.twcoord.nativeentry.TaiwanCoordinateEntryPaneContractTest" `
+  --tests "com.atakmap.android.twcoord.address.lookup.TaiwanAddressParserTest" `
+  --tests "com.atakmap.android.twcoord.address.lookup.DefaultAddressLookupServiceForwardTest"
+```
+
+The portrait/landscape, DD-equivalent geometry, and largest supported font
+checks on ATAK 5.5 and 5.7.0.9 remain PENDING under T045.
+
 ## 4. Repository quality gates
 
 ```powershell
