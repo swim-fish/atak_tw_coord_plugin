@@ -3,8 +3,13 @@ package com.atakmap.android.twcoord.address;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import android.database.sqlite.SQLiteDatabase;
-import com.atakmap.android.twcoord.address.forward.AddressCandidate;
-import com.atakmap.android.twcoord.address.forward.StreetTextNormaliser;
+import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
+import com.atakmap.android.twcoord.address.lookup.AddressDraft;
+import com.atakmap.android.twcoord.address.lookup.AddressInputMode;
+import com.atakmap.android.twcoord.address.lookup.AddressMatchKind;
+import com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser;
+import com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser;
+import com.atakmap.android.twcoord.coord.Wgs84;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -112,5 +117,29 @@ public final class AddressDatabaseFacadeStreetQueryTest {
   public void closedDbReturnsEmptyNoThrow() {
     facade.close();
     assertThat(search("中山路")).isEmpty(); // no throw
+  }
+
+  @Test
+  public void fullAddressCandidatesClassifyExactnessWithoutNearestNumberPromotion() {
+    TaiwanAddressParser parser = new TaiwanAddressParser();
+    AddressDraft draft = parser.parse("臺中市大甲區中山路1號", 1L, AddressInputMode.FULL);
+
+    List<AddressCandidate> results =
+        facade.fullAddressCandidates(
+            draft, new Wgs84(DAJIA_LAT, DAJIA_LON, 1L, Wgs84.Source.MAP_CENTRE), 20);
+
+    assertThat(results).hasSizeLessThanOrEqualTo(20);
+    assertThat(results)
+        .allMatch(
+            candidate ->
+                candidate.matchKind() == AddressMatchKind.EXACT
+                    || candidate.matchKind() == AddressMatchKind.PARTIAL);
+    assertThat(results)
+        .noneMatch(
+            candidate ->
+                candidate.matchKind() == AddressMatchKind.EXACT
+                    && !parser
+                        .normalize(candidate.displayAddress())
+                        .equals(draft.normalizedAddress()));
   }
 }

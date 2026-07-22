@@ -132,6 +132,40 @@ separate red/green commits are not required.
   --tests "com.atakmap.android.twcoord.address.lookup.AddressLookupServiceContractTest"
 ```
 
+### US1 Red-Green-Refactor (2026-07-22)
+
+- RED: the parser corpus, full-address database/service contracts, debounced
+  controller, fourth-tab pane, and candidate dialog tests initially failed
+  because canonical drafts, exactness/provenance, Address UI state, and the
+  ATAK-window/plugin-resource dialog boundary were absent.
+- GREEN: the focused command below completed with `BUILD SUCCESSFUL` after the
+  full-field Address workflow, deterministic bounded candidates, synchronous
+  resolved getter, metadata-only formatter, and revision-fenced chooser were
+  implemented.
+- REFACTOR: reusable forward-search candidate/ranking/normalization types were
+  moved under neutral `address.lookup` ownership; optional provenance metadata
+  is omitted when unavailable, and the complete focused suite plus Spotless
+  remained green.
+
+```powershell
+.\gradlew.bat :app:spotlessApply :app:spotlessCheck `
+  :app:testCivDebugUnitTest `
+  --tests "com.atakmap.android.twcoord.address.lookup.TaiwanAddressParserTest" `
+  --tests "com.atakmap.android.twcoord.address.lookup.DefaultAddressLookupServiceForwardTest" `
+  --tests "com.atakmap.android.twcoord.address.AddressDatabaseFacadeStreetQueryTest" `
+  --tests "com.atakmap.android.twcoord.nativeentry.AddressEntryControllerTest" `
+  --tests "com.atakmap.android.twcoord.nativeentry.TaiwanCoordinateEntryPaneContractTest" `
+  --tests "com.atakmap.android.twcoord.nativeentry.TaiwanCoordinateEntryPaneSafetyTest" `
+  --tests "com.atakmap.android.twcoord.nativeentry.AddressCandidateDialogTest" `
+  --tests "com.atakmap.android.twcoord.address.lookup.CompassDirectionTest" `
+  --tests "com.atakmap.android.twcoord.address.lookup.StreetCandidateReorderTest" `
+  --tests "com.atakmap.android.twcoord.address.lookup.StreetTextNormaliserTest" `
+  --tests "com.atakmap.android.twcoord.address.forward.ForwardSearchControllerTest"
+```
+
+The physical ATAK 5.5 and 5.7.0.9 full-address/dialog journey remains PENDING
+under T036 and is not implied by the JVM/Robolectric result.
+
 ## 4. Repository quality gates
 
 ```powershell

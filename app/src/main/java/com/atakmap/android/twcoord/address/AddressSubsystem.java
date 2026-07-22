@@ -431,10 +431,10 @@ public final class AddressSubsystem implements AutoCloseable {
       double metres = haversineMeters(queryLat, queryLon, f.record().lat(), f.record().lon());
       if (metres >= ARROW_MIN_DISTANCE_M) {
         double bearing =
-            com.atakmap.android.twcoord.address.forward.CompassDirection.bearingDegrees(
+            com.atakmap.android.twcoord.address.lookup.CompassDirection.bearingDegrees(
                 queryLat, queryLon, f.record().lat(), f.record().lon());
         text =
-            com.atakmap.android.twcoord.address.forward.CompassDirection.arrowGlyph(bearing)
+            com.atakmap.android.twcoord.address.lookup.CompassDirection.arrowGlyph(bearing)
                 + " "
                 + text;
       }

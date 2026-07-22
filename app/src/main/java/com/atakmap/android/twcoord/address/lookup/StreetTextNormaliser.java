@@ -1,4 +1,4 @@
-package com.atakmap.android.twcoord.address.forward;
+package com.atakmap.android.twcoord.address.lookup;
 
 /**
  * Folds operator-typed street text into the canonical form used for matching (FR-010):

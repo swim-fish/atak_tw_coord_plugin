@@ -61,6 +61,18 @@
                 android:text="@string/native_entry_system_twd67"
                 android:textColor="@color/native_entry_segment_text"
                 android:textSize="@dimen/native_entry_title_font" />
+
+            <RadioButton
+                android:id="@+id/native_entry_system_address"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/native_entry_segment_option"
+                android:button="@null"
+                android:gravity="center"
+                android:text="@string/native_entry_system_address"
+                android:textColor="@color/native_entry_segment_text"
+                android:textSize="@dimen/native_entry_title_font" />
         </RadioGroup>
 
         <LinearLayout
@@ -425,6 +437,76 @@
                     android:text="@string/native_entry_outer_island_advisory"
                     android:textColor="#FFFFD699"
                     android:textSize="@dimen/native_entry_help_font"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/native_entry_pane_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/native_entry_address_full_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="10">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:gravity="center"
+                    android:labelFor="@id/native_entry_address_full"
+                    android:text="@string/native_entry_address_full_label"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+
+                <EditText
+                    android:id="@+id/native_entry_address_full"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:autofillHints="postalAddress"
+                    android:contentDescription="@string/native_entry_a11y_address_full"
+                    android:hint="@string/native_entry_address_full_hint"
+                    android:imeOptions="actionSearch"
+                    android:inputType="textPostalAddress|textNoSuggestions"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFFFF"
+                    android:textColorHint="#99FFFFFF"
+                    android:textSize="@dimen/native_entry_title_font" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end|center_vertical"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/native_entry_address_mode"
+                    style="?android:attr/borderlessButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:contentDescription="@string/native_entry_a11y_address_mode"
+                    android:minHeight="48dp"
+                    android:text="@string/native_entry_address_mode_structured"
+                    android:textAllCaps="false" />
+
+                <Button
+                    android:id="@+id/native_entry_address_choose"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:contentDescription="@string/native_entry_a11y_address_choose"
+                    android:minHeight="48dp"
+                    android:text="@string/native_entry_address_choose_result"
+                    android:textAllCaps="false"
                     android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>

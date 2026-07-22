@@ -1,4 +1,4 @@
-package com.atakmap.android.twcoord.address.forward;
+package com.atakmap.android.twcoord.address.lookup;
 
 /**
  * Pure-logic compass helper for the forward-search result list: the initial-bearing from the

@@ -3,6 +3,8 @@ package com.atakmap.android.twcoord.address.forward;
 import com.atakmap.android.twcoord.address.AddressDatabaseFacade;
 import com.atakmap.android.twcoord.address.boundary.LocalityResult;
 import com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade;
+import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
+import com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser;
 import com.atakmap.coremap.log.Log;
 import java.util.Collections;
 import java.util.List;

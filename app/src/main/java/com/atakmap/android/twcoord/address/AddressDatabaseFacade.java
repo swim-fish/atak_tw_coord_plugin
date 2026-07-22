@@ -1,6 +1,15 @@
 package com.atakmap.android.twcoord.address;
 
+import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
+import com.atakmap.android.twcoord.address.lookup.AddressDraft;
+import com.atakmap.android.twcoord.address.lookup.AddressMatchKind;
+import com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser;
+import com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser;
+import com.atakmap.android.twcoord.coord.Wgs84;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * SDK seam over the runtime SQLite reader the resolver consumes. Wraps the {@code
@@ -46,12 +55,54 @@ public interface AddressDatabaseFacade extends AutoCloseable {
    * @param district the 鄉鎮市區 name (already {@code 臺}→{@code 台} normalised, matches {@code
    *     places.township})
    * @param foldedFragment the street fragment AFTER {@link
-   *     com.atakmap.android.twcoord.address.forward.StreetTextNormaliser#fold}
+   *     com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser#fold}
    */
-  default java.util.List<com.atakmap.android.twcoord.address.forward.AddressCandidate>
+  default java.util.List<com.atakmap.android.twcoord.address.lookup.AddressCandidate>
       streetCandidates(
           String district, String foldedFragment, double anchorLat, double anchorLon, int limit) {
     return java.util.Collections.emptyList();
+  }
+
+  /**
+   * Bounded full-address lookup built on the established street query. Exactness is classified by
+   * canonical full-address equality; a nearby house number is retained only as PARTIAL.
+   */
+  default List<AddressCandidate> fullAddressCandidates(
+      AddressDraft draft, Wgs84 anchorPoint, int limit) {
+    if (draft == null || limit <= 0 || draft.components().districtTownship().isEmpty()) {
+      return java.util.Collections.emptyList();
+    }
+    Wgs84 anchor =
+        anchorPoint != null ? anchorPoint : new Wgs84(23.7, 120.9, 1L, Wgs84.Source.MAP_CENTRE);
+    int queryLimit = Math.min(500, Math.max(50, limit * 4));
+    List<AddressCandidate> rows =
+        streetCandidates(
+            draft.components().districtTownship(),
+            StreetTextNormaliser.fold(draft.components().roadLocality()),
+            anchor.latitudeDeg(),
+            anchor.longitudeDeg(),
+            queryLimit);
+    TaiwanAddressParser parser = new TaiwanAddressParser();
+    List<AddressCandidate> classified = new ArrayList<>();
+    for (AddressCandidate row : rows) {
+      String normalized = parser.normalize(row.displayAddress());
+      AddressMatchKind kind =
+          normalized.equals(draft.normalizedAddress())
+              ? AddressMatchKind.EXACT
+              : AddressMatchKind.PARTIAL;
+      classified.add(row.withMatch(normalized, kind));
+    }
+    classified.sort(
+        Comparator.comparingInt(
+                (AddressCandidate candidate) ->
+                    candidate.matchKind() == AddressMatchKind.EXACT ? 0 : 1)
+            .thenComparingDouble(AddressCandidate::distanceMeters)
+            .thenComparing(AddressCandidate::normalizedAddress)
+            .thenComparing(AddressCandidate::candidateId));
+    if (classified.size() > limit) {
+      return new ArrayList<>(classified.subList(0, limit));
+    }
+    return classified;
   }
 
   /**
@@ -61,9 +112,9 @@ public interface AddressDatabaseFacade extends AutoCloseable {
    * what disambiguates same-named streets across districts. Never throws (Constitution VI).
    *
    * @param foldedFragment the street fragment AFTER {@link
-   *     com.atakmap.android.twcoord.address.forward.StreetTextNormaliser#fold}
+   *     com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser#fold}
    */
-  default java.util.List<com.atakmap.android.twcoord.address.forward.AddressCandidate>
+  default java.util.List<com.atakmap.android.twcoord.address.lookup.AddressCandidate>
       streetCandidatesCountyWide(
           String foldedFragment, double anchorLat, double anchorLon, int limit) {
     return java.util.Collections.emptyList();

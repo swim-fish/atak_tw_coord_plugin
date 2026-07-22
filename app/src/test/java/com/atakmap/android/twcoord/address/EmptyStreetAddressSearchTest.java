@@ -3,8 +3,8 @@ package com.atakmap.android.twcoord.address;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import android.database.sqlite.SQLiteDatabase;
-import com.atakmap.android.twcoord.address.forward.AddressCandidate;
-import com.atakmap.android.twcoord.address.forward.StreetTextNormaliser;
+import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
+import com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser;
 import java.util.List;
 import org.junit.After;
 import org.junit.Before;

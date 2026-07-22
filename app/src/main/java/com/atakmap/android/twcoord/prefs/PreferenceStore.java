@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import com.atakmap.android.twcoord.address.ConfidenceThresholds;
-import com.atakmap.android.twcoord.address.forward.ResultOrdering;
+import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.gotopage.MarkerMode;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;

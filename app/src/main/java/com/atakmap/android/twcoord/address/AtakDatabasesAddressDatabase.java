@@ -120,18 +120,17 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
   }
 
   @Override
-  public java.util.List<com.atakmap.android.twcoord.address.forward.AddressCandidate>
+  public java.util.List<com.atakmap.android.twcoord.address.lookup.AddressCandidate>
       streetCandidates(
           String district, String foldedFragment, double anchorLat, double anchorLon, int limit) {
-    java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw> raw =
+    java.util.List<com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.Raw> raw =
         new java.util.ArrayList<>();
     if (district == null || district.isEmpty()) {
       return java.util.Collections.emptyList();
     }
     try {
       String frag = foldedFragment == null ? "" : foldedFragment;
-      String tai =
-          com.atakmap.android.twcoord.address.forward.StreetTextNormaliser.taiVariant(frag);
+      String tai = com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser.taiVariant(frag);
       // Prefix match on both glyph variants (FR-009 substring incl. 段, never `=`); the app-side
       // re-fold in StreetCandidateRanker confirms the 臺↔台 equivalence (FR-010).
       raw = queryRows(district, frag + "%", tai + "%");
@@ -143,21 +142,20 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
       Log.w(TAG, "streetCandidates threw", t);
       return java.util.Collections.emptyList();
     }
-    return com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.rank(
+    return com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.rank(
         raw, foldedFragment, anchorLat, anchorLon, limit);
   }
 
   @Override
-  public java.util.List<com.atakmap.android.twcoord.address.forward.AddressCandidate>
+  public java.util.List<com.atakmap.android.twcoord.address.lookup.AddressCandidate>
       streetCandidatesCountyWide(
           String foldedFragment, double anchorLat, double anchorLon, int limit) {
-    java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw> raw =
+    java.util.List<com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.Raw> raw =
         new java.util.ArrayList<>();
     try {
       String frag = foldedFragment == null ? "" : foldedFragment;
       if (frag.isEmpty()) return java.util.Collections.emptyList();
-      String tai =
-          com.atakmap.android.twcoord.address.forward.StreetTextNormaliser.taiVariant(frag);
+      String tai = com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser.taiVariant(frag);
       raw = queryRowsCountyWide(frag + "%", tai + "%");
       if (raw.isEmpty()) {
         raw = queryRowsCountyWide("%" + frag + "%", "%" + tai + "%");
@@ -166,16 +164,16 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
       Log.w(TAG, "streetCandidatesCountyWide threw", t);
       return java.util.Collections.emptyList();
     }
-    return com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.rank(
+    return com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.rank(
         raw, foldedFragment, anchorLat, anchorLon, limit);
   }
 
   /** Bounds the whole-county scan; the app-side ranker caps further to the display limit. */
   private static final int COUNTY_WIDE_SQL_LIMIT = 5000;
 
-  private java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw>
+  private java.util.List<com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.Raw>
       queryRowsCountyWide(String like1, String like2) {
-    java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw> out =
+    java.util.List<com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.Raw> out =
         new java.util.ArrayList<>();
     try (CursorIface c =
         db.query(
@@ -190,7 +188,7 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
             new String[] {like1, like2})) {
       while (c.moveToNext()) {
         out.add(
-            new com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw(
+            new com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.Raw(
                 c.getDouble(0),
                 c.getDouble(1),
                 c.isNull(2) ? "" : c.getString(2),
@@ -202,9 +200,9 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
     return out;
   }
 
-  private java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw>
+  private java.util.List<com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.Raw>
       queryRows(String district, String like1, String like2) {
-    java.util.List<com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw> out =
+    java.util.List<com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.Raw> out =
         new java.util.ArrayList<>();
     try (CursorIface c =
         db.query(
@@ -224,7 +222,7 @@ public final class AtakDatabasesAddressDatabase implements AddressDatabaseFacade
             new String[] {district, like1, like2})) {
       while (c.moveToNext()) {
         out.add(
-            new com.atakmap.android.twcoord.address.forward.StreetCandidateRanker.Raw(
+            new com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.Raw(
                 c.getDouble(0),
                 c.getDouble(1),
                 c.isNull(2) ? "" : c.getString(2),

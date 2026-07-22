@@ -3,8 +3,8 @@
  * com.atakmap.android.twcoord.address.forward.ForwardSearchController}) plus its value types
  * ({@link com.atakmap.android.twcoord.address.forward.CountySource}, {@link
  * com.atakmap.android.twcoord.address.forward.ForwardSearchQuery}, {@link
- * com.atakmap.android.twcoord.address.forward.AddressCandidate}) and the street-text folding helper
- * ({@link com.atakmap.android.twcoord.address.forward.StreetTextNormaliser}).
+ * com.atakmap.android.twcoord.address.lookup.AddressCandidate}) and the street-text folding helper
+ * ({@link com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser}).
  *
  * <p>Pure logic — the {@code ForwardSearchReceiver} DropDownReceiver is a thin view over the
  * controller. County selection defaults to the map centre; street matching is substring (incl. the

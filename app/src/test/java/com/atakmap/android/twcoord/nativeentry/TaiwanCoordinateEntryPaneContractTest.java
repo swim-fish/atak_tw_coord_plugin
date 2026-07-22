@@ -13,11 +13,24 @@ import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import com.atakmap.android.gui.coordinateentry.CoordinateEntryPane;
+import com.atakmap.android.twcoord.address.lookup.AddressAvailability;
+import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
+import com.atakmap.android.twcoord.address.lookup.AddressLookupService;
+import com.atakmap.android.twcoord.address.lookup.AddressMatchKind;
+import com.atakmap.android.twcoord.address.lookup.DatasetIdentity;
+import com.atakmap.android.twcoord.address.lookup.ForwardAddressRequest;
+import com.atakmap.android.twcoord.address.lookup.ForwardAddressResult;
+import com.atakmap.android.twcoord.address.lookup.LookupHandle;
+import com.atakmap.android.twcoord.address.lookup.ReverseAddressRequest;
+import com.atakmap.android.twcoord.address.lookup.ReverseAddressResult;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
+import com.atakmap.android.twcoord.coord.Wgs84;
 import com.atakmap.android.twcoord.plugin.R;
 import com.atakmap.coremap.maps.coords.GeoPoint;
 import com.atakmap.coremap.maps.coords.GeoPointMetaData;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -90,6 +103,59 @@ public final class TaiwanCoordinateEntryPaneContractTest {
     assertThat(((LinearLayout.LayoutParams) taipowerInput.getLayoutParams()).weight)
         .isEqualTo(7.0f);
     assertThat(status.getVisibility()).isEqualTo(View.GONE);
+  }
+
+  @Test
+  public void fourthAddressTabUsesEqualSelectorWeightAndOneCompactFullField() {
+    View root = pane.getView();
+    RadioGroup group = root.findViewById(R.id.native_entry_system_group);
+    RadioButton address = root.findViewById(R.id.native_entry_system_address);
+    ViewGroup addressPane = root.findViewById(R.id.native_entry_pane_address);
+
+    assertThat(group.getChildCount()).isEqualTo(4);
+    assertThat(((LinearLayout.LayoutParams) address.getLayoutParams()).weight).isEqualTo(1.0f);
+    assertThat(address.getLayoutParams().height).isEqualTo(ViewGroup.LayoutParams.MATCH_PARENT);
+    address.performClick();
+    assertThat(addressPane.getVisibility()).isEqualTo(View.VISIBLE);
+    assertThat(countEditTexts(addressPane)).isEqualTo(1);
+    LinearLayout row = root.findViewById(R.id.native_entry_address_full_row);
+    EditText input = root.findViewById(R.id.native_entry_address_full);
+    assertThat(((LinearLayout.LayoutParams) row.getChildAt(0).getLayoutParams()).weight)
+        .isEqualTo(3.0f);
+    assertThat(((LinearLayout.LayoutParams) input.getLayoutParams()).weight).isEqualTo(7.0f);
+  }
+
+  @Test
+  public void addressGetterIsSynchronousAndFormatterReadsOnlyResolutionMetadata() throws Exception {
+    Context context = RuntimeEnvironment.getApplication();
+    TaiwanEntryController coordinateController =
+        new TaiwanEntryController(CoordinateUnit.TAIPOWER, ignored -> {});
+    AddressEntryController addressController =
+        new AddressEntryController(
+            new ResolvedAddressLookupService(),
+            new com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser(),
+            new ImmediateDebouncer(),
+            20);
+    TaiwanCoordinateEntryPane addressPane =
+        new TaiwanCoordinateEntryPane(
+            context, context, coordinateController, addressController, new TaiwanEntryFormatter());
+    addressPane.getView().findViewById(R.id.native_entry_system_address).performClick();
+
+    assertThatThrownBy(addressPane::getGeoPointMetaData)
+        .isInstanceOf(CoordinateEntryPane.CoordinateException.class);
+    EditText input = addressPane.getView().findViewById(R.id.native_entry_address_full);
+    input.setText("臺北市信義區市府路1號");
+    String before = input.getText().toString();
+
+    GeoPointMetaData resolved = addressPane.getGeoPointMetaData();
+    assertThat(resolved.get().getLatitude()).isEqualTo(25.033d);
+    assertThat(resolved.getMetaData("twcoord.address.display")).isEqualTo("臺北市信義區市府路1號");
+    assertThat(addressPane.format(resolved)).isEqualTo("臺北市信義區市府路1號");
+    assertThat(input.getText().toString()).isEqualTo(before);
+
+    GeoPointMetaData plain = GeoPointMetaData.wrap(new GeoPoint(25.033, 121.565));
+    assertThat(addressPane.format(plain)).isNull();
+    assertThat(input.getText().toString()).isEqualTo(before);
   }
 
   @Test
@@ -308,5 +374,84 @@ public final class TaiwanCoordinateEntryPaneContractTest {
 
   private static int dp(Context context, int value) {
     return Math.round(value * context.getResources().getDisplayMetrics().density);
+  }
+
+  private static int countEditTexts(View view) {
+    int count = view instanceof EditText ? 1 : 0;
+    if (!(view instanceof ViewGroup)) return count;
+    ViewGroup group = (ViewGroup) view;
+    for (int index = 0; index < group.getChildCount(); index++) {
+      count += countEditTexts(group.getChildAt(index));
+    }
+    return count;
+  }
+
+  private static final class ImmediateDebouncer implements AddressEntryController.Debouncer {
+    @Override
+    public AddressEntryController.Cancellable schedule(Runnable runnable, long delayMs) {
+      assertThat(delayMs).isEqualTo(250L);
+      runnable.run();
+      return () -> {};
+    }
+  }
+
+  private static final class ResolvedAddressLookupService implements AddressLookupService {
+    private final AddressAvailability availability =
+        new AddressAvailability(Collections.singleton("臺北市"), true, 3L, false);
+
+    @Override
+    public LookupHandle forward(
+        ForwardAddressRequest request, Consumer<ForwardAddressResult> callback) {
+      DatasetIdentity dataset =
+          new DatasetIdentity("臺北市", "2026-07-22", 1, "fixture-sha", "fixture");
+      AddressCandidate candidate =
+          new AddressCandidate(
+              "fixture-1",
+              "臺北市信義區市府路1號",
+              request.normalizedAddress(),
+              new Wgs84(25.033, 121.565, 1L, Wgs84.Source.COT_TARGET),
+              AddressMatchKind.EXACT,
+              0d,
+              "臺北市",
+              dataset);
+      callback.accept(
+          ForwardAddressResult.candidates(
+              request.identity(), Collections.singletonList(candidate)));
+      return new TestHandle();
+    }
+
+    @Override
+    public LookupHandle reverse(
+        ReverseAddressRequest request, Consumer<ReverseAddressResult> callback) {
+      return new TestHandle();
+    }
+
+    @Override
+    public AddressAvailability availability() {
+      return availability;
+    }
+
+    @Override
+    public void addAvailabilityListener(AvailabilityListener listener) {}
+
+    @Override
+    public void removeAvailabilityListener(AvailabilityListener listener) {}
+
+    @Override
+    public void close() {}
+  }
+
+  private static final class TestHandle implements LookupHandle {
+    private boolean cancelled;
+
+    @Override
+    public void cancel() {
+      cancelled = true;
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return cancelled;
+    }
   }
 }

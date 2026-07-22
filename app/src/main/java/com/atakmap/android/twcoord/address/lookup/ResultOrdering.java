@@ -1,4 +1,4 @@
-package com.atakmap.android.twcoord.address.forward;
+package com.atakmap.android.twcoord.address.lookup;
 
 /**
  * Forward-search result ordering (feature 007 US1). Persisted by name in {@code PreferenceStore}

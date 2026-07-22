@@ -7,6 +7,7 @@ import com.atakmap.android.twcoord.address.AddressRecord;
 import com.atakmap.android.twcoord.address.GeneratorMetadata;
 import com.atakmap.android.twcoord.address.boundary.LocalityResult;
 import com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade;
+import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
