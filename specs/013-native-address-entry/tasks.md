@@ -250,9 +250,9 @@ repository quality gates after story behavior converges.
 - [ ] T086 [RELEASE-GATE] Replace and renumber active Tools/native Address screenshots, scrub EXIF/XMP, verify Git LFS, and update references in `docs/images/README.md`
 - [X] T087 Add or update resource parity and accessibility assertions for English, zh-TW, and Japanese strings in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanAddressResourcesTest.java`
 - [X] T088 Audit for retired class/action/resource references, Activity-context plugin resource IDs, unexpected `INTERNET` permission, dead code, and unowned TODOs across `app/src/main/` and record the commands/results in `specs/013-native-address-entry/quickstart.md`
-- [ ] T089 Run `:app:spotlessApply`, `:app:spotlessCheck`, `:app:lint`, `:app:testCivDebugUnitTest`, and `:app:assembleCivDebug` against `app/build.gradle`, then record exact results in `specs/013-native-address-entry/quickstart.md`
-- [ ] T090 Run documentation link/image checks, sensitive-path scans, `git diff --check`, and a reviewed-scope status audit for `docs/` and `specs/013-native-address-entry/`, then record results in `specs/013-native-address-entry/quickstart.md`
-- [ ] T091 Run `/speckit-converge` against `specs/013-native-address-entry/` and append only concrete remaining implementation gaps to `specs/013-native-address-entry/tasks.md`
+- [X] T089 Run `:app:spotlessApply`, `:app:spotlessCheck`, `:app:lint`, `:app:testCivDebugUnitTest`, and `:app:assembleCivDebug` against `app/build.gradle`, then record exact results in `specs/013-native-address-entry/quickstart.md`
+- [X] T090 Run documentation link/image checks, sensitive-path scans, `git diff --check`, and a reviewed-scope status audit for `docs/` and `specs/013-native-address-entry/`, then record results in `specs/013-native-address-entry/quickstart.md`
+- [X] T091 Run `/speckit-converge` against `specs/013-native-address-entry/` and append only concrete remaining implementation gaps to `specs/013-native-address-entry/tasks.md`
 
 ---
 
@@ -271,6 +271,12 @@ acceptance, TPP output, signing, and public publication.
 - [ ] T099 [RELEASE-GATE] Run the project release-readiness check before any user-authorized TPP upload and record the exact commit/version/pending gates in `docs/contributing/release-readiness.md`
 - [ ] T100 [RELEASE-GATE] After a user-authorized TPP build, verify signer, version, source commit, source archive SHA-256, APK SHA-256, and durable non-Gradle staging before publication using `docs/release/tpp-runbook.md`
 - [ ] T101 [RELEASE-GATE] Re-run release-readiness before any user-authorized signed tag or GitHub release and record any narrowed compatibility claim in `docs/contributing/release-readiness.md`
+
+---
+
+## Phase 10: Convergence
+
+- [X] T102 Mark the retired custom Go To and forward-search UI records as historical and update the UI index to route current readers to native Taiwan/Address and the internal dataset manager in `docs/ui/README.md`, `docs/ui/input-page.md`, and `docs/ui/forward-search-page.md` per FR-036 and Constitution V (partial)
 
 ---
 

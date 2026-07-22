@@ -524,3 +524,36 @@ Recorded on 2026-07-22 against the feature branch before the full Gradle gate:
 This is source/test evidence only. It does not close the physical dialog,
 compatibility, screenshot, performance, memory, offline-capture, or upgrade
 release gates.
+
+## 16. Phase 8 repository quality gates
+
+Executed on 2026-07-22 from the repository root with the existing Gradle 8.14.3
+cache:
+
+```text
+.\gradlew.bat :app:spotlessApply :app:spotlessCheck :app:lint \
+  :app:testCivDebugUnitTest :app:assembleCivDebug
+```
+
+Result: `BUILD SUCCESSFUL in 1m 23s`; 62 actionable tasks (47 executed, 15
+up-to-date). `spotlessCheck`, Android lint, the complete civ-debug JVM suite,
+and civ-debug APK assembly all completed without errors. Gradle reported the
+existing flat-directory/configuration-time/deprecation notices and the JVM
+class-sharing notice; no new source lint failure was emitted.
+
+Documentation/reviewed-scope checks then produced:
+
+- `python scripts/check-doc-images.py`: 26 images checked; names, local image
+  links, Git LFS attributes, and sensitive metadata passed;
+- local Markdown target scan: 77 relative links under `docs/` and this feature
+  directory resolved; absolute website routes and external URLs were excluded;
+- sensitive scan for workstation-home paths, local-file URI prefixes, and the
+  known local username under `docs/` and this feature directory: no matches;
+- `git diff --check`: pass;
+- reviewed-scope status contained only the intentional ADR broken-link repair
+  before the final evidence commit.
+
+The link scan found and repaired one historical ADR link to the feature-013
+retired `ic_tw_coord_goto.xml`; the ADR now records it as a removed historical
+input instead of claiming the file still exists. These gates establish source,
+test, documentation, and debug-build readiness only.
