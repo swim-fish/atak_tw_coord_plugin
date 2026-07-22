@@ -219,6 +219,35 @@ checks on ATAK 5.5 and 5.7.0.9 remain PENDING under T045.
 Convert Coordinate, first-tap host dialogs, read-only host integration,
 unload/re-enable, and both physical ATAK lines remain PENDING under T059.
 
+### US4 Red-Green-Refactor (2026-07-23)
+
+- RED: preference presentation tests still required all readout toggles to be
+  enabled before dataset management was selectable, and lifecycle inspection
+  exposed four public toolbar items.
+- GREEN: focused preference, lifecycle, registry, shared address-subsystem, and
+  native registrar tests passed after the management row became independent of
+  readout visibility and the toolbar array was reduced to `TwCoordTool`.
+- REFACTOR: removed only `OfflineAddressTool`; retained
+  `ACTION_SHOW_OFFLINE_ADDRESS`, `OfflineAddressReceiver`, the settings
+  navigator, and the native Address navigator. Android instrumentation sources
+  for Import, Replace, Remove, progress, error, and same-session refresh also
+  compiled successfully.
+
+```powershell
+.\gradlew.bat :app:spotlessApply `
+  :app:testCivDebugUnitTest `
+  --tests "com.atakmap.android.twcoord.TwCoordPreferenceFragmentAddressTest" `
+  --tests "com.atakmap.android.twcoord.plugin.TwCoordLifecycleTest" `
+  --tests "com.atakmap.android.twcoord.address.ActiveDatasetRegistryTest" `
+  --tests "com.atakmap.android.twcoord.address.AddressSubsystemMultiCountyTest" `
+  --tests "com.atakmap.android.twcoord.nativeentry.NativeCoordinateEntryRegistrarTest" `
+  :app:compileCivDebugAndroidTestJavaWithJavac
+```
+
+The command completed with `BUILD SUCCESSFUL`. The instrumentation journeys
+remain source/compile coverage only; exact one-item host rendering and manager
+operation on ATAK 5.5 and 5.7.0.9 remain PENDING under T069.
+
 ## 4. Repository quality gates
 
 ```powershell

@@ -187,18 +187,18 @@ an address without another plugin Tools entry.
 
 ### Tests first
 
-- [ ] T060 [P] [US4] Add failing preference tests for an always-selectable dataset status/management row with all address readout toggles off in `app/src/test/java/com/atakmap/android/twcoord/TwCoordPreferenceFragmentAddressTest.java`
-- [ ] T061 [P] [US4] Add failing toolbar composition tests requiring only `TwCoordTool` and no public offline-address item in `app/src/test/java/com/atakmap/android/twcoord/plugin/TwCoordLifecycleTest.java`
-- [ ] T062 [P] [US4] Extend manager instrumentation coverage for navigation from settings plus Import, Replace, Remove, progress, error, and same-session availability refresh in `app/src/androidTest/java/com/atakmap/android/twcoord/address/OfflineAddressFlowBCEspressoTest.java`
+- [X] T060 [P] [US4] Add failing preference tests for an always-selectable dataset status/management row with all address readout toggles off in `app/src/test/java/com/atakmap/android/twcoord/TwCoordPreferenceFragmentAddressTest.java`
+- [X] T061 [P] [US4] Add failing toolbar composition tests requiring only `TwCoordTool` and no public offline-address item in `app/src/test/java/com/atakmap/android/twcoord/plugin/TwCoordLifecycleTest.java`
+- [X] T062 [P] [US4] Extend manager instrumentation coverage for navigation from settings plus Import, Replace, Remove, progress, error, and same-session availability refresh in `app/src/androidTest/java/com/atakmap/android/twcoord/address/OfflineAddressFlowBCEspressoTest.java`
 
 ### Implementation
 
-- [ ] T063 [US4] Keep `pref_address_dataset_status` enabled and route it to the internal manager independently of readout toggles in `app/src/main/java/com/atakmap/android/twcoord/TwCoordPreferenceFragment.java`
-- [ ] T064 [US4] Reduce the public toolbar array to the single existing `TwCoordTool` in `app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordLifecycle.java`
-- [ ] T065 [US4] Remove only the public `OfflineAddressTool` while retaining the internal receiver/action contract in `app/src/main/java/com/atakmap/android/twcoord/plugin/OfflineAddressTool.java` and `app/src/main/java/com/atakmap/android/twcoord/address/OfflineAddressIntents.java`
-- [ ] T066 [US4] Inject the retained internal manager navigator into native Address and settings paths without exposing a second Tools item in `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java` and `app/src/main/java/com/atakmap/android/twcoord/address/OfflineAddressReceiver.java`
-- [ ] T067 [P] [US4] Replace active `TW Offline Addr` navigation wording with `TW Coordinates` dataset-management wording in `app/src/main/res/values/strings.xml`, `app/src/main/res/values-zh-rTW/strings.xml`, and `app/src/main/res/values-ja/strings.xml`
-- [ ] T068 [US4] Run preference, lifecycle, registry, manager, and same-session availability tests through `app/build.gradle` and record results in `specs/013-native-address-entry/quickstart.md`
+- [X] T063 [US4] Keep `pref_address_dataset_status` enabled and route it to the internal manager independently of readout toggles in `app/src/main/java/com/atakmap/android/twcoord/TwCoordPreferenceFragment.java`
+- [X] T064 [US4] Reduce the public toolbar array to the single existing `TwCoordTool` in `app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordLifecycle.java`
+- [X] T065 [US4] Remove only the public `OfflineAddressTool` while retaining the internal receiver/action contract in `app/src/main/java/com/atakmap/android/twcoord/plugin/OfflineAddressTool.java` and `app/src/main/java/com/atakmap/android/twcoord/address/OfflineAddressIntents.java`
+- [X] T066 [US4] Inject the retained internal manager navigator into native Address and settings paths without exposing a second Tools item in `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java` and `app/src/main/java/com/atakmap/android/twcoord/address/OfflineAddressReceiver.java`
+- [X] T067 [P] [US4] Replace active `TW Offline Addr` navigation wording with `TW Coordinates` dataset-management wording in `app/src/main/res/values/strings.xml`, `app/src/main/res/values-zh-rTW/strings.xml`, and `app/src/main/res/values-ja/strings.xml`
+- [X] T068 [US4] Run preference, lifecycle, registry, manager, and same-session availability tests through `app/build.gradle` and record results in `specs/013-native-address-entry/quickstart.md`
 - [ ] T069 [RELEASE-GATE] [US4] Reload the plugin and verify exactly one Tools item plus empty/import/replace/remove/status/provenance and all-toggles-off manager access on ATAK 5.5 and 5.7.0.9, then update `specs/013-native-address-entry/quickstart.md`
 
 **Checkpoint**: Offline management remains complete and discoverable through

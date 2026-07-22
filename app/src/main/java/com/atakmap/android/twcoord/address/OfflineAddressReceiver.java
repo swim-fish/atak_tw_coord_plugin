@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /**
- * Tools-menu DropDown for the Offline Address page. Two visual states:
+ * Internal DropDown for offline address dataset management. Two visual states:
  *
  * <ul>
  *   <li><b>State A</b> — no dataset installed → empty-state copy + Import button.

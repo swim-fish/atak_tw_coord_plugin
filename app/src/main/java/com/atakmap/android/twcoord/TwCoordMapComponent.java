@@ -451,10 +451,10 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     gotoFilter.addAction(TwCoordGotoIntents.ACTION_SHOW_GOTO);
     AtakBroadcast.getInstance().registerReceiver(gotoReceiver, gotoFilter);
 
-    // Feature 004 — Offline Address page. Third Tools-menu icon (OfflineAddressTool) fires
-    // SHOW_OFFLINE_ADDRESS which this receiver consumes. The importer + executor are owned
-    // here so they outlive any single drop-down open/close cycle and so US2's AddressSubsystem
-    // can reuse the same importer to read activeOrNull() without re-opening files.
+    // Retained internal offline-data manager. Settings and the native Address pane fire
+    // SHOW_OFFLINE_ADDRESS; no standalone Tools item exposes this receiver. The importer +
+    // executor are owned here so they outlive any single drop-down open/close cycle and so the
+    // AddressSubsystem can reuse the same importer without re-opening files.
     // Pass `2` as the max supported schema version — per the generator's
     // docs/data-contract.md (v2, 2026-05-24 evening) v2 adds `places_rtree`. The importer
     // accepts both v1 (plugin builds R*Tree at import) and v2 (generator already shipped it,
@@ -664,8 +664,7 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     // the 2026-05-27 device-verified 20/100 m behaviour).
     addressSubsystem.setConfidenceThresholds(activePrefs.confidenceThresholds());
 
-    // Re-open the facade when the operator imports / removes a dataset on the
-    // Offline Address page.
+    // Re-open the facade when the operator imports or removes a dataset in the internal manager.
     addressDatasetChangedReceiver =
         new BroadcastReceiver() {
           @Override

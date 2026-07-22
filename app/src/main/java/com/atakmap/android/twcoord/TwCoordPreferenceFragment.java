@@ -42,11 +42,6 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
   @SuppressLint("StaticFieldLeak")
   private static Context pluginContext;
 
-  /** Suffix that distinguishes the three new address-row keys. */
-  private static final String[] ADDRESS_ROW_KEYS = {
-    "pref_address_row_me", "pref_address_row_target", "pref_address_row_map"
-  };
-
   /** Settable in tests so Robolectric can inject a stub importer without spinning up the map. */
   private AddressImporterProvider addressImporterProvider = TwCoordMapComponent::getAddressImporter;
 
@@ -95,8 +90,8 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
           });
     }
 
-    // Feature 004 / US3 — clicking the status row opens the Offline Address page so the operator
-    // can import / replace / remove the dataset without leaving Settings.
+    // The dataset manager remains an internal page. This settings row is its public navigation
+    // path after the standalone Tools item is retired.
     Preference status = findPreference("pref_address_dataset_status");
     if (status != null) {
       status.setOnPreferenceClickListener(
@@ -259,16 +254,17 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
   /**
    * Reads the {@link ActiveDatasetRegistry} snapshot (multi-county; Feature 005) with a {@link
    * AddressBundleImporter#activeOrNull()} fallback for the v1.0.5 intermediate state and updates
-   * the status row's summary + clickability per the four-state truth table in {@code
-   * contracts/address-preferences.md § Dataset presence summary table} (extended in 005):
+   * the status row's summary + clickability:
    *
    * <ul>
-   *   <li>all three switches off → hide the row (disabled + non-selectable)
-   *   <li>at least one switch on, registry has N ≥ 1 counties → "N counties active — tap to open"
-   *   <li>at least one switch on, registry empty, legacy active dataset → "Active: &lt;county&gt; ·
-   *       &lt;data_date&gt;" (auto-migrate intermediate state)
-   *   <li>at least one switch on, nothing active anywhere → "No dataset — tap to open"
+   *   <li>registry has N ≥ 1 counties → "N counties active — tap to open"
+   *   <li>registry empty, legacy active dataset → "Active: &lt;county&gt; · &lt;data_date&gt;"
+   *       (auto-migrate intermediate state)
+   *   <li>nothing active anywhere → "No dataset — tap to open"
    * </ul>
+   *
+   * <p>The row is always enabled and selectable because dataset management is independent of the
+   * three map readout visibility toggles.
    *
    * <p>Wrapped per Constitution VI: any exception (e.g. importer/registry not yet built because the
    * map component hasn't run {@code onCreate}) is logged at {@code Log.w} and treated as "no
@@ -280,7 +276,6 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
     try {
       status.setTitle(wrapped.getString(R.string.pref_address_dataset_status_title));
 
-      boolean anyToggleOn = anyAddressToggleOn();
       int activeCountyCount = 0;
       try {
         ActiveDatasetRegistry registry = addressRegistryProvider.get();
@@ -294,14 +289,15 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
         legacyActive = importer != null ? importer.activeOrNull() : null;
       }
       DatasetStatusPresentation p =
-          resolveDatasetStatus(
-              new ResourceStatusStrings(wrapped), anyToggleOn, activeCountyCount, legacyActive);
+          resolveDatasetStatus(new ResourceStatusStrings(wrapped), activeCountyCount, legacyActive);
       status.setEnabled(p.enabled());
       status.setSelectable(p.selectable());
       status.setSummary(p.summary());
     } catch (Throwable t) {
       Log.w(TAG, "refreshAddressDatasetStatus threw", t);
       try {
+        status.setEnabled(true);
+        status.setSelectable(true);
         status.setSummary(wrapped.getString(R.string.pref_address_dataset_status_summary_none));
       } catch (Throwable ignored) {
         // best-effort
@@ -318,13 +314,7 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
    * registry once it has been bound.
    */
   static DatasetStatusPresentation resolveDatasetStatus(
-      StatusStrings strings,
-      boolean anyToggleOn,
-      int activeCountyCount,
-      AddressDataset legacyActive) {
-    if (!anyToggleOn) {
-      return new DatasetStatusPresentation(strings.datasetStatusNone(), false, false);
-    }
+      StatusStrings strings, int activeCountyCount, AddressDataset legacyActive) {
     if (activeCountyCount > 0) {
       return new DatasetStatusPresentation(
           strings.datasetStatusActiveMulti(activeCountyCount), true, true);
@@ -342,7 +332,7 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
   /**
    * Phase 7 T042 — populate the per-county list under the {@code pref_address_active_datasets}
    * category from {@link ActiveDatasetRegistry#snapshot()}. Each row is non-selectable
-   * (informational); the operator manages datasets via the Offline Address page reachable from the
+   * (informational); the operator manages datasets via the internal manager reachable from the
    * status row above. Wrapped per Constitution VI: registry failures degrade to an empty category
    * rather than crashing the preferences fragment.
    */
@@ -411,15 +401,6 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
           .append(';');
     }
     return sb.toString();
-  }
-
-  private boolean anyAddressToggleOn() {
-    SharedPreferences sp = getPreferenceManager().getSharedPreferences();
-    if (sp == null) return false;
-    for (String key : ADDRESS_ROW_KEYS) {
-      if (sp.getBoolean(key, false)) return true;
-    }
-    return false;
   }
 
   /** Immutable presentation result for the dataset-status row. */
