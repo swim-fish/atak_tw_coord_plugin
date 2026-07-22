@@ -8,6 +8,7 @@ the full 10 MB / 324 MB databases.
 |---|---|---|
 | `townships-fixture.sqlite` | `townships.sqlite` (MOI release 1140318) | level-4 縣市 for 台中市 / 彰化縣 / 雲林縣 / 南投縣 + all their level-7/8 districts (88), R*Tree rebuilt to match |
 | `places-taichung-fixture.sqlite` | `places-taichung.sqlite` (TGOS 115-01) | 4,112 rows in 大甲區 / 西區 — the 中山路 / 向上路 / 臺灣大道 families + a sample of others; `places_rtree` rebuilt |
+| `native_address_entry_corpus.csv` | Feature 013 curated grammar corpus, cross-checked against TGOS/MOI fixture names | 100 full-width, alias, numeral, subnumber, floor, room, overlapping-locality, and unclassified-tail cases; no coordinate accuracy claim |
 
 ## Ground truth the tests rely on
 
@@ -24,3 +25,9 @@ python scripts/build_test_fixtures.py
 Re-run after any generator rebuild; if the reference districts or street families
 change, update the test expectations in `TownshipBoundaryFacadeTest` /
 `AddressDatabaseFacadeStreetQueryTest` accordingly.
+
+The native Address corpus is deterministic input/normalization evidence, not
+an address-location dataset. `CURATED_FEATURE_013` rows use locality and road
+names represented by the existing fixtures or explicit Taiwan address grammar
+regressions. Update its expected projections only with a matching specification
+change.

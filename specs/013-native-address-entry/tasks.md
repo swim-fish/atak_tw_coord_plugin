@@ -30,11 +30,11 @@ the production or evidence file affected by each task.
 **Purpose**: Freeze the accepted architecture, test corpus, and compatibility
 evidence before behavioural implementation begins.
 
-- [ ] T001 Create ADR-0026 covering the shared lookup owner, one-Tools-entry information architecture, inert legacy preferences, stale-action handling, no-data native fallback, and supersession of ADR-0009/0020/0021/0023 in `docs/adr/0026-native-address-entry-and-tools-consolidation.md`
-- [ ] T002 Add ADR-0026 with its supersedes relationships and status to `docs/adr/README.md`
-- [ ] T003 [P] Add a provenance-recorded corpus of at least 100 normalized, overlapping-locality, proper-numeral, subnumber, floor, ambiguous, and unsupported-tail cases to `app/src/test/resources/fixtures/native_address_entry_corpus.csv`
-- [ ] T004 [P] Reproduce the pinned 5.7.0.9 `javap -public` signatures, SDK SHA-256, and stable 5.5.1.1–5.5.1.10 source comparison and record sanitized results in `specs/013-native-address-entry/quickstart.md`
-- [ ] T005 Record the pre-change focused JVM baseline and the Red-Green-Refactor evidence convention for this feature in `specs/013-native-address-entry/quickstart.md`
+- [X] T001 Create ADR-0026 covering the shared lookup owner, one-Tools-entry information architecture, inert legacy preferences, stale-action handling, no-data native fallback, and supersession of ADR-0009/0020/0021/0023 in `docs/adr/0026-native-address-entry-and-tools-consolidation.md`
+- [X] T002 Add ADR-0026 with its supersedes relationships and status to `docs/adr/README.md`
+- [X] T003 [P] Add a provenance-recorded corpus of at least 100 normalized, overlapping-locality, proper-numeral, subnumber, floor, ambiguous, and unsupported-tail cases to `app/src/test/resources/fixtures/native_address_entry_corpus.csv`
+- [X] T004 [P] Reproduce the pinned 5.7.0.9 `javap -public` signatures, SDK SHA-256, and stable 5.5.1.1–5.5.1.10 source comparison and record sanitized results in `specs/013-native-address-entry/quickstart.md`
+- [X] T005 Record the pre-change focused JVM baseline and the Red-Green-Refactor evidence convention for this feature in `specs/013-native-address-entry/quickstart.md`
 
 ---
 

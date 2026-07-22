@@ -56,6 +56,20 @@ Expected compile SDK hash:
 Retain command output with the plan evidence. Exact ATAK 5.5 binary/runtime
 behavior remains `[RELEASE-GATE]` until run physically.
 
+### Recorded implementation evidence (2026-07-22)
+
+- Pinned ATAK-CIV 5.7.0.9 `main.jar` SHA-256 matched
+  `8AE6CA6028F72A99537FC2CE9436A4E4964356CB90C7934C35ABE7A7CB065B70`.
+- `javap -public` exposed the complete `CoordinateEntryPane` method set plus
+  public synchronized `registerPane`/`unregisterPane` and public static
+  capability lookup.
+- ATAK-CIV 5.5.1.1 and 5.5.1.10 exposed the same public registration methods;
+  `CoordinateEntryPane.java` had no diff. Capability implementation changes
+  were limited to an elevation focus helper, portrait dialog height, and
+  import ordering, not the plugin registration seam.
+- Source/API status is PASS. Exact 5.5 binary callback and dialog behavior
+  remains PENDING as a physical `[RELEASE-GATE]`.
+
 ## 3. Test-first focused suites
 
 After each new behavior has first failed for the intended reason, run focused
@@ -89,6 +103,14 @@ Required focused coverage:
   read-only, formatting metadata, locale refresh, and disposal;
 - single toolbar item and stale retired actions producing no legacy UI;
 - existing datasets/preferences surviving upgrade without re-import.
+
+### Pre-change baseline (2026-07-22)
+
+The focused `gotopage`, `nativeentry`, and `address` JVM suites completed with
+`BUILD SUCCESSFUL` before feature implementation. Gradle used the existing
+8.14.3 wrapper cache. For every behavioral task, record the intended failing
+assertion before production changes and the focused green command afterward;
+separate red/green commits are not required.
 
 ## 4. Repository quality gates
 
