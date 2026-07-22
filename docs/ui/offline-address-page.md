@@ -3,11 +3,17 @@
 **Feature**: 004-offline-address
 **Source**: `app/src/main/res/layout/offline_address_page.xml` + `app/src/main/java/com/atakmap/android/twcoord/address/OfflineAddressReceiver.java`
 
-The Offline Address page is a `DropDownReceiver` side-pane opened by the third Tools-menu icon (or by tapping the Dataset-status row in Settings). It is the operator's single management surface for the offline reverse-address dataset — import, replace, remove, inspect provenance.
+The Offline Address page is an internal `DropDownReceiver` side-pane reached
+from **TW Coordinates** (the plugin's only public Tools item) or the always-
+selectable Dataset-status row in Settings/native Address guidance. It is the
+operator's single management surface for forward and reverse offline-address
+datasets: import, replace, remove, and inspect provenance. It is not registered
+as a separate Tools item.
 
 ## Anatomy
 
-The page renders one of two states determined by `AddressBundleImporter.activeOrNull()`.
+The page renders one of two states from the active multi-county registry. The
+legacy single-active importer participates only during upgrade migration.
 
 ### State A — no dataset installed
 
@@ -269,10 +275,10 @@ sizing behaviour is unchanged — only rendering.
 
 ### Localisation follows the in-app language override (ADR-0020 F5)
 
-`OfflineAddressReceiver` now takes a `Supplier<Context>` localised-context supplier
+`OfflineAddressReceiver` takes a `Supplier<Context>` localised-context supplier
 (`() -> localisedPluginContext`) instead of a fixed `pluginContext`, and
 re-inflates in `onReceive` when the UI language changed since the last open — the
-same pattern as `ForwardSearchReceiver` (ADR-0003). Before this fix the storage
+same resource-ownership pattern as the native candidate dialog. Before this fix the storage
 page's strings (import / replace / remove, total-usage figure, `_boundary` row,
 overflow menu, legend) were frozen at construction and never switched language.
 As with the forward page, a language change while the page is **open** takes

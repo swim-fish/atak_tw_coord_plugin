@@ -1,236 +1,133 @@
 # TW Coordinates Plugin — User Guide
 
-> **Traditional Chinese version:** [user-guide_zh.md](user-guide_zh.md)
+This guide covers the current operator workflow. Taiwan coordinate and address
+entry are integrated into ATAK's native coordinate dialog. The plugin exposes
+one Tools item: **TW Coordinates**.
 
-**Version:** v1.4.2 | **ATAK-CIV compatibility:** 5.5.0 — 5.7.x
-**Latest release:** <https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest>
+## 1. Install and confirm
 
-This is the short version. If you just want to install the plugin and use it, read this. For deeper background — accuracy notes, datum shift internals, MIL-STD-2525 marker reference — see the source files in `docs/`.
+1. Install the plugin APK that matches the target ATAK signing line.
+2. Open ATAK and enable **TW Coordinates** when prompted.
+3. Confirm **Settings → Plugins** (or **TAK Package Mgmt**) reports the plugin
+   as **Loaded**.
 
----
+Upgrades can normally use `adb install -r`. Imported county datasets and active
+preferences are retained. Retired custom GoTo Recent/marker/icon preferences
+are ignored and are not used by the native workflow.
 
-## Table of contents
+## 2. Native Taiwan entry
 
-1. [Download & install](#1-download--install)
-2. [Confirm it loaded](#2-confirm-it-loaded)
-3. [Use it in ATAK](#3-use-it-in-atak)
-4. [Settings](#4-settings)
-5. [FAQ](#5-faq)
+### Go To a coordinate
 
----
+1. Open ATAK **Go To** and select **Taiwan**.
+2. Select **Taipower**, **TWD97**, or **TWD67**.
+3. Enter the coordinate. TWD97/TWD67 also require zone **121** (main island) or
+   **119** (outer islands).
+4. Tap ATAK's **OK** to perform the host Go To action.
 
-## 1. Download & install
-
-<table>
-<tr>
-<td width="280" valign="top"><img src="images/01-package-mgmt-dialog.jpg" alt="TAK Package Mgmt confirmation dialog" width="280"></td>
-<td valign="top">
-
-1. Grab the latest APK from the [Releases page](https://github.com/swim-fish/atak_tw_coord_plugin/releases/latest). The file is named `ATAK-Plugin-TWCoord-vX.Y.Z-ATAK-5.5+.apk`.
-2. Sideload it onto the device. Either:
-   - `adb install -r <apk>` from a workstation, or
-   - copy the APK to the device and tap it in a file manager.
-3. ATAK pops the **TAK Package Mgmt** dialog. Accept it.
-
-That's it — no extra steps, no separate "enable" toggle. The plugin is now active inside ATAK.
-
-> Upgrading from a previous version? Just `adb install -r` over the top. The signing certificate is identical across releases, so Android keeps your settings and your Recent list intact.
-
-</td>
-</tr>
-</table>
-
----
-
-## 2. Confirm it loaded
-
-If you want to double-check before relying on it:
-
-- **Settings → Plugins** (or **TAK Package Mgmt**) → look for **TW Coordinates** with status **Loaded**.
-- Or just open the Tools menu (next section). If the two TW entries are there, the plugin is live.
-
-If the entries are missing, force-stop ATAK and reopen it:
-
-```
-adb shell am force-stop com.atakmap.app.civ
-```
-
----
-
-## 3. Use it in ATAK
-
-The plugin integrates Taiwan coordinate entry into ATAK's native **Go To**
-dialog and adds two entries to the **Tools** menu. Use the native dialog for a
-quick coordinate jump; use the Tools entries for the plugin's advanced GoTo
-workflow and on-map readout.
-
-<table>
-<tr>
-<td width="280" valign="top"><img src="images/08-tools-menu.jpg" alt="Tools menu showing both TW entries" width="280"></td>
-<td valign="top">
-
-Open ATAK's **Tools** menu (the toolbar button in the bottom-right, or edge-swipe). The plugin adds **two** entries:
-
-- <img src="images/08b-tools-icon-tw-coord-goto.png" alt="TW Coord GoTo icon" width="24"> **TW Coord GoTo** — opens the advanced side panel for marker modes, Recent entries, and ATAK icon-palette use (§3.2).
-- <img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates icon" width="24"> **TW Coordinates** — opens the plugin's settings page, where you choose the on-map readout's coordinate system and show or hide it (§3.3). _(Up to v1.1.0 this icon cycled Taipower → TWD97 → TWD67 → Off on each tap; from v1.2.0 it opens Settings instead — see §3.3.)_
-
-</td>
-</tr>
-</table>
-
-### 3.1 ATAK Go To — use native Taiwan entry
-
-#### Enter or Go To a Taiwan coordinate
-
-Starting with v1.4.0, Taiwan coordinate systems appear directly in ATAK's
-standard coordinate-entry dialog:
-
-1. Open ATAK's **Go To** dialog and select the **Taiwan** pane.
-2. Choose **Taipower**, **TWD97**, or **TWD67**.
-3. Enter the coordinate, or tap ATAK's **Auto Fill** button to convert the
-   current point supplied by ATAK into the selected format.
-4. Tap **OK** to let ATAK perform the normal Go To action.
+Taipower accepts 9-character (10 m) and 11-character (1 m) main-island codes.
+TWD97/TWD67 accept integer easting and northing in metres. TWD67 zone 119 shows
+an accuracy advisory; Taipower reports out of range for outer-island points.
 
 <p align="center">
-<img src="images/22-atak-enter-coordinate.jpg" alt="ATAK Enter Coordinate dialog showing the compact Taiwan pane with Taipower selected" width="900"><br>
-<sub>Enter Coordinate → Taiwan → Taipower. The compact pane leaves ATAK's elevation and action controls unobstructed.</sub>
+<img src="images/22-atak-enter-coordinate.jpg" alt="ATAK Enter Coordinate dialog showing the compact Taiwan pane" width="900"><br>
+<sub>The previous three-tab Taiwan pane. A new numbered Address screenshot is pending the release-gate capture.</sub>
 </p>
 
-#### Convert a map item's coordinate
+### Go To an offline address
 
-To inspect the Taiwan representations of an existing map item:
+1. Import the applicable county dataset through **TW Coordinates** (section 4).
+2. Open ATAK **Go To → Taiwan → Address**.
+3. Use **Full address** for one field, or switch to **Structured** for county/
+   city, district, road/locality, and remaining address fields.
+4. Enter an address. Common `台`/`臺`, full-width digit, spacing, punctuation,
+   and address-unit numeral variants are normalised locally.
+5. For one exact result, confirm with ATAK. If multiple credible records remain,
+   tap **Choose result**, inspect the county/district/road context, and select
+   the intended record before confirming.
 
-1. Open the map item's details and tap its **Coordinate** value.
-2. In **Convert Coordinate**, select the **Taiwan** pane.
-3. Switch among Taipower, TWD97, and TWD67. No Auto Fill is needed; v1.4.2 has
-   already prepared all representable Taiwan systems from the selected item.
+Switching Full/Structured modes preserves the same canonical draft, including
+unclassified text. No result selection moves the map by itself; ATAK performs
+the action only after its normal confirmation. A missing county dataset leaves
+the coordinate tabs usable and displays data-management guidance.
+
+See [Native Address workflow](tw-addr-search.md) for detailed examples.
+
+### Convert a map item's coordinate
+
+1. Open a map item's details and tap its **Coordinate** value.
+2. In **Convert Coordinate**, select **Taiwan**.
+3. Switch among Taipower, TWD97, TWD67, and Address.
+
+The coordinate tabs are prepared immediately. Address resolves asynchronously
+from the exact map-item WGS84 point. It may display a nearby address record, but
+it never replaces or snaps the host point to that record.
 
 <p align="center">
-<img src="images/20-atak-point-detail-coordinate.jpg" alt="ATAK point details with the Coordinate field highlighted as the Convert Coordinate entry point" width="420"><br>
-<sub>Tap the Coordinate value in a map item's details.</sub>
+<img src="images/20-atak-point-detail-coordinate.jpg" alt="ATAK point details with the Coordinate value highlighted" width="420"><br>
+<sub>Tap the Coordinate value to open Convert Coordinate.</sub>
 </p>
 
 <p align="center">
-<img src="images/21-atak-convert-coordinate.jpg" alt="ATAK Convert Coordinate dialog with the Taiwan pane available beside MGRS" width="900"><br>
-<sub>Convert Coordinate exposes Taiwan beside ATAK's built-in coordinate pane.</sub>
+<img src="images/21-atak-convert-coordinate.jpg" alt="ATAK Convert Coordinate dialog with Taiwan beside built-in panes" width="900"><br>
+<sub>Taiwan is available beside ATAK's built-in coordinate panes.</sub>
 </p>
 
-When ATAK opens this pane from a map item's coordinate or another shared
-coordinate dialog, v1.4.2 prepares all three Taiwan systems from the supplied
-point. You can switch between Taipower, TWD97, and TWD67 without tapping Auto
-Fill. If one system cannot represent the point, only that system is cleared;
-the other prepared systems remain available.
+### Host controls and read-only use
 
-- Taipower accepts 9-character (10 m) and 11-character (1 m) main-island
-  codes. Auto Fill and Copy use the canonical 11-character form, such as
-  `H7509 DB4016`.
-- TWD97 and TWD67 accept integer easting/northing values in metres. Select zone
-  **121** for the main island or **119** for outer islands.
-- **Clear** clears the active Taiwan draft. **Copy** writes a canonical string
-  to the clipboard without changing the draft.
-- ATAK owns the final Go To or other location action. The plugin returns horizontal
-  WGS84 coordinates and does not invent altitude.
-- In read-only ATAK dialogs, the point remains visible and copyable while the
-  fields and selectors are disabled.
+- **Auto Fill** converts ATAK's current point into the active tab only. Address
+  performs reverse lookup without snapping the host point.
+- **Clear** clears only the active tab and cancels an active Address lookup or
+  candidate set when Address is selected.
+- **Copy** requests the active canonical representation without moving the map.
+- In read-only host dialogs, resolved values remain visible while fields,
+  selectors, and candidate actions are disabled.
 
-Use this native pane for the quickest familiar path. Use **TW Coord GoTo** when
-you need marker affiliation, the ATAK icon palette, or one of the ten Recent
-entries. Native selection and advanced-page drafts are stored independently.
+## 3. On-map readouts
 
-TWD67 zone 119 displays an accuracy advisory. Taipower cannot represent an
-outer-island point; activation or Auto Fill clears the applicable Taipower
-draft and reports the coverage limitation instead of leaving a stale
-coordinate on screen.
+The plugin can show map-centre (**MAP**), own-position (**ME**), and selected-
+target (**TGT**) coordinate rows. Each uses the selected Taipower/TWD97/TWD67
+display unit. Optional offline address rows show the nearest local address, a
+direction arrow, and `~`/`~~` confidence markers according to Settings.
 
-### 3.2 TW Coord GoTo — advanced coordinate workflow
+Tap a coordinate readout to copy the exact displayed string. Taipower shows an
+out-of-range fallback outside its main-island coverage; zone-119 TWD values are
+labelled so they are not confused with zone 121.
 
-<table>
-<tr>
-<td width="280" valign="top"><img src="images/09-coordinate-input-taipower.jpg" alt="Coordinate Input — Taipower tab" width="280"></td>
-<td valign="top">
+## 4. TW Coordinates settings and datasets
 
-Tap **TW Coord GoTo** and a panel slides in from the right with a segmented selector for three coordinate systems: **Taipower**, **TWD97**, **TWD67**. _(v1.3.2 refreshes this page into the compact, glove-friendly layout shared with the other plugin pages — same workflow, clearer controls.)_
+Open the plugin's only public Tools item, **TW Coordinates**, or navigate to:
 
-Workflow on every tab is the same:
+**Settings → Tool Preferences → Specific Tool Preferences → TW Coordinates**
 
-1. **Type the coordinate** in that tab's format, or tap **Use map centre** (the button in the panel header) to copy the current map-centre coordinate into the active tab's field.
-2. **(Optional) pick a Marker mode** — eight choices laid out as a glove-friendly 2×4 grid:
-   - *Move only* (default — just pan, no marker)
-   - *Waypoint*, *GoTo Pin*, *Point of Interest*
-   - *Friendly*, *Hostile*, *Neutral*, *Unknown* (MIL-STD-2525 colours)
-3. **Tap Submit & go.** The map pans to your coordinate. If a Marker mode other than *Move only* is picked, a marker is dropped there using ATAK's native marker tool — long-press it later to edit, move, or delete it from the standard radial menu.
+Available controls include:
 
-Alternative drop button: **Use ATAK icon palette…** pans to the coordinate and then hands off to ATAK's native Enter Location pane, letting you pick any iconset / pallet ATAK has installed.
+- display unit and on-map readout visibility;
+- MAP/ME/TGT address-row toggles and confidence preset;
+- native Address candidate result ordering;
+- plugin UI language (system, English, Traditional Chinese, or Japanese);
+- dataset status and the internal offline-data manager.
 
-Every successful submit is saved in **Recent** (10 entries, oldest dropped first). Tap a Recent row to refill the input; tap its **×** to delete just that row.
-
-</td>
-</tr>
-</table>
-
-### 3.3 TW Coordinates — on-map readout
-
-<table>
-<tr>
-<td width="280" valign="top"><img src="images/07-map-readout-widget.jpg" alt="Map readout widget" width="280"></td>
-<td valign="top">
-
-Once the readout is on, two lines appear on the right edge of the map:
-
-- **ME TPC: …** — your own position
-- **MAP TPC: …** — the current map-centre position
-
-Both lines render in whichever coordinate system you picked in **Settings** — Taipower / TWD97 / TWD67 (§4). Tapping **TW Coordinates** in the Tools menu now **opens that settings page**; it no longer cycles the format on each tap. To hide the readout entirely, turn off **Show on-map readout** in Settings.
-
-</td>
-</tr>
-</table>
-
----
-
-## 4. Settings
-
-<table>
-<tr>
-<td width="280" valign="top"><img src="images/04-tw-coordinates-settings.jpg" alt="TW Coordinates preferences page" width="280"></td>
-<td valign="top">
-
-Open: ATAK → **Settings** (gear icon) → **Tool Preferences** → **Specific Tool Preferences** → **TW Coordinates**.
-
-You can change the following, plus one shortcut button:
-
-- **Display unit** — which coordinate system the on-map readout widget uses: Taipower / TWD97 / TWD67. This is now the only place to switch format — tapping the **TW Coordinates** Tools icon opens this page rather than cycling the format (§3.3).
-- **Show on-map readout** — show or hide the on-map coordinate readout widget. This replaces the old "keep tapping the Tools icon until it reaches *Off*" behaviour.
-- **Address search result order** — orders the TW Addr Search results by *distance* or *best text match* (also toggled on the search page itself).
-- **UI language** — forces the plugin's strings to *Use system locale* / *English* / *中文（正體）* / *日本語*. Only affects this plugin — the rest of ATAK is untouched.
-- **Open Coordinate Input** *(button)* — shortcut equivalent of Tools → TW Coord GoTo.
-
-There is also a read-only **Accuracy notice** block summarising error bounds (TWD97 < 1 m, TWD67 ±3–5 m main island / ±10–20 m outer islands, Taipower main-island only). Reference info — nothing to tap.
-
-</td>
-</tr>
-</table>
-
----
+The dataset-status row remains selectable even if all three address readout
+toggles are off. In the manager, import a supported ZIP/SQLite dataset, replace
+one county atomically, remove an unneeded county, and inspect size/date/row
+provenance. See [Offline address data](tw-offline-addr.md).
 
 ## 5. FAQ
 
-**Q: The plugin doesn't show up in the Tools menu.**
-Check **Settings → Plugins** → status should be *Loaded*. If not, force-stop ATAK (`adb shell am force-stop com.atakmap.app.civ`) and reopen. If it's still missing, uninstall and reinstall the APK.
+**The plugin is missing from Tools.** Confirm the plugin is Loaded. After an
+upgrade, reload or restart ATAK so cached retired Tools entries disappear.
 
-**Q: Do I need to uninstall before upgrading?**
-No. Use `adb install -r`. The signing certificate is the same across releases; settings and Recent entries are preserved.
+**Address reports no matching dataset.** Open **TW Coordinates** and import the
+boundary data plus the applicable county. Coordinate entry remains available.
 
-**Q: The readout says `out of range`.**
-You're on *Taipower grid* and the map centre is on an outer island (Penghu / Kinmen / Matsu) where Taipower doesn't apply. Switch to TWD97 or TWD67.
+**Address returns several rows.** This is intentional: no ambiguous record is
+silently selected. Use **Choose result** and compare administrative context.
 
-**Q: How do I delete a marker I dropped via SUBMIT?**
-Long-press the marker → ATAK's standard radial menu → trash-can icon. This is ATAK's native behaviour; the plugin doesn't customise it.
+**Does lookup require a network?** No. The plugin deliberately omits the
+`INTERNET` permission; coordinate conversion and address lookup are local.
 
-**Q: Where can I see the build / signing / security-scan evidence?**
-Every GitHub Release attaches the R8 mapping file, the Fortify SAST PDF, the OWASP dependency-check HTML, and the exact source archive submitted to TAK TPP.
-
----
+**The readout says `out of range`.** Taipower grid covers the main island only.
+Use TWD97/TWD67 zone 119 for applicable outer-island points.
 
 **Report issues:** <https://github.com/swim-fish/atak_tw_coord_plugin/issues>
-**Release list:** <https://github.com/swim-fish/atak_tw_coord_plugin/releases>

@@ -494,3 +494,33 @@ Before merge/release:
 - complete or explicitly disposition every `[RELEASE-GATE]` without claiming
   unexecuted compatibility, performance, signer, or provenance evidence;
 - run release-readiness before TPP upload, tagging, or publication.
+
+## 15. Phase 8 static audit evidence
+
+Recorded on 2026-07-22 against the feature branch before the full Gradle gate:
+
+- `TaiwanAddressResourcesTest` passed under Robolectric API 34. It resolves the
+  Address string contract in English, Taiwan Traditional Chinese, and Japanese,
+  then verifies accessible names for the system selector, five Address inputs,
+  mode action, and candidate action. The layout XML separately retains
+  `android:labelFor` for all five labelled inputs; Robolectric 4.14 does not
+  expose that XML attribute through `TextView.getLabelFor()`.
+- A production-source search for `TwCoordGotoTool`, `ForwardSearchTool`, retired
+  action names, retired page layouts/icons, and the three retired public tool
+  labels returned no matches under `app/src/main/`.
+- Dialog inspection found only `AddressCandidateDialog` and the internal offline
+  manager. The candidate dialog resolves text through the localized plugin
+  context and creates its window with the ATAK Activity context. Manager dialogs
+  likewise resolve plugin strings first and use `getMapView().getContext()` for
+  the window token. No Activity-context `R.string` lookup was found.
+- `app/src/main/AndroidManifest.xml` contains no `INTERNET` permission, and a
+  production-source search found no URL connection, OkHttp, or socket use.
+- Searches for retired resource references and `TODO`/`FIXME`/`HACK`/`XXX`
+  markers under `app/src/main/` returned no matches.
+- `OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS` remains intentionally
+  internal: it is registered by the component and sent only from Settings and
+  native Address management guidance. It no longer has a Tools registration.
+
+This is source/test evidence only. It does not close the physical dialog,
+compatibility, screenshot, performance, memory, offline-capture, or upgrade
+release gates.

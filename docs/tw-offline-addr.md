@@ -3,7 +3,7 @@
   Icons in docs/images are rendered from the real Android vector drawables by
   scripts/render-doc-icons.py — re-run it if the drawables change.
 -->
-# TW Offline Addr — feature guide
+# Offline address data — feature guide
 
 > See the Taiwan street address of any point on the map, **fully offline**. No
 > network, no Google.
@@ -17,8 +17,8 @@
 <table>
 <tr>
 <td width="150" valign="top" align="center">
-<img src="images/08c-tools-icon-offline-address.png" alt="TW Offline Addr tool icon" width="120"><br>
-<sub>Tools-menu icon<br>"TW Offline Addr"</sub>
+<img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates tool icon" width="120"><br>
+<sub>The single Tools-menu entry<br>"TW Coordinates"</sub>
 </td>
 <td valign="top">
 
@@ -32,8 +32,8 @@ point and shows it in the on-map readout.
   their own address line.
 - ✅ **Taiwan house-number format**, e.g. 「臺中市西區臺灣大道二段 100 號」.
 
-> Its mirror-image sibling is **[TW Addr Search](tw-addr-search.md)** (type an
-> address → pan the map there).
+The same imported data also powers the native
+**[Taiwan Address](tw-addr-search.md)** forward-search tab.
 
 </td>
 </tr>
@@ -52,8 +52,8 @@ their Chinese equivalents:
 | Base data | 基礎資料 |
 | Done | 完成 |
 
-> The page is titled **Offline Address** in the English UI (referred to here as
-> **TW Offline Addr**).
+> The internal manager is titled **TW Coordinates · Offline address data**. It
+> is not a separate Tools item.
 
 ---
 
@@ -119,7 +119,9 @@ Only the **boundary + the counties you import** count:
 Once you have `tw-central-full.zip`, import it. Data ships as a ZIP or a single
 `.sqlite`, one file per county.
 
-1. Open ATAK's **Tools menu** → tap the **TW Offline Addr** icon <img src="images/08c-tools-icon-offline-address.png" width="20" align="center">.
+1. Open ATAK's **Tools menu** → **TW Coordinates**, then tap the dataset-status
+   row to open the internal offline-data manager. The same row is available in
+   plugin Settings even when every map-address readout toggle is off.
 2. The first time you see the **empty state** with an **Import** button.
 3. Tap it and pick the address file in the browser (`tw-central-full.zip` or
    `places-臺中市.sqlite`, etc.).
@@ -127,7 +129,7 @@ Once you have `tw-central-full.zip`, import it. Data ships as a ZIP or a single
 
 ```
 ┌──────────────────────────────┐
-│  TW Offline Addr             │
+│  TW Coordinates · Offline data│
 │                              │
 │  No address data imported    │
 │                              │
@@ -208,11 +210,11 @@ Which lines show is toggled under **Settings → Tool Preferences → TW
 Coordinates**.
 
 <p align="center">
-  <img src="images/13-tools-and-readouts.png" alt="Three on-map address readouts; the Tools menu shows the plugin's four tools" width="760"><br>
+  <img src="images/13-tools-and-readouts.png" alt="Historical screenshot of three on-map address readouts" width="760"><br>
   <sub>Address readouts appear at the <b>bottom-left / top-right / bottom-right</b>
-  of the map; the Tools menu on the right lists the plugin's four tools:
-  <b>TW Coordinates</b>, <b>TW Coord GoTo</b>, <b>TW Offline Addr</b>,
-  <b>TW Addr Search</b>.</sub>
+  of the map. This historical screenshot predates workflow consolidation; the
+  current Tools menu exposes only <b>TW Coordinates</b>. A replacement numbered
+  screenshot remains a release gate.</sub>
 </p>
 
 ### What is the direction arrow at the front of the address? (v1.3.0)
@@ -246,7 +248,7 @@ is added to signal "this is a nearby number, not directly underneath":
 
 ## Managing imported counties
 
-Back on the **TW Offline Addr** page, each county is one row; tap the **⋮** on
+Back in the internal offline-data manager, each county is one row; tap the **⋮** on
 its right to open a menu:
 
 - **Replace…**: overwrite that county with newer data. Tap ⋮ → "Replace…" → pick
@@ -318,5 +320,5 @@ readout is normal. It recovers once you're back over covered mainland Taiwan.
 
 ---
 
-> Want the reverse — "type an address → jump to the map location"? See the
-> **[TW Addr Search guide](tw-addr-search.md)**.
+> Want to type an address and use ATAK Go To? See the native
+> **[Taiwan Address guide](tw-addr-search.md)**.

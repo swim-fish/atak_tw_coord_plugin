@@ -2,7 +2,7 @@
 
 **Surface owner**: `com.atakmap.android.twcoord.TwCoordPreferenceFragment`
 **Hosted at**: ATAK menu → `Settings` → `Tool Preferences` → `Specific Tool Preferences` → **TW Coordinates**
-**Also opened by**: the **TW Coordinates** Tools-menu icon (feature 007 US2) — see "Tool-button entry point" below
+**Also opened by**: the plugin's only public Tools-menu icon, **TW Coordinates**
 **Phase**: US3 — shipped 2026-05-16 (T045 / T046 / T047 / T048)
 
 ## Tool-button entry point (feature 007 US2)
@@ -45,9 +45,8 @@ Entries declared in `app/src/main/res/xml/preferences.xml`:
 `pref_readout_visible` (title `Show on-map readout`) gates the on-map readout
 widget — it replaces the show/hide that the old tool-button cycle's `Off` state
 used to provide; applied at `onCreate` and live via `prefListener`.
-`pref_search_result_ordering` (title `Address search result order`) is shared
-with the TW Addr Search page's in-page toggle (see
-`docs/ui/forward-search-page.md`); both bind the same key.
+`pref_search_result_ordering` (title `Address search result order`) controls
+candidate ordering for the native Taiwan Address tab.
 
 Entry labels come from `strings.xml` (and `values-zh-rTW/`, `values-
 ja/`), so the dialogue text is localised to the currently-resolved
@@ -162,7 +161,7 @@ how many counties the multi-county `ActiveDatasetRegistry` holds, and
 
 | Any toggle on | Active counties | Legacy active | Summary                                                                                              |
 |---------------|-----------------|---------------|------------------------------------------------------------------------------------------------------|
-| no            | (any)           | (any)         | hidden via `setEnabled(false) + setSelectable(false)`                                                |
+| no            | (any)           | (any)         | same dataset summary as below; the row remains enabled and selectable                                |
 | yes           | ≥ 1             | (any)         | localised `pref_address_dataset_status_summary_multi_format` — `N counties active — tap to open`     |
 | yes           | 0               | yes           | localised `pref_address_dataset_status_summary_active_format` — `Active: <county> · <data_date>`     |
 | yes           | 0               | no            | localised `pref_address_dataset_status_summary_hint` — `No dataset installed — tap to open`          |
@@ -172,10 +171,11 @@ registry is the source of truth once Feature 005's `setRegistry(...)`
 has been called. The legacy branch only fires during the brief
 auto-migrate window before `Registry.initFromDisk()` runs.
 
-When the row is clickable (rows 2-4 in the table), tapping it broadcasts
-`OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS` to open the Offline
-Address page (`docs/ui/offline-address-page.md`). The click lambda body
-is wrapped in `try/catch (Throwable) { Log.w(...) }` per Constitution VI.
+The row is always clickable, independently of the three readout toggles.
+Tapping it broadcasts `OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS` to
+open the internal Offline Address page (`docs/ui/offline-address-page.md`). The
+click lambda body is wrapped in `try/catch (Throwable) { Log.w(...) }` per
+Constitution VI.
 
 ### Active-datasets category (T042)
 

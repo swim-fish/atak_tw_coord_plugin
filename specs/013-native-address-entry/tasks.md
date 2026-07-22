@@ -242,14 +242,14 @@ public workflows no longer participate in runtime behavior.
 **Purpose**: Align documentation, localization, resources, packaging, and all
 repository quality gates after story behavior converges.
 
-- [ ] T081 [P] Update the native four-tab architecture, dual-mode Address UI, candidate dialog, reverse no-snap rule, read-only/Clear semantics, and sizing guidance in `docs/ui/native-taiwan-coordinate-entry.md`
-- [ ] T082 [P] Update the one-entry Tools navigation and always-selectable internal dataset manager design in `docs/ui/settings-fragment.md` and `docs/ui/offline-address-page.md`
-- [ ] T083 [P] Rewrite canonical and Traditional Chinese operator journeys for native Address, candidate selection, Convert Coordinate, and dataset management in `docs/user-guide.md` and `docs/user-guide_zh.md`
-- [ ] T084 [P] Replace the standalone forward-search guide with the native Address workflow and redirect offline instructions through `TW Coordinates` in `docs/tw-addr-search.md`, `docs/tw-addr-search_zh.md`, `docs/tw-offline-addr.md`, and `docs/tw-offline-addr_zh.md`
-- [ ] T085 Update feature summary, compatibility wording, one-Tools-entry navigation, and accepted legacy removals in `README.md` and `CHANGELOG.md`
+- [X] T081 [P] Update the native four-tab architecture, dual-mode Address UI, candidate dialog, reverse no-snap rule, read-only/Clear semantics, and sizing guidance in `docs/ui/native-taiwan-coordinate-entry.md`
+- [X] T082 [P] Update the one-entry Tools navigation and always-selectable internal dataset manager design in `docs/ui/settings-fragment.md` and `docs/ui/offline-address-page.md`
+- [X] T083 [P] Rewrite canonical and Traditional Chinese operator journeys for native Address, candidate selection, Convert Coordinate, and dataset management in `docs/user-guide.md` and `docs/user-guide_zh.md`
+- [X] T084 [P] Replace the standalone forward-search guide with the native Address workflow and redirect offline instructions through `TW Coordinates` in `docs/tw-addr-search.md`, `docs/tw-addr-search_zh.md`, `docs/tw-offline-addr.md`, and `docs/tw-offline-addr_zh.md`
+- [X] T085 Update feature summary, compatibility wording, one-Tools-entry navigation, and accepted legacy removals in `README.md` and `CHANGELOG.md`
 - [ ] T086 [RELEASE-GATE] Replace and renumber active Tools/native Address screenshots, scrub EXIF/XMP, verify Git LFS, and update references in `docs/images/README.md`
-- [ ] T087 Add or update resource parity and accessibility assertions for English, zh-TW, and Japanese strings in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanAddressResourcesTest.java`
-- [ ] T088 Audit for retired class/action/resource references, Activity-context plugin resource IDs, unexpected `INTERNET` permission, dead code, and unowned TODOs across `app/src/main/` and record the commands/results in `specs/013-native-address-entry/quickstart.md`
+- [X] T087 Add or update resource parity and accessibility assertions for English, zh-TW, and Japanese strings in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanAddressResourcesTest.java`
+- [X] T088 Audit for retired class/action/resource references, Activity-context plugin resource IDs, unexpected `INTERNET` permission, dead code, and unowned TODOs across `app/src/main/` and record the commands/results in `specs/013-native-address-entry/quickstart.md`
 - [ ] T089 Run `:app:spotlessApply`, `:app:spotlessCheck`, `:app:lint`, `:app:testCivDebugUnitTest`, and `:app:assembleCivDebug` against `app/build.gradle`, then record exact results in `specs/013-native-address-entry/quickstart.md`
 - [ ] T090 Run documentation link/image checks, sensitive-path scans, `git diff --check`, and a reviewed-scope status audit for `docs/` and `specs/013-native-address-entry/`, then record results in `specs/013-native-address-entry/quickstart.md`
 - [ ] T091 Run `/speckit-converge` against `specs/013-native-address-entry/` and append only concrete remaining implementation gaps to `specs/013-native-address-entry/tasks.md`

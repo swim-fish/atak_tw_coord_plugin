@@ -1,18 +1,16 @@
 # Taiwan Coordinate Display + Input Plugin for ATAK (`atak_tw_coord_plugin`)
 
-An [ATAK-CIV](https://tak.gov/products/atak-civ) plugin that does three
-things in Taiwan-flavoured coordinate units:
+An [ATAK-CIV](https://tak.gov/products/atak-civ) plugin that provides Taiwan
+coordinate display, native coordinate/address entry, and offline address data:
 
 1. **Display** — shows the map-centre, the device's own position, and
    any tapped CoT target's coordinate as an on-map readout.
-2. **Input ("GoTo")** — lets the operator type a Taiwan coordinate
-   (Taipower / TWD97 / TWD67) and pans the ATAK map there. The page
-   also has Auto Fill (read current map centre → fill the field) and
-   a Recent list (up to 10 prior submissions).
-3. **Native entry** — adds one **Taiwan** pane to ATAK's shared
-   coordinate-entry dialog, so ordinary Go To, Auto Fill, Clear, and Copy use
-   the host workflow operators already know. The advanced plugin GoTo page
-   remains available for marker modes, Recent entries, and icon-palette use.
+2. **Native input** — adds one **Taiwan** pane to ATAK's shared coordinate-entry
+   dialog with Taipower, TWD97, TWD67, and offline Address tabs. Ordinary Go
+   To, Convert Coordinate, Auto Fill, Clear, Copy, and confirmation remain in
+   the host workflow operators already know.
+3. **Offline address data** — imports county-scoped datasets for forward search,
+   reverse readouts, and native Convert Coordinate address display.
 
 Both features support the same three Taiwan coordinate systems:
 
@@ -52,14 +50,12 @@ their historical runtime evidence.
 | Outer-island support | Penghu / Kinmen / Matsu (TM2 zone 119, EPSG:3825) — auto-selected by longitude. `z119` suffix appears on the readout when zone is non-default |
 | Offline, no telemetry | Zero outbound network. Manifest deliberately omits `INTERNET` permission. No analytics or crash-reporting SDKs |
 | Settings advisory | Built-in accuracy notice explaining TWD67 main-island ±3-5 m vs outer-island ±10-20 m |
-| **Coordinate input page** ("GoTo") | Second Tools-menu icon opens a DropDown with three tabs (Taipower / TWD97 / TWD67), submit pans the camera to the resolved location (X/Y only — operator's zoom is preserved). **v1.3.2 (feature 010)** restyles the page into the compact-stacked layout shared with the other pages — a segmented system selector + carded fields, a single header **Use map centre** button, a glove-friendly marker grid, and a primary **Submit & go** vs ghost **Use ATAK icon palette…** hierarchy; coordinate behaviour unchanged |
-| **ATAK native Taiwan entry** | ATAK's shared coordinate-entry dialog gains one **Taiwan** pane with Taipower, TWD97, and TWD67; explicit zones 121/119; host Auto Fill/Clear/Copy; and read-only support. v1.4.2 uses DD-style compact fields and prepares all three Taiwan representations when ATAK supplies a point; Clear and Auto Fill remain active-tab-only. Native entry is additive and stores its last system independently from the advanced GoTo page. See [`docs/ui/native-taiwan-coordinate-entry.md`](docs/ui/native-taiwan-coordinate-entry.md) |
+| **ATAK native Taiwan entry** | ATAK's shared coordinate-entry dialog gains one **Taiwan** pane with Taipower, TWD97, TWD67, and Address; explicit zones 121/119; full/structured lossless address modes; bounded candidate selection; host Auto Fill/Clear/Copy; and read-only support. It uses DD-style compact fields, prepares all representable tabs when ATAK supplies a point, and preserves the exact host WGS84 during reverse lookup. See [`docs/ui/native-taiwan-coordinate-entry.md`](docs/ui/native-taiwan-coordinate-entry.md) |
 | **Auto Fill** | One-tap fill of the active tab from the current map centre, with zone toggle (TWD97/TWD67) auto-set from longitude; disabled in real time when the centre is unrepresentable in the active tab |
 | **Recent list** | Up to 10 prior successful submissions, deduped on (unit, value), persisted across ATAK restarts; tap any row to re-fill, per-row delete |
 | **In-page marker-mode picker** | 9 radios under Submit (Move only + 7 affiliation/spot-map types + **Custom Icon**). Selecting non-Move-only drops a marker of that type at the resolved coord; selection persists across plugin restarts |
 | **Custom Icon picker** | Two-step modal (iconset list → icon grid) reading exclusively from ATAK's existing iconset library (5 bundled iconsets out of the box + any operator-loaded). Picked icon is applied via `MarkerCreator.setIconPath`; marker behaves identically to host-placed ones. Graceful one-shot fallback when the picked iconset is removed |
-| **Offline reverse address** ("TW Offline Addr") | Imports county-scoped address SQLite produced by the [sibling generator](https://github.com/swim-fish/atak-tw-address-generator); decorates each coordinate row with the nearest record (prefixed since v1.3.0 with an 8-point compass arrow pointing from the query point to that record). v1.0.6 adds multi-county import (one active dataset per county) and ZIP-bundle import (`tw-central-full.zip` etc.), with auto-migration from v1.0.5's single-active layout. v1.1.0 (feature 006) scopes the readout to the detected county via the boundary layer (replacing the query-all-counties fan-out). v1.2.0 (feature 007) shows each county's on-disk size and a distinct `_boundary` (townships.sqlite) size row. **v1.3.0 (feature 008)** redesigns the storage page — total-usage figure + stacked bar + colour legend, compact rows with a per-row ⋮ overflow (Replace / Remove), an import-progress card and a dismissible failure banner — and makes the whole page follow the in-app UI-language override |
-| **Offline forward search** ("TW Addr Search") | Fourth Tools-menu page: find a street address offline via a county → 鄉鎮市區 (or 全部) → street → house-number/巷弄 funnel, ranked by distance with a 16-point compass arrow, then tap a result to pan. Consumes the MOI `townships.sqlite` boundary layer for county/district detection. Glove UX: 3-column grid, large numeric keypad (+ 巷/弄/號), Reset, map-follow. v1.2.0 adds a *distance* / *most similar* result-order toggle (in-place re-rank, also in Settings); v1.2.1 localises the source buttons (所在地 / 地圖中心 / 清單) and makes *most similar* house-number-aware (numerically-closest number first). **v1.3.0 (feature 008)** collapses the township grid into an All / District segmented scope control + an on-demand district chooser, and the keypad into an on-demand house-number dialog; the county list flags counties with no installed data (⚠), and 地圖中心 / 所在地 auto-select the resolved 鄉鎮市區 |
+| **Offline address lookup and management** | The native Address tab performs full or structured forward search and bounded candidate selection. Convert Coordinate and Auto Fill perform reverse lookup without snapping the host point. County SQLite/ZIP datasets produced by the [sibling generator](https://github.com/swim-fish/atak-tw-address-generator) are imported, replaced, or removed from the internal manager reached through **TW Coordinates**. Address readouts retain nearest-record direction and confidence indicators. |
 | **Confidence indicator** | Per-row tilde marker (`~` / `~~`) prefix on the address text reflecting haversine distance to the nearest record. 4 presets (Off / Tight 20-100 m / Standard 50-200 m / Loose 100-500 m) selectable in Settings |
 
 ## Coverage and accuracy

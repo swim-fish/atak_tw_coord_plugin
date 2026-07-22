@@ -7,6 +7,30 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+### Added
+
+- **ATAK's native Taiwan pane now includes Address as its fourth tab.** The
+  operator can switch between one full-address field and four structured
+  fields, resolve a unique local result, or choose from a bounded ambiguous
+  candidate list without moving the map before ATAK confirms the action.
+- Convert Coordinate and Auto Fill resolve an offline address asynchronously
+  while preserving the exact host WGS84 point; reverse lookup never snaps to
+  the nearest address record.
+
+### Changed
+
+- **TW Coordinates is now the plugin's only public Tools item.** Offline dataset
+  management remains available internally from that page, Settings, and native
+  Address guidance even when every map-address readout toggle is off.
+- The standalone **TW Coord GoTo**, **TW Addr Search**, and **TW Offline Addr**
+  pages/actions were retired after native workflow and manager parity. Existing
+  coordinate/address data and settings are retained during upgrade; obsolete
+  custom GoTo Recent/marker/icon preferences are ignored rather than
+  destructively migrated.
+- Source/API/build compatibility remains compile ATAK-CIV 5.7.0.9 and declared
+  minimum runtime 5.5.0. Physical acceptance on both lines remains a release
+  gate and is not inferred from JVM or current-SDK build success.
+
 ## [1.4.2] — 2026-07-18 — Native Taiwan Go To fixes
 
 ### Fixed
