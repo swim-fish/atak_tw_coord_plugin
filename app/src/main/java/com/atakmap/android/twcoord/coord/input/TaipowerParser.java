@@ -1,4 +1,4 @@
-package com.atakmap.android.twcoord.gotopage;
+package com.atakmap.android.twcoord.coord.input;
 
 import com.atakmap.android.twcoord.coord.Twd67Tm2;
 import java.util.Locale;

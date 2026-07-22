@@ -1,0 +1,302 @@
+package com.atakmap.android.twcoord.address.lookup;
+
+import com.atakmap.android.twcoord.address.ActiveDatasetRegistry;
+import com.atakmap.coremap.log.Log;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
+/** Single bounded worker owner for forward and reverse offline address lookup. */
+public final class DefaultAddressLookupService implements AddressLookupService {
+  private static final String TAG = "DefaultAddressLookup";
+
+  /**
+   * Database/boundary query seam. Feature-specific lookup rules are implemented behind this API.
+   */
+  public interface QueryEngine {
+    ForwardAddressResult forward(
+        ForwardAddressRequest request, ActiveDatasetRegistry.ReadSession session) throws Exception;
+
+    ReverseAddressResult reverse(
+        ReverseAddressRequest request, ActiveDatasetRegistry.ReadSession session) throws Exception;
+
+    static QueryEngine noData() {
+      return new QueryEngine() {
+        @Override
+        public ForwardAddressResult forward(
+            ForwardAddressRequest request, ActiveDatasetRegistry.ReadSession session) {
+          return session.datasets().isEmpty()
+              ? ForwardAddressResult.noDataset(request.identity())
+              : ForwardAddressResult.noMatch(request.identity());
+        }
+
+        @Override
+        public ReverseAddressResult reverse(
+            ReverseAddressRequest request, ActiveDatasetRegistry.ReadSession session) {
+          return session.datasets().isEmpty()
+              ? ReverseAddressResult.noDataset(request.identity(), request.queryPoint())
+              : ReverseAddressResult.noMatch(request.identity(), request.queryPoint());
+        }
+      };
+    }
+  }
+
+  private final ActiveDatasetRegistry registry;
+  private final Executor completionDispatcher;
+  private final QueryEngine queryEngine;
+  private final int queueCapacity;
+  private final Object queueLock = new Object();
+  private final Deque<Work> nativeQueue = new ArrayDeque<>();
+  private final Deque<Work> backgroundQueue = new ArrayDeque<>();
+  private final Map<String, Work> latestByConsumer = new ConcurrentHashMap<>();
+  private final List<AvailabilityListener> availabilityListeners = new CopyOnWriteArrayList<>();
+  private final AtomicBoolean closed = new AtomicBoolean();
+  private final ActiveDatasetRegistry.Listener registryListener =
+      (county, change) -> refreshAvailability();
+  private final Thread worker;
+  private volatile AddressAvailability availability;
+
+  public DefaultAddressLookupService(
+      ActiveDatasetRegistry registry,
+      Executor completionDispatcher,
+      QueryEngine queryEngine,
+      int queueCapacity) {
+    if (queueCapacity <= 0) throw new IllegalArgumentException("queueCapacity must be positive");
+    this.registry = Objects.requireNonNull(registry, "registry");
+    this.completionDispatcher =
+        Objects.requireNonNull(completionDispatcher, "completionDispatcher");
+    this.queryEngine = Objects.requireNonNull(queryEngine, "queryEngine");
+    this.queueCapacity = queueCapacity;
+    this.availability = currentAvailability(false);
+    registry.addListener(registryListener);
+    worker = new Thread(this::runWorker, "twcoord-address-lookup");
+    worker.setDaemon(true);
+    worker.start();
+  }
+
+  @Override
+  public LookupHandle forward(
+      ForwardAddressRequest request, Consumer<ForwardAddressResult> callback) {
+    Objects.requireNonNull(request, "request");
+    Objects.requireNonNull(callback, "callback");
+    ensureOpen();
+    Work work =
+        new Work(request.consumerKey(), request.priority()) {
+          @Override
+          void runQuery() {
+            ForwardAddressResult result;
+            try (ActiveDatasetRegistry.ReadSession session = registry.openReadSession()) {
+              result = queryEngine.forward(request, session);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              return;
+            } catch (Exception e) {
+              result = ForwardAddressResult.failure(request.identity(), e);
+            }
+            ForwardAddressResult completed = result;
+            dispatch(this, () -> callback.accept(completed));
+          }
+        };
+    enqueue(work);
+    return work;
+  }
+
+  @Override
+  public LookupHandle reverse(
+      ReverseAddressRequest request, Consumer<ReverseAddressResult> callback) {
+    Objects.requireNonNull(request, "request");
+    Objects.requireNonNull(callback, "callback");
+    ensureOpen();
+    Work work =
+        new Work(request.consumerKey(), request.priority()) {
+          @Override
+          void runQuery() {
+            ReverseAddressResult result;
+            try (ActiveDatasetRegistry.ReadSession session = registry.openReadSession()) {
+              result = queryEngine.reverse(request, session);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              return;
+            } catch (Exception e) {
+              result = ReverseAddressResult.failure(request.identity(), request.queryPoint(), e);
+            }
+            ReverseAddressResult completed = result;
+            dispatch(this, () -> callback.accept(completed));
+          }
+        };
+    enqueue(work);
+    return work;
+  }
+
+  @Override
+  public AddressAvailability availability() {
+    return availability;
+  }
+
+  @Override
+  public void addAvailabilityListener(AvailabilityListener listener) {
+    if (listener == null) return;
+    synchronized (availabilityListeners) {
+      if (!closed.get()) availabilityListeners.add(listener);
+    }
+  }
+
+  @Override
+  public void removeAvailabilityListener(AvailabilityListener listener) {
+    if (listener != null) availabilityListeners.remove(listener);
+  }
+
+  int queuedWorkCount() {
+    synchronized (queueLock) {
+      return nativeQueue.size() + backgroundQueue.size();
+    }
+  }
+
+  @Override
+  public void close() {
+    if (!closed.compareAndSet(false, true)) return;
+    registry.removeListener(registryListener);
+    synchronized (queueLock) {
+      cancelAndClear(nativeQueue);
+      cancelAndClear(backgroundQueue);
+      latestByConsumer.clear();
+      queueLock.notifyAll();
+    }
+    synchronized (availabilityListeners) {
+      availabilityListeners.clear();
+    }
+    availability = currentAvailability(true);
+    worker.interrupt();
+  }
+
+  private void enqueue(Work work) {
+    synchronized (queueLock) {
+      ensureOpen();
+      Work older = latestByConsumer.put(work.consumerKey, work);
+      if (older != null) {
+        older.cancel();
+        nativeQueue.remove(older);
+        backgroundQueue.remove(older);
+      }
+      while (nativeQueue.size() + backgroundQueue.size() >= queueCapacity) {
+        Work evicted =
+            !backgroundQueue.isEmpty() ? backgroundQueue.pollFirst() : nativeQueue.pollFirst();
+        if (evicted != null) {
+          evicted.cancel();
+          latestByConsumer.remove(evicted.consumerKey, evicted);
+        }
+      }
+      queueFor(work.priority).addLast(work);
+      queueLock.notifyAll();
+    }
+  }
+
+  private Deque<Work> queueFor(LookupPriority priority) {
+    return priority == LookupPriority.NATIVE_INTERACTIVE ? nativeQueue : backgroundQueue;
+  }
+
+  private void runWorker() {
+    while (!closed.get()) {
+      Work work;
+      synchronized (queueLock) {
+        while (!closed.get() && nativeQueue.isEmpty() && backgroundQueue.isEmpty()) {
+          try {
+            queueLock.wait();
+          } catch (InterruptedException e) {
+            if (closed.get()) return;
+          }
+        }
+        if (closed.get()) return;
+        work = !nativeQueue.isEmpty() ? nativeQueue.pollFirst() : backgroundQueue.pollFirst();
+      }
+      if (work == null || work.isCancelled()) continue;
+      try {
+        work.runQuery();
+      } catch (RuntimeException e) {
+        Log.w(TAG, "lookup work threw", e);
+      } finally {
+        latestByConsumer.remove(work.consumerKey, work);
+      }
+    }
+  }
+
+  private void dispatch(Work work, Runnable callback) {
+    if (closed.get() || work.isCancelled()) return;
+    try {
+      completionDispatcher.execute(
+          () -> {
+            if (closed.get() || work.isCancelled()) return;
+            try {
+              callback.run();
+            } catch (RuntimeException e) {
+              Log.w(TAG, "completion callback threw", e);
+            }
+          });
+    } catch (RuntimeException e) {
+      Log.w(TAG, "completion dispatch failed", e);
+    }
+  }
+
+  private void refreshAvailability() {
+    if (closed.get()) return;
+    AddressAvailability updated = currentAvailability(false);
+    availability = updated;
+    for (AvailabilityListener listener : availabilityListeners) {
+      try {
+        listener.onAvailabilityChanged(updated);
+      } catch (RuntimeException e) {
+        Log.w(TAG, "availability listener threw", e);
+      }
+    }
+  }
+
+  private AddressAvailability currentAvailability(boolean terminal) {
+    if (terminal || registry.isClosed()) {
+      return new AddressAvailability(Collections.emptySet(), false, registry.revision(), true);
+    }
+    return new AddressAvailability(
+        new LinkedHashSet<>(registry.snapshot().keySet()), false, registry.revision(), false);
+  }
+
+  private void ensureOpen() {
+    if (closed.get()) throw new IllegalStateException("service is closed");
+  }
+
+  private static void cancelAndClear(Deque<Work> queue) {
+    for (Work work : new ArrayList<>(queue)) work.cancel();
+    queue.clear();
+  }
+
+  private abstract static class Work implements LookupHandle {
+    private final String consumerKey;
+    private final LookupPriority priority;
+    private final AtomicBoolean cancelled = new AtomicBoolean();
+
+    Work(String consumerKey, LookupPriority priority) {
+      this.consumerKey = Objects.requireNonNull(consumerKey, "consumerKey");
+      this.priority = Objects.requireNonNull(priority, "priority");
+    }
+
+    abstract void runQuery();
+
+    @Override
+    public void cancel() {
+      cancelled.set(true);
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return cancelled.get();
+    }
+  }
+}

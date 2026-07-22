@@ -1,4 +1,4 @@
-package com.atakmap.android.twcoord.gotopage;
+package com.atakmap.android.twcoord.coord.input;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

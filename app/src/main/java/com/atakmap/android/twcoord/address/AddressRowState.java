@@ -18,7 +18,7 @@ import java.util.Objects;
  * </ul>
  *
  * <p>Follows the project's sealed-by-convention pattern (abstract + private constructor + final
- * nested classes) used by {@link com.atakmap.android.twcoord.gotopage.ParseResult}.
+ * nested classes) used by {@link com.atakmap.android.twcoord.coord.input.ParseResult}.
  */
 public abstract class AddressRowState {
 

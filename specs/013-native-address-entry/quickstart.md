@@ -112,6 +112,26 @@ The focused `gotopage`, `nativeentry`, and `address` JVM suites completed with
 assertion before production changes and the focused green command afterward;
 separate red/green commits are not required.
 
+### Foundational Red-Green-Refactor (2026-07-22)
+
+- RED: the relocated parser plus new registry, coordinator, and lookup-service
+  suites failed compilation because the neutral parser package, leased registry
+  session/revision/close API, coordinator close fence, and lookup contracts did
+  not exist yet. This was the intended foundational failure.
+- GREEN: the focused command below completed with `BUILD SUCCESSFUL` after the
+  neutral parser move, leased snapshots, monotonic close fences, immutable
+  lookup contracts, no-data service, and bounded shared worker were added.
+- REFACTOR: added direct late-facade fencing, in-flight close suppression, and
+  bounded-queue eviction assertions; the same focused command remained green.
+
+```powershell
+.\gradlew.bat :app:testCivDebugUnitTest `
+  --tests "com.atakmap.android.twcoord.coord.input.*" `
+  --tests "com.atakmap.android.twcoord.address.ActiveDatasetRegistryTest" `
+  --tests "com.atakmap.android.twcoord.address.BatchImportCoordinatorTest" `
+  --tests "com.atakmap.android.twcoord.address.lookup.AddressLookupServiceContractTest"
+```
+
 ## 4. Repository quality gates
 
 ```powershell

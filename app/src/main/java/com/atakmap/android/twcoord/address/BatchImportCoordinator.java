@@ -3,7 +3,9 @@ package com.atakmap.android.twcoord.address;
 import com.atakmap.coremap.log.Log;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -25,7 +27,7 @@ import java.util.zip.ZipException;
  * order. The chained-picker UX on the page consumes {@link Listener} callbacks to render the
  * "queued — waiting" status until the worker reaches each entry.
  */
-public final class BatchImportCoordinator {
+public final class BatchImportCoordinator implements AutoCloseable {
 
   private static final String TAG = "BatchImportCoordinator";
 
@@ -63,6 +65,13 @@ public final class BatchImportCoordinator {
   private final AtomicBoolean draining = new AtomicBoolean(false);
   private final AtomicBoolean cancelled = new AtomicBoolean(false);
   private final AtomicBoolean finishRequested = new AtomicBoolean(false);
+  private final AtomicBoolean closed = new AtomicBoolean(false);
+
+  enum Registration {
+    ADDED,
+    REPLACED,
+    CLOSED
+  }
 
   public BatchImportCoordinator(
       AddressBundleImporter importer,
@@ -97,6 +106,7 @@ public final class BatchImportCoordinator {
    * {@code null} for an unconstrained Import.
    */
   public synchronized int enqueue(File pickedFile, String expectedCounty) {
+    if (closed.get()) throw new IllegalStateException("coordinator is closed");
     Objects.requireNonNull(pickedFile, "pickedFile");
     pending.addLast(new PendingItem(pickedFile, expectedCounty));
     int idx = pending.size() + reports.size();
@@ -111,17 +121,21 @@ public final class BatchImportCoordinator {
 
   /** Signal end-of-batch from the operator's "完成 / Done" tap. */
   public synchronized void finishBatch() {
+    if (closed.get()) return;
     finishRequested.set(true);
+    notifyAll();
   }
 
   /** Cancel: in-flight entry completes naturally; pending entries are dropped. */
   public synchronized void cancelBatch() {
     cancelled.set(true);
     finishRequested.set(true);
+    pending.clear();
+    notifyAll();
   }
 
-  public void addListener(Listener listener) {
-    if (listener != null) listeners.add(listener);
+  public synchronized void addListener(Listener listener) {
+    if (listener != null && !closed.get()) listeners.add(listener);
   }
 
   public void removeListener(Listener listener) {
@@ -133,13 +147,27 @@ public final class BatchImportCoordinator {
     return pending.size();
   }
 
+  public boolean isClosed() {
+    return closed.get();
+  }
+
+  @Override
+  public synchronized void close() {
+    if (!closed.compareAndSet(false, true)) return;
+    cancelled.set(true);
+    finishRequested.set(true);
+    pending.clear();
+    listeners.clear();
+    notifyAll();
+  }
+
   // ----------------------------------------------------------------------
   // Internal — worker loop
   // ----------------------------------------------------------------------
 
   private void drain() {
     try {
-      while (!cancelled.get()) {
+      while (!cancelled.get() && !closed.get()) {
         PendingItem next;
         synchronized (this) {
           next = pending.pollFirst();
@@ -159,9 +187,11 @@ public final class BatchImportCoordinator {
         }
         processOne(next);
       }
-      BatchImportReport report = new BatchImportReport(reports);
-      Log.i(TAG, "batch done: " + report);
-      fireOnComplete(report);
+      if (!closed.get()) {
+        BatchImportReport report = new BatchImportReport(reports);
+        Log.i(TAG, "batch done: " + report);
+        fireOnComplete(report);
+      }
     } catch (Throwable t) {
       Log.w(TAG, "drain threw", t);
     } finally {
@@ -170,6 +200,7 @@ public final class BatchImportCoordinator {
   }
 
   private void processOne(PendingItem item) {
+    if (closed.get()) return;
     File file = item.file;
     String name = file.getName();
     long startMs = System.currentTimeMillis();
@@ -327,10 +358,9 @@ public final class BatchImportCoordinator {
             System.currentTimeMillis() - startMs);
         return;
       }
-      boolean isReplace = registry.snapshot().containsKey(county);
-      CountyActiveDataset entry = new CountyActiveDataset(county, ok.dataset(), facade);
-      if (isReplace) {
-        registry.replace(entry);
+      Registration registration = registerImportedDataset(county, ok.dataset(), facade);
+      if (registration == Registration.CLOSED) return;
+      if (registration == Registration.REPLACED) {
         addAndFire(
             parentZipName + "/places-" + county + ".sqlite",
             county,
@@ -338,7 +368,6 @@ public final class BatchImportCoordinator {
             null,
             System.currentTimeMillis() - startMs);
       } else {
-        registry.add(entry);
         addAndFire(
             parentZipName + "/places-" + county + ".sqlite",
             county,
@@ -375,7 +404,7 @@ public final class BatchImportCoordinator {
       ZipExtractor.ExtractedCounty boundary, String parentZipName, long startMs) {
     String entryName = parentZipName + "/townships.sqlite";
     try {
-      fs.atomicMove(boundary.placesFile(), fs.boundaryDbFile());
+      if (!activateBoundaryIfOpen(boundary.placesFile())) return;
       addAndFire(
           entryName,
           null,
@@ -466,10 +495,9 @@ public final class BatchImportCoordinator {
             System.currentTimeMillis() - startMs);
         return;
       }
-      boolean isReplace = registry.snapshot().containsKey(county);
-      CountyActiveDataset entry = new CountyActiveDataset(county, ok.dataset(), facade);
-      if (isReplace) {
-        registry.replace(entry);
+      Registration registration = registerImportedDataset(county, ok.dataset(), facade);
+      if (registration == Registration.CLOSED) return;
+      if (registration == Registration.REPLACED) {
         addAndFire(
             sqliteFile.getName(),
             county,
@@ -477,7 +505,6 @@ public final class BatchImportCoordinator {
             null,
             System.currentTimeMillis() - startMs);
       } else {
-        registry.add(entry);
         addAndFire(
             sqliteFile.getName(),
             county,
@@ -516,11 +543,36 @@ public final class BatchImportCoordinator {
     }
   }
 
+  /** Atomic close fence between facade creation and registry ownership transfer. */
+  synchronized Registration registerImportedDataset(
+      String county, AddressDataset dataset, AddressDatabaseFacade facade) {
+    if (closed.get()) {
+      closeQuietly(facade);
+      return Registration.CLOSED;
+    }
+    boolean replacing = registry.snapshot().containsKey(county);
+    CountyActiveDataset entry = new CountyActiveDataset(county, dataset, facade);
+    if (replacing) {
+      registry.replace(entry);
+      return Registration.REPLACED;
+    }
+    registry.add(entry);
+    return Registration.ADDED;
+  }
+
+  /** Atomic close fence for boundary activation, which has no facade ownership token. */
+  private synchronized boolean activateBoundaryIfOpen(Path stagedBoundary) throws IOException {
+    if (closed.get()) return false;
+    fs.atomicMove(stagedBoundary, fs.boundaryDbFile());
+    return true;
+  }
+
   // ----------------------------------------------------------------------
   // Listener fan-out (Constitution VI listener short-circuit)
   // ----------------------------------------------------------------------
 
   private void fireOnStart(BatchImportReport.Entry e) {
+    if (closed.get()) return;
     for (Listener l : listeners) {
       try {
         l.onEntryStarted(e);
@@ -531,6 +583,7 @@ public final class BatchImportCoordinator {
   }
 
   private void fireOnFinish(BatchImportReport.Entry e) {
+    if (closed.get()) return;
     for (Listener l : listeners) {
       try {
         l.onEntryFinished(e);
@@ -541,6 +594,7 @@ public final class BatchImportCoordinator {
   }
 
   private void fireOnComplete(BatchImportReport report) {
+    if (closed.get()) return;
     for (Listener l : listeners) {
       try {
         l.onBatchComplete(report);
@@ -563,5 +617,14 @@ public final class BatchImportCoordinator {
     if (t == null) return "unknown";
     String msg = t.getMessage();
     return t.getClass().getSimpleName() + (msg == null ? "" : ": " + msg);
+  }
+
+  private static void closeQuietly(AddressDatabaseFacade facade) {
+    if (facade == null) return;
+    try {
+      facade.close();
+    } catch (RuntimeException e) {
+      Log.w(TAG, "late facade close threw", e);
+    }
   }
 }

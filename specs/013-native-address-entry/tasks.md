@@ -47,21 +47,21 @@ safe before any Address UI or legacy-page removal.
 
 ### Tests first
 
-- [ ] T006 [P] Move coordinate parser regression tests to the neutral package and update package expectations without changing assertions in `app/src/test/java/com/atakmap/android/twcoord/coord/input/CoordinateParserRoundTripTest.java`, `app/src/test/java/com/atakmap/android/twcoord/coord/input/TaipowerParserTest.java`, and `app/src/test/java/com/atakmap/android/twcoord/coord/input/TwdTm2ParserTest.java`
-- [ ] T007 [P] Add failing read-lease, revision, listener-isolation, replace/remove/close race, and monotonic-close tests in `app/src/test/java/com/atakmap/android/twcoord/address/ActiveDatasetRegistryTest.java`
-- [ ] T008 [P] Add failing late-import completion, duplicate-close, and post-close registration rejection tests in `app/src/test/java/com/atakmap/android/twcoord/address/BatchImportCoordinatorTest.java`
-- [ ] T009 [P] Add failing lookup-handle cancellation, no-callback-after-close, bounded-queue, availability, and no-data service contract tests in `app/src/test/java/com/atakmap/android/twcoord/address/lookup/AddressLookupServiceContractTest.java`
+- [X] T006 [P] Move coordinate parser regression tests to the neutral package and update package expectations without changing assertions in `app/src/test/java/com/atakmap/android/twcoord/coord/input/CoordinateParserRoundTripTest.java`, `app/src/test/java/com/atakmap/android/twcoord/coord/input/TaipowerParserTest.java`, and `app/src/test/java/com/atakmap/android/twcoord/coord/input/TwdTm2ParserTest.java`
+- [X] T007 [P] Add failing read-lease, revision, listener-isolation, replace/remove/close race, and monotonic-close tests in `app/src/test/java/com/atakmap/android/twcoord/address/ActiveDatasetRegistryTest.java`
+- [X] T008 [P] Add failing late-import completion, duplicate-close, and post-close registration rejection tests in `app/src/test/java/com/atakmap/android/twcoord/address/BatchImportCoordinatorTest.java`
+- [X] T009 [P] Add failing lookup-handle cancellation, no-callback-after-close, bounded-queue, availability, and no-data service contract tests in `app/src/test/java/com/atakmap/android/twcoord/address/lookup/AddressLookupServiceContractTest.java`
 
 ### Implementation
 
-- [ ] T010 Move `CoordinateInput`, `CoordinateParser`, `ParseResult`, and `TaipowerParser` without behavioural changes to `app/src/main/java/com/atakmap/android/twcoord/coord/input/`
-- [ ] T011 Update native entry and remaining callers to use the neutral coordinate parser package in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/TaiwanEntryController.java` and `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoView.java`
-- [ ] T012 Implement immutable leased snapshots, dataset revisions, listener isolation after lock release, and monotonic close in `app/src/main/java/com/atakmap/android/twcoord/address/ActiveDatasetRegistry.java`
-- [ ] T013 Implement coordinator close fencing so a late imported facade is closed instead of registered in `app/src/main/java/com/atakmap/android/twcoord/address/BatchImportCoordinator.java`
-- [ ] T014 [P] Add immutable availability, dataset identity, lookup identity, request, result, candidate, match-kind, resolution, and handle models under `app/src/main/java/com/atakmap/android/twcoord/address/lookup/`
-- [ ] T015 Define the UI-independent asynchronous lookup and completion-dispatch contracts in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/AddressLookupService.java`
-- [ ] T016 Implement the closed/no-dataset service and a single bounded worker owner with per-consumer coalescing and native-interactive priority in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/DefaultAddressLookupService.java`
-- [ ] T017 Run the relocated coordinate tests and new registry/coordinator/service contract tests through `app/build.gradle`, then record the foundational Red-Green-Refactor result in `specs/013-native-address-entry/quickstart.md`
+- [X] T010 Move `CoordinateInput`, `CoordinateParser`, `ParseResult`, and `TaipowerParser` without behavioural changes to `app/src/main/java/com/atakmap/android/twcoord/coord/input/`
+- [X] T011 Update native entry and remaining callers to use the neutral coordinate parser package in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/TaiwanEntryController.java` and `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoView.java`
+- [X] T012 Implement immutable leased snapshots, dataset revisions, listener isolation after lock release, and monotonic close in `app/src/main/java/com/atakmap/android/twcoord/address/ActiveDatasetRegistry.java`
+- [X] T013 Implement coordinator close fencing so a late imported facade is closed instead of registered in `app/src/main/java/com/atakmap/android/twcoord/address/BatchImportCoordinator.java`
+- [X] T014 [P] Add immutable availability, dataset identity, lookup identity, request, result, candidate, match-kind, resolution, and handle models under `app/src/main/java/com/atakmap/android/twcoord/address/lookup/`
+- [X] T015 Define the UI-independent asynchronous lookup and completion-dispatch contracts in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/AddressLookupService.java`
+- [X] T016 Implement the closed/no-dataset service and a single bounded worker owner with per-consumer coalescing and native-interactive priority in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/DefaultAddressLookupService.java`
+- [X] T017 Run the relocated coordinate tests and new registry/coordinator/service contract tests through `app/build.gradle`, then record the foundational Red-Green-Refactor result in `specs/013-native-address-entry/quickstart.md`
 
 **Checkpoint**: Shared parsers no longer depend on the legacy Go To package;
 facades cannot close under an active read; late imports and callbacks cannot

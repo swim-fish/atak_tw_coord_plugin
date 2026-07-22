@@ -4,6 +4,7 @@ import com.atakmap.android.maps.MapGroup;
 import com.atakmap.android.maps.MapView;
 import com.atakmap.android.maps.Marker;
 import com.atakmap.android.twcoord.coord.Wgs84;
+import com.atakmap.android.twcoord.coord.input.CoordinateInput;
 import com.atakmap.coremap.log.Log;
 import com.atakmap.coremap.maps.coords.GeoPoint;
 import java.util.UUID;

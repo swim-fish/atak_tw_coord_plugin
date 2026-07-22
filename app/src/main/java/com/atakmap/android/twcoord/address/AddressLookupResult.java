@@ -9,8 +9,8 @@ import java.util.Objects;
  * empty-state).
  *
  * <p>Follows the project's sealed-by-convention pattern (abstract + private constructor + final
- * nested classes) used by {@link com.atakmap.android.twcoord.gotopage.ParseResult}, instead of the
- * Java 17 {@code sealed} keyword. The properties are the same.
+ * nested classes) used by {@link com.atakmap.android.twcoord.coord.input.ParseResult}, instead of
+ * the Java 17 {@code sealed} keyword. The properties are the same.
  */
 public abstract class AddressLookupResult {
 

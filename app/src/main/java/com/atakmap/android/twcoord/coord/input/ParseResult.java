@@ -1,4 +1,4 @@
-package com.atakmap.android.twcoord.gotopage;
+package com.atakmap.android.twcoord.coord.input;
 
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.coord.Wgs84;

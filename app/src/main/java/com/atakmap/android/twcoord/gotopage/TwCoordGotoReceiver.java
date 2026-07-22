@@ -9,6 +9,7 @@ import com.atakmap.android.dropdown.DropDownReceiver;
 import com.atakmap.android.maps.MapView;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
+import com.atakmap.android.twcoord.coord.input.CoordinateParser;
 import com.atakmap.android.twcoord.plugin.R;
 import com.atakmap.android.twcoord.prefs.PreferenceStore;
 import com.atakmap.coremap.log.Log;
