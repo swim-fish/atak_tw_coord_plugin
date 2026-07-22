@@ -22,7 +22,6 @@ import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.coord.DisplayLine;
 import com.atakmap.android.twcoord.coord.Formatter;
 import com.atakmap.android.twcoord.coord.Wgs84;
-import com.atakmap.android.twcoord.gotopage.TwCoordGotoIntents;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
 import com.atakmap.android.twcoord.i18n.LocaleOverride;
 import com.atakmap.android.twcoord.plugin.R;
@@ -80,16 +79,6 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
     // FR-016 — settings-page button opens the GoTo input page (second entry point alongside
     // the Tools-menu icon). Bind here rather than in onCreate so the click handler is reattached
     // every time the user navigates back to this screen.
-    Preference openGoto = findPreference("pref_open_goto");
-    if (openGoto != null) {
-      openGoto.setOnPreferenceClickListener(
-          p -> {
-            Intent i = new Intent(TwCoordGotoIntents.ACTION_SHOW_GOTO);
-            AtakBroadcast.getInstance().sendBroadcast(i);
-            return true;
-          });
-    }
-
     // The dataset manager remains an internal page. This settings row is its public navigation
     // path after the standalone Tools item is retired.
     Preference status = findPreference("pref_address_dataset_status");

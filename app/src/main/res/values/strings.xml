@@ -33,7 +33,9 @@
     <string name="pref_readout_visible_title">Show on-map readout</string>
     <string name="pref_readout_visible_summary">Show or hide the on-map coordinate readout.</string>
     <string name="pref_search_result_ordering_title">Address search result order</string>
-    <string name="pref_search_result_ordering_summary">Order forward-search results by distance or best text match.</string>
+    <string name="pref_search_result_ordering_summary">Order native Address candidates by distance or best text match.</string>
+    <string name="opt_address_ordering_distance">Distance</string>
+    <string name="opt_address_ordering_similar">Most similar</string>
     <!-- Summary is overridden at runtime by TwCoordPreferenceFragment with a live preview
          (entry label + sample formatted coordinate). This default is only seen on first
          render before refreshAllSummaries() lands. -->
@@ -58,98 +60,8 @@
     <string name="pref_accuracy_summary">TWD97: error &lt; 1 m across all coverage areas.\n\nTWD67 typical error:\n• Main island: ±3 to ±5 m\n• Outer islands (Penghu / Kinmen / Matsu): ±10 to ±20 m\n\nTaipower grid is main-island only; outer-island fixes show "out of range" with a WGS84 fallback line.</string>
 
     <!-- ============================================================
-         Feature 002 — TW Coord GoTo input page
+         Feature 004 — Offline Address (Settings + widget rows)
          ============================================================ -->
-
-    <!-- Second Tools-menu icon identity. -->
-    <string name="app_name_goto">TW Coord GoTo</string>
-    <string name="app_desc_goto">Type a Taipower / TWD97 / TWD67 coordinate and ATAK pans + drops a marker.</string>
-
-    <!-- DropDown title shown above the tabs. -->
-    <string name="goto_title">Coordinate input</string>
-
-    <!-- Tab labels. -->
-    <string name="goto_tab_taipower">Taipower</string>
-    <string name="goto_tab_twd97">TWD97</string>
-    <string name="goto_tab_twd67">TWD67</string>
-
-    <!-- Input field hints. -->
-    <string name="goto_hint_taipower">e.g. H7509 DB4016</string>
-    <string name="goto_hint_easting">Easting (m)</string>
-    <string name="goto_hint_northing">Northing (m)</string>
-
-    <!-- Zone toggle. -->
-    <string name="goto_zone_label">Zone</string>
-    <string name="goto_zone_121">121 (main island)</string>
-    <string name="goto_zone_119">119 (outer island)</string>
-
-    <!-- Buttons. -->
-    <string name="goto_btn_submit">Submit &amp; go</string>
-    <string name="goto_btn_autofill">Use map centre</string>
-    <string name="goto_taipower_help">9-char (10 m) or 11-char (1 m) · case-insensitive · spaces OK</string>
-    <string name="goto_btn_paste">Paste</string>
-
-    <!-- Inline error reasons (mapped from ParseResult.Invalid.Reason). -->
-    <string name="goto_err_empty">Enter a coordinate.</string>
-    <string name="goto_err_bad_length">Wrong length.</string>
-    <string name="goto_err_bad_letter">Invalid letter — only A–X / A–J allowed.</string>
-    <string name="goto_err_reserved_letter_yz">Letters Y and Z are reserved; use A–X.</string>
-    <string name="goto_err_bad_zone">Zone must be 121 or 119.</string>
-    <string name="goto_err_non_digit">Digits only.</string>
-    <string name="goto_err_out_of_range">Outside Taiwan coverage.</string>
-    <string name="goto_err_taipower_outer_island">Taipower does not cover outer islands.</string>
-
-    <!-- Outer-island accuracy advisory shown above Submit when zone = 119. -->
-    <string name="goto_outer_island_advisory">Outer-island accuracy: ±10–20 m vs the official 7-parameter datum shift.</string>
-
-    <!-- FR-010 confirmation toast (format string). %1$s = unit + optional zone suffix; %2$.6f = lat; %3$.6f = lon. -->
-    <string name="goto_confirmation_toast">%1$s → %2$.6f°N %3$.6f°E</string>
-    <string name="goto_zone_suffix">zone %1$d</string>
-
-    <!-- Auto Fill disabled-state hints. -->
-    <string name="goto_autofill_hint_outside_taiwan">Outside Taiwan coverage.</string>
-    <string name="goto_autofill_hint_taipower_outer_island">Taipower does not cover outer islands.</string>
-
-    <!-- Recent entries section. -->
-    <string name="goto_recent_header">Recent</string>
-    <string name="goto_recent_empty">No recent entries.</string>
-    <string name="goto_recent_delete">Remove</string>
-
-    <!-- Settings-page button (FR-016 second entry point). -->
-    <string name="pref_open_goto_title">Open Coordinate Input</string>
-    <string name="pref_open_goto_summary">Type a Taipower / TWD97 / TWD67 coordinate and pan the map there.</string>
-
-    <!-- Marker-drop mode picker on the Submit row. -->
-    <string name="goto_marker_mode_header">Marker mode</string>
-    <string name="goto_mode_move">Move only</string>
-    <string name="goto_mode_waypoint">Waypoint</string>
-    <string name="goto_mode_friendly">Friendly</string>
-    <string name="goto_mode_hostile">Hostile</string>
-    <string name="goto_mode_neutral">Neutral</string>
-    <string name="goto_mode_unknown">Unknown</string>
-    <!-- ATAK calls this "Point of Interest" in its own UI even though the CoT type
-         is b-m-p-s-p-i (Sensor Point of Interest); see com.atakmap.android.util.PointOfInterest. -->
-    <string name="goto_mode_spi">Point of Interest</string>
-    <string name="goto_mode_mission">GoTo Pin</string>
-
-    <!-- ============================================================
-         Feature 003 (Option B / ADR-0011 D8) — ATAK picker delegation button.
-         The Custom Icon marker-mode radio + picker dialog from the earlier
-         spec was scrapped in favour of delegating directly to ATAK's native
-         EnterLocationDropDownReceiver. The custom icon strings were removed
-         alongside CustomIconPickerDialog.
-         ============================================================ -->
-
-    <!-- Label on the "Drop via ATAK picker" button (sibling of Submit). -->
-    <string name="goto_btn_atak_picker">Use ATAK icon palette…</string>
-
-    <!-- ============================================================
-         Feature 004 — Offline Address (Tools menu + Settings + widget rows)
-         ============================================================ -->
-
-    <!-- Third Tools-menu icon identity. -->
-    <string name="tool_offline_address_label">TW Offline Addr</string>
-    <string name="tool_offline_address_desc">Import an offline address dataset (places-&lt;county&gt;.sqlite) and show address text under the coordinate readout.</string>
 
     <!-- Offline Address page (DropDownReceiver). -->
     <string name="offline_address_page_title">TW Coordinates · Offline address data</string>
@@ -271,52 +183,7 @@
     <string name="opt_confidence_standard">Standard (~ 50 m / ~~ 200 m)</string>
     <string name="opt_confidence_loose">Loose (~ 100 m / ~~ 500 m)</string>
 
-    <!-- ===== Feature 006: county-scoped forward search ===== -->
-    <string name="tool_forward_search_label">TW Addr Search</string>
-    <string name="tool_forward_search_desc">Find a street address by county → district → street and GoTo it (offline).</string>
-
-    <string name="fs_boundary_missing">Import the base data (townships.sqlite) to enable forward search.</string>
-
-    <string name="fs_stage_county">1. County</string>
-    <string name="fs_county_none">No county selected</string>
-    <!-- %1$s = county, %2$s = district (may be empty) -->
-    <string name="fs_county_confirm_format">%1$s %2$s</string>
-    <string name="fs_source_self">My location</string>
-    <string name="fs_source_mapcenter">Map centre</string>
-    <string name="fs_source_list">List…</string>
-
-    <string name="fs_stage_district">2. District</string>
-    <string name="fs_stage_street">3. Street</string>
-    <string name="fs_street_hint">Street (e.g. 中山路)</string>
-    <string name="fs_search">Search</string>
-
-    <string name="fs_house_hint">House number (optional)</string>
-    <string name="fs_no_match">No matching street in this district.</string>
-    <string name="fs_county_dataset_missing">Address data for this county is not installed.</string>
-    <string name="fs_goto">GoTo</string>
-    <string name="fs_reset">Reset</string>
-    <string name="fs_district_all">All</string>
-    <!-- %1$s = address text, %2$d = distance in metres -->
-    <string name="fs_candidate_format">%1$s · %2$d m</string>
-
-    <!-- Feature 007 US1 — result ordering toggle. -->
-    <string name="fs_ordering_label">Sort by</string>
-    <string name="fs_ordering_similar">Most similar</string>
-    <string name="fs_ordering_distance">Distance</string>
-
-    <!-- ===== Feature 008: search/storage page UI redesign ===== -->
-    <!-- Forward-search scope control + district / house-number dialogs. -->
-    <string name="fs_scope_all">All</string>
-    <string name="fs_scope_specific">District</string>
-    <string name="fs_district_whole_county">Whole county (no district)</string>
-    <string name="fs_county_choose_title">Select county</string>
-    <string name="fs_district_choose_title">Select district</string>
-    <string name="fs_filter_hint">Filter (optional)</string>
-    <string name="fs_house_dialog_title">House number</string>
-    <string name="fs_house_dialog_subtitle">Optional · Done = whole street</string>
-    <string name="fs_clear">Clear</string>
-    <string name="fs_done">Done</string>
-    <string name="fs_cancel">Cancel</string>
+    <!-- ===== Feature 008: offline storage page UI redesign ===== -->
 
     <!-- Offline address — usage legend label for the shared boundary layer. -->
     <string name="offline_address_usage_boundary_label">Base data</string>

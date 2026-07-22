@@ -63,8 +63,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
 
   // Feature 008 — the CURRENT localised plugin context (ADR-0003). The page re-inflates against it
   // on a UI-language change so its strings (import / replace / remove / total usage / _boundary …)
-  // follow the in-app language override instead of being frozen at construction time. Mirrors the
-  // ForwardSearchReceiver contextSupplier pattern.
+  // follow the in-app language override instead of being frozen at construction time.
   private final Supplier<Context> contextSupplier;
   private Context pluginContext;
   private final AddressBundleImporter importer;
@@ -164,8 +163,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
    * (Re)inflate the page against the CURRENT localised plugin context (ADR-0003). Called from the
    * constructor and again from {@link #onReceive} whenever the in-app UI language changed since the
    * last inflation, so the page (import / replace / remove buttons, total-usage figure, _boundary
-   * row, etc.) repaints in the new language on its next open. Mirrors {@code
-   * ForwardSearchReceiver.inflate()}.
+   * row, etc.) repaints in the new language on its next open.
    */
   private void inflate() {
     Context ctx = safeGet(contextSupplier);

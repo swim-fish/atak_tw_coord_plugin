@@ -1,12 +1,11 @@
 package com.atakmap.android.twcoord.address.lookup;
 
 /**
- * Forward-search result ordering (feature 007 US1). Persisted by name in {@code PreferenceStore}
- * under {@code pref_search_result_ordering}.
+ * Native Address candidate ordering, persisted by name in {@code PreferenceStore} under {@code
+ * pref_search_result_ordering}.
  *
  * <ul>
- *   <li>{@link #DISTANCE} — nearest the anchor first (the shipped behaviour; the order {@code
- *       ForwardSearchController.search(...)} already returns). The default.
+ *   <li>{@link #DISTANCE} — nearest the anchor first. The default.
  *   <li>{@link #MOST_SIMILAR} — best textual match to the query first, ties broken by distance.
  * </ul>
  */

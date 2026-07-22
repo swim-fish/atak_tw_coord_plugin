@@ -1,13 +1,11 @@
 package com.atakmap.android.twcoord.address;
 
 /**
- * Broadcast action constants used by the Offline Address subsystem. Parallel to {@code
- * com.atakmap.android.twcoord.gotopage.TwCoordGotoIntents}.
+ * Internal broadcast action constants used by offline address management.
  *
  * <ul>
- *   <li>{@link #ACTION_SHOW_OFFLINE_ADDRESS} — sent by {@code OfflineAddressTool} (Tools-menu tap)
- *       and by the Settings dataset-status row tap; consumed by {@code OfflineAddressReceiver} to
- *       open the page.
+ *   <li>{@link #ACTION_SHOW_OFFLINE_ADDRESS} — sent by Settings and the native Address pane;
+ *       consumed by {@code OfflineAddressReceiver} to open the internal manager.
  *   <li>{@link #ACTION_DATASET_CHANGED} — plugin-internal notification fired after any successful
  *       import / remove; consumed by {@code AddressSubsystem} and the Settings fragment to refresh.
  * </ul>

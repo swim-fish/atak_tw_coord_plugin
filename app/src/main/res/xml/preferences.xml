@@ -35,8 +35,7 @@
         android:summary="@string/pref_readout_visible_summary"
         android:defaultValue="true"/>
 
-    <!-- Feature 007 US1 — forward-search result ordering (also reachable from the search page;
-         both bind to the same key so they stay in sync). Defaults to DISTANCE. -->
+    <!-- Native Address candidate ordering. Defaults to DISTANCE. -->
     <com.atakmap.android.gui.PanListPreference
         android:layout="@layout/pref_item"
         android:key="pref_search_result_ordering"
@@ -58,13 +57,6 @@
         android:title="@string/pref_accuracy_title"
         android:summary="@string/pref_accuracy_summary"
         android:selectable="false"/>
-
-    <!-- Feature 002 — second entry point for the GoTo input page (FR-016). -->
-    <Preference
-        android:layout="@layout/pref_item"
-        android:key="pref_open_goto"
-        android:title="@string/pref_open_goto_title"
-        android:summary="@string/pref_open_goto_summary"/>
 
     <!-- Feature 004 — three independent per-row Settings toggles + dataset-presence status row.
          All toggles default to false so the upgrade is visually zero-change until opt-in. -->

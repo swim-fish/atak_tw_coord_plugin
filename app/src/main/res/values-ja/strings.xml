@@ -25,6 +25,12 @@
     <string name="pref_coord_unit_summary">台電 / TWD97 / TWD67 を選択</string>
     <string name="pref_ui_language_title">UI 言語</string>
     <string name="pref_ui_language_summary">プラグインの UI 言語を上書き</string>
+    <string name="pref_readout_visible_title">地図の読み取り値を表示</string>
+    <string name="pref_readout_visible_summary">地図上の座標読み取り値の表示／非表示を切り替えます。</string>
+    <string name="pref_search_result_ordering_title">住所検索結果の並び順</string>
+    <string name="pref_search_result_ordering_summary">ネイティブ住所候補を距離または文字列の一致度で並べ替えます。</string>
+    <string name="opt_address_ordering_distance">距離</string>
+    <string name="opt_address_ordering_similar">類似度</string>
 
     <string name="opt_unit_taipower">台電座標 (Taipower)</string>
     <string name="opt_unit_twd97">TWD97 / TM2 z121</string>
@@ -40,78 +46,8 @@
     <string name="pref_accuracy_summary">TWD97: 全域で誤差 &lt; 1 m。\n\nTWD67 代表的な誤差:\n• 本島:±3〜±5 m\n• 離島(澎湖 / 金門 / 馬祖):±10〜±20 m\n\n台電グリッドは本島のみ対応。離島座標は「範囲外」表示と WGS84 フォールバック行を返します。</string>
 
     <!-- ============================================================
-         Feature 002 — 台湾座標入力ページ
+         Feature 004 — Offline Address（設定 + ウィジェット行）
          ============================================================ -->
-
-    <string name="app_name_goto">座標入力</string>
-    <string name="app_desc_goto">台電 / TWD97 / TWD67 座標を入力すると ATAK が地図を移動しマーカーを配置します。</string>
-
-    <string name="goto_title">座標入力</string>
-
-    <string name="goto_tab_taipower">台電グリッド</string>
-    <string name="goto_tab_twd97">TWD97</string>
-    <string name="goto_tab_twd67">TWD67</string>
-
-    <string name="goto_hint_taipower">例: H7509 DB4016</string>
-    <string name="goto_hint_easting">東距 (m)</string>
-    <string name="goto_hint_northing">北距 (m)</string>
-
-    <string name="goto_zone_label">ゾーン</string>
-    <string name="goto_zone_121">121 (本島)</string>
-    <string name="goto_zone_119">119 (離島)</string>
-
-    <string name="goto_btn_submit">送信して移動</string>
-    <string name="goto_btn_autofill">地図中心を取得</string>
-    <string name="goto_taipower_help">9桁（10m）/ 11桁（1m）· 大文字小文字不問 · 空白可</string>
-    <string name="goto_btn_paste">貼り付け</string>
-
-    <string name="goto_err_empty">座標を入力してください。</string>
-    <string name="goto_err_bad_length">長さが不正です。</string>
-    <string name="goto_err_bad_letter">無効な文字です。A–X / A–J のみ使用できます。</string>
-    <string name="goto_err_reserved_letter_yz">Y と Z は予約済みです。A–X を使用してください。</string>
-    <string name="goto_err_bad_zone">ゾーンは 121 または 119 のみ有効です。</string>
-    <string name="goto_err_non_digit">数字のみ入力できます。</string>
-    <string name="goto_err_out_of_range">台湾の範囲外です。</string>
-    <string name="goto_err_taipower_outer_island">台電グリッドは離島に対応していません。</string>
-
-    <string name="goto_outer_island_advisory">離島精度:公式 7 パラメータ変換に対して ±10〜20 m の差があります。</string>
-
-    <string name="goto_confirmation_toast">%1$s → %2$.6f°N %3$.6f°E</string>
-    <string name="goto_zone_suffix">ゾーン %1$d</string>
-
-    <string name="goto_autofill_hint_outside_taiwan">台湾の範囲外です。</string>
-    <string name="goto_autofill_hint_taipower_outer_island">台電グリッドは離島に対応していません。</string>
-
-    <string name="goto_recent_header">最近の入力</string>
-    <string name="goto_recent_empty">最近の入力はまだありません。</string>
-    <string name="goto_recent_delete">削除</string>
-
-    <string name="pref_open_goto_title">座標入力を開く</string>
-    <string name="pref_open_goto_summary">台電 / TWD97 / TWD67 座標を入力し地図をその場所へ移動します。</string>
-
-    <string name="goto_marker_mode_header">マーカー種別</string>
-    <string name="goto_mode_move">移動のみ</string>
-    <string name="goto_mode_waypoint">ウェイポイント</string>
-    <string name="goto_mode_friendly">友軍</string>
-    <string name="goto_mode_hostile">敵対</string>
-    <string name="goto_mode_neutral">中立</string>
-    <string name="goto_mode_unknown">不明</string>
-    <string name="goto_mode_spi">関心地点</string>
-    <string name="goto_mode_mission">目的地ピン</string>
-
-    <!-- ============================================================
-         Feature 003（Option B / ADR-0011 D8）— ATAK アイコン選択への委譲ボタン
-         ============================================================ -->
-
-    <string name="goto_btn_atak_picker">ATAK アイコンパレットを使う…</string>
-
-    <!-- ============================================================
-         Feature 004 — Offline Address（ツールメニュー + 設定 + ウィジェット行）
-         ============================================================ -->
-
-    <!-- Tools-menu icon identity. -->
-    <string name="tool_offline_address_label">TW Offline Addr</string>
-    <string name="tool_offline_address_desc">オフライン住所データセット（places-&lt;county&gt;.sqlite）を取り込み、座標表示の下に住所テキストを表示します。</string>
 
     <!-- Offline Address page (DropDownReceiver). -->
     <string name="offline_address_page_title">TW Coordinates · オフライン住所データ</string>
@@ -202,54 +138,7 @@
     <string name="opt_confidence_standard">標準（~ 50 m / ~~ 200 m）</string>
     <string name="opt_confidence_loose">ルーズ（~ 100 m / ~~ 500 m）</string>
 
-    <!-- ===== Feature 006: county-scoped forward search ===== -->
-    <string name="tool_forward_search_label">TW Addr Search</string>
-    <string name="tool_forward_search_desc">県市 → 郷鎮市区 → 街路で住所を検索して移動（オフライン）。</string>
-
-    <string name="fs_boundary_missing">前方検索を有効にするには base データ（townships.sqlite）を取り込んでください。</string>
-
-    <string name="fs_stage_county">1. 県市</string>
-    <string name="fs_county_none">県市が未選択</string>
-    <string name="fs_county_confirm_format">%1$s %2$s</string>
-    <string name="fs_source_self">現在地</string>
-    <string name="fs_source_mapcenter">地図中心</string>
-    <string name="fs_source_list">一覧…</string>
-
-    <string name="fs_stage_district">2. 郷鎮市区</string>
-    <string name="fs_stage_street">3. 街路</string>
-    <string name="fs_street_hint">街路（例：中山路）</string>
-    <string name="fs_search">検索</string>
-
-    <string name="fs_house_hint">番地（任意）</string>
-    <string name="fs_no_match">この郷鎮市区に一致する街路がありません。</string>
-    <string name="fs_county_dataset_missing">この県市の住所データは未インストールです。</string>
-    <string name="fs_goto">移動</string>
-    <string name="fs_reset">リセット</string>
-    <string name="fs_district_all">すべて</string>
-    <string name="fs_candidate_format">%1$s · %2$d m</string>
-
-    <!-- Backfill: feature 007 strings missing ja translations (MissingTranslation lint). -->
-    <string name="pref_readout_visible_title">地図の読み取り値を表示</string>
-    <string name="pref_readout_visible_summary">地図上の座標読み取り値の表示／非表示を切り替えます。</string>
-    <string name="pref_search_result_ordering_title">住所検索結果の並び順</string>
-    <string name="pref_search_result_ordering_summary">前方検索の結果を距離または最も一致するテキストで並べ替えます。</string>
-    <string name="fs_ordering_label">並び替え</string>
-    <string name="fs_ordering_similar">最も類似</string>
-    <string name="fs_ordering_distance">距離</string>
-
-    <!-- ===== Feature 008: search/storage page UI redesign ===== -->
-    <!-- Forward-search scope control + district / house-number dialogs. -->
-    <string name="fs_scope_all">すべて</string>
-    <string name="fs_scope_specific">地区指定</string>
-    <string name="fs_district_whole_county">県全体（地区なし）</string>
-    <string name="fs_county_choose_title">県市を選択</string>
-    <string name="fs_district_choose_title">市区町村を選択</string>
-    <string name="fs_filter_hint">絞り込み（任意）</string>
-    <string name="fs_house_dialog_title">番地</string>
-    <string name="fs_house_dialog_subtitle">任意 · 完了で通り全体</string>
-    <string name="fs_clear">クリア</string>
-    <string name="fs_done">完了</string>
-    <string name="fs_cancel">キャンセル</string>
+    <!-- ===== Feature 008: offline storage page UI redesign ===== -->
 
     <!-- Offline address — usage legend label for the shared boundary layer. -->
     <string name="offline_address_usage_boundary_label">基礎データ</string>

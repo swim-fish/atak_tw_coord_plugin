@@ -35,8 +35,6 @@ import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.coord.DisplayLine;
 import com.atakmap.android.twcoord.coord.Formatter;
 import com.atakmap.android.twcoord.coord.Wgs84;
-import com.atakmap.android.twcoord.gotopage.TwCoordGotoIntents;
-import com.atakmap.android.twcoord.gotopage.TwCoordGotoReceiver;
 import com.atakmap.android.twcoord.i18n.LocaleOverride;
 import com.atakmap.android.twcoord.nativeentry.NativeCoordinateEntryRegistrar;
 import com.atakmap.android.twcoord.plugin.R;
@@ -76,7 +74,6 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private TwCoordPreferenceFragment prefFragment;
   private SelfMarkerSubscriber selfSub;
   private Handler ui;
-  private TwCoordGotoReceiver gotoReceiver;
   private NativeCoordinateEntryRegistrar nativeEntryRegistrar;
 
   // Feature 004 — Offline Address subsystem owns the importer (one per process), a
@@ -114,9 +111,8 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private com.atakmap.android.twcoord.address.BatchImportCoordinator addressCoordinator;
   private com.atakmap.android.twcoord.address.lookup.AddressLookupService addressLookupService;
 
-  // Feature 006 — township boundary layer (mounted once) + forward-search page.
+  // Township boundary layer retained for county-scoped widget reverse lookup.
   private com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade addressBoundaryFacade;
-  private com.atakmap.android.twcoord.address.ForwardSearchReceiver forwardSearchReceiver;
 
   @android.annotation.SuppressLint("StaticFieldLeak")
   private static com.atakmap.android.twcoord.address.ActiveDatasetRegistry staticAddressRegistry;
@@ -166,11 +162,10 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private final AtomicBoolean mapRefreshPending = new AtomicBoolean(false);
 
   /**
-   * Wakes the bottom-left MAP readout on EVERY camera change, including programmatic pans. {@code
-   * CameraController.Programmatic.panTo} (TW Coord GoTo submit + forward-search tap-to-pan) drives
-   * the renderer camera directly and does NOT dispatch {@link MapEvent#MAP_MOVED} through the
-   * {@link MapEventDispatcher}, so {@link #mapCentreListener} never sees those moves and the MAP
-   * coordinate + address line went stale (issue swim-fish/atak_tw_coord_plugin#1). This
+   * Wakes the bottom-left MAP readout on every camera change, including programmatic pans. ATAK
+   * camera actions can drive the renderer directly without dispatching {@link MapEvent#MAP_MOVED}
+   * through the {@link MapEventDispatcher}, so {@link #mapCentreListener} never sees those moves
+   * and the MAP coordinate + address line went stale (issue swim-fish/atak_tw_coord_plugin#1). This
    * renderer-level listener catches them. It fires on the GL/render thread, so it hops to the UI
    * thread via {@code mapView.post} and coalesces through {@link #mapRefreshPending}; {@code
    * renderMapCentre} then reads the now-current {@code mapView.getPoint()} (also avoiding the
@@ -443,14 +438,6 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     toggleFilter.addAction(ACTION_SHOW_PLUGIN);
     AtakBroadcast.getInstance().registerReceiver(toggleReceiver, toggleFilter);
 
-    // Feature 002 — the GoTo input page is a DropDownReceiver. It registers its own broadcast
-    // (SHOW_GOTO) so the second Tools-menu icon (TwCoordGotoTool) and the settings-page button
-    // both open the same page.
-    gotoReceiver = new TwCoordGotoReceiver(view, pluginContext, prefs);
-    AtakBroadcast.DocumentedIntentFilter gotoFilter = new AtakBroadcast.DocumentedIntentFilter();
-    gotoFilter.addAction(TwCoordGotoIntents.ACTION_SHOW_GOTO);
-    AtakBroadcast.getInstance().registerReceiver(gotoReceiver, gotoFilter);
-
     // Retained internal offline-data manager. Settings and the native Address pane fire
     // SHOW_OFFLINE_ADDRESS; no standalone Tools item exposes this receiver. The importer +
     // executor are owned here so they outlive any single drop-down open/close cycle and so the
@@ -547,11 +534,8 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     addressRegistry.initFromDisk();
     addressSubsystem.setRegistry(addressRegistry);
 
-    // Feature 006 — mount the township boundary layer (active/_boundary/townships.sqlite) and bind
-    // it to the resolver for county-scoped reverse lookup (FR-014). Null when base data absent
-    // (FR-017: reverse falls back to the 005 fan-out; forward search shows "import base data").
-    // Lazily re-mounts via boundaryFacadeOrRemount() so a boundary imported later in the SAME
-    // session is picked up the next time forward search opens — no ATAK restart required.
+    // Mount the township boundary layer and bind it to county-scoped widget reverse lookup. A
+    // missing boundary remains non-fatal; a later import is picked up without an ATAK restart.
     boundaryFacadeOrRemount();
 
     // Feature 013 — one leased, bounded lookup owner serves native Address and map readouts.
@@ -625,22 +609,6 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       addressReceiver.setFileSystem(addressFileSystem);
     }
 
-    // Feature 006 — forward-search page (fourth Tools entry). The boundary facade + registry are
-    // read live via suppliers so a later import that mounts the boundary is picked up on reopen.
-    forwardSearchReceiver =
-        new com.atakmap.android.twcoord.address.ForwardSearchReceiver(
-            view,
-            // Supply the live localised context (ADR-0003) so the page localises and repaints on a
-            // language change; fall back to the raw plugin context only before it is built.
-            () -> localisedPluginContext != null ? localisedPluginContext : pluginContext,
-            this::boundaryFacadeOrRemount,
-            () -> addressRegistry,
-            () -> activePrefs.confidenceThresholds(),
-            prefs);
-    AtakBroadcast.DocumentedIntentFilter forwardFilter = new AtakBroadcast.DocumentedIntentFilter();
-    forwardFilter.addAction(
-        com.atakmap.android.twcoord.address.ForwardSearchIntents.ACTION_SHOW_FORWARD_SEARCH);
-    AtakBroadcast.getInstance().registerReceiver(forwardSearchReceiver, forwardFilter);
     addressSubsystem.addListener(
         (row, state) -> {
           try {
@@ -707,13 +675,10 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   }
 
   /**
-   * Feature 006 — return the mounted township-boundary facade, lazily (re)opening {@code
-   * active/_boundary/townships.sqlite} when it isn't open yet. Called once at setup and again as
-   * the forward-search boundary supplier, so a boundary imported later in the SAME session is
-   * picked up the next time forward search opens — no ATAK restart needed. Returns {@code null}
-   * when no boundary file exists yet (forward search then shows "import base data"). Synchronized
-   * because setup, the UI-thread supplier, and the import executor (which writes the file) can
-   * race.
+   * Return the mounted township-boundary facade, lazily reopening {@code
+   * active/_boundary/townships.sqlite} when necessary. Called at setup and after dataset changes so
+   * a later boundary import is available in the same session. Synchronized because setup, lookup,
+   * and the import executor can race.
    */
   private synchronized com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade
       boundaryFacadeOrRemount() {
@@ -749,19 +714,6 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     } catch (IllegalArgumentException ignored) {
       // Receiver was never registered (onCreate aborted) — nothing to do.
     }
-    if (gotoReceiver != null) {
-      try {
-        AtakBroadcast.getInstance().unregisterReceiver(gotoReceiver);
-      } catch (IllegalArgumentException ignored) {
-        // ditto
-      }
-      try {
-        gotoReceiver.dispose();
-      } catch (Exception ignored) {
-        // DropDownReceiver.dispose() is final and idempotent, but swallow defensively.
-      }
-      gotoReceiver = null;
-    }
     if (addressReceiver != null) {
       try {
         AtakBroadcast.getInstance().unregisterReceiver(addressReceiver);
@@ -774,20 +726,6 @@ public class TwCoordMapComponent extends AbstractMapComponent {
         // best-effort
       }
       addressReceiver = null;
-    }
-    // Feature 006 — forward-search receiver + boundary facade teardown.
-    if (forwardSearchReceiver != null) {
-      try {
-        AtakBroadcast.getInstance().unregisterReceiver(forwardSearchReceiver);
-      } catch (IllegalArgumentException ignored) {
-        // never registered
-      }
-      try {
-        forwardSearchReceiver.dispose();
-      } catch (Exception ignored) {
-        // best-effort
-      }
-      forwardSearchReceiver = null;
     }
     if (addressBoundaryFacade != null) {
       try {

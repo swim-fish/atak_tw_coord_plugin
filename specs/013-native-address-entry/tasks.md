@@ -217,19 +217,19 @@ appears, and stale retired actions open no UI or map mutation.
 
 ### Tests first
 
-- [ ] T070 [P] [US5] Add failing upgrade tests for byte-compatible datasets, manifests, ordering/confidence/readout settings, native last-tab state, and inert legacy Go To preferences in `app/src/test/java/com/atakmap/android/twcoord/address/NativeAddressUpgradeTest.java`
-- [ ] T071 [P] [US5] Add failing static/contract tests requiring stale Go To and forward-search actions to be unregistered no-ops and all shared parser/ranking references to live outside retired UI packages in `app/src/test/java/com/atakmap/android/twcoord/LegacyWorkflowRemovalTest.java`
-- [ ] T072 [P] [US5] Add an upgrade instrumentation scenario using existing imported county files and seeded retired preferences in `app/src/androidTest/java/com/atakmap/android/twcoord/address/NativeAddressUpgradeEspressoTest.java`
+- [X] T070 [P] [US5] Add failing upgrade tests for byte-compatible datasets, manifests, ordering/confidence/readout settings, native last-tab state, and inert legacy Go To preferences in `app/src/test/java/com/atakmap/android/twcoord/address/NativeAddressUpgradeTest.java`
+- [X] T071 [P] [US5] Add failing static/contract tests requiring stale Go To and forward-search actions to be unregistered no-ops and all shared parser/ranking references to live outside retired UI packages in `app/src/test/java/com/atakmap/android/twcoord/LegacyWorkflowRemovalTest.java`
+- [X] T072 [P] [US5] Add an upgrade instrumentation scenario using existing imported county files and seeded retired preferences in `app/src/androidTest/java/com/atakmap/android/twcoord/address/NativeAddressUpgradeEspressoTest.java`
 
 ### Implementation
 
-- [ ] T073 [US5] Stop constructing/registering custom Go To and forward-search receivers and remove their externally reachable providers during component startup/teardown in `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java`
-- [ ] T074 [US5] Remove custom Go To page, receiver, intents, and UI-only state after neutral parser extraction from `app/src/main/java/com/atakmap/android/twcoord/gotopage/`
-- [ ] T075 [US5] Remove forward-search receiver, intents, controller/query, and UI-only county funnel while retaining neutral ranking types from `app/src/main/java/com/atakmap/android/twcoord/address/ForwardSearchReceiver.java`, `app/src/main/java/com/atakmap/android/twcoord/address/ForwardSearchIntents.java`, and `app/src/main/java/com/atakmap/android/twcoord/address/forward/`
-- [ ] T076 [US5] Remove `TwCoordGotoTool` and `ForwardSearchTool` after toolbar and receiver migration from `app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordGotoTool.java` and `app/src/main/java/com/atakmap/android/twcoord/plugin/ForwardSearchTool.java`
-- [ ] T077 [US5] Remove retired layouts, icons, drawables, preference shortcut, and UI-only strings while retaining the offline manager resources in `app/src/main/res/layout/tw_coord_goto.xml`, `app/src/main/res/layout/forward_search_page.xml`, `app/src/main/res/drawable/ic_tw_coord_goto.xml`, `app/src/main/res/drawable/ic_forward_search.xml`, and `app/src/main/res/xml/preferences.xml`
-- [ ] T078 [US5] Delete or relocate only tests tied to retired UI while preserving coordinate parser and reusable address regressions under `app/src/test/java/com/atakmap/android/twcoord/`
-- [ ] T079 [US5] Run the upgrade, stale-action, parser, ranking, registry, native entry, resource-reference, and full JVM suites via `app/build.gradle` and record results in `specs/013-native-address-entry/quickstart.md`
+- [X] T073 [US5] Stop constructing/registering custom Go To and forward-search receivers and remove their externally reachable providers during component startup/teardown in `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java`
+- [X] T074 [US5] Remove custom Go To page, receiver, intents, and UI-only state after neutral parser extraction from `app/src/main/java/com/atakmap/android/twcoord/gotopage/`
+- [X] T075 [US5] Remove forward-search receiver, intents, controller/query, and UI-only county funnel while retaining neutral ranking types from `app/src/main/java/com/atakmap/android/twcoord/address/ForwardSearchReceiver.java`, `app/src/main/java/com/atakmap/android/twcoord/address/ForwardSearchIntents.java`, and `app/src/main/java/com/atakmap/android/twcoord/address/forward/`
+- [X] T076 [US5] Remove `TwCoordGotoTool` and `ForwardSearchTool` after toolbar and receiver migration from `app/src/main/java/com/atakmap/android/twcoord/plugin/TwCoordGotoTool.java` and `app/src/main/java/com/atakmap/android/twcoord/plugin/ForwardSearchTool.java`
+- [X] T077 [US5] Remove retired layouts, icons, drawables, preference shortcut, and UI-only strings while retaining the offline manager resources in `app/src/main/res/layout/tw_coord_goto.xml`, `app/src/main/res/layout/forward_search_page.xml`, `app/src/main/res/drawable/ic_tw_coord_goto.xml`, `app/src/main/res/drawable/ic_forward_search.xml`, and `app/src/main/res/xml/preferences.xml`
+- [X] T078 [US5] Delete or relocate only tests tied to retired UI while preserving coordinate parser and reusable address regressions under `app/src/test/java/com/atakmap/android/twcoord/`
+- [X] T079 [US5] Run the upgrade, stale-action, parser, ranking, registry, native entry, resource-reference, and full JVM suites via `app/build.gradle` and record results in `specs/013-native-address-entry/quickstart.md`
 - [ ] T080 [RELEASE-GATE] [US5] Execute an older-version-to-feature-013 upgrade with two imported counties and retired preference state on ATAK 5.5 and 5.7.0.9, verify no re-import or duplicate workflow, and update `specs/013-native-address-entry/quickstart.md`
 
 **Checkpoint**: All five stories are independently testable and the old

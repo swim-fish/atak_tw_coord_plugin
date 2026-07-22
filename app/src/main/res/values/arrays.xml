@@ -44,11 +44,11 @@
         <item>LOOSE</item>
     </string-array>
 
-    <!-- Feature 007 US1 — forward-search result ordering (entries i18n; values are
-         ResultOrdering enum names parsed by ResultOrdering.fromName, NOT translatable). -->
+    <!-- Native Address candidate ordering. Values are ResultOrdering enum names parsed by
+         ResultOrdering.fromName and are not translatable. -->
     <string-array name="search_result_ordering_entries">
-        <item>@string/fs_ordering_distance</item>
-        <item>@string/fs_ordering_similar</item>
+        <item>@string/opt_address_ordering_distance</item>
+        <item>@string/opt_address_ordering_similar</item>
     </string-array>
 
     <string-array name="search_result_ordering_values" translatable="false">

@@ -248,6 +248,30 @@ The command completed with `BUILD SUCCESSFUL`. The instrumentation journeys
 remain source/compile coverage only; exact one-item host rendering and manager
 operation on ATAK 5.5 and 5.7.0.9 remain PENDING under T069.
 
+### US5 Red-Green-Refactor (2026-07-23)
+
+- RED: upgrade and static-removal tests initially found the custom Go To and
+  forward-search receivers, actions, pages, tools, preference accessors, and
+  resources still present.
+- GREEN: dataset/manifest byte-compatibility, retained settings, native
+  last-coordinate-tab state, inert legacy preferences, neutral parser/ranking,
+  and stale-action bytecode contracts passed after the duplicate workflows
+  were removed.
+- REFACTOR: retained legacy `pref_goto_*` key names only as non-destructive
+  upgrade fixtures; production exposes no accessors. The offline manager,
+  boundary data, registry, address database queries, `coord.input` parser, and
+  `address.lookup.ResultOrdering` remain active.
+
+```powershell
+.\gradlew.bat :app:spotlessApply :app:spotlessCheck `
+  :app:testCivDebugUnitTest `
+  :app:compileCivDebugAndroidTestJavaWithJavac
+```
+
+The full JVM suite, Android resource merge, and instrumentation source compile
+completed with `BUILD SUCCESSFUL`. The older-version physical upgrade on ATAK
+5.5 and 5.7.0.9 remains PENDING under T080.
+
 ## 4. Repository quality gates
 
 ```powershell
