@@ -1,6 +1,7 @@
 package com.atakmap.android.twcoord.address.lookup;
 
 import com.atakmap.android.twcoord.address.ActiveDatasetRegistry;
+import com.atakmap.android.twcoord.address.AddressRecord;
 import com.atakmap.android.twcoord.address.CountyActiveDataset;
 import com.atakmap.android.twcoord.coord.Wgs84;
 import com.atakmap.coremap.log.Log;
@@ -109,9 +110,67 @@ public final class DefaultAddressLookupService implements AddressLookupService {
     @Override
     public ReverseAddressResult reverse(
         ReverseAddressRequest request, ActiveDatasetRegistry.ReadSession session) {
-      return session.datasets().isEmpty()
-          ? ReverseAddressResult.noDataset(request.identity(), request.queryPoint())
-          : ReverseAddressResult.noMatch(request.identity(), request.queryPoint());
+      if (session.datasets().isEmpty()) {
+        return ReverseAddressResult.noDataset(request.identity(), request.queryPoint());
+      }
+      CountyActiveDataset bestDataset = null;
+      AddressRecord bestRecord = null;
+      double bestDistance = request.radiusMeters();
+      Wgs84 query = request.queryPoint();
+      for (CountyActiveDataset active : session.datasets().values()) {
+        AddressRecord record =
+            active.facade().nearestWithin(query.latitudeDeg(), query.longitudeDeg(), bestDistance);
+        if (record == null) continue;
+        double distance =
+            haversineMeters(query.latitudeDeg(), query.longitudeDeg(), record.lat(), record.lon());
+        if (distance > bestDistance) continue;
+        bestDataset = active;
+        bestRecord = record;
+        bestDistance = distance;
+      }
+      if (bestRecord == null || bestDataset == null) {
+        return ReverseAddressResult.noMatch(request.identity(), query);
+      }
+      DatasetIdentity provenance = DatasetIdentity.from(bestDataset);
+      String normalized = parser.normalize(bestRecord.displayName());
+      String stableId =
+          provenance.fileSha256()
+              + ":"
+              + bestRecord.lat()
+              + ":"
+              + bestRecord.lon()
+              + ":"
+              + normalized;
+      AddressCandidate candidate =
+          new AddressCandidate(
+              stableId,
+              bestRecord.displayName(),
+              normalized,
+              new Wgs84(
+                  bestRecord.lat(),
+                  bestRecord.lon(),
+                  query.timestampEpochMs(),
+                  Wgs84.Source.COT_TARGET),
+              AddressMatchKind.PARTIAL,
+              bestDistance,
+              bestDataset.county(),
+              provenance);
+      return ReverseAddressResult.found(request.identity(), query, candidate);
+    }
+
+    private static double haversineMeters(
+        double latitude1, double longitude1, double latitude2, double longitude2) {
+      double phi1 = Math.toRadians(latitude1);
+      double phi2 = Math.toRadians(latitude2);
+      double deltaPhi = Math.toRadians(latitude2 - latitude1);
+      double deltaLambda = Math.toRadians(longitude2 - longitude1);
+      double a =
+          Math.sin(deltaPhi / 2.0) * Math.sin(deltaPhi / 2.0)
+              + Math.cos(phi1)
+                  * Math.cos(phi2)
+                  * Math.sin(deltaLambda / 2.0)
+                  * Math.sin(deltaLambda / 2.0);
+      return 12_742_000.0 * Math.asin(Math.sqrt(a));
     }
   }
 

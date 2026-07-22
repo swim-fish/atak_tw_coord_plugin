@@ -152,22 +152,22 @@ the reverse Address result must retain the exact host point.
 
 ### Tests first
 
-- [ ] T046 [P] [US3] Add failing reverse lookup tests for exact query WGS84 retention, separate record WGS84, bounded radius, provenance, no-data/no-match/failure, and cancellation in `app/src/test/java/com/atakmap/android/twcoord/address/lookup/DefaultAddressLookupServiceReverseTest.java`
-- [ ] T047 [P] [US3] Add failing session/draft/request/dataset revision fencing and 100 alternating delayed-completion cases in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/AddressEntryControllerConcurrencyTest.java`
-- [ ] T048 [P] [US3] Add failing non-null all-tab activation, null active-tab Clear, Address Auto Fill, reverse no-snap, read-only, Copy/format, and no-human-notification tests in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanCoordinateEntryPaneContractTest.java`
-- [ ] T049 [P] [US3] Add failing dispose, late-dialog callback, locale replacement, exact-instance unregister, start/stop cycle, no-data fallback, and inert retained-View tests in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/NativeCoordinateEntryRegistrarTest.java` and `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanCoordinateEntryPaneSafetyTest.java`
-- [ ] T050 [P] [US3] Add failing shared-worker parity tests proving native work cannot be starved by stale map-readout requests in `app/src/test/java/com/atakmap/android/twcoord/address/AddressSubsystemTest.java`
+- [X] T046 [P] [US3] Add failing reverse lookup tests for exact query WGS84 retention, separate record WGS84, bounded radius, provenance, no-data/no-match/failure, and cancellation in `app/src/test/java/com/atakmap/android/twcoord/address/lookup/DefaultAddressLookupServiceReverseTest.java`
+- [X] T047 [P] [US3] Add failing session/draft/request/dataset revision fencing and 100 alternating delayed-completion cases in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/AddressEntryControllerConcurrencyTest.java`
+- [X] T048 [P] [US3] Add failing non-null all-tab activation, null active-tab Clear, Address Auto Fill, reverse no-snap, read-only, Copy/format, and no-human-notification tests in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanCoordinateEntryPaneContractTest.java`
+- [X] T049 [P] [US3] Add failing dispose, late-dialog callback, locale replacement, exact-instance unregister, start/stop cycle, no-data fallback, and inert retained-View tests in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/NativeCoordinateEntryRegistrarTest.java` and `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanCoordinateEntryPaneSafetyTest.java`
+- [X] T050 [P] [US3] Add failing shared-worker parity tests proving native work cannot be starved by stale map-readout requests in `app/src/test/java/com/atakmap/android/twcoord/address/AddressSubsystemTest.java`
 
 ### Implementation
 
-- [ ] T051 [US3] Implement reverse lookup through a leased dataset session while retaining both query and record WGS84 in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/DefaultAddressLookupService.java`
-- [ ] T052 [US3] Implement activation generations, reverse result state, no-snap resolution, Auto Fill, active-only Clear, read-only, and terminal disposal in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/AddressEntryController.java`
-- [ ] T053 [US3] Route non-null/null activation, Auto Fill, getter, formatting, listener, and disposal between coordinate and Address controllers in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/TaiwanCoordinateEntryPane.java`
-- [ ] T054 [US3] Adapt map readout reverse consumers to the shared lookup service without changing visible row semantics or budgets in `app/src/main/java/com/atakmap/android/twcoord/address/AddressSubsystem.java`
-- [ ] T055 [US3] Reorder address initialization before registrar construction and implement failure-contained reverse ownership plus teardown ordering in `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java`
-- [ ] T056 [US3] Pass the live lookup service and manager navigator into new and locale-replacement panes while preserving UI-thread registration and exact-instance disposal in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/NativeCoordinateEntryRegistrar.java`
-- [ ] T057 [P] [US3] Add aligned Address unavailable, read-only, disposed, reverse-loading, and management-guidance strings in `app/src/main/res/values/strings.xml`, `app/src/main/res/values-zh-rTW/strings.xml`, and `app/src/main/res/values-ja/strings.xml`
-- [ ] T058 [US3] Run reverse, stale-result, pane, registrar, widget parity, coordinate golden-vector, all-tab, Clear, Auto Fill, read-only, and lifecycle suites via `app/build.gradle` and record results in `specs/013-native-address-entry/quickstart.md`
+- [X] T051 [US3] Implement reverse lookup through a leased dataset session while retaining both query and record WGS84 in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/DefaultAddressLookupService.java`
+- [X] T052 [US3] Implement activation generations, reverse result state, no-snap resolution, Auto Fill, active-only Clear, read-only, and terminal disposal in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/AddressEntryController.java`
+- [X] T053 [US3] Route non-null/null activation, Auto Fill, getter, formatting, listener, and disposal between coordinate and Address controllers in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/TaiwanCoordinateEntryPane.java`
+- [X] T054 [US3] Adapt map readout reverse consumers to the shared lookup service without changing visible row semantics or budgets in `app/src/main/java/com/atakmap/android/twcoord/address/AddressSubsystem.java`
+- [X] T055 [US3] Reorder address initialization before registrar construction and implement failure-contained reverse ownership plus teardown ordering in `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java`
+- [X] T056 [US3] Pass the live lookup service and manager navigator into new and locale-replacement panes while preserving UI-thread registration and exact-instance disposal in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/NativeCoordinateEntryRegistrar.java`
+- [X] T057 [P] [US3] Add aligned Address unavailable, read-only, disposed, reverse-loading, and management-guidance strings in `app/src/main/res/values/strings.xml`, `app/src/main/res/values-zh-rTW/strings.xml`, and `app/src/main/res/values-ja/strings.xml`
+- [X] T058 [US3] Run reverse, stale-result, pane, registrar, widget parity, coordinate golden-vector, all-tab, Clear, Auto Fill, read-only, and lifecycle suites via `app/build.gradle` and record results in `specs/013-native-address-entry/quickstart.md`
 - [ ] T059 [RELEASE-GATE] [US3] Execute Convert Coordinate, Address Auto Fill, Copy/format, missing-data isolation, read-only, 100 alternating points, active lookup/dialog unload, and re-enable journeys on ATAK 5.5 and 5.7.0.9, then update `specs/013-native-address-entry/quickstart.md`
 
 **Checkpoint**: Every supplied-point flow has four coherent representations;

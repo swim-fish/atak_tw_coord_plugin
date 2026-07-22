@@ -280,6 +280,11 @@
     <string name="native_entry_address_mode_full">一括入力</string>
     <string name="native_entry_address_choose_result">候補を選択</string>
     <string name="native_entry_address_loading">オフライン住所データを検索しています…</string>
+    <string name="native_entry_address_reverse_loading">指定地点の住所を検索しています…</string>
+    <string name="native_entry_address_unavailable">住所は利用できません。他の座標タブは使用できます。</string>
+    <string name="native_entry_address_read_only">住所は読み取り専用です。</string>
+    <string name="native_entry_address_disposed">住所入力は現在利用できません。</string>
+    <string name="native_entry_address_manage_data">TW Coordinates でオフライン住所データを管理してください。</string>
     <string name="native_entry_address_no_dataset">該当するオフライン住所データがありません。TW Coordinates からインポートしてください。</string>
     <string name="native_entry_address_no_match">一致する住所が見つかりません。</string>
     <string name="native_entry_address_ambiguous">複数の住所が一致しました。候補を選択してください。</string>

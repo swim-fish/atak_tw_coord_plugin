@@ -347,6 +347,11 @@
     <string name="native_entry_address_mode_full">Single field</string>
     <string name="native_entry_address_choose_result">Choose result</string>
     <string name="native_entry_address_loading">Searching offline address data…</string>
+    <string name="native_entry_address_reverse_loading">Resolving the supplied point’s address…</string>
+    <string name="native_entry_address_unavailable">Address is unavailable; coordinate tabs remain usable.</string>
+    <string name="native_entry_address_read_only">Address is read only.</string>
+    <string name="native_entry_address_disposed">Address entry is no longer available.</string>
+    <string name="native_entry_address_manage_data">Manage offline address data in TW Coordinates.</string>
     <string name="native_entry_address_no_dataset">No matching offline address dataset. Open TW Coordinates to import one.</string>
     <string name="native_entry_address_no_match">No matching address found.</string>
     <string name="native_entry_address_ambiguous">Multiple addresses match. Choose a result.</string>

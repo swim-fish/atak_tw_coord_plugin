@@ -111,6 +111,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
   private OnChangedListener changedListener;
   private boolean rendering;
   private boolean disposed;
+  private Runnable addressManagerNavigator = () -> {};
 
   public TaiwanCoordinateEntryPane(Context pluginContext, PreferenceStore preferences) {
     this(pluginContext, pluginContext, preferences, new NoDataAddressLookupService(Runnable::run));
@@ -129,6 +130,17 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
             preferences::setNativeEntryLastUnit),
         new AddressEntryController(Objects.requireNonNull(lookupService, "lookupService")),
         new TaiwanEntryFormatter());
+  }
+
+  public TaiwanCoordinateEntryPane(
+      Context pluginContext,
+      Context windowContext,
+      PreferenceStore preferences,
+      AddressLookupService lookupService,
+      Runnable addressManagerNavigator) {
+    this(pluginContext, windowContext, preferences, lookupService);
+    this.addressManagerNavigator =
+        Objects.requireNonNull(addressManagerNavigator, "addressManagerNavigator");
   }
 
   TaiwanCoordinateEntryPane(
@@ -295,6 +307,15 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     addressController.setOnHumanChange(this::notifyHostChanged);
     addressController.setOnStateChanged(() -> root.post(this::renderControllerState));
     addressChoose.setOnClickListener(ignored -> candidateDialog.show());
+    status.setOnClickListener(
+        ignored -> {
+          if (disposed || addressController.validation() != AddressValidation.NO_DATASET) return;
+          try {
+            addressManagerNavigator.run();
+          } catch (RuntimeException failure) {
+            Log.w(TAG, "address manager navigation failed", failure);
+          }
+        });
     addressMode.setOnClickListener(
         ignored -> {
           if (disposed) return;
@@ -365,9 +386,10 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
         addressController.setEditable(editable);
         addressController.clear(false);
       } else {
-        controller.activate(toWgs84(currentPoint), editable);
+        Wgs84 point = toWgs84(currentPoint);
+        controller.activate(point, editable);
         addressController.setEditable(editable);
-        if (currentPoint != null) addressController.clear(false);
+        if (point != null) addressController.activate(point, editable);
       }
       renderControllerState();
     } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
@@ -427,7 +449,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     boolean tracing = beginTrace("TWCoord.native.autofill");
     try {
       if (controller.activeTab() == NativeEntryTab.ADDRESS) {
-        addressController.clear(false);
+        addressController.autofill(toWgs84(point));
       } else {
         controller.autofill(toWgs84(point));
       }
@@ -522,10 +544,11 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       addressFullRow.setVisibility(fullAddressMode ? View.VISIBLE : View.GONE);
       addressStructured.setVisibility(fullAddressMode ? View.GONE : View.VISIBLE);
       addressMode.setText(
-          strings.get(
+          safeString(
               fullAddressMode
                   ? R.string.native_entry_address_mode_structured
-                  : R.string.native_entry_address_mode_full));
+                  : R.string.native_entry_address_mode_full,
+              fullAddressMode ? "Structured fields" : "Single field"));
       twd97ZoneGroup.check(
           controller.zone(CoordinateUnit.TWD97) == 119
               ? R.id.native_entry_twd97_zone_119
@@ -652,11 +675,12 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       case FAILURE:
         return strings.get(R.string.native_entry_address_failure);
       case DISPOSED:
-        return strings.get(R.string.native_entry_error_disposed);
+        return strings.get(R.string.native_entry_address_disposed);
+      case READ_ONLY:
+        return strings.get(R.string.native_entry_address_read_only);
       case EMPTY:
       case PARTIAL:
       case READY_TO_LOOKUP:
-      case READ_ONLY:
       case RESOLVED:
       default:
         return strings.get(R.string.native_entry_address_unresolved);
@@ -731,6 +755,15 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
 
   private static void setNonEmptyMetadata(GeoPointMetaData metadata, String key, String value) {
     if (value != null && !value.isEmpty()) metadata.setMetaValue(key, value);
+  }
+
+  private String safeString(int resourceId, String fallback) {
+    try {
+      return strings.get(resourceId);
+    } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError failure) {
+      Log.w(TAG, "native entry string unavailable", failure);
+      return fallback;
+    }
   }
 
   private static int buttonForTab(NativeEntryTab tab) {

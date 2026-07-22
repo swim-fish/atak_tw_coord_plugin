@@ -12,7 +12,10 @@ import com.atakmap.android.twcoord.address.lookup.ForwardAddressResult;
 import com.atakmap.android.twcoord.address.lookup.LookupHandle;
 import com.atakmap.android.twcoord.address.lookup.LookupIdentity;
 import com.atakmap.android.twcoord.address.lookup.LookupPriority;
+import com.atakmap.android.twcoord.address.lookup.ReverseAddressRequest;
+import com.atakmap.android.twcoord.address.lookup.ReverseAddressResult;
 import com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser;
+import com.atakmap.android.twcoord.coord.Wgs84;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 /** Host-independent full-address entry session with revision-fenced asynchronous lookup. */
 public final class AddressEntryController {
   static final long DEBOUNCE_MS = 250L;
+  static final double REVERSE_RADIUS_METERS = 500.0;
 
   public interface Cancellable {
     void cancel();
@@ -41,6 +45,8 @@ public final class AddressEntryController {
   private final TaiwanAddressParser parser;
   private final Debouncer debouncer;
   private final int candidateLimit;
+  private final AddressLookupService.AvailabilityListener availabilityListener =
+      ignored -> onAvailabilityChanged();
 
   private AddressDraft draft = AddressDraft.empty(0L, AddressInputMode.FULL);
   private List<AddressCandidate> candidates = Collections.emptyList();
@@ -53,6 +59,7 @@ public final class AddressEntryController {
   private long generation = 1L;
   private boolean editable = true;
   private boolean disposed;
+  private Wgs84 reversePoint;
 
   public AddressEntryController(AddressLookupService lookupService) {
     this(lookupService, new TaiwanAddressParser(), new ScheduledDebouncer(), 20);
@@ -68,6 +75,7 @@ public final class AddressEntryController {
     this.parser = Objects.requireNonNull(parser, "parser");
     this.debouncer = Objects.requireNonNull(debouncer, "debouncer");
     this.candidateLimit = candidateLimit;
+    lookupService.addAvailabilityListener(availabilityListener);
   }
 
   public synchronized AddressDraft draft() {
@@ -113,6 +121,7 @@ public final class AddressEntryController {
       candidates = Collections.emptyList();
       resolution = null;
       currentIdentity = null;
+      reversePoint = null;
       if (draft.validation() == AddressValidation.READY_TO_LOOKUP) {
         pendingDebounce = debouncer.schedule(this::dispatchForward, DEBOUNCE_MS);
       }
@@ -135,6 +144,7 @@ public final class AddressEntryController {
       candidates = Collections.emptyList();
       resolution = null;
       currentIdentity = null;
+      reversePoint = null;
       if (draft.validation() == AddressValidation.READY_TO_LOOKUP) {
         pendingDebounce = debouncer.schedule(this::dispatchForward, DEBOUNCE_MS);
       }
@@ -172,6 +182,7 @@ public final class AddressEntryController {
       if (selected == null) return;
       resolution =
           resolution(selected, AddressResolution.Source.OPERATOR_SELECTED, currentIdentity);
+      reversePoint = null;
       draft = draft.withValidation(AddressValidation.RESOLVED);
       stateListener = onStateChanged;
       humanListener = human ? onHumanChange : null;
@@ -190,6 +201,7 @@ public final class AddressEntryController {
       candidates = Collections.emptyList();
       resolution = null;
       currentIdentity = null;
+      reversePoint = null;
       stateListener = onStateChanged;
       humanListener = human ? onHumanChange : null;
     }
@@ -197,10 +209,58 @@ public final class AddressEntryController {
     runListener(humanListener);
   }
 
+  /** Starts asynchronous supplied-point labeling while retaining the exact host WGS84. */
+  public void activate(Wgs84 point, boolean editable) {
+    ReverseAddressRequest request = null;
+    Runnable stateListener;
+    synchronized (this) {
+      if (disposed) return;
+      generation++;
+      cancelPendingLocked();
+      this.editable = editable;
+      long revision = draft.draftRevision() + 1L;
+      AddressInputMode mode = draft.mode();
+      candidates = Collections.emptyList();
+      resolution = null;
+      currentIdentity = null;
+      reversePoint = point;
+      if (point == null) {
+        draft = AddressDraft.empty(revision, mode);
+      } else {
+        LookupIdentity identity =
+            new LookupIdentity(
+                UUID.randomUUID().toString(),
+                generation,
+                revision,
+                lookupService.availability().datasetRevision());
+        currentIdentity = identity;
+        draft = AddressDraft.empty(revision, mode).withValidation(AddressValidation.LOOKUP_PENDING);
+        request =
+            new ReverseAddressRequest(
+                identity,
+                "native-address",
+                LookupPriority.NATIVE_INTERACTIVE,
+                point,
+                REVERSE_RADIUS_METERS);
+      }
+      stateListener = onStateChanged;
+    }
+    runListener(stateListener);
+    if (request != null) submitReverse(request);
+  }
+
+  public void autofill(Wgs84 point) {
+    activate(point, isEditable());
+  }
+
   public synchronized void setEditable(boolean editable) {
     if (disposed) return;
     this.editable = editable;
-    if (!editable && resolution == null) draft = draft.withValidation(AddressValidation.READ_ONLY);
+    if (!editable && resolution == null && draft.validation() != AddressValidation.LOOKUP_PENDING) {
+      draft = draft.withValidation(AddressValidation.READ_ONLY);
+    } else if (editable && draft.validation() == AddressValidation.READ_ONLY) {
+      draft = parser.parse(draft.rawAddress(), draft.draftRevision(), draft.mode());
+    }
   }
 
   public void dispose() {
@@ -214,11 +274,17 @@ public final class AddressEntryController {
       candidates = Collections.emptyList();
       resolution = null;
       currentIdentity = null;
+      reversePoint = null;
       stateListener = onStateChanged;
       onStateChanged = null;
       onHumanChange = null;
     }
     runListener(stateListener);
+    try {
+      lookupService.removeAvailabilityListener(availabilityListener);
+    } catch (RuntimeException ignored) {
+      // Shared service teardown may already be in progress.
+    }
     try {
       debouncer.close();
     } catch (Exception ignored) {
@@ -272,7 +338,9 @@ public final class AddressEntryController {
           || currentIdentity == null
           || !currentIdentity.equals(result.identity())
           || result.identity().sessionGeneration() != generation
-          || result.identity().draftRevision() != draft.draftRevision()) return;
+          || result.identity().draftRevision() != draft.draftRevision()
+          || result.identity().datasetRevision() != lookupService.availability().datasetRevision())
+        return;
       lookupHandle = null;
       candidates = Collections.emptyList();
       resolution = null;
@@ -305,6 +373,102 @@ public final class AddressEntryController {
     }
     runListener(stateListener);
     runListener(humanListener);
+  }
+
+  private void submitReverse(ReverseAddressRequest request) {
+    LookupHandle submitted;
+    try {
+      submitted = lookupService.reverse(request, this::completeReverse);
+    } catch (RuntimeException failure) {
+      completeReverse(
+          ReverseAddressResult.failure(request.identity(), request.queryPoint(), failure));
+      return;
+    }
+    synchronized (this) {
+      if (disposed
+          || currentIdentity == null
+          || !currentIdentity.equals(request.identity())
+          || draft.validation() != AddressValidation.LOOKUP_PENDING) {
+        submitted.cancel();
+      } else {
+        lookupHandle = submitted;
+      }
+    }
+  }
+
+  private void completeReverse(ReverseAddressResult result) {
+    Runnable stateListener;
+    synchronized (this) {
+      if (disposed
+          || result == null
+          || currentIdentity == null
+          || !currentIdentity.equals(result.identity())
+          || result.identity().sessionGeneration() != generation
+          || result.identity().draftRevision() != draft.draftRevision()
+          || result.identity().datasetRevision() != lookupService.availability().datasetRevision())
+        return;
+      lookupHandle = null;
+      candidates = Collections.emptyList();
+      resolution = null;
+      switch (result.status()) {
+        case NO_DATASET:
+          draft = draft.withValidation(AddressValidation.NO_DATASET);
+          break;
+        case NO_MATCH:
+          draft = draft.withValidation(AddressValidation.NO_MATCH);
+          break;
+        case FAILURE:
+          draft = draft.withValidation(AddressValidation.FAILURE);
+          break;
+        case FOUND:
+          AddressCandidate candidate = result.candidate();
+          AddressInputMode mode = draft.mode();
+          draft =
+              parser
+                  .parse(candidate.displayAddress(), draft.draftRevision(), mode)
+                  .withValidation(AddressValidation.RESOLVED);
+          resolution =
+              new AddressResolution(
+                  candidate.displayAddress(),
+                  candidate.normalizedAddress(),
+                  result.queryPoint(),
+                  candidate.recordPoint(),
+                  AddressResolution.Source.REVERSE_LABEL,
+                  Objects.requireNonNull(candidate.datasetIdentity(), "candidate dataset identity"),
+                  result.identity());
+          break;
+        default:
+          draft = draft.withValidation(AddressValidation.FAILURE);
+      }
+      stateListener = onStateChanged;
+    }
+    runListener(stateListener);
+  }
+
+  private void onAvailabilityChanged() {
+    Wgs84 retryReverse = null;
+    Runnable stateListener = null;
+    synchronized (this) {
+      if (disposed
+          || currentIdentity == null
+          || currentIdentity.datasetRevision() == lookupService.availability().datasetRevision())
+        return;
+      cancelPendingLocked();
+      currentIdentity = null;
+      candidates = Collections.emptyList();
+      resolution = null;
+      if (reversePoint != null) {
+        retryReverse = reversePoint;
+      } else {
+        draft = parser.parse(draft.rawAddress(), draft.draftRevision() + 1L, draft.mode());
+        if (draft.validation() == AddressValidation.READY_TO_LOOKUP) {
+          pendingDebounce = debouncer.schedule(this::dispatchForward, DEBOUNCE_MS);
+        }
+        stateListener = onStateChanged;
+      }
+    }
+    runListener(stateListener);
+    if (retryReverse != null) activate(retryReverse, isEditable());
   }
 
   private synchronized void cancelPendingLocked() {

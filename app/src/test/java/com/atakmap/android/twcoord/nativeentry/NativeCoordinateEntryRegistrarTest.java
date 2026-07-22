@@ -47,6 +47,20 @@ public final class NativeCoordinateEntryRegistrarTest {
   }
 
   @Test
+  public void uiThreadStopCompletesUnregisterAndDisposeBeforeReturning() {
+    Fixture fixture = new Fixture();
+    fixture.registrar.start();
+    fixture.dispatcher.runAll();
+
+    fixture.registrar.stopNowOnUiThread();
+
+    assertThat(fixture.gateway.unregistered).isOne();
+    assertThat(fixture.gateway.lastUnregistered).isSameAs(fixture.pane);
+    assertThat(fixture.registrar.state()).isSameAs(NativeCoordinateEntryRegistrar.State.STOPPED);
+    verify(fixture.pane).dispose();
+  }
+
+  @Test
   public void staleQueuedStartCannotRegisterAfterStop() {
     Fixture fixture = new Fixture();
 

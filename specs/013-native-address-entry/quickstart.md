@@ -192,6 +192,33 @@ under T036 and is not implied by the JVM/Robolectric result.
 The portrait/landscape, DD-equivalent geometry, and largest supported font
 checks on ATAK 5.5 and 5.7.0.9 remain PENDING under T045.
 
+### US3 Red-Green-Refactor (2026-07-22)
+
+- RED: reverse query, alternating activation, no-snap pane, synchronous
+  teardown, and shared-widget tests failed before the production query engine,
+  reverse session state, live service injection, and exact teardown ordering
+  existed.
+- GREEN: the complete `address`, `nativeentry`, `coord`, and plugin lifecycle
+  suites passed after reverse lookup retained exact supplied WGS84 separately
+  from record WGS84, 100 stale activations were fenced, and map readouts used
+  background priority on the same bounded worker.
+- REFACTOR: registry initialization now precedes native registrar construction;
+  locale replacements receive the live service and manager navigator, while
+  UI-thread unregister/dispose completes before service and leased-registry
+  close. Address failure leaves the three coordinate tabs intact.
+
+```powershell
+.\gradlew.bat :app:spotlessApply :app:spotlessCheck `
+  :app:testCivDebugUnitTest `
+  --tests "com.atakmap.android.twcoord.address.*" `
+  --tests "com.atakmap.android.twcoord.nativeentry.*" `
+  --tests "com.atakmap.android.twcoord.coord.*" `
+  --tests "com.atakmap.android.twcoord.plugin.TwCoordLifecycleTest"
+```
+
+Convert Coordinate, first-tap host dialogs, read-only host integration,
+unload/re-enable, and both physical ATAK lines remain PENDING under T059.
+
 ## 4. Repository quality gates
 
 ```powershell

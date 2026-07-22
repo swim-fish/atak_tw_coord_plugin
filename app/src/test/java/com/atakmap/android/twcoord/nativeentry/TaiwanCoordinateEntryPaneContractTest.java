@@ -161,6 +161,70 @@ public final class TaiwanCoordinateEntryPaneContractTest {
   }
 
   @Test
+  public void suppliedPointPreparesAllTabsAndReverseAddressNeverSnapsOrNotifiesHuman()
+      throws Exception {
+    Context context = RuntimeEnvironment.getApplication();
+    TaiwanEntryController coordinateController =
+        new TaiwanEntryController(CoordinateUnit.TAIPOWER, ignored -> {});
+    AddressEntryController addressController =
+        new AddressEntryController(
+            new ResolvedAddressLookupService(),
+            new com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser(),
+            new ImmediateDebouncer(),
+            20);
+    TaiwanCoordinateEntryPane suppliedPane =
+        new TaiwanCoordinateEntryPane(
+            context, context, coordinateController, addressController, new TaiwanEntryFormatter());
+    AtomicInteger changes = new AtomicInteger();
+    suppliedPane.setOnChangedListener(ignored -> changes.incrementAndGet());
+    GeoPointMetaData host = GeoPointMetaData.wrap(new GeoPoint(25.033, 121.565));
+
+    suppliedPane.onActivate(host, true);
+    suppliedPane.getView().findViewById(R.id.native_entry_system_address).performClick();
+    changes.set(0);
+    GeoPointMetaData resolved = suppliedPane.getGeoPointMetaData();
+
+    assertThat(resolved.get().getLatitude()).isEqualTo(25.033);
+    assertThat(resolved.get().getLongitude()).isEqualTo(121.565);
+    assertThat(resolved.getMetaData(TaiwanCoordinateEntryPane.META_RECORD_LAT)).isEqualTo(25.0332d);
+    assertThat(suppliedPane.format(resolved)).isEqualTo("臺北市信義區市府路1號");
+    assertThat(changes).hasValue(0);
+
+    EditText address = suppliedPane.getView().findViewById(R.id.native_entry_address_full);
+    suppliedPane.onActivate(null, true);
+    assertThat(address.getText().toString()).isEmpty();
+    suppliedPane.getView().findViewById(R.id.native_entry_system_twd97).performClick();
+    EditText easting = suppliedPane.getView().findViewById(R.id.native_entry_twd97_easting);
+    assertThat(easting.getText().toString()).isNotEmpty();
+  }
+
+  @Test
+  public void addressAutofillAndReadOnlyKeepExactPointWithPureModeProjection() throws Exception {
+    Context context = RuntimeEnvironment.getApplication();
+    TaiwanEntryController coordinateController =
+        new TaiwanEntryController(CoordinateUnit.TAIPOWER, ignored -> {});
+    AddressEntryController addressController =
+        new AddressEntryController(
+            new ResolvedAddressLookupService(),
+            new com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser(),
+            new ImmediateDebouncer(),
+            20);
+    TaiwanCoordinateEntryPane suppliedPane =
+        new TaiwanCoordinateEntryPane(
+            context, context, coordinateController, addressController, new TaiwanEntryFormatter());
+    suppliedPane.getView().findViewById(R.id.native_entry_system_address).performClick();
+    GeoPointMetaData host = GeoPointMetaData.wrap(new GeoPoint(24.147, 120.673));
+
+    suppliedPane.onActivate(host, false);
+
+    EditText address = suppliedPane.getView().findViewById(R.id.native_entry_address_full);
+    assertThat(address.isEnabled()).isFalse();
+    assertThat(suppliedPane.getView().findViewById(R.id.native_entry_address_mode).isEnabled())
+        .isTrue();
+    assertThat(suppliedPane.getGeoPointMetaData().get()).isEqualTo(host.get());
+  }
+
+  @Test
   public void activateAndResolveTaipowerRoundTrip() throws Exception {
     pane.onActivate(GeoPointMetaData.wrap(new GeoPoint(23.9932, 121.6012)), true);
 
@@ -425,6 +489,20 @@ public final class TaiwanCoordinateEntryPaneContractTest {
     @Override
     public LookupHandle reverse(
         ReverseAddressRequest request, Consumer<ReverseAddressResult> callback) {
+      DatasetIdentity dataset =
+          new DatasetIdentity("臺北市", "2026-07-22", 1, "fixture-sha", "fixture");
+      AddressCandidate candidate =
+          new AddressCandidate(
+              "reverse-fixture",
+              "臺北市信義區市府路1號",
+              "臺北市信義區市府路1號",
+              new Wgs84(25.0332, 121.5653, 1L, Wgs84.Source.COT_TARGET),
+              AddressMatchKind.PARTIAL,
+              20d,
+              "臺北市",
+              dataset);
+      callback.accept(
+          ReverseAddressResult.found(request.identity(), request.queryPoint(), candidate));
       return new TestHandle();
     }
 

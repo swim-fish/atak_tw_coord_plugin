@@ -282,6 +282,11 @@
     <string name="native_entry_address_mode_full">單欄輸入</string>
     <string name="native_entry_address_choose_result">選擇結果</string>
     <string name="native_entry_address_loading">正在搜尋離線地址資料…</string>
+    <string name="native_entry_address_reverse_loading">正在解析指定位置的地址…</string>
+    <string name="native_entry_address_unavailable">地址目前無法使用，其他座標頁籤仍可使用。</string>
+    <string name="native_entry_address_read_only">地址為唯讀。</string>
+    <string name="native_entry_address_disposed">地址輸入目前無法使用。</string>
+    <string name="native_entry_address_manage_data">請從 TW Coordinates 管理離線地址資料。</string>
     <string name="native_entry_address_no_dataset">沒有相符的離線地址資料，請從 TW Coordinates 匯入。</string>
     <string name="native_entry_address_no_match">找不到相符地址。</string>
     <string name="native_entry_address_ambiguous">有多筆相符地址，請選擇結果。</string>

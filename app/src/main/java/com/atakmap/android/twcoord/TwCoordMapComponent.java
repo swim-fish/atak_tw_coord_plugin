@@ -112,6 +112,7 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   private com.atakmap.android.twcoord.address.AtakFileSystem addressFileSystem;
   private com.atakmap.android.twcoord.address.ActiveDatasetRegistry addressRegistry;
   private com.atakmap.android.twcoord.address.BatchImportCoordinator addressCoordinator;
+  private com.atakmap.android.twcoord.address.lookup.AddressLookupService addressLookupService;
 
   // Feature 006 — township boundary layer (mounted once) + forward-search page.
   private com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade addressBoundaryFacade;
@@ -450,25 +451,6 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     gotoFilter.addAction(TwCoordGotoIntents.ACTION_SHOW_GOTO);
     AtakBroadcast.getInstance().registerReceiver(gotoReceiver, gotoFilter);
 
-    // Feature 011 — additive native Taiwan coordinate entry. Start only after the existing
-    // custom GoTo receiver is available so any native seam/version failure leaves the advanced
-    // workflow intact. Registration itself is UI-dispatched and failure-contained by the
-    // registrar; linkage errors here are limited to the documented version-skew boundary.
-    try {
-      nativeEntryRegistrar =
-          NativeCoordinateEntryRegistrar.create(
-              view,
-              () -> localisedPluginContext != null ? localisedPluginContext : pluginContext,
-              prefs);
-      nativeEntryRegistrar.start();
-    } catch (NoClassDefFoundError | NoSuchMethodError e) {
-      android.util.Log.w("TwCoordMapComponent", "native entry unavailable on this ATAK", e);
-      nativeEntryRegistrar = null;
-    } catch (RuntimeException e) {
-      android.util.Log.w("TwCoordMapComponent", "native entry setup failed", e);
-      nativeEntryRegistrar = null;
-    }
-
     // Feature 004 — Offline Address page. Third Tools-menu icon (OfflineAddressTool) fires
     // SHOW_OFFLINE_ADDRESS which this receiver consumes. The importer + executor are owned
     // here so they outlive any single drop-down open/close cycle and so US2's AddressSubsystem
@@ -571,6 +553,47 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     // Lazily re-mounts via boundaryFacadeOrRemount() so a boundary imported later in the SAME
     // session is picked up the next time forward search opens — no ATAK restart required.
     boundaryFacadeOrRemount();
+
+    // Feature 013 — one leased, bounded lookup owner serves native Address and map readouts.
+    // Build it only after registry initialization, then construct the native pane so the first
+    // activation observes the current dataset revision. The registrar keeps exact-instance UI
+    // ownership; this component closes the service after registrar teardown.
+    try {
+      addressLookupService =
+          new com.atakmap.android.twcoord.address.lookup.DefaultAddressLookupService(
+              addressRegistry,
+              runnable -> view.post(runnable),
+              new com.atakmap.android.twcoord.address.lookup.DefaultAddressLookupService
+                  .RegistryQueryEngine(
+                  new com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser()),
+              32);
+      addressSubsystem.setLookupService(addressLookupService);
+    } catch (RuntimeException e) {
+      android.util.Log.w("TwCoordMapComponent", "shared address lookup setup failed", e);
+      addressLookupService =
+          new com.atakmap.android.twcoord.address.lookup.NoDataAddressLookupService(
+              runnable -> view.post(runnable));
+    }
+    try {
+      nativeEntryRegistrar =
+          NativeCoordinateEntryRegistrar.create(
+              view,
+              () -> localisedPluginContext != null ? localisedPluginContext : pluginContext,
+              prefs,
+              addressLookupService,
+              () ->
+                  AtakBroadcast.getInstance()
+                      .sendBroadcast(
+                          new android.content.Intent(
+                              OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS)));
+      nativeEntryRegistrar.start();
+    } catch (NoClassDefFoundError | NoSuchMethodError e) {
+      android.util.Log.w("TwCoordMapComponent", "native entry unavailable on this ATAK", e);
+      nativeEntryRegistrar = null;
+    } catch (RuntimeException e) {
+      android.util.Log.w("TwCoordMapComponent", "native entry setup failed", e);
+      nativeEntryRegistrar = null;
+    }
     // Re-render the widget when any county lifecycle event fires (add / replace / remove).
     addressRegistry.addListener(
         (county, change) -> {
@@ -716,7 +739,7 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   protected void onDestroyImpl(Context context, MapView view) {
     if (nativeEntryRegistrar != null) {
       try {
-        nativeEntryRegistrar.stop();
+        nativeEntryRegistrar.stopNowOnUiThread();
       } catch (RuntimeException e) {
         android.util.Log.w("TwCoordMapComponent", "native entry stop failed", e);
       }
@@ -775,6 +798,13 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       }
       addressBoundaryFacade = null;
     }
+    if (addressCoordinator != null) {
+      try {
+        addressCoordinator.close();
+      } catch (RuntimeException e) {
+        android.util.Log.w("TwCoordMapComponent", "address coordinator close failed", e);
+      }
+    }
     if (addressImportExecutor != null) {
       try {
         addressImportExecutor.shutdownNow();
@@ -804,20 +834,20 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     addressLookupExecutor = null;
     addressImporter = null;
     staticAddressImporter = null;
-    // Feature 005 — Registry facades are closed individually when each county removes; close
-    // any survivors here (e.g. process teardown without operator Remove).
+    if (addressLookupService != null) {
+      try {
+        addressLookupService.close();
+      } catch (RuntimeException e) {
+        android.util.Log.w("TwCoordMapComponent", "address lookup service close failed", e);
+      }
+      addressLookupService = null;
+    }
+    // Registry close waits for leased reads and closes each surviving facade exactly once.
     if (addressRegistry != null) {
-      for (String county : new java.util.ArrayList<>(addressRegistry.snapshot().keySet())) {
-        try {
-          // Best-effort: close facades but don't delete data (operator's data persists).
-          com.atakmap.android.twcoord.address.CountyActiveDataset entry =
-              addressRegistry.snapshot().get(county);
-          if (entry != null && entry.facade() != null) {
-            entry.facade().close();
-          }
-        } catch (Throwable t) {
-          android.util.Log.w("TwCoordMapComponent", "facade close on shutdown threw", t);
-        }
+      try {
+        addressRegistry.close();
+      } catch (RuntimeException e) {
+        android.util.Log.w("TwCoordMapComponent", "address registry close failed", e);
       }
       addressRegistry = null;
     }

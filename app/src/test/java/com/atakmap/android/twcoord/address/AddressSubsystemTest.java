@@ -8,6 +8,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.atakmap.android.twcoord.address.lookup.AddressAvailability;
+import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
+import com.atakmap.android.twcoord.address.lookup.AddressLookupService;
+import com.atakmap.android.twcoord.address.lookup.AddressMatchKind;
+import com.atakmap.android.twcoord.address.lookup.DatasetIdentity;
+import com.atakmap.android.twcoord.address.lookup.ForwardAddressRequest;
+import com.atakmap.android.twcoord.address.lookup.ForwardAddressResult;
+import com.atakmap.android.twcoord.address.lookup.LookupHandle;
+import com.atakmap.android.twcoord.address.lookup.LookupPriority;
+import com.atakmap.android.twcoord.address.lookup.ReverseAddressRequest;
+import com.atakmap.android.twcoord.address.lookup.ReverseAddressResult;
+import com.atakmap.android.twcoord.coord.Wgs84;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,6 +34,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -251,6 +265,27 @@ public final class AddressSubsystemTest {
     assertThat(exec.isShutdown()).isTrue();
   }
 
+  @Test
+  public void sharedWorkerReadoutUsesBackgroundPriorityAndLatestRowRequestWins() {
+    AddressSubsystem s = makeSubsystem();
+    FakeLookupService shared = new FakeLookupService();
+    s.setLookupService(shared);
+    s.setRowEnabled(AddressSubsystem.Row.MAP, true);
+
+    s.onCoord(AddressSubsystem.Row.MAP, 24.1, 120.6);
+    exec.advanceBy(DEBOUNCE);
+    LookupHandle first = shared.lastHandle;
+    s.onCoord(AddressSubsystem.Row.MAP, 24.2, 120.7);
+    exec.advanceBy(DEBOUNCE);
+
+    assertThat(first.isCancelled()).isTrue();
+    assertThat(shared.lastRequest.priority()).isEqualTo(LookupPriority.WIDGET_BACKGROUND);
+    assertThat(shared.lastRequest.consumerKey()).isEqualTo("widget-MAP");
+    shared.complete("臺中市南屯區黎明路2段130號");
+    assertThat(lastEmissionFor(AddressSubsystem.Row.MAP).isText()).isTrue();
+    s.close();
+  }
+
   // ----------------------------------------------------------------------
   // Helpers
   // ----------------------------------------------------------------------
@@ -268,6 +303,71 @@ public final class AddressSubsystemTest {
     EmittedState(AddressSubsystem.Row row, AddressRowState state) {
       this.row = row;
       this.state = state;
+    }
+  }
+
+  private static final class FakeLookupService implements AddressLookupService {
+    ReverseAddressRequest lastRequest;
+    Consumer<ReverseAddressResult> callback;
+    Handle lastHandle;
+
+    @Override
+    public LookupHandle forward(
+        ForwardAddressRequest request, Consumer<ForwardAddressResult> callback) {
+      return new Handle();
+    }
+
+    @Override
+    public LookupHandle reverse(
+        ReverseAddressRequest request, Consumer<ReverseAddressResult> callback) {
+      this.lastRequest = request;
+      this.callback = callback;
+      this.lastHandle = new Handle();
+      return lastHandle;
+    }
+
+    void complete(String display) {
+      DatasetIdentity dataset = new DatasetIdentity("臺中市", "115-07", 3, "sha", "fixture");
+      AddressCandidate candidate =
+          new AddressCandidate(
+              "candidate",
+              display,
+              display,
+              new Wgs84(24.2001, 120.7001, 1L, Wgs84.Source.COT_TARGET),
+              AddressMatchKind.PARTIAL,
+              15d,
+              "臺中市",
+              dataset);
+      callback.accept(
+          ReverseAddressResult.found(lastRequest.identity(), lastRequest.queryPoint(), candidate));
+    }
+
+    @Override
+    public AddressAvailability availability() {
+      return new AddressAvailability(Collections.singleton("臺中市"), true, 1L, false);
+    }
+
+    @Override
+    public void addAvailabilityListener(AvailabilityListener listener) {}
+
+    @Override
+    public void removeAvailabilityListener(AvailabilityListener listener) {}
+
+    @Override
+    public void close() {}
+  }
+
+  private static final class Handle implements LookupHandle {
+    private final AtomicBoolean cancelled = new AtomicBoolean();
+
+    @Override
+    public void cancel() {
+      cancelled.set(true);
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return cancelled.get();
     }
   }
 

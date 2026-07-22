@@ -5,6 +5,8 @@ import android.view.View;
 import com.atakmap.android.gui.coordinateentry.CoordinateEntryCapability;
 import com.atakmap.android.gui.coordinateentry.CoordinateEntryPane;
 import com.atakmap.android.maps.MapView;
+import com.atakmap.android.twcoord.address.lookup.AddressLookupService;
+import com.atakmap.android.twcoord.address.lookup.NoDataAddressLookupService;
 import com.atakmap.android.twcoord.prefs.PreferenceStore;
 import com.atakmap.coremap.log.Log;
 import java.util.Objects;
@@ -66,9 +68,32 @@ public final class NativeCoordinateEntryRegistrar {
 
   public static NativeCoordinateEntryRegistrar create(
       MapView mapView, ContextProvider contextProvider, PreferenceStore preferences) {
+    return create(
+        mapView,
+        contextProvider,
+        preferences,
+        new NoDataAddressLookupService(runnable -> mapView.post(runnable)));
+  }
+
+  public static NativeCoordinateEntryRegistrar create(
+      MapView mapView,
+      ContextProvider contextProvider,
+      PreferenceStore preferences,
+      AddressLookupService lookupService) {
+    return create(mapView, contextProvider, preferences, lookupService, () -> {});
+  }
+
+  public static NativeCoordinateEntryRegistrar create(
+      MapView mapView,
+      ContextProvider contextProvider,
+      PreferenceStore preferences,
+      AddressLookupService lookupService,
+      Runnable managerNavigator) {
     Objects.requireNonNull(mapView, "mapView");
     Objects.requireNonNull(contextProvider, "contextProvider");
     Objects.requireNonNull(preferences, "preferences");
+    Objects.requireNonNull(lookupService, "lookupService");
+    Objects.requireNonNull(managerNavigator, "managerNavigator");
     return new NativeCoordinateEntryRegistrar(
         runnable -> mapView.post(runnable),
         new RegistryGateway() {
@@ -85,7 +110,10 @@ public final class NativeCoordinateEntryRegistrar {
         () ->
             new TaiwanCoordinateEntryPane(
                 Objects.requireNonNull(contextProvider.get(), "contextProvider returned null"),
-                preferences));
+                mapView.getContext(),
+                preferences,
+                lookupService,
+                managerNavigator));
   }
 
   public synchronized State state() {
@@ -109,6 +137,22 @@ public final class NativeCoordinateEntryRegistrar {
     state = State.STOP_PENDING;
     removeRefreshDetachListener();
     dispatcher.post(() -> completeStop(token));
+  }
+
+  /**
+   * Completes exact-instance unregister/dispose synchronously when the component is already on the
+   * ATAK UI thread during host teardown.
+   */
+  public synchronized void stopNowOnUiThread() {
+    if (state == State.STOPPED) return;
+    long token = ++generation;
+    if (state == State.START_PENDING && pane == null) {
+      state = State.STOPPED;
+      return;
+    }
+    state = State.STOP_PENDING;
+    removeRefreshDetachListener();
+    completeStop(token);
   }
 
   public synchronized void refreshLocale() {
