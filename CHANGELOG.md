@@ -45,6 +45,12 @@ follows Semantic Versioning. Per-feature design records live under
   An omitted village/neighbourhood resolves automatically only when the
   remaining street/section and address tail identify one record; duplicates
   still require explicit selection.
+- **Imported county names and numbered road names now survive normalization.**
+  Forward lookup treats `台`/`臺` as equivalent when selecting an active county
+  dataset, and can retrieve a broader street family before exact
+  reclassification for proper names such as `工業區三十八路`. This prevents a
+  valid imported dataset from being reported as missing after a copied address
+  is normalized.
 
 ## [1.4.2] — 2026-07-18 — Native Taiwan Go To fixes
 

@@ -217,4 +217,51 @@ public final class AddressDatabaseFacadeStreetQueryTest {
     assertThat(results).hasSize(2);
     assertThat(results).allMatch(candidate -> candidate.matchKind() == AddressMatchKind.EXACT);
   }
+
+  @Test
+  public void numberedRoadNameFallsBackToStreetFamily() {
+    AddressDatabaseFacade numberedRoadFacade =
+        new AddressDatabaseFacade() {
+          @Override
+          public GeneratorMetadata readMetadata() {
+            return null;
+          }
+
+          @Override
+          public AddressRecord nearestWithin(double lat, double lon, double radiusMeters) {
+            return null;
+          }
+
+          @Override
+          public List<AddressCandidate> streetCandidates(
+              String district,
+              String foldedFragment,
+              double anchorLat,
+              double anchorLon,
+              int limit) {
+            if (!"工業區".equals(foldedFragment)) return java.util.Collections.emptyList();
+            return java.util.Collections.singletonList(
+                new AddressCandidate(
+                    24.17,
+                    120.62,
+                    "台中市西屯區協和里工業區三十八路２０８號",
+                    "台中市西屯區協和里工業區三十八路208號",
+                    "工業區三十八路",
+                    "２０８號",
+                    10));
+          }
+
+          @Override
+          public void close() {}
+        };
+    AddressDraft draft =
+        new TaiwanAddressParser().parse("台中市西屯區協和里工業區三十八路２０８號", 5L, AddressInputMode.FULL);
+
+    List<AddressCandidate> results =
+        numberedRoadFacade.fullAddressCandidates(
+            draft, new Wgs84(24.17, 120.62, 1L, Wgs84.Source.MAP_CENTRE), 20);
+
+    assertThat(results).hasSize(1);
+    assertThat(results.get(0).matchKind()).isEqualTo(AddressMatchKind.EXACT);
+  }
 }

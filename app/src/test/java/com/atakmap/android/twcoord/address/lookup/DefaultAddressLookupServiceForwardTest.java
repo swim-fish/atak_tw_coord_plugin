@@ -52,6 +52,19 @@ public final class DefaultAddressLookupServiceForwardTest {
   }
 
   @Test
+  public void taiVariantDatasetKeyDoesNotReportNoDataset() throws Exception {
+    AddressCandidate raw = raw("台中市西屯區協和里工業區三十八路２０８號", 24.17, 120.62, "工業區三十八路", "２０８號", 20);
+    Harness harness = harness(Collections.singletonList(raw), "台中市");
+
+    ForwardAddressResult result = harness.lookup("台中市西屯區協和里工業區三十八路２０８號", 20);
+
+    assertThat(result.status()).isEqualTo(ForwardAddressResult.Status.CANDIDATES);
+    assertThat(result.candidates()).hasSize(1);
+    assertThat(result.candidates().get(0).matchKind()).isEqualTo(AddressMatchKind.EXACT);
+    harness.close();
+  }
+
+  @Test
   public void duplicateStableRecordsAreDeduplicatedAndLimitIsBounded() throws Exception {
     AddressCandidate first = raw("臺中市南屯區黎明路2段130號", 24.15, 120.65, "黎明路2段", "130號", 20);
     AddressCandidate duplicate = raw("臺中市南屯區黎明路2段130號", 24.15, 120.65, "黎明路2段", "130號", 20);
@@ -79,6 +92,10 @@ public final class DefaultAddressLookupServiceForwardTest {
   }
 
   private Harness harness(List<AddressCandidate> rows) throws Exception {
+    return harness(rows, "臺中市");
+  }
+
+  private Harness harness(List<AddressCandidate> rows, String registryCounty) throws Exception {
     TestFileSystem fs = new TestFileSystem(tmp.newFolder().toPath());
     AddressBundleImporter importer =
         new AddressBundleImporter(fs, new MessageDigestShaCalculator(), 3);
@@ -127,7 +144,7 @@ public final class DefaultAddressLookupServiceForwardTest {
           @Override
           public void close() {}
         };
-    registry.add(new CountyActiveDataset("臺中市", dataset, facade));
+    registry.add(new CountyActiveDataset(registryCounty, dataset, facade));
     DefaultAddressLookupService service =
         new DefaultAddressLookupService(
             registry,

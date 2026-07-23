@@ -320,6 +320,12 @@ Use a provenance-recorded fixture covering at least:
 - `臺中市南屯區黎明路二段130號6樓之4`;
 - `台`/`臺`, full-width digits, whitespace, punctuation, and numeric
   subnumbers;
+- an imported registry key using `台中市` with operator input normalized to
+  `臺中市`, which must select the existing dataset rather than report it
+  missing;
+- a proper numbered road such as `工業區三十八路`, which may use a broader
+  `工業區` retrieval fragment but must become exact only after the complete
+  normalized street and address tail match;
 - one reverse/Auto Fill display address with a village/neighbourhood prefix
   that resolves after copy and paste;
 - the same street/section and house number without that prefix, with one

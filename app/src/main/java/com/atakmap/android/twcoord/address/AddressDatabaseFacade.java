@@ -95,12 +95,12 @@ public interface AddressDatabaseFacade extends AutoCloseable {
                 anchor.longitudeDeg(),
                 0);
       }
-      String sectionFamily = streetOnly.replaceFirst("\\d+段$", "");
-      if (rows.isEmpty() && !sectionFamily.equals(streetOnly)) {
+      String numberedStreetFamily = streetOnly.replaceFirst("\\d+(?:段|路|街)$", "");
+      if (rows.isEmpty() && !numberedStreetFamily.equals(streetOnly)) {
         rows =
             streetCandidates(
                 district,
-                StreetTextNormaliser.fold(sectionFamily),
+                StreetTextNormaliser.fold(numberedStreetFamily),
                 anchor.latitudeDeg(),
                 anchor.longitudeDeg(),
                 0);

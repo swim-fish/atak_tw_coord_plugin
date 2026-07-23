@@ -73,7 +73,8 @@ public final class DefaultAddressLookupService implements AddressLookupService {
               request.identity().draftRevision(),
               AddressInputMode.FULL);
       if (session.datasets().isEmpty()) return ForwardAddressResult.noDataset(request.identity());
-      CountyActiveDataset active = session.datasets().get(draft.components().countyCity());
+      CountyActiveDataset active =
+          datasetForCounty(session.datasets(), draft.components().countyCity());
       if (active == null) return ForwardAddressResult.noDataset(request.identity());
 
       Wgs84 anchor = request.anchorPoint();
@@ -105,6 +106,29 @@ public final class DefaultAddressLookupService implements AddressLookupService {
         candidates = new ArrayList<>(candidates.subList(0, request.limit()));
       }
       return ForwardAddressResult.candidates(request.identity(), candidates);
+    }
+
+    /**
+     * Imported county directories retain the generator spelling (for example {@code 台中市}), while
+     * operator input is normalized to the gazetted {@code 臺} form. Prefer the exact registry key,
+     * then compare the small active-dataset snapshot with the same glyph folding used by address
+     * search.
+     */
+    private static CountyActiveDataset datasetForCounty(
+        Map<String, CountyActiveDataset> datasets, String county) {
+      CountyActiveDataset exact = datasets.get(county);
+      if (exact != null) return exact;
+
+      String foldedCounty = StreetTextNormaliser.fold(county);
+      for (Map.Entry<String, CountyActiveDataset> entry : datasets.entrySet()) {
+        CountyActiveDataset dataset = entry.getValue();
+        if (foldedCounty.equals(StreetTextNormaliser.fold(entry.getKey()))
+            || (dataset != null
+                && foldedCounty.equals(StreetTextNormaliser.fold(dataset.county())))) {
+          return dataset;
+        }
+      }
+      return null;
     }
 
     @Override
