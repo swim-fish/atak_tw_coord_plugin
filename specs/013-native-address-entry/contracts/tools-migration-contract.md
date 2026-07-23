@@ -10,10 +10,18 @@ TW Coordinates
 
 The toolbar item array contains only the existing `TwCoordTool`. The public
 `TW Coord GoTo`, `TW Addr Search`, and `TW Offline Addr` items no longer exist.
+Selecting `TW Coordinates` opens the retained internal offline-data manager
+directly; it does not open Settings first.
 
 ## Retained navigation
 
-`TW Coordinates` retains:
+The offline-data manager is the default Tools landing page and retains:
+
+- Import, Replace, Remove, status, provenance, progress, and error states;
+- a top `TW Coordinates settings` action that closes the DropDown before
+  opening the plugin Settings Activity.
+
+`TW Coordinates` settings retain:
 
 - coordinate display settings;
 - map address-row settings;
@@ -21,9 +29,20 @@ The toolbar item array contains only the existing `TwCoordTool`. The public
 - offline dataset status and imported county summaries;
 - an always-selectable dataset management entry.
 
-The dataset entry opens the retained internal offline manager, which continues
-to support Import, Replace, Remove, status/provenance, progress, and error
-states. It does not require any map address-row display toggle to be enabled.
+The Settings dataset entry closes the foreground Settings Activity before it
+posts the manager action through the map View. The resulting DropDown must be
+visible immediately rather than hidden beneath Settings. This route does not
+require any map address-row display toggle to be enabled.
+
+```text
+ATAK Tools
+  → TW Coordinates
+  → Offline address data
+      → TW Coordinates settings
+          → Dataset status
+              → close Settings
+              → Offline address data
+```
 
 ## Receiver and action contract
 

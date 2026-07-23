@@ -140,9 +140,10 @@ point.
 ### User Story 4 - Manage offline data through TW Coordinates (Priority: P2)
 
 An operator opens ATAK Tools and sees only `TW Coordinates` for this plugin.
-From that page they can inspect address dataset status and open the existing
-offline data management experience to import, replace, or remove
-county datasets.
+That entry opens offline data management directly so they can inspect, import,
+replace, or remove county datasets. A top action opens the full
+`TW Coordinates` settings screen, and the Settings dataset-status row returns
+to the manager without leaving it hidden behind Settings.
 
 **Why this priority**: Address entry is not useful without a discoverable way
 to manage offline data, while four separate Tools entries create unnecessary
@@ -158,13 +159,16 @@ without using any other plugin Tools entry.
    **Then** exactly one plugin entry named `TW Coordinates` is visible.
 2. **Given** no dataset is installed, **When** the operator opens
    `TW Coordinates`, **Then** the page reports the empty state and provides a
-   clear path to offline dataset management.
-3. **Given** the operator opens offline dataset management from
-   `TW Coordinates`, **When** they import, replace, or remove a
+   clear Import action plus a top route to `TW Coordinates` settings.
+3. **Given** the operator opens `TW Coordinates`, **When** they import,
+   replace, or remove a
    dataset, **Then** the established management outcomes remain available.
 4. **Given** the operator returns to native Address entry after changing the
    active datasets, **When** a new lookup begins, **Then** it uses the current
    active dataset state without requiring an ATAK restart.
+5. **Given** Settings is in the foreground, **When** the operator selects
+   Dataset status, **Then** Settings closes and offline data management becomes
+   visible immediately.
 
 ---
 
@@ -304,8 +308,11 @@ works from the retained data.
   Clearing Address MUST remove its fields, candidates, and resolved result but
   MUST NOT modify offline datasets.
 - **FR-020**: Native Auto Fill on Address MUST resolve the host-provided point
-  to the best available offline address. Auto Fill on coordinate tabs MUST
-  retain its existing active-tab behavior.
+  to the best available offline address. Reverse candidates MUST sort by
+  shortest distance first; equal-distance rows MUST prefer the shorter
+  `number`, then the lowest stable dataset `id`, so duplicate coordinates do
+  not depend on SQLite return order. Auto Fill on coordinate tabs MUST retain
+  its existing active-tab behavior.
 - **FR-021**: Read-only host flows MUST display prepared Address results while
   preventing text edits, mode changes that mutate data, candidate changes, and
   any returned location change.

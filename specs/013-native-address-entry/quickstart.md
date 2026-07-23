@@ -328,6 +328,9 @@ Use a provenance-recorded fixture covering at least:
   normalized street and address tail match;
 - one reverse/Auto Fill display address with a village/neighbourhood prefix
   that resolves after copy and paste;
+- three reverse rows at one identical coordinate: a longer `number`, two
+  equal-length shorter numbers, and distinct IDs; the shortest number with the
+  lowest ID must win on every supported SQLite backend;
 - the same street/section and house number without that prefix, with one
   unique semantic match;
 - two records in different villages sharing the same street/section and house
@@ -426,14 +429,17 @@ Robolectric success alone is not evidence for this cross-context behavior.
    address preferences, and seeded custom Go To Recent/marker/icon values.
 2. Upgrade and reload the plugin.
 3. Verify ATAK Tools shows exactly `TW Coordinates` for this plugin.
-4. Open `TW Coordinates` with all three map address-row toggles off; dataset
-   status/management must still be selectable.
-5. Open the internal manager and Import, Replace, and Remove fixtures.
-6. Verify remaining datasets and current native lookup update without ATAK
+4. Open `TW Coordinates`; the offline-data manager must appear directly even
+   when all three map address-row toggles are off.
+5. Use the manager's top `TW Coordinates settings` button and verify Settings
+   becomes visible. Select Dataset status and verify Settings closes before
+   the manager becomes visible again.
+6. In the manager, Import, Replace, and Remove fixtures.
+7. Verify remaining datasets and current native lookup update without ATAK
    restart.
-7. Verify custom Recent/marker/icon values do not influence native behavior;
+8. Verify custom Recent/marker/icon values do not influence native behavior;
    no destructive preference cleanup is required.
-8. Send the retired custom Go To and forward-search action strings through a
+9. Send the retired custom Go To and forward-search action strings through a
    diagnostic test; no page, map change, or uncaught failure may result.
 
 ## 11. Concurrency and lifecycle

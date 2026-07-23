@@ -26,11 +26,6 @@
 整數公尺 Easting 與 Northing。TWD67 zone 119 會顯示精度提醒；外島使用
 台電座標時會顯示超出範圍。
 
-<p align="center">
-<img src="images/22-atak-enter-coordinate.jpg" alt="ATAK Enter Coordinate 的緊湊 Taiwan 頁面" width="900"><br>
-<sub>此圖為先前的三分頁 Taiwan 畫面；含 Address 的新編號截圖待 release gate 實機擷取。</sub>
-</p>
-
 ### 前往離線地址
 
 1. 先從 **TW Coordinates** 匯入適用縣市的資料集（第 4 節）。
@@ -47,6 +42,16 @@
 適用縣市，座標分頁仍可使用，Address 會顯示資料管理提示。
 
 詳細範例請參閱[原生地址操作](tw-addr-search_zh.md)。
+
+<p align="center">
+<img src="images/23a-native-address-full.png" alt="ATAK Go To 的 Taiwan Address 單一完整地址欄位" width="900"><br>
+<sub>單一欄位模式適合直接貼上完整地址，並維持 ATAK 原生 Go To 的緊湊配置。</sub>
+</p>
+
+<p align="center">
+<img src="images/23b-native-address-structured.png" alt="ATAK Go To 的 Taiwan Address 結構化四欄位" width="900"><br>
+<sub>結構化模式將同一份地址投影成縣市、行政區、道路與門牌四個可編輯欄位。</sub>
+</p>
 
 ### 轉換地圖圖標的座標
 
@@ -85,7 +90,8 @@ zone 119 的 TWD 座標會明確標示，避免與 zone 121 混淆。
 
 ## 4. TW Coordinates 設定與資料集
 
-開啟此外掛唯一的公開 Tools 項目 **TW Coordinates**，或前往：
+開啟此外掛唯一的公開 Tools 項目 **TW Coordinates**，再按最上方的
+**TW Coordinates 設定**，或直接前往：
 
 **Settings → Tool Preferences → Specific Tool Preferences → TW Coordinates**
 
@@ -97,9 +103,15 @@ zone 119 的 TWD 座標會明確標示，避免與 zone 121 混淆。
 - 外掛介面語言（系統、英文、正體中文、日文）；
 - 資料集狀態與內部離線資料管理頁。
 
-即使三個地址讀值開關都關閉，資料集狀態列仍可點選。在管理頁可匯入支援
-的 ZIP／SQLite、原子取代單一縣市、移除不需要的資料，以及檢視容量、日期
-與筆數來源。詳見[離線地址資料](tw-offline-addr_zh.md)。
+即使三個地址讀值開關都關閉，資料集狀態列仍可點選。點選後會先關閉
+Settings，再立即開啟管理頁，不會讓管理頁被 Settings 畫面遮住。在管理頁
+可匯入支援的 ZIP／SQLite、原子取代單一縣市、移除不需要的資料，以及檢視
+容量、日期與筆數來源。詳見[離線地址資料](tw-offline-addr_zh.md)。
+
+<p align="center">
+<img src="images/24-offline-address-data.png" alt="含 TW Coordinates 設定按鈕與兩個縣市資料集的離線地址資料管理頁" width="700"><br>
+<sub>Tools 項目會直接開啟此管理頁；使用頂端按鈕可繼續前往外掛設定。</sub>
+</p>
 
 ## 5. 常見問題
 

@@ -107,6 +107,12 @@ village/neighbourhood prefix remain explicit candidates.
 - `NO_DATASET`, `NO_MATCH`, and `FAILURE` retain the exact query but no
   resolution.
 
+Reverse selection is deterministic: shortest haversine distance wins; an
+equal-distance row with the shorter stored `number` wins next; equal lengths
+use the lowest stable dataset `id`. All SQLite backends use the same ordered
+bounding-box query so identical coordinates cannot fall back to engine return
+order.
+
 The caller displays the record address but returns the query WGS84 to ATAK.
 Distance/confidence remains presentation metadata and never changes geometry.
 

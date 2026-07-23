@@ -212,13 +212,18 @@ plausible nearest point could be mistaken for the typed address.
 **Decision**: Reverse results retain both the exact host/query WGS84 and the
 nearest dataset record WGS84. Convert Coordinate and Address Auto Fill display
 the record's address but return the exact host/query point with namespaced
-address and dataset-provenance metadata. Forward typed-address resolution
-returns the explicitly resolved record point.
+address and dataset-provenance metadata. Reverse candidates use one
+cross-backend tie order: shortest distance, shorter stored `number`, then
+lowest dataset `id`. Forward typed-address resolution returns the explicitly
+resolved record point.
 
 **Rationale**: Reverse lookup currently allows a radius up to 500 m. Returning
 the record point would silently move a map item while merely converting or
 labelling it. ATAK copies point metadata into its result, so a new metadata
 object can carry the address without mutating the host-supplied input.
+Datasets may legitimately contain different addresses at the same coordinate;
+without an explicit tie order, SQLite traversal order makes the displayed
+address unstable.
 
 **Alternatives considered**:
 

@@ -38,6 +38,16 @@ Each UI guide records the ATAK runtime used for its screenshots. Current
 native-entry screenshots were captured on ATAK-CIV 5.7.0.9; older guides retain
 their historical runtime evidence.
 
+<p align="center">
+<img src="docs/images/23a-native-address-full.png" alt="ATAK native Taiwan Address tab in single-field mode" width="900"><br>
+<sub>The native Taiwan pane with the Address tab in single-field mode.</sub>
+</p>
+
+<p align="center">
+<img src="docs/images/24-offline-address-data.png" alt="TW Coordinates Offline address data manager" width="700"><br>
+<sub>TW Coordinates now opens offline address data first; the top button opens plugin settings.</sub>
+</p>
+
 ## Features
 
 | Feature | Notes |
@@ -45,7 +55,7 @@ their historical runtime evidence.
 | Three coordinate systems | Taipower grid (台電), TWD97, TWD67 — selectable from settings |
 | Three readouts | Map centre, own position (any ATAK `LocationProvider` — GPS / network / fused / external CoT / Bluetooth GPS), CoT target |
 | Multi-language UI | English / Traditional Chinese (Taiwan) / Japanese; follows Android system locale by default with in-app override; switches live without ATAK restart |
-| Tools-icon opens settings | Tapping **TW Coordinates** opens the plugin settings page (since v1.2.0; it previously cycled the unit). Format is chosen there; a **Show on-map readout** toggle shows/hides the readout |
+| Tools-icon opens offline data | Tapping **TW Coordinates** opens the offline address data manager. Its top **TW Coordinates settings** button opens display, language, search-order, and readout settings |
 | Clipboard copy | Tap a readout to copy the exact displayed string to the Android clipboard (FR-015) |
 | Outer-island support | Penghu / Kinmen / Matsu (TM2 zone 119, EPSG:3825) — auto-selected by longitude. `z119` suffix appears on the readout when zone is non-default |
 | Offline, no telemetry | Zero outbound network. Manifest deliberately omits `INTERNET` permission. No analytics or crash-reporting SDKs |
@@ -139,10 +149,11 @@ Once enabled, three readout boxes appear on the map:
 the `Display unit` row. The row shows a live preview using Taipei 101 as the
 sample point, e.g. `TWD97 / TM2 z121 — TWD97: 306,963m 2,769,619m`.
 
-Tapping the **TW Coordinates** Tools icon opens this same settings page (since
-v1.2.0). Earlier versions cycled the unit `Off → Taipower → TWD97 → TWD67` on
-each tap; that cycle was removed in favour of choosing the format in settings,
-with a separate **Show on-map readout** toggle to hide/show the readout.
+Tapping the **TW Coordinates** Tools icon opens the offline address data
+manager. Use its top **TW Coordinates settings** button to reach this settings
+page. Earlier versions opened Settings directly or cycled the unit
+`Off → Taipower → TWD97 → TWD67`; the format now changes only through
+`Display unit`, with a separate **Show on-map readout** toggle.
 
 ### Switching the UI language
 
@@ -219,7 +230,7 @@ The build outputs an APK at
 │       ├── AndroidManifest.xml                   # no INTERNET permission (FR-019)
 │       ├── assets/plugin.xml                     # IPlugin → TwCoordLifecycle
 │       ├── java/com/atakmap/android/twcoord/     # Java source
-│       │   ├── TwCoordMapComponent.java          # listener wiring + Tools-button → settings
+│       │   ├── TwCoordMapComponent.java          # listener wiring + Tools → offline-data manager
 │       │   ├── TwCoordWidget.java                # 3-corner readout overlay
 │       │   ├── TwCoordPreferenceFragment.java    # settings page
 │       │   ├── SelfMarkerSubscriber.java         # 1 Hz debounce + 10s stale detector

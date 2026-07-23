@@ -68,6 +68,7 @@
     <string name="offline_address_empty_state">No address dataset installed. Use the .sqlite file produced by the atak-tw-address-generator project.</string>
 
     <!-- Action buttons + confirmations. -->
+    <string name="offline_address_button_settings">TW Coordinates settings</string>
     <string name="offline_address_button_import">Import…</string>
     <string name="offline_address_button_replace">Replace…</string>
     <string name="offline_address_button_remove">Remove</string>

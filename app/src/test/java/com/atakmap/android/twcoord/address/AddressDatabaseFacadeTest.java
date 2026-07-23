@@ -116,6 +116,19 @@ public final class AddressDatabaseFacadeTest {
     assertThat(r.displayName()).isEqualTo("點 50m");
   }
 
+  @Test
+  public void nearestWithin_sameCoordinatePrefersShortestNumberThenLowestId() throws Exception {
+    double originLat = 24.150000;
+    double originLon = 120.650000;
+    buildSameCoordinateTieFixture(originLat, originLon);
+    facade = openFacade(dbPath.toFile());
+
+    AddressRecord r = facade.nearestWithin(originLat, originLon, 500.0);
+
+    assertThat(r).isNotNull();
+    assertThat(r.displayName()).isEqualTo("短門牌低 id");
+  }
+
   // ----------------------------------------------------------------------
   // Test 4 — returns null when none in radius
   // ----------------------------------------------------------------------
@@ -181,8 +194,9 @@ public final class AddressDatabaseFacadeTest {
         s.executeUpdate(
             "CREATE TABLE places ("
                 + "id INTEGER PRIMARY KEY, lat REAL NOT NULL, lon REAL NOT NULL,"
-                + " display_name TEXT NOT NULL, display_name_halfwidth TEXT NOT NULL)");
-        s.executeUpdate("INSERT INTO places VALUES (1, 24.15, 120.65, 'X', 'X')");
+                + " display_name TEXT NOT NULL, display_name_halfwidth TEXT NOT NULL,"
+                + " number TEXT)");
+        s.executeUpdate("INSERT INTO places VALUES (1, 24.15, 120.65, 'X', 'X', '')");
         s.executeUpdate(
             "CREATE VIRTUAL TABLE places_rtree USING rtree("
                 + "id, min_lat, max_lat, min_lon, max_lon)");
@@ -224,10 +238,11 @@ public final class AddressDatabaseFacadeTest {
           s.executeUpdate(
               "CREATE TABLE places ("
                   + "id INTEGER PRIMARY KEY, lat REAL NOT NULL, lon REAL NOT NULL,"
-                  + " display_name TEXT NOT NULL, display_name_halfwidth TEXT NOT NULL)");
-          s.executeUpdate("INSERT INTO places VALUES (1, 24.15, 120.65, 'A', 'A')");
-          s.executeUpdate("INSERT INTO places VALUES (2, 24.16, 120.66, 'B', 'B')");
-          s.executeUpdate("INSERT INTO places VALUES (3, 24.17, 120.67, 'C', 'C')");
+                  + " display_name TEXT NOT NULL, display_name_halfwidth TEXT NOT NULL,"
+                  + " number TEXT)");
+          s.executeUpdate("INSERT INTO places VALUES (1, 24.15, 120.65, 'A', 'A', '')");
+          s.executeUpdate("INSERT INTO places VALUES (2, 24.16, 120.66, 'B', 'B', '')");
+          s.executeUpdate("INSERT INTO places VALUES (3, 24.17, 120.67, 'C', 'C', '')");
           s.executeUpdate(
               "CREATE VIRTUAL TABLE places_rtree USING rtree("
                   + "id, min_lat, max_lat, min_lon, max_lon)");
@@ -251,7 +266,8 @@ public final class AddressDatabaseFacadeTest {
         s.executeUpdate(
             "CREATE TABLE places ("
                 + "id INTEGER PRIMARY KEY, lat REAL NOT NULL, lon REAL NOT NULL,"
-                + " display_name TEXT NOT NULL, display_name_halfwidth TEXT NOT NULL)");
+                + " display_name TEXT NOT NULL, display_name_halfwidth TEXT NOT NULL,"
+                + " number TEXT)");
         for (int i = 0; i < rows.length; i++) {
           FixtureRow row = rows[i];
           s.executeUpdate(
@@ -265,7 +281,7 @@ public final class AddressDatabaseFacadeTest {
                   + row.name
                   + "', '"
                   + row.name
-                  + "')");
+                  + "', '')");
         }
         s.executeUpdate(
             "CREATE VIRTUAL TABLE places_rtree USING rtree("
@@ -273,6 +289,38 @@ public final class AddressDatabaseFacadeTest {
         s.executeUpdate(
             "INSERT INTO places_rtree(id, min_lat, max_lat, min_lon, max_lon)"
                 + " SELECT id, lat, lat, lon, lon FROM places");
+      }
+    }
+  }
+
+  private void buildSameCoordinateTieFixture(double lat, double lon) throws Exception {
+    try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + dbPath)) {
+      try (Statement s = c.createStatement()) {
+        s.executeUpdate("CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+        s.executeUpdate("INSERT INTO metadata VALUES ('schema_version','1')");
+        s.executeUpdate("INSERT INTO metadata VALUES ('county','X')");
+        s.executeUpdate("INSERT INTO metadata VALUES ('data_date','X')");
+        s.executeUpdate(
+            "CREATE TABLE places ("
+                + "id INTEGER PRIMARY KEY, lat REAL NOT NULL, lon REAL NOT NULL,"
+                + " display_name TEXT NOT NULL, display_name_halfwidth TEXT NOT NULL,"
+                + " number TEXT)");
+        s.executeUpdate(
+            "INSERT INTO places VALUES (10, "
+                + lat
+                + ", "
+                + lon
+                + ", '長門牌低 id', '長門牌低 id', '123號')");
+        s.executeUpdate(
+            "INSERT INTO places VALUES (30, " + lat + ", " + lon + ", '短門牌高 id', '短門牌高 id', '1號')");
+        s.executeUpdate(
+            "INSERT INTO places VALUES (20, " + lat + ", " + lon + ", '短門牌低 id', '短門牌低 id', '2號')");
+        s.executeUpdate(
+            "CREATE VIRTUAL TABLE places_rtree USING rtree("
+                + "id, min_lat, max_lat, min_lon, max_lon)");
+        s.executeUpdate(
+            "INSERT INTO places_rtree(id, min_lat, max_lat, min_lon, max_lon)"
+                + " SELECT id, lat, lat, lon, lon FROM places ORDER BY id");
       }
     }
   }

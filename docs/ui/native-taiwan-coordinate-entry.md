@@ -18,7 +18,7 @@ Auto Fill, Clear, Copy, and confirmation.
 | Enter, Auto Fill, Clear, or Copy a Taiwan coordinate | ATAK **Go To** → **Taiwan** |
 | Find an imported Taiwan street address | ATAK **Go To** → **Taiwan** → **Address** |
 | Inspect every representation of a map item | Tap its Coordinate value → **Taiwan** |
-| Import, replace, or remove offline datasets | Tools → **TW Coordinates** → dataset manager |
+| Import, replace, or remove offline datasets | Tools → **TW Coordinates** (opens the dataset manager directly) |
 
 ## Host entry paths
 
@@ -30,8 +30,13 @@ ATAK-owned elevation, Auto Fill, Clear, Copy, and confirmation controls
 reachable.
 
 <p align="center">
-<img src="../images/22-atak-enter-coordinate.jpg" alt="ATAK Enter Coordinate dialog showing the compact Taiwan pane with Taipower selected" width="900"><br>
-<sub>The current compact Taiwan pane inside ATAK's Enter Coordinate dialog.</sub>
+<img src="../images/23a-native-address-full.png" alt="ATAK Enter Coordinate dialog showing Taiwan Address in single-field mode" width="900"><br>
+<sub>Address single-field mode inside ATAK's native Enter Coordinate dialog.</sub>
+</p>
+
+<p align="center">
+<img src="../images/23b-native-address-structured.png" alt="ATAK Enter Coordinate dialog showing Taiwan Address in four structured fields" width="900"><br>
+<sub>The same draft projected into county, district, road, and address-tail fields.</sub>
 </p>
 
 ### Map item / Convert Coordinate

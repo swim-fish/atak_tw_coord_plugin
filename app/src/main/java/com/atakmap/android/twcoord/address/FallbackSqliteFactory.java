@@ -163,10 +163,7 @@ public final class FallbackSqliteFactory implements AddressDatabaseFacade.Factor
 
         try (android.database.Cursor c =
             db.rawQuery(
-                "SELECT p.lat, p.lon, p.display_name, p.display_name_halfwidth"
-                    + "  FROM places_rtree r JOIN places p ON r.id = p.id"
-                    + " WHERE r.min_lat <= ? AND r.max_lat >= ?"
-                    + "   AND r.min_lon <= ? AND r.max_lon >= ?",
+                NearestAddressQuery.SQL,
                 new String[] {
                   Double.toString(lat + dLat),
                   Double.toString(lat - dLat),

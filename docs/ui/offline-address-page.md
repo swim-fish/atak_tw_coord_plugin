@@ -3,12 +3,40 @@
 **Feature**: 004-offline-address
 **Source**: `app/src/main/res/layout/offline_address_page.xml` + `app/src/main/java/com/atakmap/android/twcoord/address/OfflineAddressReceiver.java`
 
-The Offline Address page is an internal `DropDownReceiver` side-pane reached
-from **TW Coordinates** (the plugin's only public Tools item) or the always-
-selectable Dataset-status row in Settings/native Address guidance. It is the
+The Offline Address page is an internal `DropDownReceiver` side-pane opened
+directly by **TW Coordinates** (the plugin's only public Tools item) or by the
+always-selectable Dataset-status row in Settings/native Address guidance. Its
+top **TW Coordinates settings** button closes the DropDown before opening the
+plugin Settings Activity. It is the
 operator's single management surface for forward and reverse offline-address
 datasets: import, replace, remove, and inspect provenance. It is not registered
 as a separate Tools item.
+
+## Navigation flow
+
+```text
+ATAK Tools
+  → TW Coordinates
+  → ACTION_SHOW_OFFLINE_ADDRESS
+  → OfflineAddressReceiver opens this DropDown
+
+This page
+  → TW Coordinates settings
+  → close this DropDown
+  → com.atakmap.app.ADVANCED_SETTINGS
+     (toolkey=tw_coord_settings)
+  → TW Coordinates settings
+
+TW Coordinates settings
+  → Dataset status
+  → finish the foreground Settings Activity
+  → post ACTION_SHOW_OFFLINE_ADDRESS through MapView
+  → this DropDown becomes visible
+```
+
+Closing the current foreground surface before opening the destination is part
+of the UI contract. Reversing that order can leave a successfully opened
+DropDown hidden below Settings or leave Settings covering the map.
 
 ## Anatomy
 
@@ -20,6 +48,7 @@ legacy single-active importer participates only during upgrade migration.
 ```
 ┌──────────────────────────────────────────────────────┐
 │ Offline Address                                      │  ← title (R.id.offline_address_title)
+│ [             TW Coordinates settings             ] │  ← R.id.offline_address_open_settings
 │ ─────────────────────────────────────────────────    │
 │                                                      │
 │  No address dataset installed. Use the .sqlite       │  ← R.id.offline_address_empty_state
@@ -36,6 +65,7 @@ legacy single-active importer participates only during upgrade migration.
 ```
 ┌──────────────────────────────────────────────────────┐
 │ Offline Address                                      │
+│ [             TW Coordinates settings             ] │
 │ ─────────────────────────────────────────────────    │
 │                                                      │
 │  County             台中市                            │  ← R.id.offline_address_value_county
@@ -103,7 +133,7 @@ All 30+ user-facing keys live under `app/src/main/res/values/strings.xml`, with 
 Key groups (verbatim names):
 
 - Identity — `tool_offline_address_label`, `tool_offline_address_desc`, `offline_address_page_title`, `offline_address_empty_state`.
-- Buttons — `offline_address_button_import / _replace / _remove`.
+- Buttons — `offline_address_button_settings / _import / _replace / _remove`.
 - Confirmations — `offline_address_confirm_replace`, `offline_address_confirm_remove` (both take `%1$s` = county).
 - Progress — `offline_address_progress_copying / _verifying / _building_index / _activating`.
 - State B fields — `offline_address_field_county / _data_date / _source / _rows / _csv_sha / _imported_at / _file_sha / _rtree_built`.
@@ -225,12 +255,17 @@ ADR-0017.
 
 ## Screenshots
 
-_TODO — capture during US1 / US2 / US3 device acceptance walks (T031 / T044 / T057) and embed:_
+<p align="center">
+<img src="../images/24-offline-address-data.png" alt="TW Coordinates Offline address data manager with the settings action, usage summary, and county rows" width="700"><br>
+<sub>The current populated manager and the top navigation action introduced by feature 013.</sub>
+</p>
+
+_The populated state is current. Additional state/error captures remain pending
+the corresponding device acceptance walks:_
 
 - `offline-address-state-a-en.png` — empty State A, English.
 - `offline-address-state-a-zh-tw.png` — empty State A, Traditional Chinese.
 - `offline-address-state-a-ja.png` — empty State A, Japanese.
-- `offline-address-state-b-taichung.png` — populated State B with Taichung fixture.
 - `offline-address-progress-copying.png` — Import progress chip mid-copy.
 - `offline-address-progress-building-index.png` — Import progress chip during R*Tree build (v1 import).
 - `offline-address-progress-activating.png` — Import progress chip during atomic activation.

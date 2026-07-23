@@ -25,7 +25,7 @@ The plugin's public Tools entries will be consolidated at the same time:
 
 | Current Tools entry | Target state | Rationale |
 |---|---|---|
-| `TW Coordinates` | Keep | The only public plugin Tools entry; owns settings and offline-data navigation. |
+| `TW Coordinates` | Keep | The only public plugin Tools entry; opens offline-data management first and links onward to settings. |
 | `TW Coord GoTo` | Remove | Native ATAK Go To and Convert Coordinate now host Taiwan coordinate entry. |
 | `TW Addr Search` | Remove | Forward address search moves into the native Taiwan Address tab. |
 | `TW Offline Addr` | Remove its Tools icon only | Dataset import, status, replacement, and removal remain available inside `TW Coordinates`. |
@@ -37,11 +37,14 @@ This is a user-interface consolidation, not removal of offline address capabilit
 ```text
 ATAK Tools
 └── TW Coordinates
-    ├── Coordinate display settings
-    ├── Address search settings
-    ├── Offline dataset status
-    └── Manage offline address data
-        └── Existing internal import/status/replacement/removal page
+    └── Offline address data
+        ├── Import / replace / remove
+        ├── Dataset status and provenance
+        └── TW Coordinates settings
+            ├── Coordinate display settings
+            ├── Address search settings
+            └── Dataset status
+                └── Close Settings and reopen Offline address data
 
 ATAK native Go To / Convert Coordinate
 └── Taiwan
@@ -54,10 +57,12 @@ ATAK native Go To / Convert Coordinate
         └── Candidate selection when required
 ```
 
-`OfflineAddressReceiver` remains an internal page. The `TW Coordinates` dataset-status row is the
-primary entry point. Embedding the complete importer and dataset manager directly in the
-Preference screen is out of scope because that page already owns file picking, progress,
-replacement, and removal lifecycle.
+`OfflineAddressReceiver` remains an internal page, but the `TW Coordinates` Tools action opens it
+directly. Its top settings action closes the DropDown before opening the plugin Settings Activity.
+The Settings dataset-status row provides the reverse route: it closes Settings before posting the
+manager action so the map-owned DropDown is not hidden behind the foreground Activity. Embedding
+the complete importer and dataset manager directly in the Preference screen remains out of scope
+because the existing page already owns file picking, progress, replacement, and removal lifecycle.
 
 ## 3. Address Tab UI
 

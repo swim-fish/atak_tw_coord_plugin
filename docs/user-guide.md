@@ -29,11 +29,6 @@ Taipower accepts 9-character (10 m) and 11-character (1 m) main-island codes.
 TWD97/TWD67 accept integer easting and northing in metres. TWD67 zone 119 shows
 an accuracy advisory; Taipower reports out of range for outer-island points.
 
-<p align="center">
-<img src="images/22-atak-enter-coordinate.jpg" alt="ATAK Enter Coordinate dialog showing the compact Taiwan pane" width="900"><br>
-<sub>The previous three-tab Taiwan pane. A new numbered Address screenshot is pending the release-gate capture.</sub>
-</p>
-
 ### Go To an offline address
 
 1. Import the applicable county dataset through **TW Coordinates** (section 4).
@@ -52,6 +47,16 @@ the action only after its normal confirmation. A missing county dataset leaves
 the coordinate tabs usable and displays data-management guidance.
 
 See [Native Address workflow](tw-addr-search.md) for detailed examples.
+
+<p align="center">
+<img src="images/23a-native-address-full.png" alt="ATAK Go To Taiwan Address tab using one full-address field" width="900"><br>
+<sub>Single-field mode keeps paste entry compact inside ATAK's native Go To dialog.</sub>
+</p>
+
+<p align="center">
+<img src="images/23b-native-address-structured.png" alt="ATAK Go To Taiwan Address tab split into county, district, road, and number fields" width="900"><br>
+<sub>Structured mode projects the same address into four editable logical fields.</sub>
+</p>
 
 ### Convert a map item's coordinate
 
@@ -96,7 +101,8 @@ labelled so they are not confused with zone 121.
 
 ## 4. TW Coordinates settings and datasets
 
-Open the plugin's only public Tools item, **TW Coordinates**, or navigate to:
+Open the plugin's only public Tools item, **TW Coordinates**, then select the
+top **TW Coordinates settings** button, or navigate directly to:
 
 **Settings → Tool Preferences → Specific Tool Preferences → TW Coordinates**
 
@@ -109,9 +115,16 @@ Available controls include:
 - dataset status and the internal offline-data manager.
 
 The dataset-status row remains selectable even if all three address readout
-toggles are off. In the manager, import a supported ZIP/SQLite dataset, replace
-one county atomically, remove an unneeded county, and inspect size/date/row
-provenance. See [Offline address data](tw-offline-addr.md).
+toggles are off. Selecting it first closes Settings and then opens the manager,
+so the destination is not hidden behind the Settings screen. In the manager,
+import a supported ZIP/SQLite dataset, replace one county atomically, remove an
+unneeded county, and inspect size/date/row provenance. See
+[Offline address data](tw-offline-addr.md).
+
+<p align="center">
+<img src="images/24-offline-address-data.png" alt="Offline address data manager with the TW Coordinates settings button and two imported counties" width="700"><br>
+<sub>The Tools entry opens this manager directly; use the top button to continue to plugin settings.</sub>
+</p>
 
 ## 5. FAQ
 

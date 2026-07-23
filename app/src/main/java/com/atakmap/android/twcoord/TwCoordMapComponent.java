@@ -324,30 +324,18 @@ public class TwCoordMapComponent extends AbstractMapComponent {
       };
 
   /**
-   * Tools-menu tap handler (feature 007 US2). ATAK fires {@link #ACTION_SHOW_PLUGIN} when the user
-   * taps the "TW Coordinates" icon under Tools. It now OPENS THE PLUGIN SETTINGS PAGE instead of
-   * cycling the on-map coordinate unit — the prior {@code Off → Taipower → TWD97 → TWD67} cycle is
-   * removed ("取消直接切換座標"). The coordinate format is now chosen in settings (the {@code
-   * pref_coord_unit} list), and the on-map readout's show/hide moved to the {@code
-   * pref_readout_visible} toggle.
-   *
-   * <p>Opens via the {@code com.atakmap.app.ADVANCED_SETTINGS} broadcast with a {@code toolkey}
-   * extra set to {@link #PREF_KEY} — the ATAK-sanctioned way to jump straight to a plugin's
-   * registered Tool Preferences screen (pattern from the meshtastic sample {@code
-   * MeshtasticDropDownReceiver.openPluginPreferences}; action listed in the SDK {@code
-   * docs/broadcastlist.txt}). Merely opening it does NOT change the active format (FR-007). Wrapped
-   * per Constitution VI.
+   * Tools-menu tap handler. The plugin's single public Tools entry now opens offline address data
+   * first; that page owns the explicit route into the full TW Coordinates settings screen.
    */
   private final BroadcastReceiver toggleReceiver =
       new BroadcastReceiver() {
         @Override
         public void onReceive(Context ctx, Intent intent) {
           try {
-            Intent open = new Intent("com.atakmap.app.ADVANCED_SETTINGS");
-            open.putExtra("toolkey", PREF_KEY);
-            AtakBroadcast.getInstance().sendBroadcast(open);
+            TwCoordNavigation.openToolDestination();
           } catch (Throwable t) {
-            android.util.Log.w("TwCoordMapComponent", "open settings from tool button threw", t);
+            android.util.Log.w(
+                "TwCoordMapComponent", "open offline address from tool button threw", t);
           }
         }
       };
@@ -438,10 +426,10 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     toggleFilter.addAction(ACTION_SHOW_PLUGIN);
     AtakBroadcast.getInstance().registerReceiver(toggleReceiver, toggleFilter);
 
-    // Retained internal offline-data manager. Settings and the native Address pane fire
-    // SHOW_OFFLINE_ADDRESS; no standalone Tools item exposes this receiver. The importer +
-    // executor are owned here so they outlive any single drop-down open/close cycle and so the
-    // AddressSubsystem can reuse the same importer without re-opening files.
+    // Retained offline-data manager. The single TW Coordinates Tools item, Settings, and the native
+    // Address pane fire SHOW_OFFLINE_ADDRESS; there is no separate TW Offline Addr Tools item. The
+    // importer + executor are owned here so they outlive any single drop-down open/close cycle and
+    // so the AddressSubsystem can reuse the same importer without re-opening files.
     // Pass `2` as the max supported schema version — per the generator's
     // docs/data-contract.md (v2, 2026-05-24 evening) v2 adds `places_rtree`. The importer
     // accepts both v1 (plugin builds R*Tree at import) and v2 (generator already shipped it,
@@ -477,7 +465,8 @@ public class TwCoordMapComponent extends AbstractMapComponent {
             // language change; fall back to the raw plugin context only before it is built.
             () -> localisedPluginContext != null ? localisedPluginContext : pluginContext,
             addressImporter,
-            addressImportExecutor);
+            addressImportExecutor,
+            () -> TwCoordNavigation.openSettings(PREF_KEY));
     AtakBroadcast.DocumentedIntentFilter addressFilter = new AtakBroadcast.DocumentedIntentFilter();
     addressFilter.addAction(OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS);
     AtakBroadcast.getInstance().registerReceiver(addressReceiver, addressFilter);

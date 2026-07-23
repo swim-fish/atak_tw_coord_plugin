@@ -119,9 +119,11 @@ Only the **boundary + the counties you import** count:
 Once you have `tw-central-full.zip`, import it. Data ships as a ZIP or a single
 `.sqlite`, one file per county.
 
-1. Open ATAK's **Tools menu** → **TW Coordinates**, then tap the dataset-status
-   row to open the internal offline-data manager. The same row is available in
-   plugin Settings even when every map-address readout toggle is off.
+1. Open ATAK's **Tools menu** → **TW Coordinates**. The offline-data manager
+   opens directly. The same manager remains reachable from the dataset-status
+   row in plugin Settings even when every map-address readout toggle is off.
+   Use the manager's top **TW Coordinates settings** button to return to plugin
+   Settings.
 2. The first time you see the **empty state** with an **Import** button.
 3. Tap it and pick the address file in the browser (`tw-central-full.zip` or
    `places-臺中市.sqlite`, etc.).
@@ -130,6 +132,7 @@ Once you have `tw-central-full.zip`, import it. Data ships as a ZIP or a single
 ```
 ┌──────────────────────────────┐
 │  TW Coordinates · Offline data│
+│  [ TW Coordinates settings ] │
 │                              │
 │  No address data imported    │
 │                              │
@@ -162,8 +165,9 @@ counties **+** the `_boundary` base data.
 > correct county.
 
 <p align="center">
-  <img src="images/17-tw-offline-addr-usage.jpg" alt="TW Offline Addr: total usage + stacked bar + legend + per-county rows" width="560"><br>
-  <sub>Actual screen: the "Total 498.9 MB on disk" figure and the stacked bar
+  <img src="images/24-offline-address-data.png" alt="TW Coordinates Offline address data: settings action, total usage, stacked bar, and per-county rows" width="700"><br>
+  <sub>Current TW Coordinates landing page: the top button opens plugin
+  settings. Below it, the "Total 498.9 MB on disk" figure and stacked bar
   (<b>Taichung 310.2 MB</b> / <b>Changhua 179.1 MB</b> / <b>Base data 9.6 MB</b>)
   with a matching legend; below it, the compact per-county rows (colour swatch,
   data date · row count, size, <b>⋮</b>); the dashed block at the bottom is

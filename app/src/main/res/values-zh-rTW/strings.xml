@@ -50,6 +50,7 @@
     <string name="offline_address_empty_state">尚未安裝任何地址資料集。請使用 atak-tw-address-generator 專案產生的 .sqlite 檔案。</string>
 
     <!-- Action buttons + confirmations. -->
+    <string name="offline_address_button_settings">TW Coordinates 設定</string>
     <string name="offline_address_button_import">匯入…</string>
     <string name="offline_address_button_replace">取代…</string>
     <string name="offline_address_button_remove">移除</string>

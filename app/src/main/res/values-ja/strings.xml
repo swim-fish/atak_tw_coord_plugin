@@ -54,6 +54,7 @@
     <string name="offline_address_empty_state">住所データセットがインストールされていません。atak-tw-address-generator プロジェクトが生成した .sqlite ファイルをご利用ください。</string>
 
     <!-- Action buttons + confirmations. -->
+    <string name="offline_address_button_settings">TW Coordinates 設定</string>
     <string name="offline_address_button_import">インポート…</string>
     <string name="offline_address_button_replace">差し替え…</string>
     <string name="offline_address_button_remove">削除</string>

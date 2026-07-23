@@ -2,22 +2,38 @@
 
 **Surface owner**: `com.atakmap.android.twcoord.TwCoordPreferenceFragment`
 **Hosted at**: ATAK menu → `Settings` → `Tool Preferences` → `Specific Tool Preferences` → **TW Coordinates**
-**Also opened by**: the plugin's only public Tools-menu icon, **TW Coordinates**
+**Also opened by**: **TW Coordinates settings** at the top of the offline-data manager
 **Phase**: US3 — shipped 2026-05-16 (T045 / T046 / T047 / T048)
 
-## Tool-button entry point (feature 007 US2)
+## Entry points
 
-Tapping the **TW Coordinates** Tools-menu icon (`TwCoordTool` → `ACTION_SHOW_PLUGIN`)
-opens **this fragment**. Previously the same handler cycled the on-map readout's
-coordinate unit `Off → Taipower → TWD97 → TWD67`; that cycle is removed
-("取消直接切換座標"). `TwCoordMapComponent.toggleReceiver` now broadcasts
-`com.atakmap.app.ADVANCED_SETTINGS` with a `toolkey` extra of `PREF_KEY` (the
-ATAK-sanctioned jump-to-a-plugin's-Tool-Preferences pattern, mirrored from the
-meshtastic `MeshtasticDropDownReceiver.openPluginPreferences` sample). Merely
-opening the page does NOT change the active format (FR-007). The format is now
-chosen via `pref_coord_unit`, and the readout's show/hide moved to the new
-`pref_readout_visible` toggle. See `docs/user-guide.md` §3.3 + §4 for the
-operator-facing description.
+Tapping the **TW Coordinates** Tools-menu icon (`TwCoordTool` →
+`ACTION_SHOW_PLUGIN`) opens the offline-data manager first. Its top
+**TW Coordinates settings** action closes the DropDown and then broadcasts
+`com.atakmap.app.ADVANCED_SETTINGS` with `toolkey=tw_coord_settings`.
+
+The reverse route is the Settings **Dataset status** row. Because Settings is a
+foreground Activity and the manager is a map-owned DropDown, the click handler
+finishes Settings before posting `ACTION_SHOW_OFFLINE_ADDRESS` through the map
+view. This prevents a successful manager open from remaining hidden underneath
+Settings.
+
+Neither route changes the active coordinate format. The format is chosen via
+`pref_coord_unit`, while `pref_readout_visible` controls the on-map readout.
+
+```text
+ATAK Tools
+  → TW Coordinates
+  → Offline address data
+      → TW Coordinates settings
+          → this fragment
+
+This fragment
+  → Dataset status
+  → finish Settings Activity
+  → post offline-manager action through MapView
+  → Offline address data
+```
 
 ## Anatomy
 
@@ -95,8 +111,8 @@ discovery for the user, no bespoke UI.
 Added below the existing accuracy notice category. Three flat
 `SwitchPreference` toggles (no master switch — per Clarifications
 Session 2026-05-24 Q2), a confidence-indicator preset dropdown
-(Phase 7 polish), a dataset-status row (the entry point to the
-Offline Address page), and a dynamically-populated per-county list.
+(Phase 7 polish), a dataset-status row (which closes Settings before opening
+the Offline Address page), and a dynamically-populated per-county list.
 
 ```
 ┌─ Offline Address ───────────────────────────────────────────┐

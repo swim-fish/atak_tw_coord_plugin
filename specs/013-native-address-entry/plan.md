@@ -15,12 +15,13 @@ resolve automatically; ambiguous matches require explicit candidate choice.
 Reverse lookup labels but never moves a host-supplied WGS84 point.
 
 Complete the navigation migration in the same feature: keep `TW Coordinates`
-as the only public Tools item, retain the offline dataset manager as an
-internal page reachable from settings, and retire the custom Go To and forward
-search Tools/pages after moving their shared parser/query logic to neutral
-packages. Stabilize registry/import/lookup ownership with cancellation,
-revision fences, dataset read leases, monotonic close, and an explicit startup
-and teardown order.
+as the only public Tools item and make its internal offline dataset manager the
+default landing page. The manager links onward to plugin settings; the Settings
+dataset-status row closes Settings before reopening the manager. Retire the
+custom Go To and forward-search Tools/pages after moving their shared
+parser/query logic to neutral packages. Stabilize registry/import/lookup
+ownership with cancellation, revision fences, dataset read leases, monotonic
+close, and an explicit startup and teardown order.
 
 ## Technical Context
 
@@ -260,15 +261,19 @@ the host pane while preserving existing dataset formats and reverse readouts.
 
 ### Phase C — Consolidate Tools and remove duplicate workflows
 
-1. Make the dataset status/management preference always selectable.
-2. Reduce `TwCoordLifecycle` to `TwCoordTool` only.
-3. Stop registering custom Go To and forward-search receivers; retain the
+1. Make the dataset status/management preference always selectable and close
+   Settings before opening its map-owned destination.
+2. Reduce `TwCoordLifecycle` to `TwCoordTool` only and route that action
+   directly to the internal offline manager.
+3. Add a top manager action that closes the DropDown before opening plugin
+   settings.
+4. Stop registering custom Go To and forward-search receivers; retain the
    offline receiver as internal navigation.
-4. Remove legacy UI classes, UI-only preferences/tests, intents, layouts,
+5. Remove legacy UI classes, UI-only preferences/tests, intents, layouts,
    drawables, and tool strings only after shared code extraction and parity.
-5. Leave old stored custom values inert and preserve imported data byte-for-
+6. Leave old stored custom values inert and preserve imported data byte-for-
    byte; verify stale old actions are safe no-ops.
-6. Audit localization, render scripts, resources, manifest, and dead code.
+7. Audit localization, render scripts, resources, manifest, and dead code.
 
 ### Phase D — Documentation and release evidence
 

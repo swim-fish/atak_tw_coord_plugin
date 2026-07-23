@@ -186,7 +186,9 @@ NO_DATASET | NO_MATCH | FOUND | FAILURE
 
 `FOUND` carries the exact query point and the nearest record candidate. The
 query point remains the resolved host location; the record supplies the
-display address and provenance.
+display address and provenance. Reverse ranking is stable by distance,
+`number` length, then dataset `id`; rows sharing one coordinate therefore
+produce the same address across supported SQLite backends.
 
 ## 5. Resolution and ATAK metadata
 

@@ -2,20 +2,18 @@ package com.atakmap.android.twcoord;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
-import com.atakmap.android.ipc.AtakBroadcast;
+import com.atakmap.android.maps.MapView;
 import com.atakmap.android.preference.PluginPreferenceFragment;
 import com.atakmap.android.twcoord.address.ActiveDatasetRegistry;
 import com.atakmap.android.twcoord.address.AddressBundleImporter;
 import com.atakmap.android.twcoord.address.AddressDataset;
 import com.atakmap.android.twcoord.address.ConfidenceThresholds;
 import com.atakmap.android.twcoord.address.CountyActiveDataset;
-import com.atakmap.android.twcoord.address.OfflineAddressIntents;
 import com.atakmap.android.twcoord.coord.ConversionResult;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
@@ -76,20 +74,18 @@ public class TwCoordPreferenceFragment extends PluginPreferenceFragment
     if (sp != null) sp.registerOnSharedPreferenceChangeListener(this);
     refreshAllSummaries();
 
-    // FR-016 — settings-page button opens the GoTo input page (second entry point alongside
-    // the Tools-menu icon). Bind here rather than in onCreate so the click handler is reattached
-    // every time the user navigates back to this screen.
-    // The dataset manager remains an internal page. This settings row is its public navigation
-    // path after the standalone Tools item is retired.
+    // Bind here rather than in onCreate so the click handler is reattached every time the user
+    // navigates back to this screen. Settings is a foreground Activity, while the dataset manager
+    // is a map-owned DropDown; finish Settings before posting the destination so it is not opened
+    // invisibly underneath the current Activity.
     Preference status = findPreference("pref_address_dataset_status");
     if (status != null) {
       status.setOnPreferenceClickListener(
           p -> {
             try {
-              Intent i = new Intent(OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS);
-              AtakBroadcast.getInstance().sendBroadcast(i);
+              TwCoordNavigation.finishThenOpenOfflineAddress(getActivity(), MapView.getMapView());
             } catch (Throwable t) {
-              Log.w(TAG, "ACTION_SHOW_OFFLINE_ADDRESS broadcast threw", t);
+              Log.w(TAG, "open offline address from settings threw", t);
             }
             return true;
           });

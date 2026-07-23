@@ -7,6 +7,8 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+## [1.4.3] — 2026-07-23 — Native Taiwan address entry
+
 ### Added
 
 - **ATAK's native Taiwan pane now includes Address as its fourth tab.** The
@@ -22,6 +24,10 @@ follows Semantic Versioning. Per-feature design records live under
 - **TW Coordinates is now the plugin's only public Tools item.** Offline dataset
   management remains available internally from that page, Settings, and native
   Address guidance even when every map-address readout toggle is off.
+- **The TW Coordinates Tools entry now opens Offline address data first.** The
+  manager has a top action for TW Coordinates settings, while Dataset status
+  closes Settings before reopening the manager so the destination is visible
+  immediately.
 - The standalone **TW Coord GoTo**, **TW Addr Search**, and **TW Offline Addr**
   pages/actions were retired after native workflow and manager parity. Existing
   coordinate/address data and settings are retained during upgrade; obsolete
@@ -33,6 +39,9 @@ follows Semantic Versioning. Per-feature design records live under
 
 ### Fixed
 
+- Reverse address lookup now resolves duplicate coordinates deterministically:
+  shortest distance, shorter stored house number, then lowest dataset row ID.
+  Android, ATAK-native, and fallback SQLite backends share the same query.
 - **The Address single-field/structured-field switch stays readable on ATAK's
   dark coordinate-entry panel.** Its enabled and disabled text colors are now
   explicit plugin resources instead of inheriting the plugin's light dialog
