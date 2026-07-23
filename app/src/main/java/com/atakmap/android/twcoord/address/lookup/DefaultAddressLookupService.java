@@ -8,7 +8,6 @@ import com.atakmap.coremap.log.Log;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -94,18 +93,35 @@ public final class DefaultAddressLookupService implements AddressLookupService {
             candidate.withLookupData(stableId, normalized, kind, active.county(), provenance));
       }
       if (deduplicated.isEmpty()) return ForwardAddressResult.noMatch(request.identity());
-      List<AddressCandidate> candidates = new ArrayList<>(deduplicated.values());
-      candidates.sort(
-          Comparator.comparingInt(
-                  (AddressCandidate candidate) ->
-                      candidate.matchKind() == AddressMatchKind.EXACT ? 0 : 1)
-              .thenComparingDouble(AddressCandidate::distanceMeters)
-              .thenComparing(AddressCandidate::normalizedAddress)
-              .thenComparing(AddressCandidate::candidateId));
+      List<AddressCandidate> candidates =
+          orderCandidates(new ArrayList<>(deduplicated.values()), draft, request.ordering());
       if (candidates.size() > request.limit()) {
         candidates = new ArrayList<>(candidates.subList(0, request.limit()));
       }
       return ForwardAddressResult.candidates(request.identity(), candidates);
+    }
+
+    private static List<AddressCandidate> orderCandidates(
+        List<AddressCandidate> candidates, AddressDraft draft, ResultOrdering ordering) {
+      String road = StreetTextNormaliser.fold(draft.components().roadLocality());
+      String tail = StreetTextNormaliser.fold(draft.components().tail());
+      if (ordering != ResultOrdering.MOST_SIMILAR) {
+        return StreetCandidateRanker.reorder(candidates, ResultOrdering.DISTANCE, road, tail);
+      }
+
+      List<AddressCandidate> ordered = new ArrayList<>(candidates.size());
+      for (AddressMatchKind kind :
+          new AddressMatchKind[] {
+            AddressMatchKind.EXACT, AddressMatchKind.PARTIAL, AddressMatchKind.FUZZY
+          }) {
+        List<AddressCandidate> matchingKind = new ArrayList<>();
+        for (AddressCandidate candidate : candidates) {
+          if (candidate.matchKind() == kind) matchingKind.add(candidate);
+        }
+        ordered.addAll(
+            StreetCandidateRanker.reorder(matchingKind, ResultOrdering.MOST_SIMILAR, road, tail));
+      }
+      return ordered;
     }
 
     /**

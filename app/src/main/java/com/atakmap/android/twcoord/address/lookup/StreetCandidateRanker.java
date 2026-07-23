@@ -127,7 +127,10 @@ public final class StreetCandidateRanker {
     out.addAll(results);
     ResultOrdering ord = ordering == null ? ResultOrdering.DISTANCE : ordering;
     if (ord == ResultOrdering.DISTANCE) {
-      out.sort(Comparator.comparingDouble(AddressCandidate::distanceMeters));
+      out.sort(
+          Comparator.comparingDouble(AddressCandidate::distanceMeters)
+              .thenComparing(AddressCandidate::normalizedAddress)
+              .thenComparing(AddressCandidate::candidateId));
       return out;
     }
     final String frag = foldedFragment == null ? "" : foldedFragment.trim();
@@ -137,7 +140,10 @@ public final class StreetCandidateRanker {
       // pure distance order (per this method's contract). Short-circuit rather than fall through
       // the
       // band comparator, whose leftoverLength tiebreak would otherwise sort by street-name length.
-      out.sort(Comparator.comparingDouble(AddressCandidate::distanceMeters));
+      out.sort(
+          Comparator.comparingDouble(AddressCandidate::distanceMeters)
+              .thenComparing(AddressCandidate::normalizedAddress)
+              .thenComparing(AddressCandidate::candidateId));
       return out;
     }
     out.sort(
@@ -145,7 +151,9 @@ public final class StreetCandidateRanker {
             .thenComparingInt(c -> houseNumberProximity(c, num))
             .thenComparingInt(c -> matchIndex(c, frag))
             .thenComparingInt(c -> leftoverLength(c, frag))
-            .thenComparingDouble(AddressCandidate::distanceMeters));
+            .thenComparingDouble(AddressCandidate::distanceMeters)
+            .thenComparing(AddressCandidate::normalizedAddress)
+            .thenComparing(AddressCandidate::candidateId));
     return out;
   }
 

@@ -91,6 +91,25 @@ public final class DefaultAddressLookupServiceForwardTest {
     harness.close();
   }
 
+  @Test
+  public void requestedOrderingChangesAmbiguousCandidateOrder() throws Exception {
+    AddressCandidate nearPartial = raw("臺中市南屯區黎明路1段999號", 24.15, 120.65, "黎明路1段", "999號", 5);
+    AddressCandidate fartherExact = raw("臺中市南屯區黎明路2段130號", 24.16, 120.66, "黎明路2段", "130號", 80);
+    Harness harness = harness(Arrays.asList(fartherExact, nearPartial));
+
+    ForwardAddressResult distance = harness.lookup("臺中市南屯區黎明路2段130號", ResultOrdering.DISTANCE, 20);
+    ForwardAddressResult mostSimilar =
+        harness.lookup("臺中市南屯區黎明路2段130號", ResultOrdering.MOST_SIMILAR, 20);
+
+    assertThat(distance.candidates())
+        .extracting(AddressCandidate::displayAddress)
+        .containsExactly("臺中市南屯區黎明路1段999號", "臺中市南屯區黎明路2段130號");
+    assertThat(mostSimilar.candidates())
+        .extracting(AddressCandidate::displayAddress)
+        .containsExactly("臺中市南屯區黎明路2段130號", "臺中市南屯區黎明路1段999號");
+    harness.close();
+  }
+
   private Harness harness(List<AddressCandidate> rows) throws Exception {
     return harness(rows, "臺中市");
   }
@@ -169,6 +188,11 @@ public final class DefaultAddressLookupServiceForwardTest {
     }
 
     ForwardAddressResult lookup(String address, int limit) throws Exception {
+      return lookup(address, ResultOrdering.DISTANCE, limit);
+    }
+
+    ForwardAddressResult lookup(String address, ResultOrdering ordering, int limit)
+        throws Exception {
       CountDownLatch done = new CountDownLatch(1);
       AtomicReference<ForwardAddressResult> result = new AtomicReference<>();
       service.forward(
@@ -177,6 +201,7 @@ public final class DefaultAddressLookupServiceForwardTest {
               "native",
               LookupPriority.NATIVE_INTERACTIVE,
               address,
+              ordering,
               limit),
           value -> {
             result.set(value);

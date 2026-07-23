@@ -10,6 +10,7 @@ public final class ForwardAddressRequest {
   private final LookupPriority priority;
   private final String normalizedAddress;
   private final Wgs84 anchorPoint;
+  private final ResultOrdering ordering;
   private final int limit;
 
   private ForwardAddressRequest(
@@ -18,6 +19,7 @@ public final class ForwardAddressRequest {
       LookupPriority priority,
       String normalizedAddress,
       Wgs84 anchorPoint,
+      ResultOrdering ordering,
       int limit) {
     if (limit <= 0) throw new IllegalArgumentException("limit must be positive");
     this.identity = Objects.requireNonNull(identity, "identity");
@@ -25,6 +27,7 @@ public final class ForwardAddressRequest {
     this.priority = Objects.requireNonNull(priority, "priority");
     this.normalizedAddress = Objects.requireNonNull(normalizedAddress, "normalizedAddress");
     this.anchorPoint = anchorPoint;
+    this.ordering = Objects.requireNonNull(ordering, "ordering");
     this.limit = limit;
   }
 
@@ -35,7 +38,18 @@ public final class ForwardAddressRequest {
       String normalizedAddress,
       int limit) {
     return new ForwardAddressRequest(
-        identity, consumerKey, priority, normalizedAddress, null, limit);
+        identity, consumerKey, priority, normalizedAddress, null, ResultOrdering.DISTANCE, limit);
+  }
+
+  public static ForwardAddressRequest create(
+      LookupIdentity identity,
+      String consumerKey,
+      LookupPriority priority,
+      String normalizedAddress,
+      ResultOrdering ordering,
+      int limit) {
+    return new ForwardAddressRequest(
+        identity, consumerKey, priority, normalizedAddress, null, ordering, limit);
   }
 
   public static ForwardAddressRequest create(
@@ -46,7 +60,25 @@ public final class ForwardAddressRequest {
       Wgs84 anchorPoint,
       int limit) {
     return new ForwardAddressRequest(
-        identity, consumerKey, priority, normalizedAddress, anchorPoint, limit);
+        identity,
+        consumerKey,
+        priority,
+        normalizedAddress,
+        anchorPoint,
+        ResultOrdering.DISTANCE,
+        limit);
+  }
+
+  public static ForwardAddressRequest create(
+      LookupIdentity identity,
+      String consumerKey,
+      LookupPriority priority,
+      String normalizedAddress,
+      Wgs84 anchorPoint,
+      ResultOrdering ordering,
+      int limit) {
+    return new ForwardAddressRequest(
+        identity, consumerKey, priority, normalizedAddress, anchorPoint, ordering, limit);
   }
 
   public LookupIdentity identity() {
@@ -67,6 +99,10 @@ public final class ForwardAddressRequest {
 
   public Wgs84 anchorPoint() {
     return anchorPoint;
+  }
+
+  public ResultOrdering ordering() {
+    return ordering;
   }
 
   public int limit() {

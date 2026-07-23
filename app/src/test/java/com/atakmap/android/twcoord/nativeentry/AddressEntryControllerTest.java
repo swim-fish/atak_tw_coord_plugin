@@ -13,6 +13,7 @@ import com.atakmap.android.twcoord.address.lookup.DatasetIdentity;
 import com.atakmap.android.twcoord.address.lookup.ForwardAddressRequest;
 import com.atakmap.android.twcoord.address.lookup.ForwardAddressResult;
 import com.atakmap.android.twcoord.address.lookup.LookupHandle;
+import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
 import com.atakmap.android.twcoord.address.lookup.ReverseAddressRequest;
 import com.atakmap.android.twcoord.address.lookup.ReverseAddressResult;
 import com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser;
@@ -21,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.junit.Test;
 
@@ -45,6 +47,27 @@ public final class AddressEntryControllerTest {
     debouncer.runPending();
     assertThat(service.forwardRequest).isNotNull();
     assertThat(controller.validation()).isEqualTo(AddressValidation.LOOKUP_PENDING);
+  }
+
+  @Test
+  public void forwardRequestCapturesCurrentOrderingPreference() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AtomicReference<ResultOrdering> ordering = new AtomicReference<>(ResultOrdering.MOST_SIMILAR);
+    AddressEntryController controller =
+        new AddressEntryController(
+            service, new TaiwanAddressParser(), debouncer, 20, ordering::get);
+
+    controller.editFull("臺中市南屯區黎明路2段130號", true);
+    debouncer.runPending();
+
+    assertThat(service.forwardRequest.ordering()).isEqualTo(ResultOrdering.MOST_SIMILAR);
+
+    ordering.set(ResultOrdering.DISTANCE);
+    controller.editFull("臺中市南屯區黎明路2段132號", true);
+    debouncer.runPending();
+
+    assertThat(service.forwardRequest.ordering()).isEqualTo(ResultOrdering.DISTANCE);
   }
 
   @Test

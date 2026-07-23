@@ -128,7 +128,8 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
         new TaiwanEntryController(
             Objects.requireNonNull(preferences, "preferences").getNativeEntryLastUnit(),
             preferences::setNativeEntryLastUnit),
-        new AddressEntryController(Objects.requireNonNull(lookupService, "lookupService")),
+        new AddressEntryController(
+            Objects.requireNonNull(lookupService, "lookupService"), preferences::getResultOrdering),
         new TaiwanEntryFormatter());
   }
 

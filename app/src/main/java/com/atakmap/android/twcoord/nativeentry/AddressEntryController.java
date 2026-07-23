@@ -12,6 +12,7 @@ import com.atakmap.android.twcoord.address.lookup.ForwardAddressResult;
 import com.atakmap.android.twcoord.address.lookup.LookupHandle;
 import com.atakmap.android.twcoord.address.lookup.LookupIdentity;
 import com.atakmap.android.twcoord.address.lookup.LookupPriority;
+import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
 import com.atakmap.android.twcoord.address.lookup.ReverseAddressRequest;
 import com.atakmap.android.twcoord.address.lookup.ReverseAddressResult;
 import com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /** Host-independent full-address entry session with revision-fenced asynchronous lookup. */
 public final class AddressEntryController {
@@ -45,6 +47,7 @@ public final class AddressEntryController {
   private final TaiwanAddressParser parser;
   private final Debouncer debouncer;
   private final int candidateLimit;
+  private final Supplier<ResultOrdering> orderingSupplier;
   private final AddressLookupService.AvailabilityListener availabilityListener =
       ignored -> onAvailabilityChanged();
 
@@ -62,7 +65,17 @@ public final class AddressEntryController {
   private Wgs84 reversePoint;
 
   public AddressEntryController(AddressLookupService lookupService) {
-    this(lookupService, new TaiwanAddressParser(), new ScheduledDebouncer(), 20);
+    this(
+        lookupService,
+        new TaiwanAddressParser(),
+        new ScheduledDebouncer(),
+        20,
+        () -> ResultOrdering.DISTANCE);
+  }
+
+  public AddressEntryController(
+      AddressLookupService lookupService, Supplier<ResultOrdering> orderingSupplier) {
+    this(lookupService, new TaiwanAddressParser(), new ScheduledDebouncer(), 20, orderingSupplier);
   }
 
   AddressEntryController(
@@ -70,11 +83,21 @@ public final class AddressEntryController {
       TaiwanAddressParser parser,
       Debouncer debouncer,
       int candidateLimit) {
+    this(lookupService, parser, debouncer, candidateLimit, () -> ResultOrdering.DISTANCE);
+  }
+
+  AddressEntryController(
+      AddressLookupService lookupService,
+      TaiwanAddressParser parser,
+      Debouncer debouncer,
+      int candidateLimit,
+      Supplier<ResultOrdering> orderingSupplier) {
     if (candidateLimit <= 0) throw new IllegalArgumentException("candidateLimit must be positive");
     this.lookupService = Objects.requireNonNull(lookupService, "lookupService");
     this.parser = Objects.requireNonNull(parser, "parser");
     this.debouncer = Objects.requireNonNull(debouncer, "debouncer");
     this.candidateLimit = candidateLimit;
+    this.orderingSupplier = Objects.requireNonNull(orderingSupplier, "orderingSupplier");
     lookupService.addAvailabilityListener(availabilityListener);
   }
 
@@ -312,6 +335,7 @@ public final class AddressEntryController {
               "native-address",
               LookupPriority.NATIVE_INTERACTIVE,
               draft.normalizedAddress(),
+              currentOrdering(),
               candidateLimit);
       stateListener = onStateChanged;
     }
@@ -327,6 +351,11 @@ public final class AddressEntryController {
         lookupHandle = submitted;
       }
     }
+  }
+
+  private ResultOrdering currentOrdering() {
+    ResultOrdering ordering = orderingSupplier.get();
+    return ordering != null ? ordering : ResultOrdering.DISTANCE;
   }
 
   private void completeForward(ForwardAddressResult result) {
