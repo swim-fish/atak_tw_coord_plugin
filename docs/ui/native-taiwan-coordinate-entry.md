@@ -127,6 +127,9 @@ point with the nearest address-record point (the **reverse no-snap rule**).
   results remain unresolved until the operator taps **Choose result** and
   selects a row with county/district/road context. Selection alone never pans
   the map; ATAK's confirmation performs the host action.
+- Village/neighbourhood text may be omitted. A unique county/district,
+  street/section, and address-tail match resolves automatically; identical
+  matches in multiple villages remain unresolved for explicit selection.
 - A missing applicable county dataset leaves the three coordinate systems
   usable and shows guidance to open **TW Coordinates** for data management.
 - Forward and reverse lookup are local-only. Editing, mode changes, pane

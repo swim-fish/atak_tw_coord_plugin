@@ -187,10 +187,13 @@ lookup share data continuously.
 
 ## R8 — Resolve only unique exact forward matches automatically
 
-**Decision**: Candidate match kind is explicit. Only one deduplicated exact
-candidate may auto-resolve. Multiple exact results or any partial/fuzzy set
-requires operator selection. Distance is a stable secondary ordering signal,
-never proof of exactness.
+**Decision**: Candidate match kind is explicit. Exactness accepts canonical
+full-address equality or one semantic match after an omitted TGOS
+village/neighbourhood prefix when the county, district, street/section, tail,
+and unclassified suffix still match. Only one deduplicated exact candidate may
+auto-resolve. Multiple semantic exact results or any partial/fuzzy set requires
+operator selection. Distance is a stable secondary ordering signal, never
+proof of exactness.
 
 **Rationale**: The retired forward-search workflow intentionally falls back to
 the nearest street candidate when a house number does not match. That is useful

@@ -31,6 +31,21 @@ follows Semantic Versioning. Per-feature design records live under
   minimum runtime 5.5.0. Physical acceptance on both lines remains a release
   gate and is not inferred from JVM or current-SDK build success.
 
+### Fixed
+
+- **The Address single-field/structured-field switch stays readable on ATAK's
+  dark coordinate-entry panel.** Its enabled and disabled text colors are now
+  explicit plugin resources instead of inheriting the plugin's light dialog
+  theme.
+- **An address copied from Address Auto Fill can be pasted back and resolved.**
+  Native forward lookup now follows the established district → street family
+  → house-number funnel before applying its exact/ambiguous safety rule, so
+  TGOS village/neighbourhood prefixes, Chinese section numerals, and full-width
+  house numbers no longer prevent the underlying street record from matching.
+  An omitted village/neighbourhood resolves automatically only when the
+  remaining street/section and address tail identify one record; duplicates
+  still require explicit selection.
+
 ## [1.4.2] — 2026-07-18 — Native Taiwan Go To fixes
 
 ### Fixed

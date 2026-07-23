@@ -73,7 +73,10 @@ below is mandatory.
 3. Query only the selected/resolved active county dataset when county is
    deterministic.
 4. Match road/locality and tail through parameterized bounded queries.
-5. Classify exactness independently from distance.
+5. Classify exactness independently from distance. Canonical full-address
+   equality is exact. If the query omits only a TGOS village/neighbourhood
+   prefix, exactness may also use matching county, district, street/section,
+   address tail, and unclassified suffix.
 6. Deduplicate by stable candidate identity.
 7. Sort deterministically by requested ordering, then normalized address and
    candidate identity for ties.
@@ -87,7 +90,8 @@ below is mandatory.
 
 Only one deduplicated `EXACT` candidate is eligible for automatic resolution.
 A missing house-number match never falls back to a nearest partial candidate
-as an exact result.
+as an exact result. Multiple candidates that differ by an omitted
+village/neighbourhood prefix remain explicit candidates.
 
 ## Reverse lookup
 

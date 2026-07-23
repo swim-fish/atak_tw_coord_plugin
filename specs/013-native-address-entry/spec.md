@@ -271,11 +271,16 @@ works from the retained data.
 - **FR-009**: Lookup MUST use only installed, active offline address data and
   MUST NOT require or attempt an online geocoding service.
 - **FR-010**: A unique exact address result MUST prepare its stored location
-  for the host flow and display the normalized address to the operator.
+  for the host flow and display the normalized address to the operator. Exact
+  matching MUST accept either canonical full-address equality or, when the
+  operator omits a TGOS village/neighbourhood prefix, one unique candidate
+  whose county/city, district/township, street/section, address tail, and
+  unclassified suffix all match.
 - **FR-011**: Multiple credible results MUST be presented for explicit
   operator selection with enough address context to distinguish them. The
   nearest result MUST NOT be silently treated as exact solely because it is
-  nearest.
+  nearest. Two or more candidates that differ only by an omitted
+  village/neighbourhood prefix MUST remain unresolved until selection.
 - **FR-012**: An address MUST remain unresolved until a unique result exists
   or the operator selects one result. Unresolved input MUST NOT be returned to
   the host, move the map, replace a point, or dismiss the dialog.

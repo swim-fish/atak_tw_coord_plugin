@@ -64,8 +64,9 @@ public interface AddressDatabaseFacade extends AutoCloseable {
   }
 
   /**
-   * Bounded full-address lookup built on the established street query. Exactness is classified by
-   * canonical full-address equality; a nearby house number is retained only as PARTIAL.
+   * Bounded full-address lookup built on the established street-then-house-number funnel. Exactness
+   * accepts either canonical full-address equality or an exact street/section/tail match when the
+   * operator omits a TGOS village/neighbourhood prefix. A nearby house number remains PARTIAL.
    */
   default List<AddressCandidate> fullAddressCandidates(
       AddressDraft draft, Wgs84 anchorPoint, int limit) {
@@ -74,20 +75,45 @@ public interface AddressDatabaseFacade extends AutoCloseable {
     }
     Wgs84 anchor =
         anchorPoint != null ? anchorPoint : new Wgs84(23.7, 120.9, 1L, Wgs84.Source.MAP_CENTRE);
-    int queryLimit = Math.min(500, Math.max(50, limit * 4));
+    String district = draft.components().districtTownship();
+    String roadLocality = draft.components().roadLocality();
     List<AddressCandidate> rows =
         streetCandidates(
-            draft.components().districtTownship(),
-            StreetTextNormaliser.fold(draft.components().roadLocality()),
+            district,
+            StreetTextNormaliser.fold(roadLocality),
             anchor.latitudeDeg(),
             anchor.longitudeDeg(),
-            queryLimit);
+            0);
+    if (rows.isEmpty()) {
+      String streetOnly = streetFragmentAfterLocality(roadLocality);
+      if (!streetOnly.equals(roadLocality)) {
+        rows =
+            streetCandidates(
+                district,
+                StreetTextNormaliser.fold(streetOnly),
+                anchor.latitudeDeg(),
+                anchor.longitudeDeg(),
+                0);
+      }
+      String sectionFamily = streetOnly.replaceFirst("\\d+段$", "");
+      if (rows.isEmpty() && !sectionFamily.equals(streetOnly)) {
+        rows =
+            streetCandidates(
+                district,
+                StreetTextNormaliser.fold(sectionFamily),
+                anchor.latitudeDeg(),
+                anchor.longitudeDeg(),
+                0);
+      }
+    }
+    rows = narrowByAddressTail(rows, draft.components().tail());
     TaiwanAddressParser parser = new TaiwanAddressParser();
     List<AddressCandidate> classified = new ArrayList<>();
     for (AddressCandidate row : rows) {
       String normalized = parser.normalize(row.displayAddress());
       AddressMatchKind kind =
           normalized.equals(draft.normalizedAddress())
+                  || matchesStreetAndTailWithoutLocality(draft, row, parser)
               ? AddressMatchKind.EXACT
               : AddressMatchKind.PARTIAL;
       classified.add(row.withMatch(normalized, kind));
@@ -103,6 +129,65 @@ public interface AddressDatabaseFacade extends AutoCloseable {
       return new ArrayList<>(classified.subList(0, limit));
     }
     return classified;
+  }
+
+  /**
+   * TGOS display names place village/neighbourhood text before the database's separate street
+   * value. Keep the original fragment first so real street names containing 里/村 are unaffected; use
+   * this suffix only when that direct query has no result.
+   */
+  private static String streetFragmentAfterLocality(String roadLocality) {
+    if (roadLocality == null || roadLocality.isEmpty()) return "";
+    int localityEnd =
+        Math.max(
+            roadLocality.lastIndexOf('鄰'),
+            Math.max(roadLocality.lastIndexOf('里'), roadLocality.lastIndexOf('村')));
+    if (localityEnd < 0 || localityEnd + 1 >= roadLocality.length()) return roadLocality;
+    String suffix = roadLocality.substring(localityEnd + 1);
+    return suffix.contains("大道") || suffix.contains("路") || suffix.contains("街")
+        ? suffix
+        : roadLocality;
+  }
+
+  /**
+   * Match the established house-number stage: narrow using either the dedicated number or the full
+   * half-width display address, and retain the road candidates when no tail matches.
+   */
+  private static List<AddressCandidate> narrowByAddressTail(
+      List<AddressCandidate> rows, String addressTail) {
+    String foldedTail = StreetTextNormaliser.fold(addressTail);
+    if (rows == null || rows.isEmpty() || foldedTail.isEmpty()) return rows;
+    List<AddressCandidate> narrowed = new ArrayList<>();
+    for (AddressCandidate candidate : rows) {
+      String foldedNumber = StreetTextNormaliser.fold(candidate.number());
+      String display =
+          candidate.displayNameHalfwidth().isEmpty()
+              ? candidate.displayAddress()
+              : candidate.displayNameHalfwidth();
+      if (foldedNumber.contains(foldedTail)
+          || StreetTextNormaliser.fold(display).contains(foldedTail)) {
+        narrowed.add(candidate);
+      }
+    }
+    return narrowed.isEmpty() ? rows : narrowed;
+  }
+
+  /**
+   * Treat the TGOS village/neighbourhood prefix as optional only when every operator-supplied
+   * locator after the district still matches: exact street/section, exact parsed tail, and exact
+   * unclassified suffix. Duplicate semantic matches remain multiple EXACT candidates, so the
+   * controller requires explicit selection.
+   */
+  private static boolean matchesStreetAndTailWithoutLocality(
+      AddressDraft query, AddressCandidate candidate, TaiwanAddressParser parser) {
+    String candidateStreet = parser.normalize(candidate.street());
+    if (candidateStreet.isEmpty()
+        || !candidateStreet.equals(parser.normalize(query.components().roadLocality()))) {
+      return false;
+    }
+    AddressDraft candidateDraft = parser.parse(candidate.displayAddress(), 0L, query.mode());
+    return candidateDraft.components().tail().equals(query.components().tail())
+        && candidateDraft.unclassifiedText().equals(query.unclassifiedText());
   }
 
   /**

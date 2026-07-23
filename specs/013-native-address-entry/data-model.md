@@ -161,7 +161,11 @@ A result is accepted only when all four values still match current state.
 EXACT | PARTIAL | FUZZY
 ```
 
-Only one deduplicated `EXACT` candidate may resolve automatically.
+`EXACT` means either canonical full-address equality or semantic equality after
+omitting only a TGOS village/neighbourhood prefix while retaining an exact
+county, district, street/section, address tail, and unclassified suffix. Only
+one deduplicated `EXACT` candidate may resolve automatically; multiple
+semantic matches remain ambiguous.
 
 ### ForwardAddressResult
 

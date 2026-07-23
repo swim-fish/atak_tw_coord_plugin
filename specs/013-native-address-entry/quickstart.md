@@ -320,6 +320,12 @@ Use a provenance-recorded fixture covering at least:
 - `臺中市南屯區黎明路二段130號6樓之4`;
 - `台`/`臺`, full-width digits, whitespace, punctuation, and numeric
   subnumbers;
+- one reverse/Auto Fill display address with a village/neighbourhood prefix
+  that resolves after copy and paste;
+- the same street/section and house number without that prefix, with one
+  unique semantic match;
+- two records in different villages sharing the same street/section and house
+  number, which must remain ambiguous;
 - overlapping administrative names such as `臺南市新市區`;
 - proper numeral names such as `八德路`;
 - segmented roads, named localities, lanes, alleys, floors, and rooms;

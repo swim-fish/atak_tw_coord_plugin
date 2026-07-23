@@ -69,6 +69,17 @@ public final class TaiwanAddressLayoutTest {
     assertThat(root.findViewById(R.id.native_entry_address_mode).isEnabled()).isTrue();
   }
 
+  @Test
+  public void modeSwitchUsesReadableAtakPanelTextColors() {
+    Context context = RuntimeEnvironment.getApplication();
+    TaiwanCoordinateEntryPane pane = pane(context);
+    Button mode = pane.getView().findViewById(R.id.native_entry_address_mode);
+
+    assertThat(mode.getCurrentTextColor()).isEqualTo(0xFFFFFFFF);
+    assertThat(mode.getTextColors().getColorForState(new int[] {-android.R.attr.state_enabled}, 0))
+        .isEqualTo(0x99FFFFFF);
+  }
+
   private static TaiwanCoordinateEntryPane pane(Context context) {
     return new TaiwanCoordinateEntryPane(
         context,

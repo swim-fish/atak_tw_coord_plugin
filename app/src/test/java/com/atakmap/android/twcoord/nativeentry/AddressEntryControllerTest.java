@@ -94,6 +94,23 @@ public final class AddressEntryControllerTest {
   }
 
   @Test
+  public void multipleExactCandidatesRemainAmbiguousUntilSelection() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    controller.editFull("臺中市大甲區中山路1段1號", true);
+    debouncer.runPending();
+
+    service.complete(
+        ForwardAddressResult.candidates(
+            service.forwardRequest.identity(), Arrays.asList(exact("1號"), exact("1號之二"))));
+
+    assertThat(controller.validation()).isEqualTo(AddressValidation.AMBIGUOUS);
+    assertThat(controller.resolution()).isNull();
+    assertThat(controller.candidates()).hasSize(2);
+  }
+
+  @Test
   public void editCancelsAndInvalidatesResolutionAndLateResultCannotWin() {
     FakeService service = new FakeService();
     ManualDebouncer debouncer = new ManualDebouncer();

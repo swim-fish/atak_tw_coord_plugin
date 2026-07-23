@@ -642,7 +642,8 @@
                     android:contentDescription="@string/native_entry_a11y_address_mode"
                     android:minHeight="@dimen/native_entry_control_min_size"
                     android:text="@string/native_entry_address_mode_structured"
-                    android:textAllCaps="false" />
+                    android:textAllCaps="false"
+                    android:textColor="@color/native_entry_action_text" />
 
                 <Button
                     android:id="@+id/native_entry_address_choose"
