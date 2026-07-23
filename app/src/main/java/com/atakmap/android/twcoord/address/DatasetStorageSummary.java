@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Feature 007 US3 — computes the on-disk storage footprint shown on the TW Offline Addr page:
- * per-county dataset folder sizes plus the shared {@code _boundary} (townships.sqlite) folder size.
- * Pure logic over the {@link FileSystem} seam (uses {@link FileSystem#sizeOfDirectory}), so it is
- * unit-testable with a real temp-dir-backed {@code AtakFileSystem}. Best-effort — absent/partial
- * paths report {@code 0} rather than throwing.
+ * Computes the on-disk footprint shown in TW Coordinates dataset management: per-county folders
+ * plus the shared {@code _boundary} (townships.sqlite) folder. Pure logic over the {@link
+ * FileSystem} seam (uses {@link FileSystem#sizeOfDirectory}), so it is unit-testable with a real
+ * temp-dir-backed {@code AtakFileSystem}. Best-effort — absent/partial paths report {@code 0}
+ * rather than throwing.
  */
 public final class DatasetStorageSummary {
 

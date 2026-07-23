@@ -3,4 +3,5 @@
     <!-- Mirrors ATAK's normal-size draper_title_font and draper_font. -->
     <dimen name="native_entry_title_font">13sp</dimen>
     <dimen name="native_entry_help_font">10sp</dimen>
+    <dimen name="native_entry_control_min_size">48dp</dimen>
 </resources>

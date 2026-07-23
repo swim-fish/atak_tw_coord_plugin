@@ -1,0 +1,115 @@
+package com.atakmap.android.twcoord.nativeentry;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import android.content.Context;
+import android.content.res.Configuration;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import com.atakmap.android.twcoord.coord.CoordinateUnit;
+import com.atakmap.android.twcoord.plugin.R;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
+
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 34, packageName = "com.atakmap.android.twcoord.plugin")
+public final class TaiwanAddressLayoutTest {
+
+  @Test
+  public void structuredModeHasFourDdSizedRowsOneScrollOwnerAndFortyEightDpControl() {
+    Context context = RuntimeEnvironment.getApplication();
+    TaiwanCoordinateEntryPane pane = pane(context);
+    View root = pane.getView();
+    root.findViewById(R.id.native_entry_system_address).performClick();
+    Button mode = root.findViewById(R.id.native_entry_address_mode);
+
+    assertThat(countType(root, ScrollView.class)).isEqualTo(1);
+    assertThat(root).isInstanceOf(ScrollView.class);
+    assertThat(mode.getLayoutParams().height).isEqualTo(dp(context, 48));
+    assertThat(root.findViewById(R.id.native_entry_address_full_row).getVisibility())
+        .isEqualTo(View.VISIBLE);
+    assertThat(root.findViewById(R.id.native_entry_address_structured).getVisibility())
+        .isEqualTo(View.GONE);
+
+    mode.performClick();
+
+    assertThat(root.findViewById(R.id.native_entry_address_full_row).getVisibility())
+        .isEqualTo(View.GONE);
+    assertThat(root.findViewById(R.id.native_entry_address_structured).getVisibility())
+        .isEqualTo(View.VISIBLE);
+    assertCompactRow(root, R.id.native_entry_address_county_row);
+    assertCompactRow(root, R.id.native_entry_address_district_row);
+    assertCompactRow(root, R.id.native_entry_address_road_row);
+    assertCompactRow(root, R.id.native_entry_address_tail_row);
+  }
+
+  @Test
+  public void largeFontProjectionRemainsWrapContentAndModeReachable() {
+    Context base = RuntimeEnvironment.getApplication();
+    Configuration configuration = new Configuration(base.getResources().getConfiguration());
+    configuration.fontScale = 1.5f;
+    Context scaled = base.createConfigurationContext(configuration);
+    TaiwanCoordinateEntryPane pane = pane(scaled);
+    View root = pane.getView();
+    root.findViewById(R.id.native_entry_system_address).performClick();
+    root.findViewById(R.id.native_entry_address_mode).performClick();
+
+    EditText tail = root.findViewById(R.id.native_entry_address_tail);
+    assertThat(tail.getLayoutParams().height).isEqualTo(ViewGroup.LayoutParams.WRAP_CONTENT);
+    assertThat(tail.getTextSize()).isGreaterThan(0f);
+    assertThat(root.findViewById(R.id.native_entry_address_mode).getVisibility())
+        .isEqualTo(View.VISIBLE);
+    assertThat(root.findViewById(R.id.native_entry_address_mode).isEnabled()).isTrue();
+  }
+
+  @Test
+  public void modeSwitchUsesReadableAtakPanelTextColors() {
+    Context context = RuntimeEnvironment.getApplication();
+    TaiwanCoordinateEntryPane pane = pane(context);
+    Button mode = pane.getView().findViewById(R.id.native_entry_address_mode);
+
+    assertThat(mode.getCurrentTextColor()).isEqualTo(0xFFFFFFFF);
+    assertThat(mode.getTextColors().getColorForState(new int[] {-android.R.attr.state_enabled}, 0))
+        .isEqualTo(0x99FFFFFF);
+  }
+
+  private static TaiwanCoordinateEntryPane pane(Context context) {
+    return new TaiwanCoordinateEntryPane(
+        context,
+        new TaiwanEntryController(CoordinateUnit.TAIPOWER, ignored -> {}),
+        new TaiwanEntryFormatter());
+  }
+
+  private static void assertCompactRow(View root, int rowId) {
+    LinearLayout row = root.findViewById(rowId);
+    assertThat(row.getChildCount()).isEqualTo(2);
+    assertThat(((LinearLayout.LayoutParams) row.getChildAt(0).getLayoutParams()).weight)
+        .isEqualTo(3f);
+    assertThat(((LinearLayout.LayoutParams) row.getChildAt(1).getLayoutParams()).weight)
+        .isEqualTo(7f);
+    assertThat(row.getChildAt(1)).isInstanceOf(EditText.class);
+    assertThat(row.getChildAt(1).getLayoutParams().height)
+        .isEqualTo(ViewGroup.LayoutParams.WRAP_CONTENT);
+  }
+
+  private static int countType(View view, Class<?> type) {
+    int count = type.isInstance(view) ? 1 : 0;
+    if (!(view instanceof ViewGroup)) return count;
+    ViewGroup group = (ViewGroup) view;
+    for (int index = 0; index < group.getChildCount(); index++) {
+      count += countType(group.getChildAt(index), type);
+    }
+    return count;
+  }
+
+  private static int dp(Context context, int value) {
+    return Math.round(value * context.getResources().getDisplayMetrics().density);
+  }
+}

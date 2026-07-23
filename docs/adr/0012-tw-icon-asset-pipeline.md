@@ -15,7 +15,7 @@ The plugin ships TW branding in two distinct asset families:
 | **Silhouette** | `app/src/main/res/drawable/ic_tw_coord.xml` | Android vector drawable | Tools menu (single white tint mask applied by ATAK) |
 | **Coloured** | `app/src/main/res/drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_tw_coord_plugin.png` | 5-density raster | Plugin Manager + `Settings → Tool Preferences` row (rendered as-is, full colour) |
 
-Both must show the *same* TW letterform — anything else surfaces as a noticeable inconsistency to operators flipping between the Tools strip and the Settings list. The Tools-menu sibling `ic_tw_coord_goto.xml` (globe + arrow) lives in the same pipeline but does not appear in the coloured variant family.
+Both must show the *same* TW letterform — anything else surfaces as a noticeable inconsistency to operators flipping between the Tools strip and the Settings list. At the time of this decision, the Tools-menu sibling `ic_tw_coord_goto.xml` (globe + arrow) lived in the same pipeline but did not appear in the coloured variant family. Feature 013 later retired that public workflow and asset.
 
 Before this ADR, the two assets were maintained independently:
 
@@ -135,7 +135,8 @@ This pipeline replaces three prior generations:
 ## Links
 
 - Silhouette source: [`app/src/main/res/drawable/ic_tw_coord.xml`](../../app/src/main/res/drawable/ic_tw_coord.xml)
-- Companion silhouette: [`app/src/main/res/drawable/ic_tw_coord_goto.xml`](../../app/src/main/res/drawable/ic_tw_coord_goto.xml)
+- Retired companion silhouette: `app/src/main/res/drawable/ic_tw_coord_goto.xml`
+  (historical input removed by feature 013)
 - Renderers: [`scripts/render-doc-icons.py`](../../scripts/render-doc-icons.py), [`scripts/render-plugin-icon-png.py`](../../scripts/render-plugin-icon-png.py)
 - Doc surface: `docs/user-guide.md` §4 and `docs/user-guide_zh.md` §4
 - Prior icon ADRs: none — icon work tracked inline in earlier `feat(003)` commits before this ADR was written.

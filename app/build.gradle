@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 buildscript {
-    ext.PLUGIN_VERSION = "1.4.2"
+    ext.PLUGIN_VERSION = "1.4.3"
     // ATAK_VERSION drives the plugin-api meta-data string in AndroidManifest.xml.
     // ATAK 5.5.0 remains the minimum supported runtime family. Feature 011 uses the public
     // CoordinateEntryPane / CoordinateEntryCapability seam evidenced in the 5.5 source line.

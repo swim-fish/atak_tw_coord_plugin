@@ -7,6 +7,69 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+### Changed
+
+- Native Address candidate retrieval now queries five deterministic SQL pools,
+  each capped at 20 rows, then displays at most 20 exact-only or
+  category-balanced results. Ambiguous lists allocate text-prefix,
+  numeric-nearest, current-map-distance, and fallback candidates, deduplicate
+  them, and backfill unused capacity. Direct-road input ranks direct numbers
+  ahead of unrelated lane/alley records.
+
+## [1.4.3] — 2026-07-23 — Native Taiwan address entry
+
+### Added
+
+- **ATAK's native Taiwan pane now includes Address as its fourth tab.** The
+  operator can switch between one full-address field and four structured
+  fields, resolve a unique local result, or choose from a bounded ambiguous
+  candidate list without moving the map before ATAK confirms the action.
+- Convert Coordinate and Auto Fill resolve an offline address asynchronously
+  while preserving the exact host WGS84 point; reverse lookup never snaps to
+  the nearest address record.
+
+### Changed
+
+- **TW Coordinates is now the plugin's only public Tools item.** Offline dataset
+  management remains available internally from that page, Settings, and native
+  Address guidance even when every map-address readout toggle is off.
+- **The TW Coordinates Tools entry now opens Offline address data first.** The
+  manager has a top action for TW Coordinates settings, while Dataset status
+  closes Settings before reopening the manager so the destination is visible
+  immediately.
+- The standalone **TW Coord GoTo**, **TW Addr Search**, and **TW Offline Addr**
+  pages/actions were retired after native workflow and manager parity. Existing
+  coordinate/address data and settings are retained during upgrade; obsolete
+  custom GoTo Recent/marker/icon preferences are ignored rather than
+  destructively migrated.
+- Source/API/build compatibility remains compile ATAK-CIV 5.7.0.9 and declared
+  minimum runtime 5.5.0. Physical acceptance on both lines remains a release
+  gate and is not inferred from JVM or current-SDK build success.
+
+### Fixed
+
+- Reverse address lookup now resolves duplicate coordinates deterministically:
+  shortest distance, shorter stored house number, then lowest dataset row ID.
+  Android, ATAK-native, and fallback SQLite backends share the same query.
+- **The Address single-field/structured-field switch stays readable on ATAK's
+  dark coordinate-entry panel.** Its enabled and disabled text colors are now
+  explicit plugin resources instead of inheriting the plugin's light dialog
+  theme.
+- **An address copied from Address Auto Fill can be pasted back and resolved.**
+  Native forward lookup now follows the established district → street family
+  → house-number funnel before applying its exact/ambiguous safety rule, so
+  TGOS village/neighbourhood prefixes, Chinese section numerals, and full-width
+  house numbers no longer prevent the underlying street record from matching.
+  An omitted village/neighbourhood resolves automatically only when the
+  remaining street/section and address tail identify one record; duplicates
+  still require explicit selection.
+- **Imported county names and numbered road names now survive normalization.**
+  Forward lookup treats `台`/`臺` as equivalent when selecting an active county
+  dataset, and can retrieve a broader street family before exact
+  reclassification for proper names such as `工業區三十八路`. This prevents a
+  valid imported dataset from being reported as missing after a copied address
+  is normalized.
+
 ## [1.4.2] — 2026-07-18 — Native Taiwan Go To fixes
 
 ### Fixed

@@ -1,7 +1,14 @@
 # UI — TW Coord GoTo input page
 
+> **Historical design record.** Feature 013 removed this public Tools page,
+> receiver, layout, marker-mode workflow, Recent list, and ATAK icon-palette
+> delegation after Taiwan coordinate entry converged on ATAK's native dialog.
+> Use [Native Taiwan coordinate entry](native-taiwan-coordinate-entry.md) for
+> the current four-tab workflow. Paths and present-tense statements below
+> describe the retired implementation at the time it shipped.
+
 **Features**: 002-tw-coord-goto (base page) + 003-custom-marker-icon (ATAK-picker delegation button — ADR-0011 D8) + 010-goto-ui-redesign (compact-stacked visual redesign)
-**Source**: `app/src/main/res/layout/tw_coord_goto.xml` + `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoView.java`
+**Retired source**: `app/src/main/res/layout/tw_coord_goto.xml` + `app/src/main/java/com/atakmap/android/twcoord/gotopage/TwCoordGotoView.java` (removed by feature 013)
 
 The TW Coord GoTo input page is a `DropDownReceiver` side-pane opened by the second Tools-menu icon (or the settings-page button). It is the *only* new user-facing surface this feature adds; everything downstream of Submit is pure ATAK behaviour the operator already knows.
 

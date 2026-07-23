@@ -15,22 +15,22 @@ later polish pass.
   ATAK's Tool Preferences. Covers the base coordinate-unit + UI-
   language rows (feature 001) plus the feature 004 "Offline Address"
   section (3 per-row toggles + dataset-status row).
-- `input-page.md` — the TW Coord GoTo input page (feature 002 + the
-  feature 003 ATAK-picker delegation button + the feature 010 / v1.3.2
-  compact-stacked redesign).
-- `native-taiwan-coordinate-entry.md` — the feature 011 pane registered in
-  ATAK's shared coordinate-entry dialog, including native-versus-advanced
-  workflow selection, host controls, read-only state, and locale lifecycle.
-- `offline-address-page.md` — the Offline Address `DropDownReceiver`
-  (feature 004): State A (empty) / State B (active dataset), the
+- `input-page.md` — historical design record for the retired TW Coord GoTo
+  page. Current coordinate entry is documented in
+  `native-taiwan-coordinate-entry.md`.
+- `native-taiwan-coordinate-entry.md` — the current four-tab Taiwan pane
+  registered in ATAK's shared coordinate-entry dialog, including Address,
+  the bounded 20-row category-balanced candidate shortlist, host controls,
+  read-only state, and locale lifecycle.
+- `offline-address-page.md` — the internal Offline Address manager reached
+  through TW Coordinates (feature 004): State A (empty) / State B (active dataset), the
   Import / Replace / Remove flows, and the inline-error matrix; the
   feature-008 storage-dashboard redesign (usage bar/legend, ⋮ overflow,
   progress/error cards) and its localisation fix.
-- `forward-search-page.md` — the TW Addr Search `DropDownReceiver`
-  (feature 006): the county → 鄉鎮市區 → street → house-number funnel,
-  the result-order toggle (feature 007), and the feature-008 redesign
-  (segmented scope control + on-demand district / house-number dialogs,
-  county-list missing-data ⚠, county-only chip).
+- `forward-search-page.md` — historical design record for the retired TW Addr
+  Search page. Current forward lookup is the Address tab described in
+  `native-taiwan-coordinate-entry.md`; dataset management remains in
+  `offline-address-page.md`.
 
 ## Contribution rules
 

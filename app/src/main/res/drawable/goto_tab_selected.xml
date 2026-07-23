@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Selected-tab pill: styleTab() sets this via setBackgroundResource() on the active tab and a
-     transparent colour on inactive tabs. Rounded solid light-grey, matching the search pages. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#BFBFBF"/>
-    <corners android:radius="6dp"/>
-</shape>

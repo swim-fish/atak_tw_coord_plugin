@@ -3,7 +3,7 @@
   Icons in docs/images are rendered from the real Android vector drawables by
   scripts/render-doc-icons.py — re-run it if the drawables change.
 -->
-# TW Offline Addr（離線地址）— 功能介紹
+# 離線地址資料 — 功能介紹
 
 > 地圖上的點，**離線**就能看出它的台灣門牌地址。不需網路、不需 Google。
 
@@ -16,8 +16,8 @@
 <table>
 <tr>
 <td width="150" valign="top" align="center">
-<img src="images/08c-tools-icon-offline-address.png" alt="TW Offline Addr 工具圖示" width="120"><br>
-<sub>Tools 選單圖示<br>「TW Offline Addr」</sub>
+<img src="images/08a-tools-icon-tw-coord.png" alt="TW Coordinates 工具圖示" width="120"><br>
+<sub>唯一的 Tools 選單項目<br>「TW Coordinates」</sub>
 </td>
 <td valign="top">
 
@@ -27,7 +27,8 @@
 - ✅ **三種點位**：地圖中心、我的位置、目標點，各自顯示地址。
 - ✅ **台灣門牌格式**：例如「臺中市西區臺灣大道二段 100 號」。
 
-> 它的反向兄弟功能是 **[TW Addr Search](tw-addr-search_zh.md)**（打字找地址 → 移動地圖）。
+同一份匯入資料也提供原生
+**[Taiwan Address](tw-addr-search_zh.md)** 正向地址搜尋。
 
 </td>
 </tr>
@@ -45,7 +46,8 @@
 | 移除 | Remove |
 | 完成 | Done |
 
-> 頁名本身：內文稱 **TW Offline Addr**，英文介面顯示為 **Offline Address**。
+> 內部管理頁標題為 **TW Coordinates · 離線地址資料**，不會另外註冊成
+> Tools 項目。
 
 ---
 
@@ -100,14 +102,17 @@ ZIP 內含多個檔案，但**外掛只會用到縣市邊界與地址（places�
 
 取得 `tw-central-full.zip` 後就能匯入。資料以 ZIP 或單一 `.sqlite` 提供，一個縣市一份。
 
-1. 開啟 ATAK 的 **Tools 選單** → 點 **TW Offline Addr** 圖示 <img src="images/08c-tools-icon-offline-address.png" width="20" align="center">。
+1. 開啟 ATAK **Tools 選單 → TW Coordinates**，會直接進入離線資料管理頁。
+   即使三個地圖地址讀值開關都關閉，仍可從 Settings 的資料集狀態列進入
+   同一頁；管理頁最上方的 **TW Coordinates 設定** 可返回外掛設定。
 2. 第一次進入會看到 **空狀態**，畫面上有一個 **Import（匯入）** 按鈕。
 3. 按下後用檔案瀏覽器選擇地址檔（`tw-central-full.zip` 或 `places-臺中市.sqlite` 之類）。
 4. 匯入完成後，畫面會列出已啟用的縣市與資料日期。
 
 ```
 ┌──────────────────────────────┐
-│  TW Offline Addr             │
+│  TW Coordinates · 離線地址資料 │
+│  [  TW Coordinates 設定  ]      │
 │                              │
 │  尚未匯入任何地址資料             │
 │                              │
@@ -133,8 +138,8 @@ ZIP 內含多個檔案，但**外掛只會用到縣市邊界與地址（places�
 > 💡 可以匯入**多個縣市**。跨縣市時，外掛**先用邊界檔判斷該點落在哪個縣市**，再**只查那個縣市**的地址資料（不會同時查所有縣市）。所以即使同時匯入台中＋彰化，跨縣界的點也能正確對應到所在縣市。
 
 <p align="center">
-  <img src="images/17-tw-offline-addr-usage.jpg" alt="TW Offline Addr：容量總計 + 堆疊長條 + 圖例 + 各縣市列" width="560"><br>
-  <sub>實際畫面：頂端「共佔用 498.9 MB」與堆疊長條（<b>台中市 310.2 MB</b>／<b>彰化縣 179.1 MB</b>／<b>基礎資料 9.6 MB</b>）＋同色圖例；下方為各縣市緊湊列（左側色標、資料日期 · 筆數、容量、<b>⋮</b>）；底部虛線框為 <code>_boundary (townships.sqlite)</code>。</sub>
+  <img src="images/24-offline-address-data.png" alt="TW Coordinates 離線地址資料：設定按鈕、容量總計、堆疊長條與各縣市列" width="700"><br>
+  <sub>目前的 TW Coordinates 起始頁：頂端按鈕可開啟外掛設定；下方顯示「共佔用 498.9 MB」與堆疊長條（<b>台中市 310.2 MB</b>／<b>彰化縣 179.1 MB</b>／<b>基礎資料 9.6 MB</b>）＋同色圖例；各縣市緊湊列包含左側色標、資料日期 · 筆數、容量與 <b>⋮</b>；底部虛線框為 <code>_boundary (townships.sqlite)</code>。</sub>
 </p>
 
 <p align="center">
@@ -169,8 +174,10 @@ ZIP 內含多個檔案，但**外掛只會用到縣市邊界與地址（places�
 哪幾列要顯示，可在 **Settings → Tool Preferences → TW Coordinates** 開關。
 
 <p align="center">
-  <img src="images/13-tools-and-readouts.png" alt="地圖三處地址讀數，右側 Tools 選單可見本 plugin 四個工具" width="760"><br>
-  <sub>地圖<b>左下／右上／右下</b>三處各自顯示地址讀數；右側 Tools 選單可見本 plugin 的四個工具：<b>TW Coordinates</b>、<b>TW Coord GoTo</b>、<b>TW Offline Addr</b>、<b>TW Addr Search</b>。</sub>
+  <img src="images/13-tools-and-readouts.png" alt="地圖三處地址讀值的歷史截圖" width="760"><br>
+  <sub>地圖<b>左下／右上／右下</b>三處各自顯示地址讀值。這張歷史截圖早於
+  工作流程整併；目前 Tools 只顯示 <b>TW Coordinates</b>。新的編號截圖仍為
+  release gate。</sub>
 </p>
 
 ### 地址最前面的方向箭頭是什麼？
@@ -198,7 +205,7 @@ ZIP 內含多個檔案，但**外掛只會用到縣市邊界與地址（places�
 
 ## 管理已匯入的縣市
 
-回到 **TW Offline Addr** 頁面，每個縣市一列，點該列右側的 **⋮** 會跳出選單：
+回到內部離線資料管理頁，每個縣市一列，點該列右側的 **⋮** 會跳出選單：
 
 - **取代（Replace…）**：用新版資料覆蓋該縣市。點 ⋮ →「取代…」→ 選新版檔即可，**不必先移除**；匯入**成功前舊資料保留、失敗也不會遺失**（更新是安全的）。請預留與該縣市相近的暫時空間。
 - **移除（Remove）**：刪除該縣市的資料、釋放空間（紅字，會再次確認）。
@@ -256,4 +263,5 @@ A：超出台灣縣市邊界時，無法判斷地址，讀數列空白屬正常�
 
 ---
 
-> 想反過來「打地址 → 跳到地圖位置」？請看 **[TW Addr Search 功能介紹](tw-addr-search_zh.md)**。
+> 想輸入地址並使用 ATAK Go To？請看原生
+> **[Taiwan Address 功能介紹](tw-addr-search_zh.md)**。

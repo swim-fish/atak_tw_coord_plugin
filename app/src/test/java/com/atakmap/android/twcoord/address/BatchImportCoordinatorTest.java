@@ -1,6 +1,7 @@
 package com.atakmap.android.twcoord.address;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.atakmap.android.twcoord.address.AddressBundleImporterTest.TempFileSystem;
 import java.io.File;
@@ -9,6 +10,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -284,6 +286,66 @@ public final class BatchImportCoordinatorTest {
     assertThat(tracked.completes.get())
         .as("a removed listener gets no further onBatchComplete")
         .isEqualTo(1);
+  }
+
+  @Test
+  public void closeIsIdempotentRejectsNewWorkAndDetachesListeners() throws Exception {
+    CountingCallbacks tracked = new CountingCallbacks();
+    coordinator.addListener(tracked);
+
+    coordinator.close();
+    coordinator.close();
+
+    assertThat(coordinator.isClosed()).isTrue();
+    assertThat(coordinator.queueDepth()).isZero();
+    assertThatThrownBy(() -> coordinator.enqueue(writeJunkSqlite("late.sqlite")))
+        .isInstanceOf(IllegalStateException.class);
+    assertThat(tracked.completes.get()).isZero();
+  }
+
+  @Test
+  public void lateImportedFacadeIsClosedInsteadOfRegisteredAfterClose() throws Exception {
+    java.util.concurrent.atomic.AtomicInteger closes =
+        new java.util.concurrent.atomic.AtomicInteger();
+    AddressDatabaseFacade lateFacade =
+        new AddressDatabaseFacade() {
+          @Override
+          public GeneratorMetadata readMetadata() {
+            return null;
+          }
+
+          @Override
+          public AddressRecord nearestWithin(double lat, double lon, double radiusMeters) {
+            return null;
+          }
+
+          @Override
+          public void close() {
+            closes.incrementAndGet();
+          }
+        };
+    File root = tmp.newFolder("late-active");
+    File database = new File(root, "places.sqlite");
+    Files.write(database.toPath(), new byte[] {1});
+    AddressDataset dataset =
+        new AddressDataset(
+            root,
+            database,
+            new GeneratorMetadata(
+                2, "fixture", "高雄市", "115-01", null, null, null, 1L, Collections.emptyMap()),
+            new ImportedManifest(
+                Instant.EPOCH,
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                true,
+                2));
+
+    coordinator.close();
+    BatchImportCoordinator.Registration outcome =
+        coordinator.registerImportedDataset("高雄市", dataset, lateFacade);
+
+    assertThat(outcome).isEqualTo(BatchImportCoordinator.Registration.CLOSED);
+    assertThat(closes.get()).isEqualTo(1);
+    assertThat(registry.snapshot()).isEmpty();
   }
 
   // ----------------------------------------------------------------------

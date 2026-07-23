@@ -40,86 +40,17 @@
     <string name="pref_accuracy_summary">TWD97 全境誤差 &lt; 1 公尺。\n\nTWD67 典型誤差:\n• 本島:±3 至 ±5 公尺\n• 外島（澎湖 / 金門 / 馬祖）:±10 至 ±20 公尺\n\n台電座標僅本島支援；外島讀數會顯示「超出範圍」並附 WGS84 fallback line。</string>
 
     <!-- ============================================================
-         Feature 002 — 台灣座標輸入頁
-         ============================================================ -->
-
-    <string name="app_name_goto">座標輸入</string>
-    <string name="app_desc_goto">輸入台電 / TWD97 / TWD67 座標，ATAK 自動平移地圖並落下標記。</string>
-
-    <string name="goto_title">座標輸入</string>
-
-    <string name="goto_tab_taipower">台電座標</string>
-    <string name="goto_tab_twd97">TWD97</string>
-    <string name="goto_tab_twd67">TWD67</string>
-
-    <string name="goto_hint_taipower">例:H7509 DB4016</string>
-    <string name="goto_hint_easting">東距（公尺）</string>
-    <string name="goto_hint_northing">北距（公尺）</string>
-
-    <string name="goto_zone_label">投影帶</string>
-    <string name="goto_zone_121">121（本島）</string>
-    <string name="goto_zone_119">119（外島）</string>
-
-    <string name="goto_btn_submit">送出並前往</string>
-    <string name="goto_btn_autofill">帶入地圖中心</string>
-    <string name="goto_taipower_help">9 碼（10m）或 11 碼（1m）· 不分大小寫 · 可含空格</string>
-    <string name="goto_btn_paste">貼上</string>
-
-    <string name="goto_err_empty">請輸入座標。</string>
-    <string name="goto_err_bad_length">長度錯誤。</string>
-    <string name="goto_err_bad_letter">字母不合規，僅允許 A–X / A–J。</string>
-    <string name="goto_err_reserved_letter_yz">Y、Z 為保留字母，請使用 A–X。</string>
-    <string name="goto_err_bad_zone">投影帶必須為 121 或 119。</string>
-    <string name="goto_err_non_digit">僅能輸入數字。</string>
-    <string name="goto_err_out_of_range">超出台灣涵蓋範圍。</string>
-    <string name="goto_err_taipower_outer_island">台電座標不支援外島。</string>
-
-    <string name="goto_outer_island_advisory">外島精度:相對於官方 7 參數位移約 ±10–20 公尺。</string>
-
-    <string name="goto_confirmation_toast">%1$s → %2$.6f°N %3$.6f°E</string>
-    <string name="goto_zone_suffix">投影帶 %1$d</string>
-
-    <string name="goto_autofill_hint_outside_taiwan">超出台灣涵蓋範圍。</string>
-    <string name="goto_autofill_hint_taipower_outer_island">台電座標不支援外島。</string>
-
-    <string name="goto_recent_header">最近輸入</string>
-    <string name="goto_recent_empty">尚無最近輸入紀錄。</string>
-    <string name="goto_recent_delete">移除</string>
-
-    <string name="pref_open_goto_title">開啟座標輸入頁</string>
-    <string name="pref_open_goto_summary">輸入台電 / TWD97 / TWD67 座標並讓地圖平移過去。</string>
-
-    <string name="goto_marker_mode_header">標點模式</string>
-    <string name="goto_mode_move">僅移動</string>
-    <string name="goto_mode_waypoint">航點</string>
-    <string name="goto_mode_friendly">友軍</string>
-    <string name="goto_mode_hostile">敵軍</string>
-    <string name="goto_mode_neutral">中立</string>
-    <string name="goto_mode_unknown">未知</string>
-    <string name="goto_mode_spi">關注點</string>
-    <string name="goto_mode_mission">目的地</string>
-
-    <!-- ============================================================
-         Feature 003（Option B / ADR-0011 D8）— 委派 ATAK 圖示挑選按鈕
-         ============================================================ -->
-
-    <string name="goto_btn_atak_picker">改用 ATAK 圖示盤…</string>
-
-    <!-- ============================================================
-         Feature 004 — Offline Address (Tools menu + Settings + widget rows)
+         Feature 004 — Offline Address (Settings + widget rows)
          台灣正體中文翻譯。Prose 使用全形標點；識別字 / 路徑 / SHA 雜湊維持
          半形。Fullwidth-punctuation rule per user CLAUDE.md.
          ============================================================ -->
 
-    <!-- Tools-menu icon identity. -->
-    <string name="tool_offline_address_label">TW Offline Addr</string>
-    <string name="tool_offline_address_desc">匯入離線地址資料集（places-&lt;county&gt;.sqlite），在座標讀數下方顯示地址文字。</string>
-
     <!-- Offline Address page (DropDownReceiver). -->
-    <string name="offline_address_page_title">TW Offline Addr</string>
+    <string name="offline_address_page_title">TW Coordinates · 離線地址資料</string>
     <string name="offline_address_empty_state">尚未安裝任何地址資料集。請使用 atak-tw-address-generator 專案產生的 .sqlite 檔案。</string>
 
     <!-- Action buttons + confirmations. -->
+    <string name="offline_address_button_settings">TW Coordinates 設定</string>
     <string name="offline_address_button_import">匯入…</string>
     <string name="offline_address_button_replace">取代…</string>
     <string name="offline_address_button_remove">移除</string>
@@ -158,7 +89,7 @@
     <string name="offline_address_error_io">匯入失敗：%1$s。</string>
 
     <!-- Settings — Offline Address preference category. -->
-    <string name="pref_address_header">TW Offline Addr</string>
+    <string name="pref_address_header">TW Coordinates · 離線地址資料</string>
     <string name="pref_address_row_me_title">顯示自身位置（ME）地址</string>
     <string name="pref_address_row_me_summary">在 ME 座標列下方加上一行地址。</string>
     <string name="pref_address_row_target_title">顯示目標（TGT）地址</string>
@@ -167,7 +98,7 @@
     <string name="pref_address_row_map_summary">在 MAP 座標列下方加上一行地址。</string>
     <string name="pref_address_dataset_status_title">資料集狀態</string>
     <string name="pref_address_dataset_status_summary_none">尚未安裝資料集。</string>
-    <string name="pref_address_dataset_status_summary_hint">尚未安裝資料集 — 點此開啟「TW Offline Addr」頁面。</string>
+    <string name="pref_address_dataset_status_summary_hint">尚未安裝資料集 — 點此在 TW Coordinates 管理資料。</string>
     <string name="pref_address_dataset_status_summary_active_format">使用中：%1$s · %2$s</string>
 
     <!-- Widget address-row states. -->
@@ -194,7 +125,7 @@
 
     <!-- Phase 7 T042 — 動態 per-county 列表。 -->
     <string name="pref_address_active_datasets_header">使用中的資料集</string>
-    <string name="pref_address_dataset_status_summary_multi_format">已啟用 %1$d 個縣市 — 點此開啟 TW Offline Addr</string>
+    <string name="pref_address_dataset_status_summary_multi_format">已啟用 %1$d 個縣市 — 點此在 TW Coordinates 管理資料</string>
 
     <!-- Feature 005 polish — 信心指示器預設。 -->
     <string name="pref_address_confidence_preset_title">信心指示器</string>
@@ -205,53 +136,20 @@
     <string name="opt_confidence_loose">寬鬆（~ 100 公尺 / ~~ 500 公尺）</string>
 
     <!-- ===== 功能 006：縣市優先前向搜尋 ===== -->
-    <string name="tool_forward_search_label">TW Addr Search</string>
-    <string name="tool_forward_search_desc">依縣市 → 鄉鎮市區 → 街道找出地址並前往（離線）。</string>
 
-    <string name="fs_boundary_missing">請先匯入 base 資料（townships.sqlite）以啟用前向搜尋。</string>
 
-    <string name="fs_stage_county">1. 縣市</string>
-    <string name="fs_county_none">尚未選擇縣市</string>
-    <string name="fs_county_confirm_format">%1$s %2$s</string>
-    <string name="fs_source_self">所在地</string>
-    <string name="fs_source_mapcenter">地圖中心</string>
-    <string name="fs_source_list">清單…</string>
 
-    <string name="fs_stage_district">2. 鄉鎮市區</string>
-    <string name="fs_stage_street">3. 街道</string>
-    <string name="fs_street_hint">街道（例：中山路）</string>
-    <string name="fs_search">搜尋</string>
 
-    <string name="fs_house_hint">門牌號（可省略）</string>
-    <string name="fs_no_match">此鄉鎮市區查無符合的街道。</string>
-    <string name="fs_county_dataset_missing">此縣市地址資料未安裝。</string>
-    <string name="fs_goto">前往</string>
-    <string name="fs_reset">重設</string>
-    <string name="fs_district_all">全部</string>
-    <string name="fs_candidate_format">%1$s · %2$d 公尺</string>
 
     <!-- Backfill: feature 007 strings missing zh-rTW translations (MissingTranslation lint). -->
     <string name="pref_readout_visible_title">顯示地圖讀數</string>
     <string name="pref_readout_visible_summary">顯示或隱藏地圖上的座標讀數。</string>
     <string name="pref_search_result_ordering_title">地址搜尋結果排序</string>
-    <string name="pref_search_result_ordering_summary">依距離或最相符文字排序前向搜尋結果。</string>
-    <string name="fs_ordering_label">排序方式</string>
-    <string name="fs_ordering_similar">最相似</string>
-    <string name="fs_ordering_distance">距離</string>
+    <string name="pref_search_result_ordering_summary">依距離或文字相符程度排序原生地址候選結果。</string>
+    <string name="opt_address_ordering_distance">距離</string>
+    <string name="opt_address_ordering_similar">最相似</string>
 
-    <!-- ===== Feature 008: search/storage page UI redesign ===== -->
-    <!-- Forward-search scope control + district / house-number dialogs. -->
-    <string name="fs_scope_all">全部</string>
-    <string name="fs_scope_specific">指定鄉鎮</string>
-    <string name="fs_district_whole_county">整個縣市（免選鄉鎮）</string>
-    <string name="fs_county_choose_title">選擇縣市</string>
-    <string name="fs_district_choose_title">選擇鄉鎮市區</string>
-    <string name="fs_filter_hint">輸入過濾（可省略）</string>
-    <string name="fs_house_dialog_title">門牌號</string>
-    <string name="fs_house_dialog_subtitle">可省略 · 直接按完成查整條街</string>
-    <string name="fs_clear">清除</string>
-    <string name="fs_done">完成</string>
-    <string name="fs_cancel">取消</string>
+    <!-- ===== Feature 008: offline storage page UI redesign ===== -->
 
     <!-- Offline address — usage legend label for the shared boundary layer. -->
     <string name="offline_address_usage_boundary_label">基礎資料</string>
@@ -267,6 +165,40 @@
     <string name="native_entry_system_taipower">台電座標</string>
     <string name="native_entry_system_twd97">TWD97</string>
     <string name="native_entry_system_twd67">TWD67</string>
+    <string name="native_entry_system_address">地址</string>
+    <string name="native_entry_address_full_label">地址</string>
+    <string name="native_entry_address_full_hint">例如：臺中市南屯區黎明路2段130號</string>
+    <string name="native_entry_address_county_label">縣市</string>
+    <string name="native_entry_address_county_hint">例如：臺中市</string>
+    <string name="native_entry_address_district_label">鄉鎮市區</string>
+    <string name="native_entry_address_district_hint">例如：南屯區</string>
+    <string name="native_entry_address_road_label">道路地名</string>
+    <string name="native_entry_address_road_hint">例如：黎明路2段</string>
+    <string name="native_entry_address_tail_label">門牌樓層</string>
+    <string name="native_entry_address_tail_hint">例如：130號6樓之4</string>
+    <string name="native_entry_address_mode_structured">分欄輸入</string>
+    <string name="native_entry_address_mode_full">單欄輸入</string>
+    <string name="native_entry_address_choose_result">選擇結果</string>
+    <string name="native_entry_address_loading">正在搜尋離線地址資料…</string>
+    <string name="native_entry_address_reverse_loading">正在解析指定位置的地址…</string>
+    <string name="native_entry_address_unavailable">地址目前無法使用，其他座標頁籤仍可使用。</string>
+    <string name="native_entry_address_read_only">地址為唯讀。</string>
+    <string name="native_entry_address_disposed">地址輸入目前無法使用。</string>
+    <string name="native_entry_address_manage_data">請從 TW Coordinates 管理離線地址資料。</string>
+    <string name="native_entry_address_no_dataset">沒有相符的離線地址資料，請從 TW Coordinates 匯入。</string>
+    <string name="native_entry_address_no_match">找不到相符地址。</string>
+    <string name="native_entry_address_ambiguous">有多筆相符地址，請選擇結果。</string>
+    <string name="native_entry_address_failure">地址搜尋失敗，其他座標頁籤仍可使用。</string>
+    <string name="native_entry_address_unresolved">請先解析或選擇地址，再確認位置。</string>
+    <string name="native_entry_address_candidates_title">地址候選結果</string>
+    <string name="native_entry_address_candidate_format">%1$s · %2$s</string>
+    <string name="native_entry_a11y_address_full">完整台灣地址</string>
+    <string name="native_entry_a11y_address_county">地址縣市</string>
+    <string name="native_entry_a11y_address_district">地址鄉鎮市區</string>
+    <string name="native_entry_a11y_address_road">地址道路或地名</string>
+    <string name="native_entry_a11y_address_tail">地址巷弄、門牌、樓層及其餘文字</string>
+    <string name="native_entry_a11y_address_mode">切換地址輸入模式</string>
+    <string name="native_entry_a11y_address_choose">選擇地址候選結果</string>
     <string name="native_entry_taipower_hint">例：B8146CC1454</string>
     <string name="native_entry_taipower_help">請輸入 9 或 11 碼台電座標。</string>
     <string name="native_entry_easting">東向座標</string>

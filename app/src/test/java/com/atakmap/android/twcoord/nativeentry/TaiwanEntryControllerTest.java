@@ -19,6 +19,20 @@ public final class TaiwanEntryControllerTest {
     assertThat(controller.activeUnit()).isSameAs(CoordinateUnit.TAIPOWER);
     assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.EMPTY);
     assertThat(controller.resolvedOrNull()).isNull();
+    assertThat(controller.activeTab()).isEqualTo(NativeEntryTab.TAIPOWER);
+  }
+
+  @Test
+  public void addressTabIsSeparateFromPersistedCoordinateUnit() {
+    AtomicInteger selections = new AtomicInteger();
+    TaiwanEntryController controller =
+        new TaiwanEntryController(CoordinateUnit.TWD97, ignored -> selections.incrementAndGet());
+
+    controller.selectTab(NativeEntryTab.ADDRESS, true);
+
+    assertThat(controller.activeTab()).isEqualTo(NativeEntryTab.ADDRESS);
+    assertThat(controller.activeUnit()).isEqualTo(CoordinateUnit.TWD97);
+    assertThat(selections).hasValue(0);
   }
 
   @Test

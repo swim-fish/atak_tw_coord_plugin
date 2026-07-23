@@ -7,8 +7,8 @@ import com.atakmap.android.twcoord.coord.TaipowerCode;
 import com.atakmap.android.twcoord.coord.Twd67Tm2;
 import com.atakmap.android.twcoord.coord.Twd97Tm2;
 import com.atakmap.android.twcoord.coord.Wgs84;
-import com.atakmap.android.twcoord.gotopage.CoordinateParser;
-import com.atakmap.android.twcoord.gotopage.ParseResult;
+import com.atakmap.android.twcoord.coord.input.CoordinateParser;
+import com.atakmap.android.twcoord.coord.input.ParseResult;
 import java.util.EnumMap;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -33,6 +33,7 @@ public final class TaiwanEntryController {
   private final BiFunction<Wgs84, CoordinateUnit, ConversionResult> converter;
 
   private CoordinateUnit activeUnit;
+  private NativeEntryTab activeTab;
   private EnumMap<CoordinateUnit, Draft> drafts;
   private Runnable onHumanChange;
   private boolean editable = true;
@@ -48,6 +49,7 @@ public final class TaiwanEntryController {
       Consumer<CoordinateUnit> selectionWriter,
       BiFunction<Wgs84, CoordinateUnit, ConversionResult> converter) {
     activeUnit = initialUnit == null ? CoordinateUnit.TAIPOWER : initialUnit;
+    activeTab = NativeEntryTab.fromCoordinateUnit(activeUnit);
     this.selectionWriter = Objects.requireNonNull(selectionWriter, "selectionWriter");
     this.converter = Objects.requireNonNull(converter, "converter");
     drafts = emptyDrafts(Validation.EMPTY);
@@ -55,6 +57,10 @@ public final class TaiwanEntryController {
 
   public CoordinateUnit activeUnit() {
     return activeUnit;
+  }
+
+  public NativeEntryTab activeTab() {
+    return activeTab;
   }
 
   public Validation validation() {
@@ -99,10 +105,20 @@ public final class TaiwanEntryController {
   public void selectSystem(CoordinateUnit unit, boolean human) {
     if (disposed || unit == null || (human && !editable)) return;
     activeUnit = unit;
+    activeTab = NativeEntryTab.fromCoordinateUnit(unit);
     if (human) {
       selectionWriter.accept(unit);
       notifyHumanChange();
     }
+  }
+
+  public void selectTab(NativeEntryTab tab, boolean human) {
+    if (disposed || tab == null || (human && !editable)) return;
+    CoordinateUnit coordinateUnit = tab.coordinateUnitOrNull();
+    activeTab = tab;
+    if (coordinateUnit != null) activeUnit = coordinateUnit;
+    if (human && coordinateUnit != null) selectionWriter.accept(coordinateUnit);
+    if (human) notifyHumanChange();
   }
 
   public void setTaipowerText(String text, boolean human) {

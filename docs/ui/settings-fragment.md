@@ -2,22 +2,38 @@
 
 **Surface owner**: `com.atakmap.android.twcoord.TwCoordPreferenceFragment`
 **Hosted at**: ATAK menu → `Settings` → `Tool Preferences` → `Specific Tool Preferences` → **TW Coordinates**
-**Also opened by**: the **TW Coordinates** Tools-menu icon (feature 007 US2) — see "Tool-button entry point" below
+**Also opened by**: **TW Coordinates settings** at the top of the offline-data manager
 **Phase**: US3 — shipped 2026-05-16 (T045 / T046 / T047 / T048)
 
-## Tool-button entry point (feature 007 US2)
+## Entry points
 
-Tapping the **TW Coordinates** Tools-menu icon (`TwCoordTool` → `ACTION_SHOW_PLUGIN`)
-opens **this fragment**. Previously the same handler cycled the on-map readout's
-coordinate unit `Off → Taipower → TWD97 → TWD67`; that cycle is removed
-("取消直接切換座標"). `TwCoordMapComponent.toggleReceiver` now broadcasts
-`com.atakmap.app.ADVANCED_SETTINGS` with a `toolkey` extra of `PREF_KEY` (the
-ATAK-sanctioned jump-to-a-plugin's-Tool-Preferences pattern, mirrored from the
-meshtastic `MeshtasticDropDownReceiver.openPluginPreferences` sample). Merely
-opening the page does NOT change the active format (FR-007). The format is now
-chosen via `pref_coord_unit`, and the readout's show/hide moved to the new
-`pref_readout_visible` toggle. See `docs/user-guide.md` §3.3 + §4 for the
-operator-facing description.
+Tapping the **TW Coordinates** Tools-menu icon (`TwCoordTool` →
+`ACTION_SHOW_PLUGIN`) opens the offline-data manager first. Its top
+**TW Coordinates settings** action closes the DropDown and then broadcasts
+`com.atakmap.app.ADVANCED_SETTINGS` with `toolkey=tw_coord_settings`.
+
+The reverse route is the Settings **Dataset status** row. Because Settings is a
+foreground Activity and the manager is a map-owned DropDown, the click handler
+finishes Settings before posting `ACTION_SHOW_OFFLINE_ADDRESS` through the map
+view. This prevents a successful manager open from remaining hidden underneath
+Settings.
+
+Neither route changes the active coordinate format. The format is chosen via
+`pref_coord_unit`, while `pref_readout_visible` controls the on-map readout.
+
+```text
+ATAK Tools
+  → TW Coordinates
+  → Offline address data
+      → TW Coordinates settings
+          → this fragment
+
+This fragment
+  → Dataset status
+  → finish Settings Activity
+  → post offline-manager action through MapView
+  → Offline address data
+```
 
 ## Anatomy
 
@@ -45,9 +61,8 @@ Entries declared in `app/src/main/res/xml/preferences.xml`:
 `pref_readout_visible` (title `Show on-map readout`) gates the on-map readout
 widget — it replaces the show/hide that the old tool-button cycle's `Off` state
 used to provide; applied at `onCreate` and live via `prefListener`.
-`pref_search_result_ordering` (title `Address search result order`) is shared
-with the TW Addr Search page's in-page toggle (see
-`docs/ui/forward-search-page.md`); both bind the same key.
+`pref_search_result_ordering` (title `Address search result order`) controls
+candidate ordering for the native Taiwan Address tab.
 
 Entry labels come from `strings.xml` (and `values-zh-rTW/`, `values-
 ja/`), so the dialogue text is localised to the currently-resolved
@@ -96,8 +111,8 @@ discovery for the user, no bespoke UI.
 Added below the existing accuracy notice category. Three flat
 `SwitchPreference` toggles (no master switch — per Clarifications
 Session 2026-05-24 Q2), a confidence-indicator preset dropdown
-(Phase 7 polish), a dataset-status row (the entry point to the
-Offline Address page), and a dynamically-populated per-county list.
+(Phase 7 polish), a dataset-status row (which closes Settings before opening
+the Offline Address page), and a dynamically-populated per-county list.
 
 ```
 ┌─ Offline Address ───────────────────────────────────────────┐
@@ -162,7 +177,7 @@ how many counties the multi-county `ActiveDatasetRegistry` holds, and
 
 | Any toggle on | Active counties | Legacy active | Summary                                                                                              |
 |---------------|-----------------|---------------|------------------------------------------------------------------------------------------------------|
-| no            | (any)           | (any)         | hidden via `setEnabled(false) + setSelectable(false)`                                                |
+| no            | (any)           | (any)         | same dataset summary as below; the row remains enabled and selectable                                |
 | yes           | ≥ 1             | (any)         | localised `pref_address_dataset_status_summary_multi_format` — `N counties active — tap to open`     |
 | yes           | 0               | yes           | localised `pref_address_dataset_status_summary_active_format` — `Active: <county> · <data_date>`     |
 | yes           | 0               | no            | localised `pref_address_dataset_status_summary_hint` — `No dataset installed — tap to open`          |
@@ -172,10 +187,11 @@ registry is the source of truth once Feature 005's `setRegistry(...)`
 has been called. The legacy branch only fires during the brief
 auto-migrate window before `Registry.initFromDisk()` runs.
 
-When the row is clickable (rows 2-4 in the table), tapping it broadcasts
-`OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS` to open the Offline
-Address page (`docs/ui/offline-address-page.md`). The click lambda body
-is wrapped in `try/catch (Throwable) { Log.w(...) }` per Constitution VI.
+The row is always clickable, independently of the three readout toggles.
+Tapping it broadcasts `OfflineAddressIntents.ACTION_SHOW_OFFLINE_ADDRESS` to
+open the internal Offline Address page (`docs/ui/offline-address-page.md`). The
+click lambda body is wrapped in `try/catch (Throwable) { Log.w(...) }` per
+Constitution VI.
 
 ### Active-datasets category (T042)
 

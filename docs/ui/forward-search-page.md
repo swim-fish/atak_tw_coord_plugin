@@ -1,5 +1,13 @@
 # UI: Forward Search page (feature 006)
 
+> **Historical design record.** Feature 013 removed this standalone Tools page,
+> receiver, action, and county-funnel UI after forward lookup moved to ATAK
+> **Go To → Taiwan → Address**. See
+> [Native Taiwan coordinate entry](native-taiwan-coordinate-entry.md) for the
+> current full/structured Address workflow and
+> [Offline Address page](offline-address-page.md) for the retained internal
+> dataset manager. The remainder documents the retired page as shipped.
+
 A standalone Tools-menu entry (前向搜尋), sibling to 離線地址 and the GoTo input
 page. Implements the county-first funnel from
 [`docs/research/county-scoped-forward-search.md`](../research/county-scoped-forward-search.md)

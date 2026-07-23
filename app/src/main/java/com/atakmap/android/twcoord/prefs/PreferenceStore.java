@@ -4,9 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import com.atakmap.android.twcoord.address.ConfidenceThresholds;
-import com.atakmap.android.twcoord.address.forward.ResultOrdering;
+import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
-import com.atakmap.android.twcoord.gotopage.MarkerMode;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
 import com.atakmap.coremap.log.Log;
 import java.util.List;
@@ -28,9 +27,8 @@ public final class PreferenceStore {
   public static final String KEY_UI_LANGUAGE = "pref_ui_language";
   public static final String KEY_STALE_THRESHOLD = "pref_stale_fix_threshold_ms";
 
-  // Feature 002 (input-page GoTo) — last-submitted (unit, value) tuple plus the recent-entries
-  // JSON. None of these fire `fireAll()` because the on-map readout widget does not depend on
-  // them. The input page reads them directly via the getters below at open time.
+  // Retired custom Go To keys remain named solely for non-destructive upgrade tests. Production
+  // code intentionally exposes no accessors and never reads, writes, or clears these values.
   public static final String KEY_GOTO_LAST_UNIT = "pref_goto_last_unit";
   public static final String KEY_GOTO_LAST_TAIPOWER = "pref_goto_last_taipower";
   public static final String KEY_GOTO_LAST_TWD97_E = "pref_goto_last_twd97_e";
@@ -41,15 +39,9 @@ public final class PreferenceStore {
   public static final String KEY_GOTO_LAST_TWD67_ZONE = "pref_goto_last_twd67_zone";
   public static final String KEY_GOTO_RECENT_JSON = "pref_goto_recent_json";
 
-  // Feature 011: ATAK native coordinate-entry pane selection. This is intentionally separate
-  // from KEY_GOTO_LAST_UNIT so native entry never changes the advanced custom GoTo workflow.
+  // ATAK native coordinate-entry selection remains separate from retired Go To state.
   public static final String KEY_NATIVE_ENTRY_LAST_UNIT = "pref_native_entry_last_unit";
 
-  // Feature 003: marker-mode is durable across plugin restarts (changes feature 002's prior
-  // in-session-only behaviour — ADR-0010 D5). MOVE_ONLY is the install-time default so a fresh
-  // install never auto-drops markers. The Option B refactor (ADR-0011 D8) removed the
-  // KEY_GOTO_LAST_ICONSET_PATH key and its atomic-clear helper since the custom picker was
-  // scrapped in favour of EnterLocationDropDownReceiver delegation.
   public static final String KEY_GOTO_MARKER_MODE = "pref_goto_marker_mode";
 
   // Feature 004: three independent per-row address-display toggles (ME / TGT / MAP). All default
@@ -65,10 +57,8 @@ public final class PreferenceStore {
   // values keeps the 2026-05-27 device-verified default for upgrading installs.
   public static final String KEY_ADDRESS_CONFIDENCE_PRESET = "pref_address_confidence_preset";
 
-  // Feature 007 US1: forward-search result ordering (最相似 / 距離). Stored as the ResultOrdering
-  // enum name; missing/corrupt → DISTANCE (the shipped behaviour). Does NOT fire fireAll() — the
-  // on-map widget does not depend on it; the forward-search page reads it directly at open + on
-  // toggle (mirrors the GoTo keys).
+  // Native Address candidate ordering. Stored as the ResultOrdering enum name; missing/corrupt
+  // values fall back to DISTANCE. The map widget does not depend on it.
   public static final String KEY_SEARCH_RESULT_ORDERING = "pref_search_result_ordering";
 
   // Feature 007 US2: on-map readout visibility. Replaces the show/hide the old tool-button cycle
@@ -192,29 +182,6 @@ public final class PreferenceStore {
     return ms > 0 ? ms : 10_000L;
   }
 
-  // ============================================================
-  // Feature 002 (input-page GoTo) typed accessors.
-  //
-  // These do NOT fire fireAll() — the readout widget is unaffected by GoTo persistence. The
-  // input page reads via these getters at DropDown open time and writes via the setters on
-  // successful submit (FR-014).
-  // ============================================================
-
-  public CoordinateUnit getGotoLastUnit() {
-    String s = sp.getString(KEY_GOTO_LAST_UNIT, CoordinateUnit.TAIPOWER.name());
-    try {
-      return CoordinateUnit.valueOf(s);
-    } catch (IllegalArgumentException e) {
-      Log.w(TAG, "Unknown goto-last-unit pref value '" + s + "', falling back to TAIPOWER");
-      return CoordinateUnit.TAIPOWER;
-    }
-  }
-
-  public void setGotoLastUnit(CoordinateUnit unit) {
-    Objects.requireNonNull(unit, "unit");
-    sp.edit().putString(KEY_GOTO_LAST_UNIT, unit.name()).apply();
-  }
-
   public CoordinateUnit getNativeEntryLastUnit() {
     String value = sp.getString(KEY_NATIVE_ENTRY_LAST_UNIT, CoordinateUnit.TAIPOWER.name());
     try {
@@ -228,96 +195,6 @@ public final class PreferenceStore {
   public void setNativeEntryLastUnit(CoordinateUnit unit) {
     Objects.requireNonNull(unit, "unit");
     sp.edit().putString(KEY_NATIVE_ENTRY_LAST_UNIT, unit.name()).apply();
-  }
-
-  public String getGotoLastTaipower() {
-    return sp.getString(KEY_GOTO_LAST_TAIPOWER, "");
-  }
-
-  public void setGotoLastTaipower(String rawValue) {
-    sp.edit().putString(KEY_GOTO_LAST_TAIPOWER, rawValue == null ? "" : rawValue).apply();
-  }
-
-  public int getGotoLastTwd97Easting() {
-    return sp.getInt(KEY_GOTO_LAST_TWD97_E, 0);
-  }
-
-  public int getGotoLastTwd97Northing() {
-    return sp.getInt(KEY_GOTO_LAST_TWD97_N, 0);
-  }
-
-  public int getGotoLastTwd97Zone() {
-    int z = sp.getInt(KEY_GOTO_LAST_TWD97_ZONE, 121);
-    return (z == 121 || z == 119) ? z : 121;
-  }
-
-  public void setGotoLastTwd97(int easting, int northing, int zone) {
-    if (zone != 121 && zone != 119) {
-      throw new IllegalArgumentException("zone must be 121 or 119: " + zone);
-    }
-    sp.edit()
-        .putInt(KEY_GOTO_LAST_TWD97_E, easting)
-        .putInt(KEY_GOTO_LAST_TWD97_N, northing)
-        .putInt(KEY_GOTO_LAST_TWD97_ZONE, zone)
-        .apply();
-  }
-
-  public int getGotoLastTwd67Easting() {
-    return sp.getInt(KEY_GOTO_LAST_TWD67_E, 0);
-  }
-
-  public int getGotoLastTwd67Northing() {
-    return sp.getInt(KEY_GOTO_LAST_TWD67_N, 0);
-  }
-
-  public int getGotoLastTwd67Zone() {
-    int z = sp.getInt(KEY_GOTO_LAST_TWD67_ZONE, 121);
-    return (z == 121 || z == 119) ? z : 121;
-  }
-
-  public void setGotoLastTwd67(int easting, int northing, int zone) {
-    if (zone != 121 && zone != 119) {
-      throw new IllegalArgumentException("zone must be 121 or 119: " + zone);
-    }
-    sp.edit()
-        .putInt(KEY_GOTO_LAST_TWD67_E, easting)
-        .putInt(KEY_GOTO_LAST_TWD67_N, northing)
-        .putInt(KEY_GOTO_LAST_TWD67_ZONE, zone)
-        .apply();
-  }
-
-  public String getGotoRecentJson() {
-    return sp.getString(KEY_GOTO_RECENT_JSON, "[]");
-  }
-
-  public void setGotoRecentJson(String json) {
-    sp.edit().putString(KEY_GOTO_RECENT_JSON, json == null ? "[]" : json).apply();
-  }
-
-  // ============================================================
-  // Feature 003 (Custom Icon marker mode) — durable across plugin restarts.
-  // The eight feature-002 marker modes ALSO persist through getGotoMarkerMode/setGotoMarkerMode
-  // — this changes feature 002's in-session-only behaviour, per ADR-0010 D5. MOVE_ONLY is the
-  // install-time default, so the "no surprise marker drops on fresh install" property is kept.
-  // ============================================================
-
-  /**
-   * Last persisted marker-mode selection. Defaults to {@link MarkerMode#MOVE_ONLY}; falls back to
-   * MOVE_ONLY on a corrupt value (e.g. an enum name from a future version we don't know).
-   */
-  public MarkerMode getGotoMarkerMode() {
-    String s = sp.getString(KEY_GOTO_MARKER_MODE, MarkerMode.MOVE_ONLY.name());
-    try {
-      return MarkerMode.valueOf(s);
-    } catch (IllegalArgumentException e) {
-      Log.w(TAG, "Unknown goto-marker-mode pref value '" + s + "', falling back to MOVE_ONLY");
-      return MarkerMode.MOVE_ONLY;
-    }
-  }
-
-  public void setGotoMarkerMode(MarkerMode mode) {
-    Objects.requireNonNull(mode, "mode");
-    sp.edit().putString(KEY_GOTO_MARKER_MODE, mode.name()).apply();
   }
 
   // ============================================================

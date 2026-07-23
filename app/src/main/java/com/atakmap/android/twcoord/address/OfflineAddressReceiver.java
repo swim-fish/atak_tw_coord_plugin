@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /**
- * Tools-menu DropDown for the Offline Address page. Two visual states:
+ * Internal DropDown for offline address dataset management. Two visual states:
  *
  * <ul>
  *   <li><b>State A</b> — no dataset installed → empty-state copy + Import button.
@@ -63,12 +63,12 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
 
   // Feature 008 — the CURRENT localised plugin context (ADR-0003). The page re-inflates against it
   // on a UI-language change so its strings (import / replace / remove / total usage / _boundary …)
-  // follow the in-app language override instead of being frozen at construction time. Mirrors the
-  // ForwardSearchReceiver contextSupplier pattern.
+  // follow the in-app language override instead of being frozen at construction time.
   private final Supplier<Context> contextSupplier;
   private Context pluginContext;
   private final AddressBundleImporter importer;
   private final ExecutorService importExecutor;
+  private final Runnable settingsLauncher;
   private final Handler ui;
   private View view;
 
@@ -78,6 +78,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   // ---- inflated view refs (rebuilt by inflate() on each language change) ----
   private TextView progressView;
   private TextView errorView;
+  private Button settingsButton;
   private View stateAGroup;
   private Button stateAImportBtn;
   private View stateBGroup;
@@ -110,6 +111,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
   private View errorCard;
   private Button errorRetry;
   private Button errorDismiss;
+  private boolean openSettingsAfterClose;
 
   // Feature 008 US3 — per-county palette; the bar segment, legend dot, and row swatch for a given
   // county share one colour. Indexed by snapshot iteration order (stable within a render).
@@ -151,11 +153,13 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
       MapView mapView,
       Supplier<Context> localisedContextSupplier,
       AddressBundleImporter importer,
-      ExecutorService importExecutor) {
+      ExecutorService importExecutor,
+      Runnable settingsLauncher) {
     super(mapView);
     this.contextSupplier = localisedContextSupplier;
     this.importer = importer;
     this.importExecutor = importExecutor;
+    this.settingsLauncher = settingsLauncher;
     this.ui = new Handler(Looper.getMainLooper());
     inflate();
   }
@@ -164,8 +168,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
    * (Re)inflate the page against the CURRENT localised plugin context (ADR-0003). Called from the
    * constructor and again from {@link #onReceive} whenever the in-app UI language changed since the
    * last inflation, so the page (import / replace / remove buttons, total-usage figure, _boundary
-   * row, etc.) repaints in the new language on its next open. Mirrors {@code
-   * ForwardSearchReceiver.inflate()}.
+   * row, etc.) repaints in the new language on its next open.
    */
   private void inflate() {
     Context ctx = safeGet(contextSupplier);
@@ -177,6 +180,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
 
     this.progressView = view.findViewById(R.id.offline_address_progress);
     this.errorView = view.findViewById(R.id.offline_address_error);
+    this.settingsButton = view.findViewById(R.id.offline_address_open_settings);
     this.stateAGroup = view.findViewById(R.id.offline_address_state_a);
     this.stateAImportBtn = view.findViewById(R.id.offline_address_state_a_import);
     this.stateBGroup = view.findViewById(R.id.offline_address_state_b);
@@ -203,6 +207,9 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     this.errorRetry = view.findViewById(R.id.offline_address_error_retry);
     this.errorDismiss = view.findViewById(R.id.offline_address_error_dismiss);
 
+    if (settingsButton != null) {
+      settingsButton.setOnClickListener(v -> safeRun(this::openSettings));
+    }
     if (stateAImportBtn != null) {
       stateAImportBtn.setOnClickListener(v -> safeRun(this::launchPicker));
     }
@@ -253,6 +260,7 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     } catch (Throwable t) {
       Log.w(TAG, "ui.removeCallbacksAndMessages on dispose threw", t);
     }
+    openSettingsAfterClose = false;
   }
 
   @Override
@@ -290,9 +298,22 @@ public final class OfflineAddressReceiver extends DropDownReceiver implements On
     try {
       clearError();
       hideProgress();
+      if (openSettingsAfterClose) {
+        openSettingsAfterClose = false;
+        if (settingsLauncher != null) {
+          ui.post(() -> safeRun(settingsLauncher));
+        }
+      }
     } catch (Throwable t) {
       Log.w(TAG, "onDropDownClose threw", t);
     }
+  }
+
+  /** Close the map-owned page before ATAK starts its foreground Settings Activity. */
+  private void openSettings() {
+    if (settingsLauncher == null) return;
+    openSettingsAfterClose = true;
+    closeDropDown();
   }
 
   @Override

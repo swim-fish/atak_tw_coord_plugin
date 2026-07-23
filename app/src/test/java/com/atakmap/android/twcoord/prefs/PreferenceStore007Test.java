@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import com.atakmap.android.twcoord.address.forward.ResultOrdering;
+import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

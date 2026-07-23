@@ -1,20 +1,18 @@
 # Taiwan Coordinate Display + Input Plugin for ATAK (`atak_tw_coord_plugin`)
 
-An [ATAK-CIV](https://tak.gov/products/atak-civ) plugin that does three
-things in Taiwan-flavoured coordinate units:
+An [ATAK-CIV](https://tak.gov/products/atak-civ) plugin that provides Taiwan
+coordinate display, native coordinate/address entry, and offline address data:
 
 1. **Display** — shows the map-centre, the device's own position, and
    any tapped CoT target's coordinate as an on-map readout.
-2. **Input ("GoTo")** — lets the operator type a Taiwan coordinate
-   (Taipower / TWD97 / TWD67) and pans the ATAK map there. The page
-   also has Auto Fill (read current map centre → fill the field) and
-   a Recent list (up to 10 prior submissions).
-3. **Native entry** — adds one **Taiwan** pane to ATAK's shared
-   coordinate-entry dialog, so ordinary Go To, Auto Fill, Clear, and Copy use
-   the host workflow operators already know. The advanced plugin GoTo page
-   remains available for marker modes, Recent entries, and icon-palette use.
+2. **Native input** — adds one **Taiwan** pane to ATAK's shared coordinate-entry
+   dialog with Taipower, TWD97, TWD67, and offline Address tabs. Ordinary Go
+   To, Convert Coordinate, Auto Fill, Clear, Copy, and confirmation remain in
+   the host workflow operators already know.
+3. **Offline address data** — imports county-scoped datasets for forward search,
+   reverse readouts, and native Convert Coordinate address display.
 
-Both features support the same three Taiwan coordinate systems:
+Coordinate conversion supports the same three Taiwan coordinate systems:
 
 - **Taipower grid** (台電座標) — 11-character codes over TWD67 TM2
 - **TWD97 / TM2** — central meridian 121° (main island) or 119° (outer islands)
@@ -40,6 +38,16 @@ Each UI guide records the ATAK runtime used for its screenshots. Current
 native-entry screenshots were captured on ATAK-CIV 5.7.0.9; older guides retain
 their historical runtime evidence.
 
+<p align="center">
+<img src="docs/images/23a-native-address-full.png" alt="ATAK native Taiwan Address tab in single-field mode" width="900"><br>
+<sub>The native Taiwan pane with the Address tab in single-field mode.</sub>
+</p>
+
+<p align="center">
+<img src="docs/images/24-offline-address-data.png" alt="TW Coordinates Offline address data manager" width="700"><br>
+<sub>TW Coordinates now opens offline address data first; the top button opens plugin settings.</sub>
+</p>
+
 ## Features
 
 | Feature | Notes |
@@ -47,19 +55,14 @@ their historical runtime evidence.
 | Three coordinate systems | Taipower grid (台電), TWD97, TWD67 — selectable from settings |
 | Three readouts | Map centre, own position (any ATAK `LocationProvider` — GPS / network / fused / external CoT / Bluetooth GPS), CoT target |
 | Multi-language UI | English / Traditional Chinese (Taiwan) / Japanese; follows Android system locale by default with in-app override; switches live without ATAK restart |
-| Tools-icon opens settings | Tapping **TW Coordinates** opens the plugin settings page (since v1.2.0; it previously cycled the unit). Format is chosen there; a **Show on-map readout** toggle shows/hides the readout |
+| Tools-icon opens offline data | Tapping **TW Coordinates** opens the offline address data manager. Its top **TW Coordinates settings** button opens display, language, search-order, and readout settings |
 | Clipboard copy | Tap a readout to copy the exact displayed string to the Android clipboard (FR-015) |
 | Outer-island support | Penghu / Kinmen / Matsu (TM2 zone 119, EPSG:3825) — auto-selected by longitude. `z119` suffix appears on the readout when zone is non-default |
 | Offline, no telemetry | Zero outbound network. Manifest deliberately omits `INTERNET` permission. No analytics or crash-reporting SDKs |
 | Settings advisory | Built-in accuracy notice explaining TWD67 main-island ±3-5 m vs outer-island ±10-20 m |
-| **Coordinate input page** ("GoTo") | Second Tools-menu icon opens a DropDown with three tabs (Taipower / TWD97 / TWD67), submit pans the camera to the resolved location (X/Y only — operator's zoom is preserved). **v1.3.2 (feature 010)** restyles the page into the compact-stacked layout shared with the other pages — a segmented system selector + carded fields, a single header **Use map centre** button, a glove-friendly marker grid, and a primary **Submit & go** vs ghost **Use ATAK icon palette…** hierarchy; coordinate behaviour unchanged |
-| **ATAK native Taiwan entry** | ATAK's shared coordinate-entry dialog gains one **Taiwan** pane with Taipower, TWD97, and TWD67; explicit zones 121/119; host Auto Fill/Clear/Copy; and read-only support. v1.4.2 uses DD-style compact fields and prepares all three Taiwan representations when ATAK supplies a point; Clear and Auto Fill remain active-tab-only. Native entry is additive and stores its last system independently from the advanced GoTo page. See [`docs/ui/native-taiwan-coordinate-entry.md`](docs/ui/native-taiwan-coordinate-entry.md) |
+| **ATAK native Taiwan entry** | ATAK's shared coordinate-entry dialog gains one **Taiwan** pane with Taipower, TWD97, TWD67, and Address; explicit zones 121/119; full/structured lossless address modes; a maximum 20-row category-balanced candidate list; host Auto Fill/Clear/Copy; and read-only support. Exact matches are exclusive; ambiguous results combine text-prefix, numeric-nearest, current-map-distance, and fallback candidates without allowing one dense road family to consume the dialog. It uses DD-style compact fields, prepares all representable tabs when ATAK supplies a point, and preserves the exact host WGS84 during reverse lookup. See [`docs/ui/native-taiwan-coordinate-entry.md`](docs/ui/native-taiwan-coordinate-entry.md) |
 | **Auto Fill** | One-tap fill of the active tab from the current map centre, with zone toggle (TWD97/TWD67) auto-set from longitude; disabled in real time when the centre is unrepresentable in the active tab |
-| **Recent list** | Up to 10 prior successful submissions, deduped on (unit, value), persisted across ATAK restarts; tap any row to re-fill, per-row delete |
-| **In-page marker-mode picker** | 9 radios under Submit (Move only + 7 affiliation/spot-map types + **Custom Icon**). Selecting non-Move-only drops a marker of that type at the resolved coord; selection persists across plugin restarts |
-| **Custom Icon picker** | Two-step modal (iconset list → icon grid) reading exclusively from ATAK's existing iconset library (5 bundled iconsets out of the box + any operator-loaded). Picked icon is applied via `MarkerCreator.setIconPath`; marker behaves identically to host-placed ones. Graceful one-shot fallback when the picked iconset is removed |
-| **Offline reverse address** ("TW Offline Addr") | Imports county-scoped address SQLite produced by the [sibling generator](https://github.com/swim-fish/atak-tw-address-generator); decorates each coordinate row with the nearest record (prefixed since v1.3.0 with an 8-point compass arrow pointing from the query point to that record). v1.0.6 adds multi-county import (one active dataset per county) and ZIP-bundle import (`tw-central-full.zip` etc.), with auto-migration from v1.0.5's single-active layout. v1.1.0 (feature 006) scopes the readout to the detected county via the boundary layer (replacing the query-all-counties fan-out). v1.2.0 (feature 007) shows each county's on-disk size and a distinct `_boundary` (townships.sqlite) size row. **v1.3.0 (feature 008)** redesigns the storage page — total-usage figure + stacked bar + colour legend, compact rows with a per-row ⋮ overflow (Replace / Remove), an import-progress card and a dismissible failure banner — and makes the whole page follow the in-app UI-language override |
-| **Offline forward search** ("TW Addr Search") | Fourth Tools-menu page: find a street address offline via a county → 鄉鎮市區 (or 全部) → street → house-number/巷弄 funnel, ranked by distance with a 16-point compass arrow, then tap a result to pan. Consumes the MOI `townships.sqlite` boundary layer for county/district detection. Glove UX: 3-column grid, large numeric keypad (+ 巷/弄/號), Reset, map-follow. v1.2.0 adds a *distance* / *most similar* result-order toggle (in-place re-rank, also in Settings); v1.2.1 localises the source buttons (所在地 / 地圖中心 / 清單) and makes *most similar* house-number-aware (numerically-closest number first). **v1.3.0 (feature 008)** collapses the township grid into an All / District segmented scope control + an on-demand district chooser, and the keypad into an on-demand house-number dialog; the county list flags counties with no installed data (⚠), and 地圖中心 / 所在地 auto-select the resolved 鄉鎮市區 |
+| **Offline address lookup and management** | The native Address tab performs full or structured forward search and bounded candidate selection. Convert Coordinate and Auto Fill perform reverse lookup without snapping the host point. County SQLite/ZIP datasets produced by the [sibling generator](https://github.com/swim-fish/atak-tw-address-generator) are imported, replaced, or removed from the internal manager reached through **TW Coordinates**. Address readouts retain nearest-record direction and confidence indicators. |
 | **Confidence indicator** | Per-row tilde marker (`~` / `~~`) prefix on the address text reflecting haversine distance to the nearest record. 4 presets (Off / Tight 20-100 m / Standard 50-200 m / Loose 100-500 m) selectable in Settings |
 
 ## Coverage and accuracy
@@ -143,10 +146,11 @@ Once enabled, three readout boxes appear on the map:
 the `Display unit` row. The row shows a live preview using Taipei 101 as the
 sample point, e.g. `TWD97 / TM2 z121 — TWD97: 306,963m 2,769,619m`.
 
-Tapping the **TW Coordinates** Tools icon opens this same settings page (since
-v1.2.0). Earlier versions cycled the unit `Off → Taipower → TWD97 → TWD67` on
-each tap; that cycle was removed in favour of choosing the format in settings,
-with a separate **Show on-map readout** toggle to hide/show the readout.
+Tapping the **TW Coordinates** Tools icon opens the offline address data
+manager. Use its top **TW Coordinates settings** button to reach this settings
+page. Earlier versions opened Settings directly or cycled the unit
+`Off → Taipower → TWD97 → TWD67`; the format now changes only through
+`Display unit`, with a separate **Show on-map readout** toggle.
 
 ### Switching the UI language
 
@@ -223,7 +227,7 @@ The build outputs an APK at
 │       ├── AndroidManifest.xml                   # no INTERNET permission (FR-019)
 │       ├── assets/plugin.xml                     # IPlugin → TwCoordLifecycle
 │       ├── java/com/atakmap/android/twcoord/     # Java source
-│       │   ├── TwCoordMapComponent.java          # listener wiring + Tools-button → settings
+│       │   ├── TwCoordMapComponent.java          # listener wiring + Tools → offline-data manager
 │       │   ├── TwCoordWidget.java                # 3-corner readout overlay
 │       │   ├── TwCoordPreferenceFragment.java    # settings page
 │       │   ├── SelfMarkerSubscriber.java         # 1 Hz debounce + 10s stale detector
@@ -238,7 +242,7 @@ The build outputs an APK at
 │           ├── layout/pref_item.xml              # custom preference row layouts
 │           └── xml/preferences.xml               # PanListPreference declarations
 ├── docs/
-│   ├── adr/                                      # 18 Architecture Decision Records
+│   ├── adr/                                      # 26 Architecture Decision Records
 │   └── ui/                                       # readout + settings layout docs
 ├── CHANGELOG.md                                  # per-version change log
 ├── specs/001-tw-coord-display/                   # spec / plan / tasks / contracts (display)
@@ -248,6 +252,11 @@ The build outputs an APK at
 ├── specs/005-multi-county-zip-import/            # multi-county + ZIP import
 ├── specs/006-county-forward-search/              # county-first forward search
 ├── specs/007-settings-ux-tweaks/                 # settings page + search/storage UX tweaks
+├── specs/008-search-settings-ui/                 # search/storage UI redesign
+├── specs/010-goto-ui-redesign/                   # historical custom Go To redesign
+├── specs/011-native-coordinate-entry/            # native Taiwan coordinate entry
+├── specs/012-prefill-native-tabs/                 # Convert Coordinate all-tab prefill
+├── specs/013-native-address-entry/                # native Address + one Tools entry
 ├── test-data/taiwan_cities_coords.csv            # 22-city authoritative coords
 └── .specify/memory/constitution.md               # project constitution
 ```
@@ -269,8 +278,9 @@ spec / plan / tasks / contracts live under `specs/NNN-<short-name>/`:
 - [`specs/010-goto-ui-redesign/`](specs/010-goto-ui-redesign/) — GoTo input page UI redesign (v1.3.2)
 - [`specs/011-native-coordinate-entry/`](specs/011-native-coordinate-entry/) — ATAK native Taiwan coordinate entry
 - [`specs/012-prefill-native-tabs/`](specs/012-prefill-native-tabs/) — native Convert Coordinates all-tab prefill and safety polish
+- [`specs/013-native-address-entry/`](specs/013-native-address-entry/) — native offline Address entry, bounded candidates, and Tools consolidation
 
-Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty-five ADRs
+Per-version changes are tracked in [`CHANGELOG.md`](CHANGELOG.md). Twenty-six ADRs
 under [`docs/adr/`](docs/adr/) cover every architecturally significant decision
 (ADR-0001 is the entry point and carries the 2026-05-23 Taipower letter-table
 correction follow-up; ADR-0014/0015 the offline-address reconnaissance +
@@ -296,7 +306,10 @@ integration, lifecycle, and advanced-page coexistence decision; and
 [ADR-0024](docs/adr/0024-use-atak-5-7-0-9-compile-sdk.md) the split compile SDK
 5.7.0.9 / minimum runtime 5.5 validation decision; and
 [ADR-0025](docs/adr/0025-separate-release-readiness-from-tpp-staging.md) the
-separation of TPP staging, public-release gates, and immutable signed tags).
+separation of TPP staging, public-release gates, and immutable signed tags; and
+[ADR-0026](docs/adr/0026-native-address-entry-and-tools-consolidation.md) the
+native Address service, one-public-Tools-entry migration, and bounded
+category-balanced candidate retrieval).
 
 The active feature is resolved from `.specify/feature.json`; agent guidance
 must not infer it from the newest directory. The required lifecycle is:

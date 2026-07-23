@@ -17,72 +17,69 @@ import java.util.Map;
 import org.junit.Test;
 
 /**
- * Feature 004 / US3 + Phase 7 T042 — covers the four-state truth table in {@code
- * specs/004-offline-address/contracts/address-preferences.md § Dataset presence summary table},
- * extended for feature 005 multi-county.
+ * Covers the internal dataset-manager status presentation, including feature 013's requirement that
+ * management remain reachable independently of map readout visibility.
  *
  * <p>The truth table:
  *
  * <ul>
- *   <li>all toggles off → hide the row (disabled + non-selectable)
- *   <li>any toggle on + registry has N ≥ 1 counties → "N counties active — tap to open"
- *   <li>any toggle on + registry empty + legacy active dataset → "Active: county · data_date" (the
- *       auto-migrate intermediate state and v1.0.5 fallback)
- *   <li>any toggle on + nothing active anywhere → "No dataset — tap to open"
+ *   <li>registry has N ≥ 1 counties → "N counties active — tap to open"
+ *   <li>registry empty + legacy active dataset → "Active: county · data_date" (the auto-migrate
+ *       intermediate state and v1.0.5 fallback)
+ *   <li>nothing active anywhere → "No dataset — tap to open"
  * </ul>
  */
 public final class TwCoordPreferenceFragmentAddressTest {
 
   // ---------------------------------------------------------------------
-  // All toggles off → hidden (disabled + non-selectable), regardless of dataset state
+  // Management remains reachable with all readout toggles off.
   // ---------------------------------------------------------------------
   @Test
-  public void resolveDatasetStatus_allTogglesOff_returnsHiddenStatus() {
+  public void resolveDatasetStatus_readoutsOffLegacyDataset_remainsSelectable() {
     StatusStrings strings = new StubStatusStrings();
     AddressDataset active = newDataset("Taipei", "2025-11-15");
 
     DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, false, 0, active);
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, 0, active);
 
-    assertThat(result.summary()).isEqualTo("none");
-    assertThat(result.enabled()).isFalse();
-    assertThat(result.selectable()).isFalse();
+    assertThat(result.summary()).isEqualTo("Active: Taipei · 2025-11-15");
+    assertThat(result.enabled()).isTrue();
+    assertThat(result.selectable()).isTrue();
   }
 
   @Test
-  public void resolveDatasetStatus_allTogglesOffNoDataset_returnsHiddenStatus() {
+  public void resolveDatasetStatus_readoutsOffNoDataset_remainsSelectable() {
     StatusStrings strings = new StubStatusStrings();
 
     DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, false, 0, null);
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, 0, null);
 
-    assertThat(result.summary()).isEqualTo("none");
-    assertThat(result.enabled()).isFalse();
-    assertThat(result.selectable()).isFalse();
+    assertThat(result.summary()).isEqualTo("hint");
+    assertThat(result.enabled()).isTrue();
+    assertThat(result.selectable()).isTrue();
   }
 
-  // Even with N > 0 counties, toggles off → still hidden. (Multi-county shouldn't override toggle.)
   @Test
-  public void resolveDatasetStatus_allTogglesOffMultiCountyActive_stillHidden() {
+  public void resolveDatasetStatus_readoutsOffMultiCounty_remainsSelectable() {
     StatusStrings strings = new StubStatusStrings();
 
     DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, false, 3, null);
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, 3, null);
 
-    assertThat(result.summary()).isEqualTo("none");
-    assertThat(result.enabled()).isFalse();
-    assertThat(result.selectable()).isFalse();
+    assertThat(result.summary()).isEqualTo("Multi: 3");
+    assertThat(result.enabled()).isTrue();
+    assertThat(result.selectable()).isTrue();
   }
 
   // ---------------------------------------------------------------------
-  // Any toggle on, no datasets anywhere → hint summary, clickable
+  // No datasets anywhere → hint summary, clickable
   // ---------------------------------------------------------------------
   @Test
-  public void resolveDatasetStatus_anyToggleOnNoDataset_returnsHintClickable() {
+  public void resolveDatasetStatus_noDataset_returnsHintClickable() {
     StatusStrings strings = new StubStatusStrings();
 
     DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, true, 0, null);
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, 0, null);
 
     assertThat(result.summary()).isEqualTo("hint");
     assertThat(result.enabled()).isTrue();
@@ -99,7 +96,7 @@ public final class TwCoordPreferenceFragmentAddressTest {
     AddressDataset legacy = newDataset("Taichung", "2025-12-01");
 
     DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, true, 0, legacy);
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, 0, legacy);
 
     assertThat(result.summary()).isEqualTo("Active: Taichung · 2025-12-01");
     assertThat(result.enabled()).isTrue();
@@ -114,7 +111,7 @@ public final class TwCoordPreferenceFragmentAddressTest {
     StatusStrings strings = new StubStatusStrings();
 
     DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, true, 1, null);
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, 1, null);
 
     assertThat(result.summary()).isEqualTo("Multi: 1");
     assertThat(result.enabled()).isTrue();
@@ -129,7 +126,7 @@ public final class TwCoordPreferenceFragmentAddressTest {
     StatusStrings strings = new StubStatusStrings();
 
     DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, true, 5, null);
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, 5, null);
 
     assertThat(result.summary()).isEqualTo("Multi: 5");
     assertThat(result.enabled()).isTrue();
@@ -145,7 +142,7 @@ public final class TwCoordPreferenceFragmentAddressTest {
     AddressDataset legacy = newDataset("Taipei", "2025-11-15");
 
     DatasetStatusPresentation result =
-        TwCoordPreferenceFragment.resolveDatasetStatus(strings, true, 2, legacy);
+        TwCoordPreferenceFragment.resolveDatasetStatus(strings, 2, legacy);
 
     assertThat(result.summary()).isEqualTo("Multi: 2");
     assertThat(result.enabled()).isTrue();

@@ -36,6 +36,29 @@ import org.junit.runner.RunWith;
     "Requires ATAK-CIV + pre-pushed fixtures + mock-location provider — see class javadoc; T044 runs manually")
 public final class OfflineAddressFlowBCEspressoTest {
 
+  /**
+   * Feature 013 / US4 — settings remains a navigation path to the internal manager even when all
+   * three address readout switches are disabled.
+   */
+  @Test
+  public void manager_fromSettingsWithAllReadoutsOff_remainsFullyOperational() {
+    // Step 1: disable pref_address_row_me, pref_address_row_map, and pref_address_row_target.
+    // Step 2: tap pref_address_dataset_status and assert the internal manager opens.
+    // Step 3: Import a fixture and assert progress, provenance, and same-session native Address
+    //         availability refresh.
+    // Step 4: Replace the fixture and assert the active county/status refreshes without restart.
+    // Step 5: Remove the fixture and assert the empty state plus native Address guidance refresh.
+  }
+
+  /** Manager failures remain visible and recoverable from the retained internal page. */
+  @Test
+  public void manager_invalidImport_showsErrorAndAllowsRetry() {
+    // Step 1: open the internal manager from Settings with all readout switches off.
+    // Step 2: import an invalid fixture and assert progress closes into a localized error state.
+    // Step 3: retry with a valid fixture and assert the manager plus native Address refresh in the
+    //         same session.
+  }
+
   // ---------------------------------------------------------------------
   // Flow B — US2 + US3 address row appears (quickstart.md §4)
   // ---------------------------------------------------------------------

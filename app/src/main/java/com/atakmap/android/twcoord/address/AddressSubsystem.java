@@ -3,6 +3,14 @@ package com.atakmap.android.twcoord.address;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.StrictMode;
+import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
+import com.atakmap.android.twcoord.address.lookup.AddressLookupService;
+import com.atakmap.android.twcoord.address.lookup.LookupHandle;
+import com.atakmap.android.twcoord.address.lookup.LookupIdentity;
+import com.atakmap.android.twcoord.address.lookup.LookupPriority;
+import com.atakmap.android.twcoord.address.lookup.ReverseAddressRequest;
+import com.atakmap.android.twcoord.address.lookup.ReverseAddressResult;
+import com.atakmap.android.twcoord.coord.Wgs84;
 import com.atakmap.coremap.log.Log;
 import java.util.EnumMap;
 import java.util.Map;
@@ -51,6 +59,8 @@ public final class AddressSubsystem implements AutoCloseable {
 
   private final EnumMap<Row, Boolean> enabled = new EnumMap<>(Row.class);
   private final EnumMap<Row, ScheduledFuture<?>> inflight = new EnumMap<>(Row.class);
+  private final EnumMap<Row, LookupHandle> sharedInflight = new EnumMap<>(Row.class);
+  private final EnumMap<Row, LookupIdentity> sharedIdentity = new EnumMap<>(Row.class);
   private final EnumMap<Row, AddressRowState> lastState = new EnumMap<>(Row.class);
   private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
 
@@ -73,6 +83,9 @@ public final class AddressSubsystem implements AutoCloseable {
    * {@code volatile} because it is bound from the UI thread and read on the worker thread.
    */
   private volatile com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade boundary;
+
+  private volatile AddressLookupService lookupService;
+  private long sharedRequestRevision;
 
   /** Coastline tolerance for the reverse-path county resolve (metres). */
   private static final double REVERSE_SNAP_M = 1000.0;
@@ -154,6 +167,11 @@ public final class AddressSubsystem implements AutoCloseable {
   public void setBoundaryFacade(
       com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade boundary) {
     this.boundary = boundary;
+  }
+
+  /** Binds the component-owned shared lookup worker; this subsystem never closes it. */
+  public void setLookupService(AddressLookupService lookupService) {
+    this.lookupService = lookupService;
   }
 
   /**
@@ -267,6 +285,11 @@ public final class AddressSubsystem implements AutoCloseable {
 
   private void runLookup(Row row, double lat, double lon) {
     installStrictModeIfFirstRun();
+    AddressLookupService shared = lookupService;
+    if (shared != null) {
+      runSharedLookup(shared, row, lat, lon);
+      return;
+    }
     AddressRowState state;
     try {
       AddressLookupResult result;
@@ -282,6 +305,68 @@ public final class AddressSubsystem implements AutoCloseable {
     }
     final AddressRowState toEmit = state;
     uiPoster.accept(() -> emit(row, toEmit));
+  }
+
+  private void runSharedLookup(AddressLookupService service, Row row, double lat, double lon) {
+    long revision = ++sharedRequestRevision;
+    LookupIdentity identity =
+        new LookupIdentity(
+            "widget-" + row + "-" + revision,
+            1L,
+            revision,
+            service.availability().datasetRevision());
+    sharedIdentity.put(row, identity);
+    Wgs84 query =
+        new Wgs84(
+            lat,
+            lon,
+            Math.max(1L, System.currentTimeMillis()),
+            row == Row.ME ? Wgs84.Source.DEVICE_LOCATION : Wgs84.Source.MAP_CENTRE);
+    ReverseAddressRequest request =
+        new ReverseAddressRequest(
+            identity, "widget-" + row, LookupPriority.WIDGET_BACKGROUND, query, LOOKUP_RADIUS_M);
+    LookupHandle submitted;
+    try {
+      submitted =
+          service.reverse(
+              request,
+              result -> {
+                if (!identity.equals(sharedIdentity.get(row))) return;
+                sharedIdentity.remove(row);
+                sharedInflight.remove(row);
+                AddressRowState state = mapReverseResultToState(result, lat, lon);
+                uiPoster.accept(() -> emit(row, state));
+              });
+    } catch (RuntimeException failure) {
+      sharedIdentity.remove(row);
+      uiPoster.accept(() -> emit(row, AddressRowState.emptyState()));
+      return;
+    }
+    if (identity.equals(sharedIdentity.get(row))) sharedInflight.put(row, submitted);
+    else submitted.cancel();
+  }
+
+  private AddressRowState mapReverseResultToState(
+      ReverseAddressResult result, double queryLat, double queryLon) {
+    if (result == null || result.status() != ReverseAddressResult.Status.FOUND) {
+      return AddressRowState.emptyState();
+    }
+    AddressCandidate candidate = result.candidate();
+    String text =
+        confidenceThresholds.decorate(candidate.displayAddress(), candidate.distanceMeters());
+    if (candidate.distanceMeters() >= ARROW_MIN_DISTANCE_M) {
+      double bearing =
+          com.atakmap.android.twcoord.address.lookup.CompassDirection.bearingDegrees(
+              queryLat,
+              queryLon,
+              candidate.recordPoint().latitudeDeg(),
+              candidate.recordPoint().longitudeDeg());
+      text =
+          com.atakmap.android.twcoord.address.lookup.CompassDirection.arrowGlyph(bearing)
+              + " "
+              + text;
+    }
+    return AddressRowState.text(text);
   }
 
   /**
@@ -431,10 +516,10 @@ public final class AddressSubsystem implements AutoCloseable {
       double metres = haversineMeters(queryLat, queryLon, f.record().lat(), f.record().lon());
       if (metres >= ARROW_MIN_DISTANCE_M) {
         double bearing =
-            com.atakmap.android.twcoord.address.forward.CompassDirection.bearingDegrees(
+            com.atakmap.android.twcoord.address.lookup.CompassDirection.bearingDegrees(
                 queryLat, queryLon, f.record().lat(), f.record().lon());
         text =
-            com.atakmap.android.twcoord.address.forward.CompassDirection.arrowGlyph(bearing)
+            com.atakmap.android.twcoord.address.lookup.CompassDirection.arrowGlyph(bearing)
                 + " "
                 + text;
       }
@@ -453,6 +538,9 @@ public final class AddressSubsystem implements AutoCloseable {
   private void cancelInflight(Row row) {
     ScheduledFuture<?> f = inflight.remove(row);
     if (f != null) f.cancel(false);
+    sharedIdentity.remove(row);
+    LookupHandle handle = sharedInflight.remove(row);
+    if (handle != null) handle.cancel();
   }
 
   private void openFacadeFromActive() {

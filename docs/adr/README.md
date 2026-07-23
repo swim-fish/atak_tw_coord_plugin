@@ -88,3 +88,13 @@ because analysis ran. If a later remediation accepts an architectural
 decision, record that decision separately and link the relevant finding ID.
 Likewise, `/speckit-implement` and `/speckit-converge` require an ADR only when
 their resulting work meets the significance test above.
+
+## Current supersession map
+
+| ADR | Status | Relationship |
+|-----|--------|--------------|
+| ADR-0026 | Accepted | Native Address entry, one public Tools item, and bounded category-balanced candidate retrieval |
+| ADR-0023 | Partially superseded by ADR-0026 | Taiwan pane retained; custom Go To fallback retired |
+| ADR-0021 | Partially superseded by ADR-0026 | Standalone Go To UI retired |
+| ADR-0020 | Partially superseded by ADR-0026 | Standalone search settings/navigation retired |
+| ADR-0009 | Partially superseded by ADR-0026 | Custom Go To page retired |

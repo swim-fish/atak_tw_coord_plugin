@@ -3,11 +3,20 @@ package com.atakmap.android.twcoord.address;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import android.database.sqlite.SQLiteDatabase;
-import com.atakmap.android.twcoord.address.forward.AddressCandidate;
-import com.atakmap.android.twcoord.address.forward.StreetTextNormaliser;
+import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
+import com.atakmap.android.twcoord.address.lookup.AddressDraft;
+import com.atakmap.android.twcoord.address.lookup.AddressInputMode;
+import com.atakmap.android.twcoord.address.lookup.AddressMatchKind;
+import com.atakmap.android.twcoord.address.lookup.ForwardCandidatePool;
+import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
+import com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser;
+import com.atakmap.android.twcoord.address.lookup.TaichungAddressRankingFixture;
+import com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser;
+import com.atakmap.android.twcoord.coord.Wgs84;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.After;
 import org.junit.Assume;
@@ -112,5 +121,242 @@ public final class AddressDatabaseFacadeStreetQueryTest {
   public void closedDbReturnsEmptyNoThrow() {
     facade.close();
     assertThat(search("中山路")).isEmpty(); // no throw
+  }
+
+  @Test
+  public void fullAddressCandidatesClassifyExactnessWithoutNearestNumberPromotion() {
+    TaiwanAddressParser parser = new TaiwanAddressParser();
+    AddressDraft draft = parser.parse("臺中市大甲區中山路1號", 1L, AddressInputMode.FULL);
+
+    List<AddressCandidate> results =
+        facade.fullAddressCandidates(
+            draft, new Wgs84(DAJIA_LAT, DAJIA_LON, 1L, Wgs84.Source.MAP_CENTRE), 20);
+
+    assertThat(results).hasSizeLessThanOrEqualTo(20);
+    assertThat(results)
+        .allMatch(
+            candidate ->
+                candidate.matchKind() == AddressMatchKind.EXACT
+                    || candidate.matchKind() == AddressMatchKind.PARTIAL);
+    assertThat(results)
+        .noneMatch(
+            candidate ->
+                candidate.matchKind() == AddressMatchKind.EXACT
+                    && !parser
+                        .normalize(candidate.displayAddress())
+                        .equals(draft.normalizedAddress()));
+  }
+
+  @Test
+  public void copiedReverseAddressFindsExactRecordThroughStreetAndNumberFunnel() {
+    TaiwanAddressParser parser = new TaiwanAddressParser();
+    AddressDraft draft = parser.parse("台中市大甲區大甲里中山路一段８４４之１號", 2L, AddressInputMode.FULL);
+
+    List<AddressCandidate> results =
+        facade.fullAddressCandidates(
+            draft, new Wgs84(23.7, 120.9, 1L, Wgs84.Source.MAP_CENTRE), 20);
+
+    assertThat(results)
+        .anyMatch(
+            candidate ->
+                candidate.matchKind() == AddressMatchKind.EXACT
+                    && parser
+                        .normalize(candidate.displayAddress())
+                        .equals(draft.normalizedAddress()));
+  }
+
+  @Test
+  public void addressWithoutVillageStillReturnsStreetAndNumberCandidate() {
+    TaiwanAddressParser parser = new TaiwanAddressParser();
+    AddressDraft draft = parser.parse("台中市大甲區中山路一段８４４之１號", 3L, AddressInputMode.FULL);
+
+    List<AddressCandidate> results =
+        facade.fullAddressCandidates(
+            draft, new Wgs84(23.7, 120.9, 1L, Wgs84.Source.MAP_CENTRE), 20);
+
+    assertThat(results).hasSize(1);
+    assertThat(results.get(0).displayAddress()).isEqualTo("台中市大甲區大甲里中山路一段８４４之１號");
+    assertThat(results.get(0).matchKind()).isEqualTo(AddressMatchKind.EXACT);
+  }
+
+  @Test
+  public void omittedVillageKeepsDuplicateSemanticMatchesAmbiguous() {
+    AddressDatabaseFacade duplicateFacade =
+        new AddressDatabaseFacade() {
+          @Override
+          public GeneratorMetadata readMetadata() {
+            return null;
+          }
+
+          @Override
+          public AddressRecord nearestWithin(double lat, double lon, double radiusMeters) {
+            return null;
+          }
+
+          @Override
+          public List<AddressCandidate> streetCandidates(
+              String district,
+              String foldedFragment,
+              double anchorLat,
+              double anchorLon,
+              int limit) {
+            return Arrays.asList(
+                new AddressCandidate(
+                    24.1, 120.6, "台中市大甲區第一里中山路一段１號", "台中市大甲區第一里中山路一段1號", "中山路一段", "１號", 10),
+                new AddressCandidate(
+                    24.2, 120.7, "台中市大甲區第二里中山路一段１號", "台中市大甲區第二里中山路一段1號", "中山路一段", "１號", 20));
+          }
+
+          @Override
+          public void close() {}
+        };
+    AddressDraft draft =
+        new TaiwanAddressParser().parse("台中市大甲區中山路一段１號", 4L, AddressInputMode.FULL);
+
+    List<AddressCandidate> results =
+        duplicateFacade.fullAddressCandidates(
+            draft, new Wgs84(23.7, 120.9, 1L, Wgs84.Source.MAP_CENTRE), 20);
+
+    assertThat(results).hasSize(2);
+    assertThat(results).allMatch(candidate -> candidate.matchKind() == AddressMatchKind.EXACT);
+  }
+
+  @Test
+  public void numberedRoadNameFallsBackToStreetFamily() {
+    AddressDatabaseFacade numberedRoadFacade =
+        new AddressDatabaseFacade() {
+          @Override
+          public GeneratorMetadata readMetadata() {
+            return null;
+          }
+
+          @Override
+          public AddressRecord nearestWithin(double lat, double lon, double radiusMeters) {
+            return null;
+          }
+
+          @Override
+          public List<AddressCandidate> streetCandidates(
+              String district,
+              String foldedFragment,
+              double anchorLat,
+              double anchorLon,
+              int limit) {
+            if (!"工業區".equals(foldedFragment)) return java.util.Collections.emptyList();
+            return java.util.Collections.singletonList(
+                new AddressCandidate(
+                    24.17,
+                    120.62,
+                    "台中市西屯區協和里工業區三十八路２０８號",
+                    "台中市西屯區協和里工業區三十八路208號",
+                    "工業區三十八路",
+                    "２０８號",
+                    10));
+          }
+
+          @Override
+          public void close() {}
+        };
+    AddressDraft draft =
+        new TaiwanAddressParser().parse("台中市西屯區協和里工業區三十八路２０８號", 5L, AddressInputMode.FULL);
+
+    List<AddressCandidate> results =
+        numberedRoadFacade.fullAddressCandidates(
+            draft, new Wgs84(24.17, 120.62, 1L, Wgs84.Source.MAP_CENTRE), 20);
+
+    assertThat(results).hasSize(1);
+    assertThat(results.get(0).matchKind()).isEqualTo(AddressMatchKind.EXACT);
+  }
+
+  @Test
+  public void partialHouseNumberDoesNotSubstringFilterRealTaichungRows() {
+    AddressDatabaseFacade actualRowsFacade =
+        new AddressDatabaseFacade() {
+          @Override
+          public GeneratorMetadata readMetadata() {
+            return null;
+          }
+
+          @Override
+          public AddressRecord nearestWithin(double lat, double lon, double radiusMeters) {
+            return null;
+          }
+
+          @Override
+          public List<AddressCandidate> streetCandidates(
+              String district,
+              String foldedFragment,
+              double anchorLat,
+              double anchorLon,
+              int limit) {
+            return TaichungAddressRankingFixture.taiwanBoulevard(anchorLat, anchorLon);
+          }
+
+          @Override
+          public void close() {}
+        };
+    AddressDraft draft =
+        new TaiwanAddressParser().parse("台中市西屯區臺灣大道三段９號", 6L, AddressInputMode.FULL);
+
+    List<AddressCandidate> results =
+        actualRowsFacade.fullAddressCandidates(
+            draft,
+            new Wgs84(24.161989237766, 120.647296501898, 1L, Wgs84.Source.MAP_CENTRE),
+            ResultOrdering.DISTANCE,
+            20);
+
+    assertThat(results)
+        .extracting(AddressCandidate::displayAddress)
+        .containsExactly(
+            "台中市西屯區惠來里臺灣大道三段９９號",
+            "台中市西屯區惠來里臺灣大道三段８號",
+            "台中市西屯區潮洋里臺灣大道三段６０９號",
+            "台中市西屯區上安里臺灣大道三段５５６巷９號",
+            "台中市西屯區何南里臺灣大道二段６０７號");
+  }
+
+  @Test
+  public void numberedAddressQueriesEveryBoundedPoolAndSkipsDistanceWithoutAnchor() {
+    List<ForwardCandidatePool> queriedPools = new java.util.ArrayList<>();
+    List<Integer> requestedLimits = new java.util.ArrayList<>();
+    AddressDatabaseFacade boundedFacade =
+        new AddressDatabaseFacade() {
+          @Override
+          public GeneratorMetadata readMetadata() {
+            return null;
+          }
+
+          @Override
+          public AddressRecord nearestWithin(double lat, double lon, double radiusMeters) {
+            return null;
+          }
+
+          @Override
+          public List<AddressCandidate> forwardCandidatePool(
+              AddressDraft draft,
+              String foldedStreetFragment,
+              Wgs84 anchorPoint,
+              ForwardCandidatePool pool,
+              int limit) {
+            queriedPools.add(pool);
+            requestedLimits.add(limit);
+            return java.util.Collections.emptyList();
+          }
+
+          @Override
+          public void close() {}
+        };
+    AddressDraft draft =
+        new TaiwanAddressParser().parse("台中市西屯區臺灣大道三段9號", 7L, AddressInputMode.FULL);
+
+    boundedFacade.fullAddressCandidates(draft, null, ResultOrdering.DISTANCE, 20);
+
+    assertThat(queriedPools)
+        .containsExactly(
+            ForwardCandidatePool.EXACT,
+            ForwardCandidatePool.TEXT_PREFIX,
+            ForwardCandidatePool.NUMERIC_NEAREST,
+            ForwardCandidatePool.FALLBACK);
+    assertThat(requestedLimits).containsOnly(20);
   }
 }

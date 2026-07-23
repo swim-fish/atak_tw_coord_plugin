@@ -16,6 +16,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.Before;
@@ -220,6 +224,67 @@ public final class ActiveDatasetRegistryTest {
 
     assertThatThrownBy(() -> r.snapshot().put("彰化縣", fakeDataset("彰化縣")))
         .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  public void readSessionPinsFacadeUntilReplacementCompletes() throws Exception {
+    ActiveDatasetRegistry r = new ActiveDatasetRegistry(importer, primary, fallbackSupplier, fs);
+    CountingFacade first = new CountingFacade();
+    CountingFacade second = new CountingFacade();
+    r.add(fakeDataset("台中市", first));
+    ActiveDatasetRegistry.ReadSession session = r.openReadSession();
+    ExecutorService worker = Executors.newSingleThreadExecutor();
+    try {
+      Future<?> replacement = worker.submit(() -> r.replace(fakeDataset("台中市", second)));
+      Thread.sleep(100L);
+
+      assertThat(replacement.isDone()).isFalse();
+      assertThat(first.closeCount.get()).isZero();
+      assertThat(session.datasets()).containsOnlyKeys("台中市");
+
+      session.close();
+      replacement.get(2, TimeUnit.SECONDS);
+      assertThat(first.closeCount.get()).isEqualTo(1);
+      assertThat(r.snapshot().get("台中市").facade()).isSameAs(second);
+    } finally {
+      session.close();
+      worker.shutdownNow();
+      r.close();
+    }
+  }
+
+  @Test
+  public void snapshotIsDetachedFromLaterMutations() {
+    ActiveDatasetRegistry r = new ActiveDatasetRegistry(importer, primary, fallbackSupplier, fs);
+    r.add(fakeDataset("台中市"));
+    java.util.Map<String, CountyActiveDataset> first = r.snapshot();
+
+    r.add(fakeDataset("彰化縣"));
+
+    assertThat(first).containsOnlyKeys("台中市");
+    assertThat(r.snapshot()).containsOnlyKeys("台中市", "彰化縣");
+  }
+
+  @Test
+  public void closeIsMonotonicAndRejectsNewReadsAndDatasets() {
+    ActiveDatasetRegistry r = new ActiveDatasetRegistry(importer, primary, fallbackSupplier, fs);
+    CountingFacade active = new CountingFacade();
+    r.add(fakeDataset("台中市", active));
+    long beforeClose = r.revision();
+
+    r.close();
+    r.close();
+
+    assertThat(r.isClosed()).isTrue();
+    assertThat(r.revision()).isEqualTo(beforeClose + 1L);
+    assertThat(active.closeCount.get()).isEqualTo(1);
+    assertThat(r.snapshot()).isEmpty();
+    assertThatThrownBy(r::openReadSession).isInstanceOf(IllegalStateException.class);
+
+    CountingFacade late = new CountingFacade();
+    r.add(fakeDataset("彰化縣", late));
+    assertThat(late.closeCount.get()).isEqualTo(1);
+    assertThat(r.snapshot()).isEmpty();
   }
 
   // ----------------------------------------------------------------------
