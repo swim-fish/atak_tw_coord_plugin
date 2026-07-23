@@ -192,6 +192,62 @@ public final class FallbackSqliteFactory implements AddressDatabaseFacade.Factor
     }
 
     @Override
+    public java.util.List<com.atakmap.android.twcoord.address.lookup.AddressCandidate>
+        forwardCandidatePool(
+            com.atakmap.android.twcoord.address.lookup.AddressDraft draft,
+            String foldedStreetFragment,
+            com.atakmap.android.twcoord.coord.Wgs84 anchorPoint,
+            com.atakmap.android.twcoord.address.lookup.ForwardCandidatePool pool,
+            int limit) {
+      if (draft == null
+          || pool == null
+          || limit <= 0
+          || (pool == com.atakmap.android.twcoord.address.lookup.ForwardCandidatePool.DISTANCE
+              && anchorPoint == null)) {
+        return java.util.Collections.emptyList();
+      }
+      try {
+        ForwardCandidateSql.Query query =
+            ForwardCandidateSql.build(draft, foldedStreetFragment, anchorPoint, pool, limit);
+        java.util.List<com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.Raw> raw =
+            new java.util.ArrayList<>();
+        try (android.database.Cursor cursor = db.rawQuery(query.sql(), query.args())) {
+          while (cursor.moveToNext()) {
+            raw.add(
+                new com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.Raw(
+                    cursor.getDouble(0),
+                    cursor.getDouble(1),
+                    cursor.isNull(2) ? "" : cursor.getString(2),
+                    cursor.isNull(3) ? "" : cursor.getString(3),
+                    cursor.isNull(4) ? "" : cursor.getString(4),
+                    cursor.isNull(5) ? "" : cursor.getString(5)));
+          }
+        }
+        java.util.List<com.atakmap.android.twcoord.address.lookup.AddressCandidate> candidates =
+            com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.materialize(
+                raw,
+                foldedStreetFragment,
+                anchorPoint != null ? anchorPoint.latitudeDeg() : 0.0,
+                anchorPoint != null ? anchorPoint.longitudeDeg() : 0.0,
+                anchorPoint != null,
+                com.atakmap.android.twcoord.address.lookup.ForwardCandidateShortlist
+                    .SQL_POOL_LIMIT);
+        return pool == com.atakmap.android.twcoord.address.lookup.ForwardCandidatePool.DISTANCE
+            ? com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker.reorderForPool(
+                candidates,
+                pool,
+                draft.components().roadLocality(),
+                draft.components().tail(),
+                true,
+                com.atakmap.android.twcoord.address.lookup.ForwardCandidateShortlist.SQL_POOL_LIMIT)
+            : candidates;
+      } catch (Throwable failure) {
+        Log.w(TAG, "forwardCandidatePool threw", failure);
+        return java.util.Collections.emptyList();
+      }
+    }
+
+    @Override
     public void close() {
       try {
         db.close();

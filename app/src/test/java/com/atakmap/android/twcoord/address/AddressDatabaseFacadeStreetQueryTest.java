@@ -7,7 +7,10 @@ import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
 import com.atakmap.android.twcoord.address.lookup.AddressDraft;
 import com.atakmap.android.twcoord.address.lookup.AddressInputMode;
 import com.atakmap.android.twcoord.address.lookup.AddressMatchKind;
+import com.atakmap.android.twcoord.address.lookup.ForwardCandidatePool;
+import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
 import com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser;
+import com.atakmap.android.twcoord.address.lookup.TaichungAddressRankingFixture;
 import com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser;
 import com.atakmap.android.twcoord.coord.Wgs84;
 import java.nio.file.Files;
@@ -263,5 +266,97 @@ public final class AddressDatabaseFacadeStreetQueryTest {
 
     assertThat(results).hasSize(1);
     assertThat(results.get(0).matchKind()).isEqualTo(AddressMatchKind.EXACT);
+  }
+
+  @Test
+  public void partialHouseNumberDoesNotSubstringFilterRealTaichungRows() {
+    AddressDatabaseFacade actualRowsFacade =
+        new AddressDatabaseFacade() {
+          @Override
+          public GeneratorMetadata readMetadata() {
+            return null;
+          }
+
+          @Override
+          public AddressRecord nearestWithin(double lat, double lon, double radiusMeters) {
+            return null;
+          }
+
+          @Override
+          public List<AddressCandidate> streetCandidates(
+              String district,
+              String foldedFragment,
+              double anchorLat,
+              double anchorLon,
+              int limit) {
+            return TaichungAddressRankingFixture.taiwanBoulevard(anchorLat, anchorLon);
+          }
+
+          @Override
+          public void close() {}
+        };
+    AddressDraft draft =
+        new TaiwanAddressParser().parse("台中市西屯區臺灣大道三段９號", 6L, AddressInputMode.FULL);
+
+    List<AddressCandidate> results =
+        actualRowsFacade.fullAddressCandidates(
+            draft,
+            new Wgs84(24.161989237766, 120.647296501898, 1L, Wgs84.Source.MAP_CENTRE),
+            ResultOrdering.DISTANCE,
+            20);
+
+    assertThat(results)
+        .extracting(AddressCandidate::displayAddress)
+        .containsExactly(
+            "台中市西屯區惠來里臺灣大道三段９９號",
+            "台中市西屯區惠來里臺灣大道三段８號",
+            "台中市西屯區潮洋里臺灣大道三段６０９號",
+            "台中市西屯區上安里臺灣大道三段５５６巷９號",
+            "台中市西屯區何南里臺灣大道二段６０７號");
+  }
+
+  @Test
+  public void numberedAddressQueriesEveryBoundedPoolAndSkipsDistanceWithoutAnchor() {
+    List<ForwardCandidatePool> queriedPools = new java.util.ArrayList<>();
+    List<Integer> requestedLimits = new java.util.ArrayList<>();
+    AddressDatabaseFacade boundedFacade =
+        new AddressDatabaseFacade() {
+          @Override
+          public GeneratorMetadata readMetadata() {
+            return null;
+          }
+
+          @Override
+          public AddressRecord nearestWithin(double lat, double lon, double radiusMeters) {
+            return null;
+          }
+
+          @Override
+          public List<AddressCandidate> forwardCandidatePool(
+              AddressDraft draft,
+              String foldedStreetFragment,
+              Wgs84 anchorPoint,
+              ForwardCandidatePool pool,
+              int limit) {
+            queriedPools.add(pool);
+            requestedLimits.add(limit);
+            return java.util.Collections.emptyList();
+          }
+
+          @Override
+          public void close() {}
+        };
+    AddressDraft draft =
+        new TaiwanAddressParser().parse("台中市西屯區臺灣大道三段9號", 7L, AddressInputMode.FULL);
+
+    boundedFacade.fullAddressCandidates(draft, null, ResultOrdering.DISTANCE, 20);
+
+    assertThat(queriedPools)
+        .containsExactly(
+            ForwardCandidatePool.EXACT,
+            ForwardCandidatePool.TEXT_PREFIX,
+            ForwardCandidatePool.NUMERIC_NEAREST,
+            ForwardCandidatePool.FALLBACK);
+    assertThat(requestedLimits).containsOnly(20);
   }
 }

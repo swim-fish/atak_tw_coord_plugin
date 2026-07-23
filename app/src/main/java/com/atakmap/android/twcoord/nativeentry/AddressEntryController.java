@@ -48,6 +48,7 @@ public final class AddressEntryController {
   private final Debouncer debouncer;
   private final int candidateLimit;
   private final Supplier<ResultOrdering> orderingSupplier;
+  private final Supplier<Wgs84> forwardAnchorSupplier;
   private final AddressLookupService.AvailabilityListener availabilityListener =
       ignored -> onAvailabilityChanged();
 
@@ -63,6 +64,7 @@ public final class AddressEntryController {
   private boolean editable = true;
   private boolean disposed;
   private Wgs84 reversePoint;
+  private Wgs84 forwardAnchor;
 
   public AddressEntryController(AddressLookupService lookupService) {
     this(
@@ -70,12 +72,32 @@ public final class AddressEntryController {
         new TaiwanAddressParser(),
         new ScheduledDebouncer(),
         20,
-        () -> ResultOrdering.DISTANCE);
+        () -> ResultOrdering.DISTANCE,
+        () -> null);
   }
 
   public AddressEntryController(
       AddressLookupService lookupService, Supplier<ResultOrdering> orderingSupplier) {
-    this(lookupService, new TaiwanAddressParser(), new ScheduledDebouncer(), 20, orderingSupplier);
+    this(
+        lookupService,
+        new TaiwanAddressParser(),
+        new ScheduledDebouncer(),
+        20,
+        orderingSupplier,
+        () -> null);
+  }
+
+  public AddressEntryController(
+      AddressLookupService lookupService,
+      Supplier<ResultOrdering> orderingSupplier,
+      Supplier<Wgs84> forwardAnchorSupplier) {
+    this(
+        lookupService,
+        new TaiwanAddressParser(),
+        new ScheduledDebouncer(),
+        20,
+        orderingSupplier,
+        forwardAnchorSupplier);
   }
 
   AddressEntryController(
@@ -83,7 +105,13 @@ public final class AddressEntryController {
       TaiwanAddressParser parser,
       Debouncer debouncer,
       int candidateLimit) {
-    this(lookupService, parser, debouncer, candidateLimit, () -> ResultOrdering.DISTANCE);
+    this(
+        lookupService,
+        parser,
+        debouncer,
+        candidateLimit,
+        () -> ResultOrdering.DISTANCE,
+        () -> null);
   }
 
   AddressEntryController(
@@ -92,12 +120,24 @@ public final class AddressEntryController {
       Debouncer debouncer,
       int candidateLimit,
       Supplier<ResultOrdering> orderingSupplier) {
+    this(lookupService, parser, debouncer, candidateLimit, orderingSupplier, () -> null);
+  }
+
+  AddressEntryController(
+      AddressLookupService lookupService,
+      TaiwanAddressParser parser,
+      Debouncer debouncer,
+      int candidateLimit,
+      Supplier<ResultOrdering> orderingSupplier,
+      Supplier<Wgs84> forwardAnchorSupplier) {
     if (candidateLimit <= 0) throw new IllegalArgumentException("candidateLimit must be positive");
     this.lookupService = Objects.requireNonNull(lookupService, "lookupService");
     this.parser = Objects.requireNonNull(parser, "parser");
     this.debouncer = Objects.requireNonNull(debouncer, "debouncer");
     this.candidateLimit = candidateLimit;
     this.orderingSupplier = Objects.requireNonNull(orderingSupplier, "orderingSupplier");
+    this.forwardAnchorSupplier =
+        Objects.requireNonNull(forwardAnchorSupplier, "forwardAnchorSupplier");
     lookupService.addAvailabilityListener(availabilityListener);
   }
 
@@ -138,9 +178,12 @@ public final class AddressEntryController {
     Runnable humanListener;
     synchronized (this) {
       if (disposed || (human && !editable)) return;
+      String next = valueOrEmpty(value);
+      if (draft.mode() == AddressInputMode.FULL && next.equals(draft.rawAddress())) return;
       cancelPendingLocked();
+      if (human) forwardAnchor = currentForwardAnchor();
       long revision = draft.draftRevision() + 1L;
-      draft = parser.parse(value, revision, AddressInputMode.FULL);
+      draft = parser.parse(next, revision, AddressInputMode.FULL);
       candidates = Collections.emptyList();
       resolution = null;
       currentIdentity = null;
@@ -161,7 +204,13 @@ public final class AddressEntryController {
     Runnable humanListener;
     synchronized (this) {
       if (disposed || (human && !editable)) return;
+      if (draft.mode() == AddressInputMode.STRUCTURED
+          && valueOrEmpty(countyCity).equals(draft.components().countyCity())
+          && valueOrEmpty(districtTownship).equals(draft.components().districtTownship())
+          && valueOrEmpty(roadLocality).equals(draft.components().roadLocality())
+          && valueOrEmpty(tail).equals(draft.structuredTail())) return;
       cancelPendingLocked();
+      if (human) forwardAnchor = currentForwardAnchor();
       long revision = draft.draftRevision() + 1L;
       draft = parser.parseStructured(countyCity, districtTownship, roadLocality, tail, revision);
       candidates = Collections.emptyList();
@@ -206,7 +255,10 @@ public final class AddressEntryController {
       resolution =
           resolution(selected, AddressResolution.Source.OPERATOR_SELECTED, currentIdentity);
       reversePoint = null;
-      draft = draft.withValidation(AddressValidation.RESOLVED);
+      draft =
+          parser
+              .parse(selected.displayAddress(), draft.draftRevision(), draft.mode())
+              .withValidation(AddressValidation.RESOLVED);
       stateListener = onStateChanged;
       humanListener = human ? onHumanChange : null;
     }
@@ -225,6 +277,7 @@ public final class AddressEntryController {
       resolution = null;
       currentIdentity = null;
       reversePoint = null;
+      forwardAnchor = null;
       stateListener = onStateChanged;
       humanListener = human ? onHumanChange : null;
     }
@@ -247,6 +300,7 @@ public final class AddressEntryController {
       resolution = null;
       currentIdentity = null;
       reversePoint = point;
+      forwardAnchor = null;
       if (point == null) {
         draft = AddressDraft.empty(revision, mode);
       } else {
@@ -298,6 +352,7 @@ public final class AddressEntryController {
       resolution = null;
       currentIdentity = null;
       reversePoint = null;
+      forwardAnchor = null;
       stateListener = onStateChanged;
       onStateChanged = null;
       onHumanChange = null;
@@ -335,6 +390,7 @@ public final class AddressEntryController {
               "native-address",
               LookupPriority.NATIVE_INTERACTIVE,
               draft.normalizedAddress(),
+              forwardAnchor,
               currentOrdering(),
               candidateLimit);
       stateListener = onStateChanged;
@@ -356,6 +412,14 @@ public final class AddressEntryController {
   private ResultOrdering currentOrdering() {
     ResultOrdering ordering = orderingSupplier.get();
     return ordering != null ? ordering : ResultOrdering.DISTANCE;
+  }
+
+  private Wgs84 currentForwardAnchor() {
+    try {
+      return forwardAnchorSupplier.get();
+    } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError ignored) {
+      return null;
+    }
   }
 
   private void completeForward(ForwardAddressResult result) {
@@ -540,6 +604,10 @@ public final class AddressEntryController {
     } catch (RuntimeException ignored) {
       // One listener cannot corrupt session state or suppress another transition.
     }
+  }
+
+  private static String valueOrEmpty(String value) {
+    return value != null ? value : "";
   }
 
   private static final class ScheduledDebouncer implements Debouncer {

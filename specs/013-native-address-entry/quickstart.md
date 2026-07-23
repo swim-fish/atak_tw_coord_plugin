@@ -543,6 +543,43 @@ This is source/test evidence only. It does not close the physical dialog,
 compatibility, screenshot, performance, memory, offline-capture, or upgrade
 release gates.
 
+### Bounded candidate category ranking (2026-07-23)
+
+- RED: focused compilation failed after tests introduced the not-yet-existing
+  candidate-pool, shortlist, bounded database-pool, and current-map-anchor
+  seams.
+- GREEN: focused SQL, shortlist, facade, lookup-service, semantic-ranking,
+  controller, and registrar tests passed after implementing five
+  deterministically ordered SQL pools, exact short-circuiting, `6 / 8 / 4 / 2`
+  visible allocation, stable deduplication/backfill, and UI-thread map-centre
+  capture.
+- The SQLite fixture proves every category remains at or below 20 rows even
+  when the caller asks for 200. Taiwan Boulevard fixtures cover text-prefix
+  and numeric-nearest ordering, direct-road preference when the query omits
+  `巷`/`弄`, and operation without a valid distance anchor.
+- The complete gate
+  `:app:spotlessApply :app:spotlessCheck :app:lint
+  :app:testCivDebugUnitTest :app:assembleCivDebug` completed successfully with
+  441 tests, zero failures/errors, two existing skips, and a civ-debug APK.
+  This is source/build evidence only and does not close any physical-device or
+  ATAK 5.5 compatibility release gate.
+
+### Candidate-policy documentation synchronization (2026-07-24)
+
+- ADR-0026 received a dated implementation clarification for the five bounded
+  SQL pools, exact-only behavior, `6 / 8 / 4 / 2` allocation, deduplication,
+  backfill, optional map-centre distance category, and direct-road preference.
+  No new ADR was required because this specifies the accepted shared bounded
+  lookup architecture without changing its external contract or storage.
+- The ADR/UI indexes, README, changelog, and canonical English/Traditional
+  Chinese user and Address guides now describe the same 20-row candidate
+  behavior. The README no longer presents retired custom Go To Recent,
+  marker-mode, or Custom Icon workflows as current features.
+- `python scripts/check-doc-images.py` checked 27 documentation images and
+  passed names, local image links, Git LFS, and sensitive metadata.
+- A local Markdown target scan, reviewed-diff sensitive-path scan, and
+  `git diff --check` passed.
+
 ## 16. Phase 8 repository quality gates
 
 Executed on 2026-07-22 from the repository root with the existing Gradle 8.14.3

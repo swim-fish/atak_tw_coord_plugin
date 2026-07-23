@@ -72,14 +72,25 @@ below is mandatory.
    first `市`/`區` character.
 3. Query only the selected/resolved active county dataset when county is
    deterministic.
-4. Match road/locality and tail through parameterized bounded queries.
+4. Match road/locality and tail through parameterized bounded category
+   queries. `EXACT`, `TEXT_PREFIX`, `NUMERIC_NEAREST`, `DISTANCE`, and
+   `FALLBACK` are each hard-capped at 20 SQL rows with explicit deterministic
+   ordering. `DISTANCE` uses the current map centre when it is valid and is
+   omitted otherwise.
 5. Classify exactness independently from distance. Canonical full-address
    equality is exact. If the query omits only a TGOS village/neighbourhood
    prefix, exactness may also use matching county, district, street/section,
    address tail, and unclassified suffix.
-6. Deduplicate by stable candidate identity.
-7. Sort deterministically by requested ordering, then normalized address and
-   candidate identity for ties.
+6. If any exact candidates remain after classification and deduplication,
+   return only those candidates. Otherwise allocate the visible list as six
+   text-prefix, eight numeric-nearest, four map-distance, and two fallback
+   rows.
+7. Deduplicate across categories by stable candidate identity, then backfill
+   in text-prefix, numeric-nearest, distance, and fallback order until the
+   visible 20-row cap is reached. When distance is unavailable, its allocation
+   is backfilled from the other categories.
+8. Preserve each category's deterministic semantic ordering and use
+   normalized address and candidate identity as stable final tie-breakers.
 
 ### Outcomes
 
@@ -91,7 +102,8 @@ below is mandatory.
 Only one deduplicated `EXACT` candidate is eligible for automatic resolution.
 A missing house-number match never falls back to a nearest partial candidate
 as an exact result. Multiple candidates that differ by an omitted
-village/neighbourhood prefix remain explicit candidates.
+village/neighbourhood prefix remain explicit candidates. Candidate retrieval
+never performs an unbounded county or road-family scan.
 
 ## Reverse lookup
 

@@ -3,12 +3,15 @@ package com.atakmap.android.twcoord.address;
 import com.atakmap.android.twcoord.address.lookup.AddressCandidate;
 import com.atakmap.android.twcoord.address.lookup.AddressDraft;
 import com.atakmap.android.twcoord.address.lookup.AddressMatchKind;
+import com.atakmap.android.twcoord.address.lookup.ForwardCandidatePool;
+import com.atakmap.android.twcoord.address.lookup.ForwardCandidateShortlist;
+import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
+import com.atakmap.android.twcoord.address.lookup.StreetCandidateRanker;
 import com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser;
 import com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser;
 import com.atakmap.android.twcoord.coord.Wgs84;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -64,71 +67,145 @@ public interface AddressDatabaseFacade extends AutoCloseable {
   }
 
   /**
+   * Returns one deterministically ordered retrieval category. Production SQLite implementations
+   * override this method so every category is bounded by SQL. The default keeps injected facades
+   * source-compatible and applies the same pool ordering in memory.
+   */
+  default List<AddressCandidate> forwardCandidatePool(
+      AddressDraft draft,
+      String foldedStreetFragment,
+      Wgs84 anchorPoint,
+      ForwardCandidatePool pool,
+      int limit) {
+    if (draft == null || pool == null || limit <= 0) {
+      return java.util.Collections.emptyList();
+    }
+    double anchorLat = anchorPoint != null ? anchorPoint.latitudeDeg() : 0.0;
+    double anchorLon = anchorPoint != null ? anchorPoint.longitudeDeg() : 0.0;
+    List<AddressCandidate> rows =
+        streetCandidates(
+            draft.components().districtTownship(), foldedStreetFragment, anchorLat, anchorLon, 0);
+    return StreetCandidateRanker.reorderForPool(
+        rows,
+        pool,
+        draft.components().roadLocality(),
+        draft.components().tail(),
+        anchorPoint != null,
+        Math.min(limit, ForwardCandidateShortlist.SQL_POOL_LIMIT));
+  }
+
+  /**
    * Bounded full-address lookup built on the established street-then-house-number funnel. Exactness
    * accepts either canonical full-address equality or an exact street/section/tail match when the
    * operator omits a TGOS village/neighbourhood prefix. A nearby house number remains PARTIAL.
    */
   default List<AddressCandidate> fullAddressCandidates(
       AddressDraft draft, Wgs84 anchorPoint, int limit) {
-    if (draft == null || limit <= 0 || draft.components().districtTownship().isEmpty()) {
+    return fullAddressCandidates(draft, anchorPoint, ResultOrdering.DISTANCE, limit);
+  }
+
+  /**
+   * Applies the operator-selected ordering before the visible candidate limit. The legacy
+   * three-argument method remains the retrieval/classification seam so existing database and test
+   * implementations do not need a parallel override.
+   */
+  default List<AddressCandidate> fullAddressCandidates(
+      AddressDraft draft, Wgs84 anchorPoint, ResultOrdering ordering, int limit) {
+    if (draft == null
+        || limit <= 0
+        || draft.components().districtTownship().isEmpty()
+        || draft.components().roadLocality().isEmpty()) {
       return java.util.Collections.emptyList();
     }
-    Wgs84 anchor =
-        anchorPoint != null ? anchorPoint : new Wgs84(23.7, 120.9, 1L, Wgs84.Source.MAP_CENTRE);
-    String district = draft.components().districtTownship();
-    String roadLocality = draft.components().roadLocality();
-    List<AddressCandidate> rows =
-        streetCandidates(
-            district,
-            StreetTextNormaliser.fold(roadLocality),
-            anchor.latitudeDeg(),
-            anchor.longitudeDeg(),
-            0);
-    if (rows.isEmpty()) {
-      String streetOnly = streetFragmentAfterLocality(roadLocality);
-      if (!streetOnly.equals(roadLocality)) {
-        rows =
-            streetCandidates(
-                district,
-                StreetTextNormaliser.fold(streetOnly),
-                anchor.latitudeDeg(),
-                anchor.longitudeDeg(),
-                0);
-      }
-      String numberedStreetFamily = streetOnly.replaceFirst("\\d+(?:段|路|街)$", "");
-      if (rows.isEmpty() && !numberedStreetFamily.equals(streetOnly)) {
-        rows =
-            streetCandidates(
-                district,
-                StreetTextNormaliser.fold(numberedStreetFamily),
-                anchor.latitudeDeg(),
-                anchor.longitudeDeg(),
-                0);
-      }
-    }
-    rows = narrowByAddressTail(rows, draft.components().tail());
+    int visibleLimit = Math.min(limit, ForwardCandidateShortlist.SQL_POOL_LIMIT);
+    int poolLimit = ForwardCandidateShortlist.SQL_POOL_LIMIT;
+    String streetFragment =
+        StreetTextNormaliser.fold(
+            streetFamilyFragment(streetFragmentAfterLocality(draft.components().roadLocality())));
     TaiwanAddressParser parser = new TaiwanAddressParser();
-    List<AddressCandidate> classified = new ArrayList<>();
-    for (AddressCandidate row : rows) {
-      String normalized = parser.normalize(row.displayAddress());
-      AddressMatchKind kind =
-          normalized.equals(draft.normalizedAddress())
-                  || matchesStreetAndTailWithoutLocality(draft, row, parser)
-              ? AddressMatchKind.EXACT
-              : AddressMatchKind.PARTIAL;
-      classified.add(row.withMatch(normalized, kind));
+
+    List<AddressCandidate> exact =
+        exactOnly(
+            classify(
+                forwardCandidatePool(
+                    draft, streetFragment, anchorPoint, ForwardCandidatePool.EXACT, poolLimit),
+                draft,
+                parser));
+    if (!exact.isEmpty()) {
+      return ForwardCandidateShortlist.select(
+          exact,
+          java.util.Collections.emptyList(),
+          java.util.Collections.emptyList(),
+          java.util.Collections.emptyList(),
+          java.util.Collections.emptyList(),
+          visibleLimit);
     }
-    classified.sort(
-        Comparator.comparingInt(
-                (AddressCandidate candidate) ->
-                    candidate.matchKind() == AddressMatchKind.EXACT ? 0 : 1)
-            .thenComparingDouble(AddressCandidate::distanceMeters)
-            .thenComparing(AddressCandidate::normalizedAddress)
-            .thenComparing(AddressCandidate::candidateId));
-    if (classified.size() > limit) {
-      return new ArrayList<>(classified.subList(0, limit));
+
+    if (!containsDigit(draft.components().tail())) {
+      ForwardCandidatePool pool =
+          ordering == ResultOrdering.DISTANCE && anchorPoint != null
+              ? ForwardCandidatePool.DISTANCE
+              : ForwardCandidatePool.TEXT_PREFIX;
+      List<AddressCandidate> roadCandidates =
+          classify(
+              forwardCandidatePool(draft, streetFragment, anchorPoint, pool, poolLimit),
+              draft,
+              parser);
+      return pool == ForwardCandidatePool.DISTANCE
+          ? ForwardCandidateShortlist.select(
+              java.util.Collections.emptyList(),
+              java.util.Collections.emptyList(),
+              java.util.Collections.emptyList(),
+              roadCandidates,
+              java.util.Collections.emptyList(),
+              visibleLimit)
+          : ForwardCandidateShortlist.select(
+              java.util.Collections.emptyList(),
+              roadCandidates,
+              java.util.Collections.emptyList(),
+              java.util.Collections.emptyList(),
+              java.util.Collections.emptyList(),
+              visibleLimit);
     }
-    return classified;
+
+    List<AddressCandidate> text =
+        classify(
+            forwardCandidatePool(
+                draft, streetFragment, anchorPoint, ForwardCandidatePool.TEXT_PREFIX, poolLimit),
+            draft,
+            parser);
+    List<AddressCandidate> numeric =
+        classify(
+            forwardCandidatePool(
+                draft,
+                streetFragment,
+                anchorPoint,
+                ForwardCandidatePool.NUMERIC_NEAREST,
+                poolLimit),
+            draft,
+            parser);
+    List<AddressCandidate> distance =
+        anchorPoint == null
+            ? java.util.Collections.emptyList()
+            : classify(
+                forwardCandidatePool(
+                    draft, streetFragment, anchorPoint, ForwardCandidatePool.DISTANCE, poolLimit),
+                draft,
+                parser);
+    List<AddressCandidate> fallback =
+        classify(
+            forwardCandidatePool(
+                draft, streetFragment, anchorPoint, ForwardCandidatePool.FALLBACK, poolLimit),
+            draft,
+            parser);
+
+    List<AddressCandidate> exactFromSecondary = new ArrayList<>();
+    collectExact(exactFromSecondary, text);
+    collectExact(exactFromSecondary, numeric);
+    collectExact(exactFromSecondary, distance);
+    collectExact(exactFromSecondary, fallback);
+    return ForwardCandidateShortlist.select(
+        exactFromSecondary, text, numeric, distance, fallback, visibleLimit);
   }
 
   /**
@@ -150,26 +227,56 @@ public interface AddressDatabaseFacade extends AutoCloseable {
   }
 
   /**
-   * Match the established house-number stage: narrow using either the dedicated number or the full
-   * half-width display address, and retain the road candidates when no tail matches.
+   * Match the established house-number stage. Narrow only when a candidate's complete parsed tail
+   * equals the requested tail; a substring such as {@code 9號} must not select {@code 99號} or {@code
+   * 609號}. Retain the road candidates when no exact tail exists so the semantic ranker can order
+   * nearby house numbers.
    */
-  private static List<AddressCandidate> narrowByAddressTail(
-      List<AddressCandidate> rows, String addressTail) {
-    String foldedTail = StreetTextNormaliser.fold(addressTail);
-    if (rows == null || rows.isEmpty() || foldedTail.isEmpty()) return rows;
-    List<AddressCandidate> narrowed = new ArrayList<>();
-    for (AddressCandidate candidate : rows) {
-      String foldedNumber = StreetTextNormaliser.fold(candidate.number());
-      String display =
-          candidate.displayNameHalfwidth().isEmpty()
-              ? candidate.displayAddress()
-              : candidate.displayNameHalfwidth();
-      if (foldedNumber.contains(foldedTail)
-          || StreetTextNormaliser.fold(display).contains(foldedTail)) {
-        narrowed.add(candidate);
-      }
+  private static List<AddressCandidate> classify(
+      List<AddressCandidate> rows, AddressDraft draft, TaiwanAddressParser parser) {
+    List<AddressCandidate> classified = new ArrayList<>();
+    if (rows == null) return classified;
+    for (AddressCandidate row : rows) {
+      String normalized = parser.normalize(row.displayAddress());
+      AddressMatchKind kind =
+          normalized.equals(draft.normalizedAddress())
+                  || matchesStreetAndTailWithoutLocality(draft, row, parser)
+              ? AddressMatchKind.EXACT
+              : AddressMatchKind.PARTIAL;
+      classified.add(row.withMatch(normalized, kind));
     }
-    return narrowed.isEmpty() ? rows : narrowed;
+    return classified;
+  }
+
+  private static List<AddressCandidate> exactOnly(List<AddressCandidate> candidates) {
+    List<AddressCandidate> exact = new ArrayList<>();
+    collectExact(exact, candidates);
+    return exact;
+  }
+
+  private static void collectExact(
+      List<AddressCandidate> destination, List<AddressCandidate> candidates) {
+    for (AddressCandidate candidate : candidates) {
+      if (candidate.matchKind() == AddressMatchKind.EXACT) destination.add(candidate);
+    }
+  }
+
+  private static String streetFamilyFragment(String street) {
+    String family = street == null ? "" : street;
+    String previous;
+    do {
+      previous = family;
+      family = family.replaceFirst("\\d+(?:段|路|街)$", "");
+    } while (!family.equals(previous));
+    return family.isEmpty() ? street : family;
+  }
+
+  private static boolean containsDigit(String value) {
+    if (value == null) return false;
+    for (int index = 0; index < value.length(); index++) {
+      if (Character.isDigit(value.charAt(index))) return true;
+    }
+    return false;
   }
 
   /**

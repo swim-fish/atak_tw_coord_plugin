@@ -7,6 +7,15 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+### Changed
+
+- Native Address candidate retrieval now queries five deterministic SQL pools,
+  each capped at 20 rows, then displays at most 20 exact-only or
+  category-balanced results. Ambiguous lists allocate text-prefix,
+  numeric-nearest, current-map-distance, and fallback candidates, deduplicate
+  them, and backfill unused capacity. Direct-road input ranks direct numbers
+  ahead of unrelated lane/alley records.
+
 ## [1.4.3] — 2026-07-23 — Native Taiwan address entry
 
 ### Added

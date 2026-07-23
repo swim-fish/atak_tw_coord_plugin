@@ -46,6 +46,12 @@ unclassified text. No result selection moves the map by itself; ATAK performs
 the action only after its normal confirmation. A missing county dataset leaves
 the coordinate tabs usable and displays data-management guidance.
 
+The candidate dialog shows at most 20 rows. Exact matches are shown by
+themselves. Otherwise the shortlist combines text-prefix, nearby house-number,
+current-map-distance, and fallback records, then removes duplicates and fills
+unused capacity. When the input does not contain a lane or alley, direct-road
+house numbers rank ahead of lane/alley records.
+
 See [Native Address workflow](tw-addr-search.md) for detailed examples.
 
 <p align="center">
@@ -136,6 +142,8 @@ boundary data plus the applicable county. Coordinate entry remains available.
 
 **Address returns several rows.** This is intentional: no ambiguous record is
 silently selected. Use **Choose result** and compare administrative context.
+The list is a bounded, category-balanced shortlist rather than every stored
+record on a dense road.
 
 **Does lookup require a network?** No. The plugin deliberately omits the
 `INTERNET` permission; coordinate conversion and address lookup are local.

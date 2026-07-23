@@ -130,9 +130,22 @@ A result is accepted only when all four values still match current state.
 |-------|---------|
 | `identity` | LookupIdentity |
 | `draft` | Immutable normalized AddressDraft snapshot |
-| `anchorPoint` | Optional WGS84 used only for stable distance ordering |
+| `anchorPoint` | Optional valid current map-centre WGS84 used only for the distance category and stable distance ordering |
 | `ordering` | Existing candidate ordering preference |
-| `limit` | Positive bounded candidate display limit |
+| `limit` | Positive candidate display limit, hard-capped at 20 |
+
+Forward retrieval uses five independently bounded categories:
+
+```text
+EXACT | TEXT_PREFIX | NUMERIC_NEAREST | DISTANCE | FALLBACK
+```
+
+Every category is capped at 20 SQL rows. Exact candidates are exclusive.
+Otherwise the initial visible allocation is `6 / 8 / 4 / 2` for text prefix,
+numeric nearest, distance, and fallback. Stable-identity deduplication and
+semantic-order backfill produce at most 20 visible candidates. An unavailable
+map-centre anchor removes the distance category rather than substituting a
+fixed Taiwan coordinate.
 
 ### ReverseAddressRequest
 
@@ -173,7 +186,8 @@ semantic matches remain ambiguous.
 NO_DATASET | NO_MATCH | CANDIDATES | FAILURE
 ```
 
-- `CANDIDATES` carries a bounded, deterministic list.
+- `CANDIDATES` carries a deterministic list capped at 20 after category
+  allocation, cross-category deduplication, and backfill.
 - A unique exact list may be converted into a resolution automatically.
 - Every other non-empty list remains `AMBIGUOUS` until human selection.
 - A nearest partial candidate is never promoted to exact.

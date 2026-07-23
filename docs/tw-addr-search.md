@@ -67,8 +67,16 @@ requests and candidate lists, so a slow result cannot overwrite a newer draft.
 - Multiple credible records remain unresolved. Tap **Choose result** and compare
   county, district, road/locality, house number, and other distinguishing
   context.
-- Candidate count is bounded. Selecting a row updates the draft/result but does
-  not pan the map; ATAK's normal confirmation performs Go To.
+- The dialog displays at most 20 candidates. Exact matches are exclusive.
+  Otherwise it initially reserves six text-prefix, eight numeric-nearest, four
+  current-map-distance, and two fallback rows, removes duplicates, and
+  backfills unused capacity in that order.
+- Distance candidates use ATAK's valid current map centre. If no valid anchor
+  exists, that category is skipped and the other categories fill the list.
+- When the typed address does not include `巷` or `弄`, direct-road house
+  numbers rank ahead of lane/alley records. Selecting a row updates the
+  draft/result but does not pan the map; ATAK's normal confirmation performs
+  Go To.
 - An invalid or unmatched address reports a localised status without retaining
   a stale point.
 - If no applicable county dataset is active, use the displayed **TW Coordinates**
@@ -95,7 +103,9 @@ the address can be displayed but cannot be edited or selected.
 the applicable county are active.
 
 **Several similar records:** Use **Choose result** and compare administrative
-context; the plugin intentionally does not guess.
+context; the plugin intentionally does not guess. The list is a bounded,
+category-balanced shortlist rather than an exhaustive dump of every address on
+a dense road.
 
 **A recent edit seems to return an older result:** close and reopen the pane if
 needed. The lifecycle fence rejects stale callbacks, and the older result must

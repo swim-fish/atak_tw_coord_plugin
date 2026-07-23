@@ -17,6 +17,7 @@ import java.util.List;
 public final class StreetCandidateRanker {
 
   private static final double EARTH_R_M = 6_371_000.0;
+  private static final TaiwanAddressParser ADDRESS_NORMALIZER = new TaiwanAddressParser();
 
   private StreetCandidateRanker() {}
 
@@ -56,6 +57,24 @@ public final class StreetCandidateRanker {
    */
   public static List<AddressCandidate> rank(
       List<Raw> rows, String foldedFragment, double anchorLat, double anchorLon, int limit) {
+    List<AddressCandidate> out = materialize(rows, foldedFragment, anchorLat, anchorLon, true, 0);
+    out.sort(
+        Comparator.comparingDouble(AddressCandidate::distanceMeters)
+            .thenComparing(AddressCandidate::candidateId));
+    if (limit > 0 && out.size() > limit) {
+      return new ArrayList<>(out.subList(0, limit));
+    }
+    return out;
+  }
+
+  /** Fold-filters raw rows and computes optional distance without changing SQL result order. */
+  public static List<AddressCandidate> materialize(
+      List<Raw> rows,
+      String foldedFragment,
+      double anchorLat,
+      double anchorLon,
+      boolean anchorAvailable,
+      int limit) {
     List<AddressCandidate> out = new ArrayList<>();
     if (rows == null) return out;
     String frag = foldedFragment == null ? "" : foldedFragment;
@@ -67,16 +86,83 @@ public final class StreetCandidateRanker {
       if (!frag.isEmpty() && !foldedStreet.contains(frag)) {
         continue;
       }
-      double d = haversine(anchorLat, anchorLon, r.lat, r.lon);
+      double d =
+          anchorAvailable
+              ? haversine(anchorLat, anchorLon, r.lat, r.lon)
+              : Double.POSITIVE_INFINITY;
       out.add(
           new AddressCandidate(
               r.lat, r.lon, r.displayName, r.displayNameHalfwidth, r.street, r.number, d));
-    }
-    out.sort(Comparator.comparingDouble(AddressCandidate::distanceMeters));
-    if (limit > 0 && out.size() > limit) {
-      return new ArrayList<>(out.subList(0, limit));
+      if (limit > 0 && out.size() >= limit) return out;
     }
     return out;
+  }
+
+  /** In-memory compatibility ordering for facades that do not implement bounded SQL pools. */
+  public static List<AddressCandidate> reorderForPool(
+      List<AddressCandidate> results,
+      ForwardCandidatePool pool,
+      String foldedFragment,
+      String foldedTail,
+      boolean anchorAvailable,
+      int limit) {
+    List<AddressCandidate> out = new ArrayList<>();
+    if (results == null || pool == null || limit <= 0) return out;
+    out.addAll(results);
+    String fragment = normalizeForSimilarity(foldedFragment).trim();
+    String tail = normalizeForSimilarity(foldedTail).trim();
+    Comparator<AddressCandidate> stable =
+        Comparator.comparing(AddressCandidate::normalizedAddress)
+            .thenComparing(AddressCandidate::candidateId);
+    switch (pool) {
+      case EXACT:
+        out.sort(
+            Comparator.comparingInt(
+                    (AddressCandidate candidate) ->
+                        candidateAddressTail(candidate).equals(tail) ? 0 : 1)
+                .thenComparingInt(candidate -> -similarityBand(candidate, fragment))
+                .thenComparingInt(candidate -> laneAlleyPenalty(candidate, tail))
+                .thenComparing(stable));
+        break;
+      case TEXT_PREFIX:
+        out.sort(
+            Comparator.comparingInt(
+                    (AddressCandidate candidate) -> -similarityBand(candidate, fragment))
+                .thenComparingInt(
+                    candidate ->
+                        candidateAddressTail(candidate).startsWith(primaryDigits(tail)) ? 0 : 1)
+                .thenComparingInt(candidate -> laneAlleyPenalty(candidate, tail))
+                .thenComparingInt(candidate -> candidateAddressTail(candidate).length())
+                .thenComparing(stable));
+        break;
+      case NUMERIC_NEAREST:
+        out.sort(
+            Comparator.comparingInt(
+                    (AddressCandidate candidate) -> -similarityBand(candidate, fragment))
+                .thenComparingInt(candidate -> laneAlleyPenalty(candidate, tail))
+                .thenComparingInt(candidate -> houseNumberProximity(candidate, tail))
+                .thenComparingDouble(AddressCandidate::distanceMeters)
+                .thenComparing(stable));
+        break;
+      case DISTANCE:
+        if (!anchorAvailable) return new ArrayList<>();
+        out.sort(
+            Comparator.comparingInt(
+                    (AddressCandidate candidate) -> -similarityBand(candidate, fragment))
+                .thenComparingDouble(AddressCandidate::distanceMeters)
+                .thenComparing(stable));
+        break;
+      case FALLBACK:
+        out.sort(
+            Comparator.comparingInt(
+                    (AddressCandidate candidate) -> -similarityBand(candidate, fragment))
+                .thenComparingInt(
+                    candidate -> containsLaneOrAlley(candidateAddressTail(candidate)) ? 0 : 1)
+                .thenComparingDouble(AddressCandidate::distanceMeters)
+                .thenComparing(stable));
+        break;
+    }
+    return out.size() > limit ? new ArrayList<>(out.subList(0, limit)) : out;
   }
 
   /**
@@ -105,13 +191,12 @@ public final class StreetCandidateRanker {
   }
 
   /**
-   * House-number-aware overload (issue: 最相似 had no visible effect once a house number was typed).
-   * Once the operator narrows by house number, every surviving candidate shares the same street
-   * (e.g. all {@code 五權西路一段/二段}), so the street-only similarity bands tie and {@code MOST_SIMILAR}
-   * degrades to distance order — looking like a no-op. This adds a SECONDARY key: candidates whose
-   * leading house number is numerically closest to the typed one rank first (so typing {@code 五權西路
-   * 2號} surfaces {@code …一段2C號} ahead of {@code 12號 / 20號}), ties broken by the existing
-   * street-match index / leftover length / distance.
+   * House-number-aware overload. Once a house number is present, both configured orderings preserve
+   * address semantics before map distance: exact full address, requested street/section, address
+   * structure, numeric house-number proximity, other street/section, then distance. When the query
+   * has no lane/alley, direct-road candidates rank ahead of lane/alley candidates. This keeps an
+   * exact or nearby number from being hidden by a geographically nearer but textually unrelated
+   * row.
    *
    * @param foldedHouseNumber the house-number tail typed on the keypad, AFTER {@link
    *     StreetTextNormaliser#fold} ({@code null}/blank ⇒ neutral, so this collapses to the
@@ -126,6 +211,18 @@ public final class StreetCandidateRanker {
     if (results == null) return out;
     out.addAll(results);
     ResultOrdering ord = ordering == null ? ResultOrdering.DISTANCE : ordering;
+    final String frag = normalizeForSimilarity(foldedFragment).trim();
+    final String num = normalizeForSimilarity(foldedHouseNumber).trim();
+    if (!num.isEmpty()) {
+      out.sort(
+          Comparator.comparingInt((AddressCandidate c) -> numberedAddressTier(c, frag))
+              .thenComparingInt(c -> laneAlleyPenalty(c, num))
+              .thenComparingInt(c -> sameStreetHouseNumberProximity(c, frag, num))
+              .thenComparingDouble(AddressCandidate::distanceMeters)
+              .thenComparing(AddressCandidate::normalizedAddress)
+              .thenComparing(AddressCandidate::candidateId));
+      return out;
+    }
     if (ord == ResultOrdering.DISTANCE) {
       out.sort(
           Comparator.comparingDouble(AddressCandidate::distanceMeters)
@@ -133,9 +230,7 @@ public final class StreetCandidateRanker {
               .thenComparing(AddressCandidate::candidateId));
       return out;
     }
-    final String frag = foldedFragment == null ? "" : foldedFragment.trim();
-    final String num = foldedHouseNumber == null ? "" : foldedHouseNumber.trim();
-    if (frag.isEmpty() && num.isEmpty()) {
+    if (frag.isEmpty()) {
       // No fragment to match on — every candidate is band 1 with no leftover signal, so degrade to
       // pure distance order (per this method's contract). Short-circuit rather than fall through
       // the
@@ -158,6 +253,35 @@ public final class StreetCandidateRanker {
   }
 
   /**
+   * 0 = classified exact full address; 1 = requested street/section or its segment family; 2 =
+   * another street/section.
+   */
+  private static int numberedAddressTier(AddressCandidate candidate, String foldedFragment) {
+    if (candidate.matchKind() == AddressMatchKind.EXACT) return 0;
+    return similarityBand(candidate, foldedFragment) >= 3 ? 1 : 2;
+  }
+
+  private static int sameStreetHouseNumberProximity(
+      AddressCandidate candidate, String foldedFragment, String foldedHouseNumber) {
+    return similarityBand(candidate, foldedFragment) >= 3
+        ? houseNumberProximity(candidate, foldedHouseNumber)
+        : 0;
+  }
+
+  /**
+   * A direct-road query must not surface addresses whose matching final number belongs inside a
+   * lane/alley. Queries that explicitly include a lane/alley keep every candidate neutral.
+   */
+  private static int laneAlleyPenalty(AddressCandidate candidate, String foldedHouseNumber) {
+    if (containsLaneOrAlley(foldedHouseNumber)) return 0;
+    return containsLaneOrAlley(candidateAddressTail(candidate)) ? 1 : 0;
+  }
+
+  private static boolean containsLaneOrAlley(String value) {
+    return value != null && (value.indexOf('巷') >= 0 || value.indexOf('弄') >= 0);
+  }
+
+  /**
    * Numeric closeness of a candidate's house number to the typed one (smaller = better), the {@code
    * MOST_SIMILAR} secondary key. Returns {@code 0} (neutral) when nothing comparable was typed, and
    * {@link Integer#MAX_VALUE} (sorted last) when the candidate has no leading integer to compare —
@@ -166,9 +290,27 @@ public final class StreetCandidateRanker {
   static int houseNumberProximity(AddressCandidate c, String foldedHouseNumber) {
     Integer typed = leadingInt(foldedHouseNumber);
     if (typed == null) return 0; // nothing typed (or no digits) — neutral, distance decides
-    Integer got = leadingInt(StreetTextNormaliser.fold(c.number()));
+    Integer got = leadingInt(candidateAddressTail(c));
     if (got == null) return Integer.MAX_VALUE;
     return Math.abs(got - typed);
+  }
+
+  /**
+   * Returns the complete tail after the stored street so a lane address such as {@code
+   * 臺灣大道三段506巷9號} compares as house number 506, not the dedicated final-number column's 9.
+   */
+  private static String candidateAddressTail(AddressCandidate candidate) {
+    String display =
+        normalizeForSimilarity(
+            candidate.displayNameHalfwidth().isEmpty()
+                ? candidate.displayAddress()
+                : candidate.displayNameHalfwidth());
+    String street = similarityText(candidate);
+    int streetAt = display.lastIndexOf(street);
+    if (!street.isEmpty() && streetAt >= 0) {
+      return display.substring(streetAt + street.length());
+    }
+    return normalizeForSimilarity(candidate.number());
   }
 
   /** The first run of decimal digits in {@code s} as an int, or {@code null} if none / overflow. */
@@ -187,11 +329,24 @@ public final class StreetCandidateRanker {
     }
   }
 
+  private static String primaryDigits(String value) {
+    if (value == null) return "";
+    int index = 0;
+    while (index < value.length() && !Character.isDigit(value.charAt(index))) index++;
+    int start = index;
+    while (index < value.length() && Character.isDigit(value.charAt(index))) index++;
+    return start < index ? value.substring(start, index) : "";
+  }
+
   /** Folded text used for similarity: the street, or the display name when street is empty. */
   private static String similarityText(AddressCandidate c) {
     String street = c.street();
     String base = (street != null && !street.isEmpty()) ? street : c.displayName();
-    return StreetTextNormaliser.fold(base);
+    return normalizeForSimilarity(base);
+  }
+
+  private static String normalizeForSimilarity(String value) {
+    return StreetTextNormaliser.fold(ADDRESS_NORMALIZER.normalize(value));
   }
 
   /** 4 = exact, 3 = prefix, 2 = substring, 1 = none/blank-fragment. Higher is more similar. */

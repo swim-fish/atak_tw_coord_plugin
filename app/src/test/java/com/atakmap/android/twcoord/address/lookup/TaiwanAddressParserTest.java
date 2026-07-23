@@ -59,6 +59,19 @@ public final class TaiwanAddressParserTest {
     assertThat(draft.draftRevision()).isEqualTo(7L);
   }
 
+  @Test
+  public void bareHouseNumberAfterRoadRemainsEditableDraftText() {
+    AddressDraft draft = parser.parse("台中市西屯區惠來里臺灣大道三段９９", 8L, AddressInputMode.FULL);
+
+    assertThat(draft.rawAddress()).isEqualTo("台中市西屯區惠來里臺灣大道三段９９");
+    assertThat(draft.normalizedAddress()).isEqualTo("臺中市西屯區惠來里臺灣大道3段99");
+    assertThat(draft.components().roadLocality()).isEqualTo("惠來里臺灣大道3段");
+    assertThat(draft.components().tail()).isEmpty();
+    assertThat(draft.unclassifiedText()).isEqualTo("99");
+    assertThat(draft.structuredTail()).isEqualTo("99");
+    assertThat(draft.validation()).isEqualTo(AddressValidation.READY_TO_LOOKUP);
+  }
+
   private static List<String[]> fixtureRows() throws Exception {
     InputStream stream =
         TaiwanAddressParserTest.class

@@ -31,6 +31,40 @@ public class StreetCandidateReorderTest {
   }
 
   @Test
+  public void numberedDistanceOrderingUsesAddressSemanticsBeforeMapDistance() {
+    List<AddressCandidate> actualRows =
+        TaichungAddressRankingFixture.taiwanBoulevard(24.161989237766, 120.647296501898);
+
+    List<AddressCandidate> out =
+        StreetCandidateRanker.reorder(actualRows, ResultOrdering.DISTANCE, "台灣大道3段", "９號");
+
+    assertThat(out)
+        .extracting(AddressCandidate::displayAddress)
+        .containsExactly(
+            "台中市西屯區惠來里臺灣大道三段８號",
+            "台中市西屯區惠來里臺灣大道三段９９號",
+            "台中市西屯區潮洋里臺灣大道三段６０９號",
+            "台中市西屯區上安里臺灣大道三段５５６巷９號",
+            "台中市西屯區何南里臺灣大道二段６０７號");
+  }
+
+  @Test
+  public void numberedQueryWithLaneDoesNotPenalizeLaneCandidate() {
+    AddressCandidate laneNear =
+        new AddressCandidate(
+            24.1, 120.6, "台中市西屯區上安里臺灣大道三段５０６巷９號", "台中市西屯區上安里臺灣大道三段506巷9號", "臺灣大道三段", "９號", 10);
+    AddressCandidate directFar =
+        new AddressCandidate(
+            24.2, 120.7, "台中市西屯區上安里臺灣大道三段５０６號", "台中市西屯區上安里臺灣大道三段506號", "臺灣大道三段", "５０６號", 100);
+
+    List<AddressCandidate> out =
+        StreetCandidateRanker.reorder(
+            Arrays.asList(directFar, laneNear), ResultOrdering.DISTANCE, "台灣大道3段", "506巷9號");
+
+    assertThat(out).containsExactly(laneNear, directFar);
+  }
+
+  @Test
   public void mostSimilarRanksExactThenPrefixThenSubstringThenNone() {
     AddressCandidate exact = c("中山路", 900);
     AddressCandidate prefix = c("中山路一段", 800);
@@ -60,6 +94,18 @@ public class StreetCandidateReorderTest {
         StreetCandidateRanker.reorder(
             Arrays.asList(other, gazetted), ResultOrdering.MOST_SIMILAR, "台灣大道"); // typed 台
     assertThat(out).containsExactly(gazetted, other);
+  }
+
+  @Test
+  public void chineseNumberedRoadMatchesNormalizedArabicQuery() {
+    AddressCandidate numbered = cn("工業區三十八路", "207號", 100);
+    AddressCandidate other = cn("工業區3路", "208號", 1);
+
+    List<AddressCandidate> out =
+        StreetCandidateRanker.reorder(
+            Arrays.asList(other, numbered), ResultOrdering.MOST_SIMILAR, "工業區38路", "208號");
+
+    assertThat(out).containsExactly(numbered, other);
   }
 
   @Test

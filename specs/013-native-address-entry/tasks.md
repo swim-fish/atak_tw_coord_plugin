@@ -280,6 +280,18 @@ acceptance, TPP output, signing, and public publication.
 
 ---
 
+## Phase 11: Bounded Candidate Category Ranking
+
+- [X] T103 [P] [US1] Add Red tests for exact short-circuit, category quotas, cross-category deduplication/backfill, SQL hard limits, Taiwan Boulevard number ranking, and missing-anchor behavior in `app/src/test/java/com/atakmap/android/twcoord/address/`
+- [X] T104 [US1] Implement deterministic `EXACT`, `TEXT_PREFIX`, `NUMERIC_NEAREST`, `DISTANCE`, and `FALLBACK` SQL pools capped at 20 rows across all supported SQLite backends in `app/src/main/java/com/atakmap/android/twcoord/address/`
+- [X] T105 [US1] Compose the visible 20-row shortlist with exact-only behavior, `6 / 8 / 4 / 2` quotas, stable-identity deduplication, semantic backfill, and direct-road preference when no lane/alley was entered in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/`
+- [X] T106 [US1] Capture the valid current ATAK map centre on the UI thread for distance retrieval and omit the distance pool when no valid anchor exists in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/`
+- [X] T107 [P] Update the feature contract, model, plan, quickstart, and native Taiwan pane UI record with the bounded category-ranking behavior
+- [X] T108 Run formatting, full JVM, lint, and civ-debug APK assembly gates and record the result in `specs/013-native-address-entry/quickstart.md`
+- [X] T109 [P] Synchronize ADR-0026, ADR/UI indexes, README, changelog, and canonical English/Traditional Chinese operator guides with the bounded candidate policy and retired-workflow state
+
+---
+
 ## Dependencies and Execution Order
 
 ### Phase dependencies

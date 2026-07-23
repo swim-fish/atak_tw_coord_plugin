@@ -71,6 +71,26 @@ public final class AddressEntryControllerTest {
   }
 
   @Test
+  public void forwardRequestCapturesCurrentMapAnchor() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    Wgs84 mapAnchor = new Wgs84(24.161989237766, 120.647296501898, 1L, Wgs84.Source.MAP_CENTRE);
+    AddressEntryController controller =
+        new AddressEntryController(
+            service,
+            new TaiwanAddressParser(),
+            debouncer,
+            20,
+            () -> ResultOrdering.DISTANCE,
+            () -> mapAnchor);
+
+    controller.editFull("臺中市西屯區臺灣大道三段9", true);
+    debouncer.runPending();
+
+    assertThat(service.forwardRequest.anchorPoint()).isEqualTo(mapAnchor);
+  }
+
+  @Test
   public void uniqueExactCommitsResolutionThenNotifiesHumanListener() {
     FakeService service = new FakeService();
     ManualDebouncer debouncer = new ManualDebouncer();
@@ -110,10 +130,99 @@ public final class AddressEntryControllerTest {
     assertThat(controller.resolution()).isNull();
     assertThat(controller.candidates()).hasSize(2);
 
+    long revision = controller.draft().draftRevision();
     controller.selectCandidate(partial.candidateId(), true);
     assertThat(controller.validation()).isEqualTo(AddressValidation.RESOLVED);
     assertThat(controller.resolution().source())
         .isEqualTo(AddressResolution.Source.OPERATOR_SELECTED);
+    assertThat(controller.draft().rawAddress()).isEqualTo(partial.displayAddress());
+    assertThat(controller.draft().draftRevision()).isEqualTo(revision);
+    assertThat(controller.candidates()).hasSize(2);
+  }
+
+  @Test
+  public void structuredSelectionProjectsChosenFullAddressWithoutNewRevision() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    controller.editStructured("臺中市", "南屯區", "黎明路2段", "130號", true);
+    debouncer.runPending();
+    AddressCandidate selected = candidate("132號", AddressMatchKind.PARTIAL, 2);
+    service.complete(
+        ForwardAddressResult.candidates(
+            service.forwardRequest.identity(),
+            Arrays.asList(selected, candidate("134號", AddressMatchKind.PARTIAL, 3))));
+    long revision = controller.draft().draftRevision();
+
+    controller.selectCandidate(selected.candidateId(), true);
+
+    assertThat(controller.draft().mode()).isEqualTo(AddressInputMode.STRUCTURED);
+    assertThat(controller.draft().rawAddress()).isEqualTo(selected.displayAddress());
+    assertThat(controller.draft().components().countyCity()).isEqualTo("臺中市");
+    assertThat(controller.draft().components().districtTownship()).isEqualTo("南屯區");
+    assertThat(controller.draft().components().roadLocality()).isEqualTo("黎明路2段");
+    assertThat(controller.draft().structuredTail()).isEqualTo("132號");
+    assertThat(controller.draft().draftRevision()).isEqualTo(revision);
+  }
+
+  @Test
+  public void structuredBareNumberRemainsUnmodifiedWhileEditing() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+
+    controller.editStructured("臺中市", "西屯區", "惠來里臺灣大道3段", "9", true);
+
+    assertThat(controller.draft().rawAddress()).isEqualTo("臺中市西屯區惠來里臺灣大道3段9");
+    assertThat(controller.draft().structuredTail()).isEqualTo("9");
+    assertThat(controller.draft().components().tail()).isEmpty();
+    assertThat(controller.draft().unclassifiedText()).isEqualTo("9");
+    assertThat(controller.validation()).isEqualTo(AddressValidation.READY_TO_LOOKUP);
+  }
+
+  @Test
+  public void identicalImeCommitDoesNotInvalidateOpenCandidates() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    String address = "臺中市南屯區黎明路2段130號";
+    controller.editFull(address, true);
+    debouncer.runPending();
+    AddressCandidate first = candidate("132號", AddressMatchKind.PARTIAL, 2);
+    AddressCandidate second = candidate("134號", AddressMatchKind.PARTIAL, 3);
+    service.complete(
+        ForwardAddressResult.candidates(
+            service.forwardRequest.identity(), Arrays.asList(first, second)));
+    long revision = controller.draft().draftRevision();
+
+    controller.editFull(address, true);
+
+    assertThat(controller.draft().draftRevision()).isEqualTo(revision);
+    assertThat(controller.validation()).isEqualTo(AddressValidation.AMBIGUOUS);
+    assertThat(controller.candidates()).containsExactly(first, second);
+    assertThat(debouncer.pending).isNull();
+  }
+
+  @Test
+  public void identicalStructuredImeCommitDoesNotInvalidateOpenCandidates() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    controller.editStructured("臺中市", "南屯區", "黎明路2段", "130號", true);
+    debouncer.runPending();
+    AddressCandidate first = candidate("132號", AddressMatchKind.PARTIAL, 2);
+    AddressCandidate second = candidate("134號", AddressMatchKind.PARTIAL, 3);
+    service.complete(
+        ForwardAddressResult.candidates(
+            service.forwardRequest.identity(), Arrays.asList(first, second)));
+    long revision = controller.draft().draftRevision();
+
+    controller.editStructured("臺中市", "南屯區", "黎明路2段", "130號", true);
+
+    assertThat(controller.draft().draftRevision()).isEqualTo(revision);
+    assertThat(controller.validation()).isEqualTo(AddressValidation.AMBIGUOUS);
+    assertThat(controller.candidates()).containsExactly(first, second);
+    assertThat(debouncer.pending).isNull();
   }
 
   @Test

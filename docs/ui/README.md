@@ -20,7 +20,8 @@ later polish pass.
   `native-taiwan-coordinate-entry.md`.
 - `native-taiwan-coordinate-entry.md` — the current four-tab Taiwan pane
   registered in ATAK's shared coordinate-entry dialog, including Address,
-  candidate selection, host controls, read-only state, and locale lifecycle.
+  the bounded 20-row category-balanced candidate shortlist, host controls,
+  read-only state, and locale lifecycle.
 - `offline-address-page.md` — the internal Offline Address manager reached
   through TW Coordinates (feature 004): State A (empty) / State B (active dataset), the
   Import / Replace / Remove flows, and the inline-error matrix; the

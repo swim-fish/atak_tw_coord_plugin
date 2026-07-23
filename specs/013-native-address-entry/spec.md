@@ -284,7 +284,14 @@ works from the retained data.
   operator selection with enough address context to distinguish them. The
   nearest result MUST NOT be silently treated as exact solely because it is
   nearest. Two or more candidates that differ only by an omitted
-  village/neighbourhood prefix MUST remain unresolved until selection.
+  village/neighbourhood prefix MUST remain unresolved until selection. Each
+  retrieval category and the visible candidate list MUST be capped at 20
+  rows. Any exact matches MUST form the exclusive candidate set. Otherwise,
+  the initial visible allocation MUST be six text-prefix, eight
+  numeric-nearest, four map-distance, and two fallback rows, deduplicated by
+  stable candidate identity and backfilled in that semantic order to the
+  20-row cap. A missing valid map-centre anchor MUST skip the distance
+  category and backfill from the remaining categories.
 - **FR-012**: An address MUST remain unresolved until a unique result exists
   or the operator selects one result. Unresolved input MUST NOT be returned to
   the host, move the map, replace a point, or dismiss the dialog.

@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -92,7 +93,7 @@ public final class DefaultAddressLookupServiceForwardTest {
   }
 
   @Test
-  public void requestedOrderingChangesAmbiguousCandidateOrder() throws Exception {
+  public void exactFullAddressWinsBeforeEitherConfiguredOrdering() throws Exception {
     AddressCandidate nearPartial = raw("臺中市南屯區黎明路1段999號", 24.15, 120.65, "黎明路1段", "999號", 5);
     AddressCandidate fartherExact = raw("臺中市南屯區黎明路2段130號", 24.16, 120.66, "黎明路2段", "130號", 80);
     Harness harness = harness(Arrays.asList(fartherExact, nearPartial));
@@ -103,10 +104,51 @@ public final class DefaultAddressLookupServiceForwardTest {
 
     assertThat(distance.candidates())
         .extracting(AddressCandidate::displayAddress)
-        .containsExactly("臺中市南屯區黎明路1段999號", "臺中市南屯區黎明路2段130號");
+        .containsExactly("臺中市南屯區黎明路2段130號");
     assertThat(mostSimilar.candidates())
         .extracting(AddressCandidate::displayAddress)
-        .containsExactly("臺中市南屯區黎明路2段130號", "臺中市南屯區黎明路1段999號");
+        .containsExactly("臺中市南屯區黎明路2段130號");
+    harness.close();
+  }
+
+  @Test
+  public void numberedQueryUsesNormalizedStreetTextForEverySetting() throws Exception {
+    AddressCandidate nearButTextuallyWrong =
+        raw("臺中市西屯區協和里完全不同路208號", 24.15, 120.65, "完全不同路", "208號", 5)
+            .withMatch("", AddressMatchKind.PARTIAL);
+    AddressCandidate fartherTextualMatch =
+        raw("臺中市西屯區協和里工業區三十八路207號", 24.16, 120.66, "工業區三十八路", "207號", 80)
+            .withMatch("", AddressMatchKind.PARTIAL);
+    Harness harness = harness(Arrays.asList(nearButTextuallyWrong, fartherTextualMatch));
+    String query = "臺中市西屯區協和里工業區38路208號";
+
+    ForwardAddressResult distance = harness.lookup(query, ResultOrdering.DISTANCE, 20);
+    ForwardAddressResult mostSimilar = harness.lookup(query, ResultOrdering.MOST_SIMILAR, 20);
+
+    assertThat(distance.candidates().get(0).displayAddress()).isEqualTo("臺中市西屯區協和里工業區三十八路207號");
+    assertThat(mostSimilar.candidates().get(0).displayAddress()).isEqualTo("臺中市西屯區協和里工業區三十八路207號");
+    harness.close();
+  }
+
+  @Test
+  public void addressSemanticsReorderBeforeFacadeCandidateLimitForEverySetting() throws Exception {
+    AddressCandidate nearbyWrongSegment =
+        raw("臺中市西屯區何南里臺灣大道二段607號", 24.16, 120.65, "臺灣大道二段", "607號", 5);
+    AddressCandidate fartherRequestedAddress =
+        raw("臺中市西屯區惠來里臺灣大道三段99號", 24.17, 120.64, "臺灣大道三段", "99號", 500);
+    Harness harness =
+        harness(Arrays.asList(nearbyWrongSegment, fartherRequestedAddress), "臺中市", true);
+
+    ForwardAddressResult distance = harness.lookup("台中市西屯區惠來里臺灣大道三段９９", ResultOrdering.DISTANCE, 1);
+    ForwardAddressResult mostSimilar =
+        harness.lookup("台中市西屯區惠來里臺灣大道三段９９", ResultOrdering.MOST_SIMILAR, 1);
+
+    assertThat(distance.candidates())
+        .extracting(AddressCandidate::displayAddress)
+        .containsExactly("臺中市西屯區惠來里臺灣大道三段99號");
+    assertThat(mostSimilar.candidates())
+        .extracting(AddressCandidate::displayAddress)
+        .containsExactly("臺中市西屯區惠來里臺灣大道三段99號");
     harness.close();
   }
 
@@ -115,6 +157,12 @@ public final class DefaultAddressLookupServiceForwardTest {
   }
 
   private Harness harness(List<AddressCandidate> rows, String registryCounty) throws Exception {
+    return harness(rows, registryCounty, false);
+  }
+
+  private Harness harness(
+      List<AddressCandidate> rows, String registryCounty, boolean facadeHonorsLimit)
+      throws Exception {
     TestFileSystem fs = new TestFileSystem(tmp.newFolder().toPath());
     AddressBundleImporter importer =
         new AddressBundleImporter(fs, new MessageDigestShaCalculator(), 3);
@@ -157,7 +205,24 @@ public final class DefaultAddressLookupServiceForwardTest {
           @Override
           public List<AddressCandidate> fullAddressCandidates(
               AddressDraft draft, Wgs84 anchorPoint, int limit) {
-            return rows;
+            if (!facadeHonorsLimit || rows.size() <= limit) return rows;
+            return new ArrayList<>(rows.subList(0, limit));
+          }
+
+          @Override
+          public List<AddressCandidate> forwardCandidatePool(
+              AddressDraft draft,
+              String foldedStreetFragment,
+              Wgs84 anchorPoint,
+              ForwardCandidatePool pool,
+              int limit) {
+            return StreetCandidateRanker.reorderForPool(
+                rows,
+                pool,
+                foldedStreetFragment,
+                draft.components().tail(),
+                anchorPoint != null,
+                facadeHonorsLimit ? limit : Math.max(limit, rows.size()));
           }
 
           @Override

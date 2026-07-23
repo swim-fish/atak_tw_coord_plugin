@@ -102,6 +102,8 @@ module, flavor, process, service, or permission
   to approximately 731,000 rows / 324 MB and approximately 10 MB boundary data;
 - one bounded address worker shared by native entry and adapted address
   consumers;
+- at most five deterministic SQL candidate pools of 20 rows each per forward
+  request, followed by a deduplicated visible shortlist of at most 20 rows;
 - three retired public Tools workflows, two retired receivers/pages, and one
   retained internal receiver/page.
 

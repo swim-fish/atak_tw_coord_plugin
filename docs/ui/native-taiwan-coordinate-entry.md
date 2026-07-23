@@ -135,6 +135,15 @@ point with the nearest address-record point (the **reverse no-snap rule**).
 - Village/neighbourhood text may be omitted. A unique county/district,
   street/section, and address-tail match resolves automatically; identical
   matches in multiple villages remain unresolved for explicit selection.
+- Candidate retrieval is bounded before display. Exact matches are shown
+  exclusively. Otherwise the 20-row shortlist initially reserves six
+  text-prefix, eight numeric-nearest, four current-map-distance, and two
+  fallback rows, then deduplicates and backfills in that semantic order.
+  Distance rows are omitted when ATAK has no valid map-centre anchor.
+- A direct-road query without `巷` or `弄` ranks direct-road numbers ahead of
+  lane/alley addresses. For example, a `臺灣大道三段9` draft prefers matching
+  prefixes and nearby direct numbers instead of filling the dialog with
+  unrelated `...巷...弄9號` rows.
 - A missing applicable county dataset leaves the three coordinate systems
   usable and shows guidance to open **TW Coordinates** for data management.
 - Forward and reverse lookup are local-only. Editing, mode changes, pane

@@ -19,6 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 /** Single bounded worker owner for forward and reverse offline address lookup. */
 public final class DefaultAddressLookupService implements AddressLookupService {
@@ -57,6 +58,7 @@ public final class DefaultAddressLookupService implements AddressLookupService {
 
   /** Production query engine over one leased registry snapshot. */
   public static final class RegistryQueryEngine implements QueryEngine {
+    private static final Pattern BARE_HOUSE_NUMBER = Pattern.compile("^\\d+(?:之\\d+)?$");
     private final TaiwanAddressParser parser;
 
     public RegistryQueryEngine(TaiwanAddressParser parser) {
@@ -71,20 +73,24 @@ public final class DefaultAddressLookupService implements AddressLookupService {
               request.normalizedAddress(),
               request.identity().draftRevision(),
               AddressInputMode.FULL);
+      AddressDraft lookupDraft = lookupDraft(draft);
       if (session.datasets().isEmpty()) return ForwardAddressResult.noDataset(request.identity());
       CountyActiveDataset active =
-          datasetForCounty(session.datasets(), draft.components().countyCity());
+          datasetForCounty(session.datasets(), lookupDraft.components().countyCity());
       if (active == null) return ForwardAddressResult.noDataset(request.identity());
 
       Wgs84 anchor = request.anchorPoint();
       List<AddressCandidate> raw =
-          active.facade().fullAddressCandidates(draft, anchor, Math.max(request.limit(), 1));
+          active
+              .facade()
+              .fullAddressCandidates(
+                  lookupDraft, anchor, request.ordering(), Math.max(request.limit(), 1));
       DatasetIdentity provenance = DatasetIdentity.from(active);
       Map<String, AddressCandidate> deduplicated = new LinkedHashMap<>();
       for (AddressCandidate candidate : raw) {
         String normalized = parser.normalize(candidate.displayAddress());
         AddressMatchKind kind =
-            normalized.equals(draft.normalizedAddress())
+            normalized.equals(lookupDraft.normalizedAddress())
                 ? AddressMatchKind.EXACT
                 : candidate.matchKind();
         String stableId = provenance.fileSha256() + ":" + candidate.candidateId();
@@ -93,35 +99,27 @@ public final class DefaultAddressLookupService implements AddressLookupService {
             candidate.withLookupData(stableId, normalized, kind, active.county(), provenance));
       }
       if (deduplicated.isEmpty()) return ForwardAddressResult.noMatch(request.identity());
-      List<AddressCandidate> candidates =
-          orderCandidates(new ArrayList<>(deduplicated.values()), draft, request.ordering());
+      List<AddressCandidate> candidates = new ArrayList<>(deduplicated.values());
       if (candidates.size() > request.limit()) {
         candidates = new ArrayList<>(candidates.subList(0, request.limit()));
       }
       return ForwardAddressResult.candidates(request.identity(), candidates);
     }
 
-    private static List<AddressCandidate> orderCandidates(
-        List<AddressCandidate> candidates, AddressDraft draft, ResultOrdering ordering) {
-      String road = StreetTextNormaliser.fold(draft.components().roadLocality());
-      String tail = StreetTextNormaliser.fold(draft.components().tail());
-      if (ordering != ResultOrdering.MOST_SIMILAR) {
-        return StreetCandidateRanker.reorder(candidates, ResultOrdering.DISTANCE, road, tail);
+    /**
+     * Interprets a final bare number as the common omitted-號 shorthand only inside lookup. The
+     * controller draft remains byte-for-byte editable, so a structured field containing {@code 9}
+     * is never rendered back as {@code 9號} while the operator is still typing.
+     */
+    private AddressDraft lookupDraft(AddressDraft draft) {
+      if (draft == null
+          || !draft.components().tail().isEmpty()
+          || draft.components().roadLocality().isEmpty()
+          || !BARE_HOUSE_NUMBER.matcher(draft.unclassifiedText()).matches()) {
+        return draft;
       }
-
-      List<AddressCandidate> ordered = new ArrayList<>(candidates.size());
-      for (AddressMatchKind kind :
-          new AddressMatchKind[] {
-            AddressMatchKind.EXACT, AddressMatchKind.PARTIAL, AddressMatchKind.FUZZY
-          }) {
-        List<AddressCandidate> matchingKind = new ArrayList<>();
-        for (AddressCandidate candidate : candidates) {
-          if (candidate.matchKind() == kind) matchingKind.add(candidate);
-        }
-        ordered.addAll(
-            StreetCandidateRanker.reorder(matchingKind, ResultOrdering.MOST_SIMILAR, road, tail));
-      }
-      return ordered;
+      String canonical = draft.components().compose() + draft.unclassifiedText() + "號";
+      return parser.parse(canonical, draft.draftRevision(), draft.mode());
     }
 
     /**

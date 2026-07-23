@@ -7,8 +7,10 @@ import com.atakmap.android.gui.coordinateentry.CoordinateEntryPane;
 import com.atakmap.android.maps.MapView;
 import com.atakmap.android.twcoord.address.lookup.AddressLookupService;
 import com.atakmap.android.twcoord.address.lookup.NoDataAddressLookupService;
+import com.atakmap.android.twcoord.coord.Wgs84;
 import com.atakmap.android.twcoord.prefs.PreferenceStore;
 import com.atakmap.coremap.log.Log;
+import com.atakmap.coremap.maps.coords.GeoPoint;
 import java.util.Objects;
 
 /** UI-thread-confined, idempotent owner of one native coordinate-entry registration. */
@@ -113,7 +115,26 @@ public final class NativeCoordinateEntryRegistrar {
                 mapView.getContext(),
                 preferences,
                 lookupService,
-                managerNavigator));
+                managerNavigator,
+                () -> currentMapAnchor(mapView)));
+  }
+
+  private static Wgs84 currentMapAnchor(MapView mapView) {
+    GeoPoint point = mapView.getPoint().get();
+    if (point == null
+        || !Double.isFinite(point.getLatitude())
+        || !Double.isFinite(point.getLongitude())
+        || point.getLatitude() < -90.0
+        || point.getLatitude() > 90.0
+        || point.getLongitude() < -180.0
+        || point.getLongitude() > 180.0) {
+      return null;
+    }
+    return new Wgs84(
+        point.getLatitude(),
+        point.getLongitude(),
+        System.currentTimeMillis(),
+        Wgs84.Source.MAP_CENTRE);
   }
 
   public synchronized State state() {

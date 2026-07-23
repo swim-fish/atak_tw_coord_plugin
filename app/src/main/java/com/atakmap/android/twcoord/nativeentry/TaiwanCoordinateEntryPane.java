@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /** Plugin-owned implementation of ATAK's public native coordinate-entry pane contract. */
 public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
@@ -122,6 +123,15 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       Context windowContext,
       PreferenceStore preferences,
       AddressLookupService lookupService) {
+    this(pluginContext, windowContext, preferences, lookupService, () -> null);
+  }
+
+  private TaiwanCoordinateEntryPane(
+      Context pluginContext,
+      Context windowContext,
+      PreferenceStore preferences,
+      AddressLookupService lookupService,
+      Supplier<Wgs84> forwardAnchorSupplier) {
     this(
         pluginContext,
         windowContext,
@@ -129,7 +139,9 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
             Objects.requireNonNull(preferences, "preferences").getNativeEntryLastUnit(),
             preferences::setNativeEntryLastUnit),
         new AddressEntryController(
-            Objects.requireNonNull(lookupService, "lookupService"), preferences::getResultOrdering),
+            Objects.requireNonNull(lookupService, "lookupService"),
+            preferences::getResultOrdering,
+            Objects.requireNonNull(forwardAnchorSupplier, "forwardAnchorSupplier")),
         new TaiwanEntryFormatter());
   }
 
@@ -139,7 +151,23 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       PreferenceStore preferences,
       AddressLookupService lookupService,
       Runnable addressManagerNavigator) {
-    this(pluginContext, windowContext, preferences, lookupService);
+    this(
+        pluginContext,
+        windowContext,
+        preferences,
+        lookupService,
+        addressManagerNavigator,
+        () -> null);
+  }
+
+  public TaiwanCoordinateEntryPane(
+      Context pluginContext,
+      Context windowContext,
+      PreferenceStore preferences,
+      AddressLookupService lookupService,
+      Runnable addressManagerNavigator,
+      Supplier<Wgs84> forwardAnchorSupplier) {
+    this(pluginContext, windowContext, preferences, lookupService, forwardAnchorSupplier);
     this.addressManagerNavigator =
         Objects.requireNonNull(addressManagerNavigator, "addressManagerNavigator");
   }

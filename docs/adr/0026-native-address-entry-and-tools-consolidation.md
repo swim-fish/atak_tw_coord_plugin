@@ -65,6 +65,30 @@ active public-page decisions in ADR-0009, ADR-0020, and ADR-0021. Their
 historical rationale remains unchanged. ADR-0015 and ADR-0017 continue to
 govern offline storage, validation, and multi-county import behavior.
 
+## 2026-07-24 implementation clarification — bounded candidate retrieval
+
+The shared forward lookup service implements the bounded-candidate part of
+this decision with five deterministic SQL pools:
+
+```text
+EXACT | TEXT_PREFIX | NUMERIC_NEAREST | DISTANCE | FALLBACK
+```
+
+Each backend query is capped at 20 rows. Exact matches are exclusive.
+Otherwise the visible 20-row shortlist initially allocates six text-prefix,
+eight numeric-nearest, four current-map-distance, and two fallback rows. It
+deduplicates stable candidate identities across pools and backfills in that
+semantic order. If ATAK has no valid current map-centre anchor, the distance
+pool is omitted and the remaining pools backfill its allocation. A query that
+does not contain `巷` or `弄` ranks direct-road numbers ahead of lane/alley
+records.
+
+This is a concrete bounded-query policy under decisions 2–4, not a new
+external contract or storage format. It prevents one dense road family from
+consuming the entire dialog through SQLite traversal order, while retaining a
+small distance-aware sample and a deterministic fallback. At most 100 raw rows
+are materialized per forward request and at most 20 are displayed.
+
 ## Alternatives considered
 
 - **Keep all legacy Tools entries as fallback.** Rejected because it preserves
@@ -94,6 +118,9 @@ govern offline storage, validation, and multi-county import behavior.
   stale-result/use-after-close races.
 - Address unavailability cannot remove or invalidate coordinate conversion.
 - Reverse address display cannot silently alter host geometry.
+- Dense road families use bounded, category-balanced retrieval instead of one
+  global text or distance ordering; the visible list is stable but deliberately
+  not an exhaustive list of every stored address on that road.
 - Upgrade retains large offline datasets without re-import; legacy UI state is
   intentionally not migrated.
 - ATAK 5.5 and 5.7.0.9 physical journeys, cross-context dialogs, performance,
