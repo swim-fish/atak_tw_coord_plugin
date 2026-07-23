@@ -1,5 +1,7 @@
 # TW Coordinates Plugin — 使用手冊
 
+**對應版本：** v1.4.3
+
 本手冊說明目前的操作流程。台灣座標與地址輸入已整合進 ATAK 原生座標
 對話框；此外掛在 Tools 選單只保留一個公開項目：**TW Coordinates**。
 

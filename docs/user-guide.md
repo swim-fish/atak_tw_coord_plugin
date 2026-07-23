@@ -1,5 +1,7 @@
 # TW Coordinates Plugin — User Guide
 
+**Version:** v1.4.3
+
 This guide covers the current operator workflow. Taiwan coordinate and address
 entry are integrated into ATAK's native coordinate dialog. The plugin exposes
 one Tools item: **TW Coordinates**.

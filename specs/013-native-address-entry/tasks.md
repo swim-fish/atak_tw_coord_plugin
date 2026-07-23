@@ -261,7 +261,7 @@ repository quality gates after story behavior converges.
 **Purpose**: Keep implementation/build completion distinct from physical
 acceptance, TPP output, signing, and public publication.
 
-- [ ] T092 [RELEASE-GATE] Select and commit the release `PLUGIN_VERSION` with matching user-visible version and changelog text in `app/build.gradle` and `CHANGELOG.md` before any TPP source archive is generated
+- [X] T092 [RELEASE-GATE] Select and commit the release `PLUGIN_VERSION` with matching user-visible version and changelog text in `app/build.gradle` and `CHANGELOG.md` before any TPP source archive is generated
 - [ ] T093 [RELEASE-GATE] Record the exact candidate commit, APK SHA-256, dataset provenance, and completed/PENDING scenario matrix without device serials or workstation paths in `specs/013-native-address-entry/quickstart.md`
 - [ ] T094 [RELEASE-GATE] Complete or explicitly disposition every ATAK 5.5 and 5.7.0.9 compatibility row, including small portrait pane, large font, reload, dialog, lifecycle, and upgrade, in `specs/013-native-address-entry/quickstart.md`
 - [ ] T095 [RELEASE-GATE] Measure at least 100 normalization/mode projections and 100 forward/reverse lookups on the named reference device, prove ≤100 ms local work and ≤1,000 ms median/≤2,000 ms p95 lookup budgets, and record sanitized summaries in `specs/013-native-address-entry/quickstart.md`
