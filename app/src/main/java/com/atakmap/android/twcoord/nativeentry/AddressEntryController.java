@@ -296,12 +296,15 @@ public final class AddressEntryController {
       current = draft;
     }
     if (kind == LocalitySelectorSnapshot.Kind.COUNTY) {
+      String retainedDistrict =
+          !selected.isEmpty()
+                  && StreetTextNormaliser.fold(selected)
+                      .equals(StreetTextNormaliser.fold(current.components().countyCity()))
+              ? current.components().districtTownship()
+              : "";
       editStructured(
           selected,
-          StreetTextNormaliser.fold(selected)
-                  .equals(StreetTextNormaliser.fold(current.components().countyCity()))
-              ? current.components().districtTownship()
-              : "",
+          retainedDistrict,
           current.components().roadLocality(),
           current.structuredTail(),
           human);

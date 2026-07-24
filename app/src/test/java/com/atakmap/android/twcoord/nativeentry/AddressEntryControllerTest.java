@@ -47,6 +47,21 @@ public final class AddressEntryControllerTest {
   }
 
   @Test
+  public void clearingEmptyCountyAlsoClearsOrphanedDistrictAndPreservesRoadAndTail() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    controller.editStructured("", "西屯區", "臺灣大道3段", "99號", false);
+
+    controller.selectLocality(LocalitySelectorSnapshot.Kind.COUNTY, "", 1L, true);
+
+    assertThat(controller.draft().components().countyCity()).isEmpty();
+    assertThat(controller.draft().components().districtTownship()).isEmpty();
+    assertThat(controller.draft().components().roadLocality()).isEqualTo("臺灣大道3段");
+    assertThat(controller.draft().structuredTail()).isEqualTo("99號");
+  }
+
+  @Test
   public void staleDatasetSelectionCannotMutateDraft() {
     FakeService service = new FakeService();
     ManualDebouncer debouncer = new ManualDebouncer();
