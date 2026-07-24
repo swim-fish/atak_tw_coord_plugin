@@ -612,3 +612,119 @@ The link scan found and repaired one historical ADR link to the feature-013
 retired `ic_tw_coord_goto.xml`; the ADR now records it as a removed historical
 input instead of claiming the file still exists. These gates establish source,
 test, documentation, and debug-build readiness only.
+
+## 17. Validate structured locality selectors
+
+### Static postal provenance baseline
+
+The ordering asset is:
+
+```text
+app/src/main/assets/address/chunghwa_post_postal_localities.json
+```
+
+It must retain:
+
+- 22 county/city selector entries in the Chunghwa Post search-page order;
+- 371 unique county/district rows with three-digit prefixes;
+- source authority, title, URL, version/effective/retrieval dates, and
+  available source SHA-256 values;
+- published locality centres as metadata, never as proof that imported address
+  rows are searchable.
+
+Regenerate from an explicitly downloaded official XML source:
+
+```powershell
+.\scripts\generate_chunghwa_post_postal_localities.ps1 `
+  -SourceXml '<OFFICIAL_LOCALITY_CENTRE_XML>' `
+  -OutputJson '.\app\src\main\assets\address\chunghwa_post_postal_localities.json' `
+  -RetrievedOn '<YYYY-MM-DD>'
+```
+
+Review the complete semantic diff before accepting a refresh. Never replace
+the source version/date/hash with the current build date. The focused asset
+test recorded on 2026-07-24 is:
+
+```powershell
+.\gradlew.bat :app:testCivDebugUnitTest `
+  --tests com.atakmap.android.twcoord.address.ChunghwaPostPostalLocalitiesAssetTest
+```
+
+Expected: three tests pass, including source metadata, complete deterministic
+ordering, uniqueness/coordinate validation, and representative postal
+prefixes. This baseline does not yet prove selector behavior.
+
+### Test-first selector suites
+
+Add failing tests before production selector behavior, then make the following
+focused groups green:
+
+```text
+PostalLocalityCatalogTest
+LocalitySelectorOrderingTest
+AddressDatabaseFacadeLocalitiesTest
+DefaultAddressLookupServiceLocalitiesTest
+AddressEntryControllerLocalitySelectionTest
+AddressLocalityDialogTest
+TaiwanCoordinateEntryPaneLocalitySelectorTest
+```
+
+Required fixtures and outcomes:
+
+1. Registry contains only Taichung and New Taipei datasets: county choices
+   contain exactly those counties, in postal selector order unless one is the
+   accepted map-centre locality.
+2. Taichung fixture contains a subset of imported `township` values: district
+   choices contain exactly that subset, not every Taichung postal row.
+3. Two districts share one prefix: official source order then normalized name
+   gives a stable tie-break.
+4. One imported district is absent from the postal asset: it remains selectable
+   after matched rows and emits only a contained diagnostic.
+5. Map anchor resolves inside an active county/district: exactly those
+   applicable choices are promoted; all remaining rows preserve baseline
+   order.
+6. Anchor is invalid, outside boundary coverage, boundary data is absent, or
+   the locality dataset is inactive: no choice is promoted and no nearest
+   address is substituted.
+7. A dataset revision changes while discovery or a dialog is pending: the old
+   result/selection is rejected; reopening reflects the completed revision.
+8. Full-address parsing yields an unavailable locality: structured mode shows
+   the preserved value without presenting it as searchable or losing text on
+   a round trip.
+9. Changing county clears an incompatible district and stale resolution but
+   preserves road/tail; changing district preserves road/tail and invalidates
+   stale resolution.
+10. Read-only, dispose, locale replacement, and late callbacks cannot mutate
+    the draft or escape a failure into ATAK.
+
+### On-device selector journey `[RELEASE-GATE]`
+
+Run on ATAK 5.7.0.9 and ATAK 5.5:
+
+1. Import at least two county datasets plus compatible township boundaries.
+2. Move the map centre into one active county and open native Go To → Taiwan →
+   Address → Structured fields.
+3. Open County / city. Expect only active imported counties; the map-centre
+   county is first and every remaining row follows Chunghwa Post selector
+   order. Keep the dialog open while panning and confirm rows do not move.
+4. Select the map-centre county and open District. Expect only imported
+   districts; the map-centre district is first and every remaining row follows
+   three-digit postal order.
+5. Select a different county. Expect the incompatible district and old
+   candidates/resolution to clear while road/tail text remains.
+6. Remove or replace the selected dataset from the manager, return, and reopen
+   the selector. Expect the new active set without restarting ATAK and no stale
+   selectable row.
+7. Repeat in Convert Coordinate and read-only mode. Expect visible locality
+   values but no selector mutation in read-only state.
+8. Repeat at supported font scales and orientations. Expect 48 dp-reachable
+   controls, a bounded dialog list, and no overlap with host elevation/actions.
+
+Capture selector-open latency for at least 100 prepared snapshots. Required:
+≤ 100 ms p95. Capture background catalog/district refresh for the largest
+representative county: ≤ 1,000 ms p95. The two-county retained catalog/cache
+increment must be ≤ 1 MiB, and airplane-mode capture must show zero network
+attempts.
+
+These device, performance, memory, screenshot, and minimum-runtime results
+remain open release gates until executed and recorded.

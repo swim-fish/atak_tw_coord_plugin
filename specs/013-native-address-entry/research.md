@@ -104,21 +104,28 @@ geospatial conversion logic.
 to address units. Split county/city and district/township using longest known
 prefixes from installed boundary/dataset information; derive the road/locality
 against active address data; parse only the lane/alley/house/floor/room tail by
-unit grammar. Preserve raw, normalized, structured, and unclassified text.
+unit grammar. Preserve raw, normalized, structured, and unclassified text. Use
+a separate provenance-recorded Chunghwa Post catalog only to order structured
+locality selectors; it does not replace active imported data as the matching
+or availability authority.
 
 **Rationale**: A single regular expression mis-splits overlapping place names
 such as `臺南市新市區`. The existing `StreetTextNormaliser` handles only a small
-folding subset and is insufficient for full addresses. The plugin already has
-authoritative imported address rows and township boundary data, so a new
-external postcode library or bundled duplicate locality table is unnecessary.
+folding subset and is insufficient for full addresses. Imported address rows
+and township boundaries remain authoritative for parsing and lookup. A small
+bundled postal catalog is justified only for deterministic operator-facing
+ordering, which the imported schema's MOI `district_code` cannot supply.
 
 **Alternatives considered**:
 
 - One large regular expression: rejected because Taiwan administrative and
   road names overlap address-unit characters.
-- Add `zipcodetw` as a runtime dependency: rejected because it would duplicate
-  data, add provenance/update responsibility, and diverge from active TGOS
-  datasets.
+- Add `zipcodetw` as a runtime dependency: rejected because it would add a
+  runtime and data dependency, while the required ordering can be represented
+  by a small provenance-recorded official snapshot.
+- Use postal catalog rows as searchable availability: rejected because a
+  locality without an active imported address row would appear searchable but
+  always return no result.
 - Discard unknown tails: rejected because silent loss prevents safe correction
   and violates full/structured round-trip requirements.
 
@@ -378,3 +385,168 @@ public navigation. Historical ADR text must not be rewritten.
 
 - Amend old ADRs: rejected because accepted historical decisions are
   immutable; reversals require a superseding ADR.
+
+## R16 — Bundle a traceable Chunghwa Post locality-order catalog
+
+**Decision**: Bundle one offline catalog containing the 22 county/city
+selector positions published by Chunghwa Post and 371 locality rows carrying
+three-digit postal prefixes and the published administrative-area centre
+coordinates. Record the source authority, source title and URL, official
+version/effective date, retrieval date, and SHA-256 of each downloaded source.
+Generate the catalog reproducibly from the official XML rather than editing
+hundreds of rows by hand.
+
+County/city baseline order follows the current Chunghwa Post postal-search
+selector. District/township baseline order is ascending three-digit postal
+prefix, with official source order and normalized locality name as stable
+tie-breakers. The catalog is an ordering and locality-metadata reference only;
+it is not current delivery-route validation and never enables a choice absent
+from imported data.
+
+**Rationale**: The imported `places` schema carries MOI `district_code`, not
+postal code. Sorting it as postal order would be factually wrong. Chunghwa
+Post remains the primary source for postal ordering, and a bundled snapshot
+keeps native entry fully offline. Embedded provenance and checksums satisfy
+Constitution VIII and make future refreshes reviewable.
+
+**Evidence**:
+
+- [Chunghwa Post postal-code search](https://www.post.gov.tw/post/internet/SearchZone/index.jsp?ID=208)
+- [Chunghwa Post postal-code downloads](https://subservices.post.gov.tw/post/internet/Download/index.jsp?ID=220306)
+- `app/src/main/assets/address/chunghwa_post_postal_localities.json`
+- `scripts/generate_chunghwa_post_postal_localities.ps1`
+- `app/src/test/java/com/atakmap/android/twcoord/address/ChunghwaPostPostalLocalitiesAssetTest.java`
+
+**Alternatives considered**:
+
+- Sort by `district_code`: rejected because it is an MOI administrative code,
+  not a postal prefix.
+- Fetch postal data at runtime: rejected because it adds network permission,
+  failure modes, and operational dependence to an offline feature.
+- Hand-maintain an unversioned Java list: rejected because it obscures
+  provenance and makes omissions or reordered rows difficult to review.
+- Use only numeric postal order for counties: rejected because the accepted
+  county experience follows Chunghwa Post's own selector order, including its
+  explicit placement of offshore counties.
+
+## R17 — Intersect postal order with active imported searchability
+
+**Decision**: Build county choices from the active dataset registry. For a
+selected county, derive distinct non-empty `township` values from its active
+`places` facade, then join those values to the postal catalog by normalized
+county and district name. Postal rows never create choices by themselves.
+Unmatched active values remain available after matched values in normalized
+name order and surface a diagnostic counter rather than disappearing.
+
+Run district discovery on the existing bounded address worker and cache the
+small immutable result by dataset revision and county. Import, replacement,
+removal, tamper invalidation, or close invalidates the relevant snapshot.
+Never run a distinct-locality database scan from an Android rendering or click
+callback.
+
+**Rationale**: The operator must see only data that can actually be searched.
+The boundary database can list legally valid districts that have no imported
+address rows, while the postal catalog can be older than a current import.
+Intersecting at runtime preserves search truth without changing the imported
+database format. Revision-scoped caching avoids repeatedly scanning datasets
+as large as the existing 731,000-row county budget.
+
+**Alternatives considered**:
+
+- Use `TownshipBoundaryFacade.districtsOf()` directly: rejected because it can
+  offer a district whose address dataset is absent or incomplete.
+- Add a `localities` table to the generator contract now: deferred because it
+  would require a dataset schema/version migration; the requested selector can
+  be delivered compatibly with current imports.
+- Query `SELECT DISTINCT township` on every selector tap: rejected because
+  storage I/O must not block or repeatedly consume the host process.
+
+## R18 — Promote a cached map-centre locality without unstable reordering
+
+**Decision**: Reuse the existing validated `MapView.getPoint()` anchor supplier
+and resolve its containing county/district through
+`TownshipBoundaryFacade.localityAt(...)` on the address worker. Promote exactly
+one county when it is active. Promote exactly one district only when its county
+is selected and that district is present in the active dataset. Preserve the
+remaining postal order.
+
+Each selector opening consumes one immutable anchor/locality/dataset snapshot.
+It never reorders while visible. If the current anchor has no matching cached
+locality, boundary data is unavailable, or resolution is still pending, open
+immediately in baseline postal order; a later opening may use the refreshed
+locality. Do not substitute the nearest stored address.
+
+**Rationale**: Polygon containment expresses the operator's current map
+context without bias from address density or a cross-border nearest row.
+Promoting one choice improves reachability while leaving the rest of the list
+learnable. A cache-only open path satisfies the 100 ms selector budget and
+prevents movement beneath the operator.
+
+**Alternatives considered**:
+
+- Fully distance-sort every county/district: rejected because list positions
+  would change after every pan and conflict with the requested postal order.
+- Use the nearest imported address: rejected because sparse data and boundary
+  proximity can select the wrong locality.
+- Wait synchronously for polygon/database work before opening: rejected
+  because ATAK host controls must not block.
+- Reorder an already-open list when resolution completes: rejected because it
+  creates a selection race and poor field usability.
+
+## R19 — Use plugin-owned selector dialogs and preserve unavailable drafts
+
+**Decision**: Replace only the structured county/city and
+district/township text controls with compact, accessible selector controls.
+Open a height-bounded single-choice dialog rather than nesting a vertical list
+inside the pane. Use the ATAK Activity context for the window and pre-resolve
+all labels through the plugin context. Reuse platform widgets available across
+the ATAK 5.5–5.7 runtime range; add no Material dependency or new ATAK SDK
+seam.
+
+The full-address field remains free text. When parsing produces a locality not
+present in current choices, structured mode displays it as an explicit
+unavailable draft value rather than losing or silently replacing it. Changing
+county clears an incompatible district and stale resolution/candidates but
+preserves road/tail text; changing district preserves road/tail and starts a
+fresh combined lookup. Dataset-change or late dialog callbacks must pass pane,
+session, draft, and dataset-revision gates.
+
+**Rationale**: Selection prevents spelling and width variants while the
+single full field preserves paste and exceptional-address workflows. A dialog
+keeps one pane scroll owner, provides adequate touch targets, and follows the
+already verified plugin-resource/window-context rule. Explicit unavailable
+state is required by the lossless shared-draft contract.
+
+**Alternatives considered**:
+
+- Strict `Spinner` values that cannot display unmatched input: rejected
+  because full-to-structured switching would lose or misrepresent the draft.
+- Editable auto-complete fields: rejected for the first iteration because they
+  retain spelling ambiguity and add filtering/state complexity without user
+  need.
+- Inline county/district lists: rejected because they compete with the pane's
+  vertical scroll owner and host controls.
+- Clear road and tail whenever county changes: rejected because it punishes a
+  common locality correction; preserving text while invalidating resolution
+  is safe and reversible.
+
+## R20 — Record the postal-catalog decision separately
+
+**Decision**: Add a new ADR during implementation for the Chunghwa Post catalog
+and active-data intersection. It records the ordering-only authority boundary,
+provenance/update process, deterministic fallbacks, current dataset
+compatibility, and why map-centre containment is promotion rather than
+searchability. It supplements ADR-0026 rather than rewriting it.
+
+**Rationale**: R5 originally rejected a bundled locality table because parsing
+and matching did not need one. The accepted selector ordering now introduces a
+new authoritative snapshot and update responsibility. That reversal is
+architecturally significant under Constitution V and VIII even though it does
+not change the imported address format.
+
+**Alternatives considered**:
+
+- Extend ADR-0026 after acceptance: rejected because accepted ADRs are
+  immutable except for metadata corrections.
+- Treat the asset as an undocumented implementation detail: rejected because
+  authority, staleness, and update policy materially affect displayed order.

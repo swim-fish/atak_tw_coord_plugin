@@ -15,6 +15,8 @@ interface AddressLookupService extends AutoCloseable {
                        Callback<ForwardAddressResult> callback);
   LookupHandle reverse(ReverseAddressRequest request,
                        Callback<ReverseAddressResult> callback);
+  LookupHandle localities(LocalitySelectorRequest request,
+                          Callback<LocalitySelectorResult> callback);
   AddressAvailability availability();
   void addAvailabilityListener(AvailabilityListener listener);
   void removeAvailabilityListener(AvailabilityListener listener);
@@ -54,6 +56,12 @@ below is mandatory.
   register data; any newly opened facade is closed immediately.
 - The service does not change dataset directories, manifests, schema versions,
   provenance fields, or import atomicity.
+- Active county choices come from the registry snapshot. District choices come
+  from distinct non-empty `township` values read through the selected county's
+  leased facade.
+- Locality discovery results are cached by county plus dataset
+  identity/revision. Any registry write transition invalidates affected cached
+  snapshots before availability notification.
 
 ## Forward lookup
 
@@ -141,6 +149,52 @@ Distance/confidence remains presentation metadata and never changes geometry.
 - Resolve road/locality against active data; parse the remaining unit tail.
 - Always preserve raw input and unclassified text.
 
+## Locality selector snapshots
+
+### Input
+
+- Selector kind: county or district.
+- Selected canonical county for a district request.
+- Optional validated WGS84 map-centre anchor.
+- Pane/session generation and current dataset revision.
+
+### Processing rules
+
+1. Load and validate the bundled postal catalog off the main thread. A valid
+   catalog carries authority, version/effective/retrieval dates, source URLs,
+   source hashes, unique county/district names, three-digit prefixes, and
+   bounded coordinates.
+2. Build county availability only from active registry entries.
+3. Build district availability only from distinct imported `township` values
+   for the selected active county. Postal or boundary-only rows never create
+   selectable values.
+4. Normalize names for joining without changing canonical display spelling.
+5. Order counties by Chunghwa Post selector position and districts by numeric
+   three-digit prefix plus official source order. Append unmatched active
+   values in normalized-name order and report their count.
+6. Resolve the optional anchor through cached/off-thread township polygon
+   containment. Promote at most one active county and, for a district request,
+   at most one active district belonging to the selected county.
+7. Do not substitute a nearest stored address when polygon locality is absent.
+8. Publish an immutable ordered snapshot. Completion after cancellation,
+   service close, pane/session replacement, or dataset revision change is
+   stale and cannot be applied.
+
+### Outcomes
+
+- `READY`: immutable choices, ordering provenance/fallback state, optional
+  promoted locality, and captured identities.
+- `NO_DATASET`: no active county or no active selected county.
+- `LOADING`: optional controller presentation while an uncached district
+  snapshot is prepared; never a synchronous wait.
+- `FAILURE`: contained catalog/database/boundary failure. Active imported
+  choices use deterministic normalized-name fallback when safely obtainable;
+  full-address lookup remains available.
+
+An already-open selector holds one accepted snapshot and never receives
+in-place row reordering. Reopening may use a newer map anchor or completed
+dataset revision.
+
 ## Result provenance
 
 Every candidate/resolution carries county, data date, schema version, source,
@@ -154,5 +208,9 @@ accuracy or provenance than the imported data provides.
   least 100 real-device lookups.
 - Process RSS remains at or below 200 MiB during the established five-minute
   boundary-plus-two-counties scenario.
+- Postal catalog load/index and the largest active county district refresh
+  complete within 1,000 ms p95 on the bounded worker.
+- A prepared county/district snapshot opens within 100 ms p95 and all retained
+  catalog/snapshot objects add no more than 1 MiB in the two-county scenario.
 - Candidate lists and queues are bounded; no new county facade is opened solely
   to render the Address tab before a query requires it.

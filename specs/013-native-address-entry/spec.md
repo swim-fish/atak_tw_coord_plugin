@@ -11,7 +11,10 @@ ATAK's native Go To and Convert Coordinate experience. Let operators switch
 between one full-address field and four structured address fields. Retire the
 duplicate TW Coord GoTo and TW Addr Search Tools entries, move offline address
 management under TW Coordinates, and leave TW Coordinates as the plugin's only
-Tools entry."
+Tools entry. In structured mode, make county/city and district/township
+selectable from currently active imported address data, order them by
+traceable Chunghwa Post locality data, and promote the current map-centre
+locality when it is available."
 
 ## Scope
 
@@ -27,6 +30,12 @@ dataset import, status, replacement, and removal remain available from that
 entry. The custom `TW Coord GoTo` and `TW Addr Search` workflows are retired,
 including their plugin-specific marker, icon-palette, and recent-entry user
 experiences.
+
+Structured entry uses offline county/city and district/township selectors.
+Only localities represented by currently active imported address data are
+offered as searchable choices. Chunghwa Post's published county selector order
+and three-digit postal locality order provide a stable baseline; the locality
+containing the current map centre is promoted when it is also available.
 
 Online geocoding, changes to coordinate transformation algorithms, changes to
 address dataset formats, and adding a separate top-level ATAK Address format
@@ -99,6 +108,22 @@ candidate.
 4. **Given** part of an address cannot be safely classified, **When** modes are
    switched, **Then** that text remains visible and editable rather than being
    silently removed or assigned an invented meaning.
+5. **Given** one or more county datasets are active, **When** the operator
+   opens the structured county/city selector, **Then** only active imported
+   counties are offered, the available map-centre county is first, and the
+   remaining choices follow the published Chunghwa Post county selector order.
+6. **Given** the operator selects an active county, **When** they open the
+   district/township selector, **Then** only districts represented by that
+   county's active data are offered, the available map-centre district is
+   first when applicable, and the remaining choices follow three-digit postal
+   locality order.
+7. **Given** the map centre is invalid, outside known locality coverage, or in
+   a county without active data, **When** either selector opens, **Then** no
+   map-centre promotion occurs and the stable postal ordering remains.
+8. **Given** a full-address draft contains a locality that is not currently
+   selectable, **When** the operator switches to structured mode, **Then** the
+   draft locality remains visible and represented but is not misreported as an
+   active searchable choice.
 
 ---
 
@@ -224,6 +249,16 @@ works from the retained data.
 - Long localized labels and address text must remain reachable in supported
   dialog sizes and font scales without covering ATAK's elevation and action
   controls.
+- The map centre may be invalid, outside Taiwan locality coverage, or inside a
+  county whose address dataset is not active.
+- Multiple districts may share one three-digit postal prefix; their relative
+  order must remain deterministic.
+- A valid imported district may be absent from or renamed since the bundled
+  postal reference snapshot.
+- A dataset may be imported, replaced, removed, or invalidated while a
+  locality selector is open.
+- A pasted full address may contain a recognized county or district that is
+  not represented by currently active imported data.
 
 ### Failure & Recovery Scenarios
 
@@ -245,6 +280,11 @@ works from the retained data.
   unsupported host, when the plugin starts, then ATAK and `TW Coordinates`
   remain usable, no broken Taiwan choice is shown, and no removed legacy page
   is restored as an undocumented fallback.
+- **FS-006**: Given the bundled postal ordering reference is absent, malformed,
+  or cannot match a valid imported locality, when structured selectors are
+  used, then active imported choices remain reachable in a deterministic
+  fallback order, no online retrieval is attempted, and full-address entry
+  remains usable.
 
 ## Requirements *(mandatory)*
 
@@ -255,9 +295,9 @@ works from the retained data.
 - **FR-002**: Address MUST be an internal Taiwan tab and MUST NOT create an
   additional top-level ATAK coordinate-format choice.
 - **FR-003**: The Address tab MUST support a full-address mode containing one
-  editable address field and a structured mode containing four logical fields:
-  county/city, district/township, road/locality, and the remaining
-  lane/alley/number/floor/room tail.
+  editable address field and a structured mode containing county/city and
+  district/township selection controls plus editable road/locality and
+  lane/alley/number/floor/room-tail fields.
 - **FR-004**: First use MUST show full-address mode. The operator MUST be able
   to switch modes with one clearly labelled, accessible control.
 - **FR-005**: Both address modes MUST represent one shared draft; switching
@@ -364,6 +404,45 @@ works from the retained data.
 - **FR-036**: User documentation MUST describe the four-tab native workflow,
   the single `TW Coordinates` Tools entry, offline dataset management, address
   mode switching, candidate selection, and the removal of legacy entry points.
+- **FR-037**: The structured county/city selector MUST offer only counties
+  represented by currently installed, valid, active address datasets.
+- **FR-038**: After promoting one applicable map-centre county, the remaining
+  county/city choices MUST follow the county selector order published by
+  Chunghwa Post, filtered to the active imported choices. Active counties that
+  cannot be matched to the postal reference MUST remain available at the end
+  in a deterministic order.
+- **FR-039**: After a county/city is selected, the structured
+  district/township selector MUST offer only distinct districts represented by
+  that county's active imported address rows; the postal reference alone MUST
+  NOT create an apparently searchable district.
+- **FR-040**: After promoting one applicable map-centre district, the
+  remaining district/township choices MUST follow ascending Chunghwa Post
+  three-digit postal locality order. Equal-prefix and unmatched districts MUST
+  use a deterministic documented tie-break order and remain selectable.
+- **FR-041**: Map-centre promotion MUST use the locality containing a valid
+  map-centre point, MUST apply only when that locality is present in active
+  imported data, and MUST NOT infer locality solely from the nearest stored
+  address.
+- **FR-042**: Each opened selector MUST use one stable map-centre and dataset
+  snapshot so that choices do not reorder beneath the operator. A later
+  opening MUST reflect the current map centre and current active dataset state
+  without requiring an ATAK restart.
+- **FR-043**: Selecting a different county/city MUST clear an incompatible
+  district/township and any stale candidates or resolution while preserving
+  road/locality and tail text for correction. Selecting a district/township
+  MUST invalidate stale candidates or resolution and resolve the current
+  combined draft again.
+- **FR-044**: Switching from full-address mode MUST preserve a parsed locality
+  that is not currently selectable as an explicit unavailable draft value
+  until the operator selects an active choice, edits the full address, or
+  clears Address. The feature MUST NOT silently replace or discard it.
+- **FR-045**: The offline postal reference MUST record its authority, source
+  title and URL, source version or effective date, retrieval date, and source
+  checksum when available. It MUST be used for selector ordering and locality
+  metadata only, not presented as current mail-delivery validation.
+- **FR-046**: Import, replace, remove, tamper invalidation, read-only
+  activation, pane disposal, or a late selector refresh MUST NOT apply a stale
+  locality choice, mutate a read-only draft, or escape a failure into ATAK.
 
 ### Project-Wide Quality Requirements
 
@@ -395,6 +474,10 @@ works from the retained data.
   localization, documentation screenshots, signer, dataset provenance, and
   release artifact provenance are complete or explicitly dispositioned
   without overstating compatibility.
+- **QR-008 Locality selector integrity**: County and district choices must be
+  the intersection of active imported data and the operator's current
+  selection context, with postal ordering provenance, stable map-centre
+  promotion, deterministic fallback, and dataset-revision safety.
 
 ### Key Entities
 
@@ -409,6 +492,12 @@ works from the retained data.
   relevant dataset-state change.
 - **Offline Dataset State**: The installed county datasets, their provenance,
   validity, and availability to native lookup and the management page.
+- **Postal Locality Catalog**: The versioned offline Chunghwa Post county
+  selector order, district three-digit postal prefixes, optional locality
+  centres, and source provenance used only to order and describe choices.
+- **Locality Selector Snapshot**: One immutable set of active county/district
+  choices, postal order keys, optional map-centre promotion, dataset revision,
+  and fallback status used for one selector opening.
 - **Native Entry Session**: The host-supplied point, editability, active Taiwan
   tab, four tab drafts, current lookup generation, and prepared result for one
   native dialog activation.
@@ -458,6 +547,17 @@ works from the retained data.
 - **SC-012**: All existing coordinate golden-vector, round-trip, native
   all-tab-prefill, Clear, Auto Fill, read-only, and lifecycle expectations pass
   without widened tolerances or changed coordinate behavior.
+- **SC-013**: Across fixtures covering all **22** published county/city order
+  entries and at least **100** district/township entries, **100%** of displayed
+  selector choices come from active imported data, and every non-promoted
+  choice follows its documented postal or fallback order.
+- **SC-014**: Across at least **100** selector openings while changing map
+  centre and active dataset state, zero open lists reorder in place, zero
+  inactive locality is presented as searchable, and every later opening
+  reflects the latest completed dataset revision.
+- **SC-015**: Once active locality data is available, county and district
+  selectors become usable within **100 ms p95** on the reference device,
+  without a visible pause in surrounding host controls or any network access.
 
 ## Assumptions
 
@@ -467,6 +567,13 @@ works from the retained data.
 - The existing imported county address datasets, their stored WGS84 points,
   provenance records, active-dataset state, and management operations remain
   authoritative and do not require a new dataset format.
+- Chunghwa Post's offline county selector order and three-digit postal locality
+  data are authoritative for selector ordering only. Imported active address
+  data remains authoritative for whether a county or district is offered and
+  whether an address can resolve.
+- The current map-centre locality is determined from available offline
+  locality boundary data. When it cannot be determined reliably, no locality
+  is promoted; nearest stored address is not used as a substitute.
 - The default Address experience is one full-address field. Structured entry
   is an editing aid, not a guarantee that every Taiwan address can be
   losslessly categorized into a universal postal schema.
