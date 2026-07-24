@@ -7,12 +7,34 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+## [1.4.4] — 2026-07-24 — Native pane layout fix
+
+### Fixed
+
+- Tall structured Address content now shrink-wraps up to a bounded viewport and
+  scrolls before reaching ATAK-owned Elevation and action controls. Compact
+  Taipower, TWD97, and TWD67 content keeps its natural height.
+- The Address mode and candidate actions now occupy a top-aligned right column,
+  matching ATAK's built-in ADDR pane instead of appearing below all structured
+  fields.
+- Taiwan system-tab labels use a smaller dedicated font while retaining the
+  48 dp touch target.
+
+## [1.4.3] — 2026-07-23 — Native Taiwan address entry
+
 ### Added
 
-- Structured native Address entry now uses county/city and district/township
+- **ATAK's native Taiwan pane now includes Address as its fourth tab.** The
+  operator can switch between one full-address field and four structured
+  fields, resolve a unique local result, or choose from a bounded ambiguous
+  candidate list without moving the map before ATAK confirms the action.
+- Structured native Address entry uses county/city and district/township
   selectors derived from currently active imported data. A strictly contained
   and searchable map-centre locality is promoted first; remaining rows follow
   the bundled, traceable Chunghwa Post county and three-digit locality order.
+- Convert Coordinate and Auto Fill resolve an offline address asynchronously
+  while preserving the exact host WGS84 point; reverse lookup never snaps to
+  the nearest address record.
 
 ### Changed
 
@@ -23,21 +45,6 @@ follows Semantic Versioning. Per-feature design records live under
 - Changing county clears an incompatible district and stale result while
   preserving road and address-tail corrections. Selector dialogs retain one
   immutable dataset/map-centre snapshot and reject late dataset revisions.
-
-## [1.4.3] — 2026-07-23 — Native Taiwan address entry
-
-### Added
-
-- **ATAK's native Taiwan pane now includes Address as its fourth tab.** The
-  operator can switch between one full-address field and four structured
-  fields, resolve a unique local result, or choose from a bounded ambiguous
-  candidate list without moving the map before ATAK confirms the action.
-- Convert Coordinate and Auto Fill resolve an offline address asynchronously
-  while preserving the exact host WGS84 point; reverse lookup never snaps to
-  the nearest address record.
-
-### Changed
-
 - Native Address candidate retrieval now queries five deterministic SQL pools,
   each capped at 20 rows, then displays at most 20 exact-only or
   category-balanced results. Ambiguous lists allocate text-prefix,

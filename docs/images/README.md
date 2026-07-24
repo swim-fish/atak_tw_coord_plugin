@@ -25,8 +25,9 @@ sanitized image is committed.
 
 - `23a-native-address-full.png` and
   `23b-native-address-structured.png` are a coupled ATAK-CIV 5.7.0.9 capture
-  of the native Taiwan Address tab. They replace the obsolete three-tab
-  `22-atak-enter-coordinate.jpg`.
+  of the native Taiwan Address tab, refreshed for plugin 1.4.4 to show the
+  top-aligned right action column. They replace the obsolete three-tab
+  `22-atak-enter-coordinate.jpg`; address values are redacted.
 - `24-offline-address-data.png` shows the current `TW Coordinates` landing
   page, including the top settings action. It replaces the older populated
   manager capture `17-tw-offline-addr-usage.jpg`.

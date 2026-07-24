@@ -1,6 +1,6 @@
 # TW Coordinates Plugin — 使用手冊
 
-**對應版本：** v1.4.3
+**對應版本：** v1.4.4
 
 本手冊說明目前的操作流程。台灣座標與地址輸入已整合進 ATAK 原生座標
 對話框；此外掛在 Tools 選單只保留一個公開項目：**TW Coordinates**。
@@ -58,13 +58,13 @@
 詳細範例請參閱[原生地址操作](tw-addr-search_zh.md)。
 
 <p align="center">
-<img src="images/23a-native-address-full.png" alt="ATAK Go To 的 Taiwan Address 單一完整地址欄位" width="900"><br>
-<sub>單一欄位模式適合直接貼上完整地址，並維持 ATAK 原生 Go To 的緊湊配置。</sub>
+<img src="images/23a-native-address-full.png" alt="ATAK Go To 的 Taiwan Address 單一完整地址欄位，結構化切換按鈕位於右上方" width="900"><br>
+<sub>單一欄位模式維持緊湊配置，模式切換按鈕固定在右上方；地址內容已遮除。</sub>
 </p>
 
 <p align="center">
-<img src="images/23b-native-address-structured.png" alt="ATAK Go To 的 Taiwan Address 結構化四欄位" width="900"><br>
-<sub>結構化模式使用可搜尋資料產生縣市／行政區選單，並保留可編輯的道路與其餘地址欄位。</sub>
+<img src="images/23b-native-address-structured.png" alt="ATAK Go To 的 Taiwan Address 結構化四欄位，單一欄位切換按鈕位於右上方" width="900"><br>
+<sub>結構化模式將四個欄位放在左側，模式切換按鈕固定在右上方；地址值已遮除。</sub>
 </p>
 
 <p align="center">

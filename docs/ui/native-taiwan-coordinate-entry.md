@@ -30,13 +30,13 @@ ATAK-owned elevation, Auto Fill, Clear, Copy, and confirmation controls
 reachable.
 
 <p align="center">
-<img src="../images/23a-native-address-full.png" alt="ATAK Enter Coordinate dialog showing Taiwan Address in single-field mode" width="900"><br>
-<sub>Address single-field mode inside ATAK's native Enter Coordinate dialog.</sub>
+<img src="../images/23a-native-address-full.png" alt="ATAK Enter Coordinate dialog showing Taiwan Address single-field mode with its mode action at the upper right" width="900"><br>
+<sub>Address single-field mode keeps its mode action at the upper right; address content is redacted.</sub>
 </p>
 
 <p align="center">
-<img src="../images/23b-native-address-structured.png" alt="ATAK Enter Coordinate dialog showing Taiwan Address in four structured fields" width="900"><br>
-<sub>The same draft projected into county, district, road, and address-tail fields.</sub>
+<img src="../images/23b-native-address-structured.png" alt="ATAK Enter Coordinate dialog showing four Taiwan Address fields with its mode action at the upper right" width="900"><br>
+<sub>The four structured rows remain visible beside the top-aligned mode action; address values are redacted.</sub>
 </p>
 
 <p align="center">
@@ -87,22 +87,27 @@ Fill.
 │ [validation status]                    │
 │                                        │
 │ — when Address is selected —           │
-│ [ Full address ] [ Structured ]        │
-│ Full: [臺中市南屯區黎明路2段130號]       │
-│ or: county · district · road · tail    │
-│ [normalised/status] [Choose result]    │
+│ Full: [臺中市南屯區黎明路2段130號] [Structured]│
+│ or: county · district · road · tail [Single]│
+│                                  [Choose result]│
+│ [normalised/status]                    │
 └────────────────────────────────────────┘
 ATAK-owned controls: Auto Fill · Clear · Copy · action/confirm
 ```
 
 The pane owns one outer `ScrollView`; no nested vertical scroller competes with
-ATAK's dialog. Its geometry mirrors ATAK's DD pane: compact horizontal
-label/input/unit rows, native underline inputs at `wrap_content` height,
-13 sp normal / 17 sp large title text, a 2 dp top inset, and system/zone
-selectors whose outer and clickable heights both remain 48 dp. Their visual
+ATAK's dialog. The root shrink-wraps compact Taipower, TWD97, and TWD67 content
+and caps tall Address content at a 216 dp viewport so structured fields scroll
+before reaching ATAK-owned elevation and action controls. Its geometry mirrors
+ATAK's DD pane: compact horizontal label/input/unit rows, native underline
+inputs at `wrap_content` height, 13 sp normal / 17 sp large title text, a 2 dp
+top inset, and system/zone selectors whose outer and clickable heights both
+remain 48 dp. System-tab labels use a dedicated 12 sp normal / 15 sp large font
+to reduce visual weight without reducing the touch target. Their visual
 vertical inset is drawable-owned, so it does not enlarge the pane. Empty status
-text consumes no height, so the pane stays above ATAK's elevation and action
-controls.
+text consumes no height. Like ATAK's built-in ADDR pane, Address entry keeps
+input content on the left and its mode/candidate actions in a top-aligned right
+column, so the mode control is not placed below the four structured rows.
 
 When ATAK opens the pane with a map-item or shared-dialog point, the plugin
 prepares Taipower, TWD97, and TWD67 synchronously and starts an Address reverse
