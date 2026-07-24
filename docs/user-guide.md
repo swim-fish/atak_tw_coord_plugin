@@ -35,8 +35,9 @@ an accuracy advisory; Taipower reports out of range for outer-island points.
 
 1. Import the applicable county dataset through **TW Coordinates** (section 4).
 2. Open ATAK **Go To → Taiwan → Address**.
-3. Use **Full address** for one field, or switch to **Structured** for county/
-   city, district, road/locality, and remaining address fields.
+3. Use **Full address** for one field, or switch to **Structured**. Tap the
+   county/city selector, then the district selector; road/locality and the
+   remaining address stay editable.
 4. Enter an address. Common `台`/`臺`, full-width digit, spacing, punctuation,
    and address-unit numeral variants are normalised locally.
 5. For one exact result, confirm with ATAK. If multiple credible records remain,
@@ -47,6 +48,15 @@ Switching Full/Structured modes preserves the same canonical draft, including
 unclassified text. No result selection moves the map by itself; ATAK performs
 the action only after its normal confirmation. A missing county dataset leaves
 the coordinate tabs usable and displays data-management guidance.
+
+County choices come only from imported datasets. District choices come only
+from address rows in the selected county, so the list cannot promise coverage
+that is not installed. The map-centre locality is placed first when the
+installed township boundary strictly contains the centre and that locality is
+searchable. All other choices follow the bundled Chunghwa Post order; imported
+values not present in that reference remain available at the end. Choosing a
+different county clears an incompatible district but preserves road and
+remaining-address text.
 
 The candidate dialog shows at most 20 rows. Exact matches are shown by
 themselves. Otherwise the shortlist combines text-prefix, nearby house-number,
@@ -63,7 +73,7 @@ See [Native Address workflow](tw-addr-search.md) for detailed examples.
 
 <p align="center">
 <img src="images/23b-native-address-structured.png" alt="ATAK Go To Taiwan Address tab split into county, district, road, and number fields" width="900"><br>
-<sub>Structured mode projects the same address into four editable logical fields.</sub>
+<sub>Structured mode uses active-data county/district selectors plus editable road and remaining-address fields.</sub>
 </p>
 
 ### Convert a map item's coordinate

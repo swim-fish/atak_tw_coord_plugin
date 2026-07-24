@@ -49,6 +49,17 @@ public final class NoDataAddressLookupService implements AddressLookupService {
   }
 
   @Override
+  public LookupHandle localities(
+      LocalitySelectorRequest request, Consumer<LocalitySelectorResult> callback) {
+    Objects.requireNonNull(request, "request");
+    Objects.requireNonNull(callback, "callback");
+    ensureOpen();
+    Handle handle = new Handle();
+    dispatch(handle, () -> callback.accept(LocalitySelectorResult.noDataset(request.identity())));
+    return handle;
+  }
+
+  @Override
   public AddressAvailability availability() {
     return new AddressAvailability(Collections.emptySet(), false, 0L, closed.get());
   }

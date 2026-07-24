@@ -539,7 +539,26 @@ public class TwCoordMapComponent extends AbstractMapComponent {
               new com.atakmap.android.twcoord.address.lookup.DefaultAddressLookupService
                   .RegistryQueryEngine(
                   new com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser()),
-              32);
+              32,
+              () -> {
+                android.content.Context assetContext =
+                    localisedPluginContext != null ? localisedPluginContext : pluginContext;
+                try (java.io.InputStream input =
+                    assetContext.getAssets().open("address/chunghwa_post_postal_localities.json")) {
+                  return com.atakmap.android.twcoord.address.lookup.PostalLocalityCatalogLoader
+                      .load(input);
+                } catch (java.io.IOException failure) {
+                  throw new IllegalStateException("postal locality catalog unavailable", failure);
+                }
+              },
+              anchor -> {
+                com.atakmap.android.twcoord.address.boundary.TownshipBoundaryFacade boundary =
+                    boundaryFacadeOrRemount();
+                return boundary == null
+                    ? com.atakmap.android.twcoord.address.boundary.LocalityResult.none()
+                    : boundary.localityAt(
+                        anchor.latitudeDeg(), anchor.longitudeDeg(), 0.0 /* strict containment */);
+              });
       addressSubsystem.setLookupService(addressLookupService);
     } catch (RuntimeException e) {
       android.util.Log.w("TwCoordMapComponent", "shared address lookup setup failed", e);

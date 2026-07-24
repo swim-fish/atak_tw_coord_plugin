@@ -40,6 +40,14 @@ public interface AddressDatabaseFacade extends AutoCloseable {
   AddressRecord nearestWithin(double lat, double lon, double radiusMeters);
 
   /**
+   * Returns distinct non-blank imported {@code places.township} values. The query is bounded and
+   * deterministic; production callers run it on the shared address worker, never on the UI thread.
+   */
+  default List<String> localities(int limit) {
+    return java.util.Collections.emptyList();
+  }
+
+  /**
    * Feature 006 (T022): district-scoped, distance-ranked street lookup for forward search. Filters
    * {@code places} to {@code district} (matched against the {@code township} column),
    * street-matches {@code foldedFragment} as a prefix/substring spanning the {@code 段} suffix

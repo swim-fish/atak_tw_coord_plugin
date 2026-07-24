@@ -7,6 +7,23 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+### Added
+
+- Structured native Address entry now uses county/city and district/township
+  selectors derived from currently active imported data. A strictly contained
+  and searchable map-centre locality is promoted first; remaining rows follow
+  the bundled, traceable Chunghwa Post county and three-digit locality order.
+
+### Changed
+
+- The postal locality catalog is ordering metadata only: it never exposes a
+  county or district without imported address coverage. Imported locality
+  names absent from the catalog remain selectable through deterministic
+  fallback ordering.
+- Changing county clears an incompatible district and stale result while
+  preserving road and address-tail corrections. Selector dialogs retain one
+  immutable dataset/map-centre snapshot and reject late dataset revisions.
+
 ## [1.4.3] — 2026-07-23 — Native Taiwan address entry
 
 ### Added

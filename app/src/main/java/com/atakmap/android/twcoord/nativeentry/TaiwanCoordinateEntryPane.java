@@ -18,6 +18,7 @@ import com.atakmap.android.twcoord.address.lookup.AddressInputMode;
 import com.atakmap.android.twcoord.address.lookup.AddressLookupService;
 import com.atakmap.android.twcoord.address.lookup.AddressResolution;
 import com.atakmap.android.twcoord.address.lookup.AddressValidation;
+import com.atakmap.android.twcoord.address.lookup.LocalitySelectorSnapshot;
 import com.atakmap.android.twcoord.address.lookup.NoDataAddressLookupService;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.coord.Wgs84;
@@ -72,6 +73,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
   private final TaiwanEntryController controller;
   private final AddressEntryController addressController;
   private final AddressCandidateDialog candidateDialog;
+  private final AddressLocalityDialog localityDialog;
   private final TaiwanEntryFormatter formatter;
   private final TraceSink trace;
   private final StringResolver strings;
@@ -278,6 +280,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     twd67Advisory = requireView(R.id.native_entry_twd67_advisory);
     status = requireView(R.id.native_entry_status);
     candidateDialog = new AddressCandidateDialog(windowContext, context, addressController);
+    localityDialog = new AddressLocalityDialog(windowContext, context, addressController);
 
     addWatcher(taipowerInput, value -> controller.setTaipowerText(value, true));
     addWatcher(twd97Easting, value -> controller.setTwdEasting(CoordinateUnit.TWD97, value, true));
@@ -287,8 +290,6 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     addWatcher(
         twd67Northing, value -> controller.setTwdNorthing(CoordinateUnit.TWD67, value, true));
     addWatcher(addressInput, value -> addressController.editFull(value, true));
-    addWatcher(addressCounty, ignored -> editStructuredFromViews());
-    addWatcher(addressDistrict, ignored -> editStructuredFromViews());
     addWatcher(addressRoad, ignored -> editStructuredFromViews());
     addWatcher(addressTail, ignored -> editStructuredFromViews());
 
@@ -336,6 +337,14 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     addressController.setOnHumanChange(this::notifyHostChanged);
     addressController.setOnStateChanged(() -> root.post(this::renderControllerState));
     addressChoose.setOnClickListener(ignored -> candidateDialog.show());
+    addressCounty.setOnClickListener(
+        ignored -> localityDialog.show(LocalitySelectorSnapshot.Kind.COUNTY));
+    addressDistrict.setOnClickListener(
+        ignored -> {
+          if (!addressController.draft().components().countyCity().isEmpty()) {
+            localityDialog.show(LocalitySelectorSnapshot.Kind.DISTRICT);
+          }
+        });
     status.setOnClickListener(
         ignored -> {
           if (disposed || addressController.validation() != AddressValidation.NO_DATASET) return;
@@ -521,6 +530,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     disposed = true;
     changedListener = null;
     safeDisposeStep("address dialog", candidateDialog::dispose);
+    safeDisposeStep("locality dialog", localityDialog::dispose);
     safeDisposeStep("address controller", addressController::dispose);
     safeDisposeStep("controller", controller::dispose);
     safeDisposeStep("system listener", () -> systemGroup.setOnCheckedChangeListener(null));
@@ -615,7 +625,10 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     twd67Northing.setEnabled(editable);
     addressInput.setEnabled(editable);
     addressCounty.setEnabled(editable);
-    addressDistrict.setEnabled(editable);
+    boolean districtSelectable =
+        editable && !addressController.draft().components().countyCity().isEmpty();
+    addressDistrict.setEnabled(districtSelectable);
+    addressDistrict.setClickable(districtSelectable);
     addressRoad.setEnabled(editable);
     addressTail.setEnabled(editable);
     addressMode.setEnabled(!disposed);

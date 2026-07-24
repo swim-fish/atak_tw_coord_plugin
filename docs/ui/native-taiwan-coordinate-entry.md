@@ -125,9 +125,25 @@ point with the nearest address-record point (the **reverse no-snap rule**).
 - **Full address** provides one field. Normalisation accepts common Taiwan
   variants such as `台`/`臺`, full-width digits, spacing, and Chinese numerals
   adjacent to address units.
-- **Structured** provides four compact fields: county/city, district,
-  road/locality, and remaining address. Switching modes projects one canonical
-  draft, including unclassified text, so repeated switches are lossless.
+- **Structured** provides four compact fields. County/city and district are
+  selectors; road/locality and remaining address stay editable. A county list
+  contains only active imported county datasets. After a county is selected,
+  its district list contains only distinct non-empty `places.township` values
+  present in that active dataset.
+- The map-centre county or district is promoted to the first row only when
+  strict township-boundary containment resolves it and the same locality is
+  active. Remaining counties follow the bundled Chunghwa Post selector order;
+  remaining districts follow three-digit postal order. The open dialog is an
+  immutable snapshot and never reorders while the operator is choosing.
+- The postal catalog controls order only. It cannot make a missing county or
+  district searchable. Imported values absent from the catalog remain
+  selectable in deterministic name order.
+- Switching modes projects one canonical draft, including unclassified text,
+  so repeated switches are lossless. A pasted locality that is not currently
+  selectable remains visible for correction instead of being discarded.
+- Selecting another county clears an incompatible district and stale address
+  result while preserving road/locality and remaining-address text. Selecting
+  a district preserves both editable fields.
 - A unique exact result becomes the resolved host point. Multiple credible
   results remain unresolved until the operator taps **Choose result** and
   selects a row with county/district/road context. Selection alone never pans
@@ -148,6 +164,17 @@ point with the nearest address-record point (the **reverse no-snap rule**).
   usable and shows guidance to open **TW Coordinates** for data management.
 - Forward and reverse lookup are local-only. Editing, mode changes, pane
   replacement, or plugin unload fence stale callbacks and candidate dialogs.
+
+### Locality-order provenance and updates
+
+`app/src/main/assets/address/chunghwa_post_postal_localities.json` is a
+versioned, offline ordering reference derived from the Chunghwa Post county
+selector and published three-digit locality data. Its authority URLs,
+retrieval/effective dates, and source hashes are stored in the asset. The
+reproducible refresh command is documented in
+`specs/013-native-address-entry/quickstart.md`; refreshes must pass the
+22-county/371-locality schema, uniqueness, coordinate, and representative
+prefix tests before review. See ADR-0027 for the authority boundary.
 
 ## ATAK-owned controls
 

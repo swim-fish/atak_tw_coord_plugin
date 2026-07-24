@@ -654,6 +654,14 @@ Expected: three tests pass, including source metadata, complete deterministic
 ordering, uniqueness/coordinate validation, and representative postal
 prefixes. This baseline does not yet prove selector behavior.
 
+Recorded on 2026-07-24 before selector production code:
+
+- the focused asset suite completed with `BUILD SUCCESSFUL`;
+- all three tests passed against 22 county/city entries and 371 unique
+  locality rows;
+- the existing Gradle 8.14.3 distribution cache was invoked directly, so the
+  wrapper did not download another distribution.
+
 ### Test-first selector suites
 
 Add failing tests before production selector behavior, then make the following
@@ -696,6 +704,28 @@ Required fixtures and outcomes:
    stale resolution.
 10. Read-only, dispose, locale replacement, and late callbacks cannot mutate
     the draft or escape a failure into ATAK.
+
+Recorded Red-Green-Refactor evidence on 2026-07-24:
+
+- **Red**: the first focused compile failed with 19 expected missing-symbol
+  errors for the not-yet-implemented catalog, selector snapshot/ordering, and
+  facade-locality seams.
+- **Green**: the catalog/ordering, SQLite locality, shared-service,
+  controller, dialog, layout, and resource focused suites completed with
+  `BUILD SUCCESSFUL`.
+- **Refactor**: canonical `台`/`臺` joins, official equal-prefix tie-breaking,
+  strict (non-snapped) polygon promotion, immutable dialog identity fencing,
+  and aligned English/Traditional Chinese/Japanese accessibility text were
+  retained while the full Civ debug JVM suite completed 459 tests with zero
+  failures and two established skips.
+- `:app:spotlessCheck`, `:app:lintCivDebug`, and
+  `:app:assembleCivDebug` completed with `BUILD SUCCESSFUL`; the lint report
+  contained zero issue elements.
+- Reviewed Markdown targets, documentation-image metadata/LFS checks,
+  reviewed-scope sensitive-path scan, and `git diff --check` passed.
+- The Civ debug APK was assembled under
+  `app/build/outputs/apk/civ/debug/`. This build proves current-SDK build
+  readiness only; it does not close T128.
 
 ### On-device selector journey `[RELEASE-GATE]`
 

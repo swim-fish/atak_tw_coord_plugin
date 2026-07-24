@@ -12,6 +12,9 @@ import com.atakmap.android.twcoord.address.lookup.AddressValidation;
 import com.atakmap.android.twcoord.address.lookup.DatasetIdentity;
 import com.atakmap.android.twcoord.address.lookup.ForwardAddressRequest;
 import com.atakmap.android.twcoord.address.lookup.ForwardAddressResult;
+import com.atakmap.android.twcoord.address.lookup.LocalitySelectorRequest;
+import com.atakmap.android.twcoord.address.lookup.LocalitySelectorResult;
+import com.atakmap.android.twcoord.address.lookup.LocalitySelectorSnapshot;
 import com.atakmap.android.twcoord.address.lookup.LookupHandle;
 import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
 import com.atakmap.android.twcoord.address.lookup.ReverseAddressRequest;
@@ -27,6 +30,72 @@ import java.util.function.Consumer;
 import org.junit.Test;
 
 public final class AddressEntryControllerTest {
+
+  @Test
+  public void countySelectionClearsDistrictButPreservesRoadAndTail() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    controller.editStructured("臺中市", "西屯區", "臺灣大道3段", "99號", false);
+
+    controller.selectLocality(LocalitySelectorSnapshot.Kind.COUNTY, "新北市", 1L, true);
+
+    assertThat(controller.draft().components().countyCity()).isEqualTo("新北市");
+    assertThat(controller.draft().components().districtTownship()).isEmpty();
+    assertThat(controller.draft().components().roadLocality()).isEqualTo("臺灣大道3段");
+    assertThat(controller.draft().structuredTail()).isEqualTo("99號");
+  }
+
+  @Test
+  public void staleDatasetSelectionCannotMutateDraft() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    controller.editStructured("臺中市", "西屯區", "臺灣大道3段", "99號", false);
+
+    controller.selectLocality(LocalitySelectorSnapshot.Kind.COUNTY, "新北市", 0L, true);
+
+    assertThat(controller.draft().components().countyCity()).isEqualTo("臺中市");
+    assertThat(controller.draft().components().districtTownship()).isEqualTo("西屯區");
+  }
+
+  @Test
+  public void staleDraftIdentitySelectionCannotMutateDraft() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    AddressEntryController controller = controller(service, debouncer);
+    controller.editStructured("臺中市", "西屯區", "臺灣大道3段", "99號", false);
+    com.atakmap.android.twcoord.address.lookup.LookupIdentity stale =
+        new com.atakmap.android.twcoord.address.lookup.LookupIdentity(
+            "selector", 1L, controller.draft().draftRevision() - 1L, 1L);
+
+    controller.selectLocality(LocalitySelectorSnapshot.Kind.COUNTY, "新北市", stale, true);
+
+    assertThat(controller.draft().components().countyCity()).isEqualTo("臺中市");
+    assertThat(controller.draft().components().districtTownship()).isEqualTo("西屯區");
+  }
+
+  @Test
+  public void localityRequestCapturesCurrentMapAnchorAndCounty() {
+    FakeService service = new FakeService();
+    ManualDebouncer debouncer = new ManualDebouncer();
+    Wgs84 anchor = new Wgs84(24.16, 120.64, 1L, Wgs84.Source.MAP_CENTRE);
+    AddressEntryController controller =
+        new AddressEntryController(
+            service,
+            new TaiwanAddressParser(),
+            debouncer,
+            20,
+            () -> ResultOrdering.DISTANCE,
+            () -> anchor);
+    controller.editStructured("臺中市", "", "臺灣大道3段", "99號", false);
+
+    controller.prepareLocalities(LocalitySelectorSnapshot.Kind.DISTRICT, ignored -> {});
+
+    assertThat(service.localityRequest.selectedCounty()).isEqualTo("臺中市");
+    assertThat(service.localityRequest.mapAnchor()).isEqualTo(anchor);
+    assertThat(service.localityRequest.identity().datasetRevision()).isEqualTo(1L);
+  }
 
   @Test
   public void fullEditDebouncesFor250MsAndNotifiesImmediateHumanChange() {
@@ -387,6 +456,8 @@ public final class AddressEntryControllerTest {
   private static final class FakeService implements AddressLookupService {
     ForwardAddressRequest forwardRequest;
     Consumer<ForwardAddressResult> forwardCallback;
+    LocalitySelectorRequest localityRequest;
+    Consumer<LocalitySelectorResult> localityCallback;
 
     @Override
     public LookupHandle forward(
@@ -418,6 +489,14 @@ public final class AddressEntryControllerTest {
     }
 
     @Override
+    public LookupHandle localities(
+        LocalitySelectorRequest request, Consumer<LocalitySelectorResult> callback) {
+      localityRequest = request;
+      localityCallback = callback;
+      return handle();
+    }
+
+    @Override
     public AddressAvailability availability() {
       return new AddressAvailability(Collections.singleton("臺中市"), false, 1L, false);
     }
@@ -430,5 +509,20 @@ public final class AddressEntryControllerTest {
 
     @Override
     public void close() {}
+
+    private static LookupHandle handle() {
+      AtomicBoolean cancelled = new AtomicBoolean();
+      return new LookupHandle() {
+        @Override
+        public void cancel() {
+          cancelled.set(true);
+        }
+
+        @Override
+        public boolean isCancelled() {
+          return cancelled.get();
+        }
+      };
+    }
   }
 }

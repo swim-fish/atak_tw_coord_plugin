@@ -192,6 +192,24 @@ public final class FallbackSqliteFactory implements AddressDatabaseFacade.Factor
     }
 
     @Override
+    public java.util.List<String> localities(int limit) {
+      if (limit <= 0) return java.util.Collections.emptyList();
+      java.util.List<String> result = new java.util.ArrayList<>();
+      try (android.database.Cursor cursor =
+          db.rawQuery(
+              "SELECT DISTINCT TRIM(township) FROM places "
+                  + "WHERE township IS NOT NULL AND TRIM(township) <> '' "
+                  + "ORDER BY TRIM(township) LIMIT ?",
+              new String[] {Integer.toString(Math.min(limit, 512))})) {
+        while (cursor.moveToNext()) result.add(cursor.getString(0));
+      } catch (Throwable t) {
+        Log.w(TAG, "localities threw", t);
+        return java.util.Collections.emptyList();
+      }
+      return java.util.Collections.unmodifiableList(result);
+    }
+
+    @Override
     public java.util.List<com.atakmap.android.twcoord.address.lookup.AddressCandidate>
         forwardCandidatePool(
             com.atakmap.android.twcoord.address.lookup.AddressDraft draft,
