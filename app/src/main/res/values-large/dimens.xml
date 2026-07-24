@@ -2,5 +2,6 @@
 <resources>
     <!-- Mirrors ATAK's large-screen draper_title_font and draper_font. -->
     <dimen name="native_entry_title_font">17sp</dimen>
+    <dimen name="native_entry_tab_font">15sp</dimen>
     <dimen name="native_entry_help_font">14sp</dimen>
 </resources>

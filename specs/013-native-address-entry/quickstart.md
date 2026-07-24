@@ -783,3 +783,44 @@ This is partial current-device evidence only. District ordering, stable open
 lists while panning, dataset replacement/removal refresh, Convert Coordinate,
 read-only behavior, supported orientations/font scales, latency, retained
 memory, airplane mode, and every ATAK 5.5 row remain PENDING under T128.
+
+## 18. Structured Address viewport regression
+
+Recorded on 2026-07-24 for the v1.4.4 candidate after an ATAK 5.7.0.9
+landscape test exposed the fourth structured Address row behind ATAK-owned
+Elevation and action controls:
+
+- **Red**: the focused layout suite failed to compile after introducing the
+  not-yet-existing bounded pane root, maximum-height resource, and dedicated
+  system-tab font assertions.
+- **Green**: `TaiwanAddressLayoutTest` passed after replacing the unbounded
+  root with one `BoundedPaneScrollView`. Compact coordinate systems
+  shrink-wrap naturally; tall content is capped at a 216 dp viewport and uses
+  the existing single vertical scroll owner. The system selector keeps its
+  48 dp hit target while using 12 sp normal / 15 sp large labels. A second
+  red/green layout assertion then moved Address mode/candidate actions into a
+  weighted, top-aligned right column beside the Address content, matching
+  ATAK's ADDR composition instead of placing the mode control below all four
+  structured rows.
+- The complete
+  `:app:spotlessApply :app:spotlessCheck :app:lintCivDebug
+  :app:testCivDebugUnitTest :app:assembleCivDebug` gate completed with
+  `BUILD SUCCESSFUL`; 461 tests ran with zero failures/errors and two
+  established skips.
+- The pre-commit v1.4.4 Civ debug validation APK SHA-256 was
+  `7BA4EDA313BA9F5888888A26D021EBC620103AC1F7EF9AE5CA54983103FEBE0D`.
+- The APK installed on the reference device, ATAK 5.7.0.9 restarted, and the
+  device reported plugin 1.4.4. The plugin lifecycle loaded without a scoped
+  fatal, resource, or version-skew error.
+- The latest coupled single-field/structured-field device captures replaced
+  `docs/images/23a-native-address-full.png` and
+  `docs/images/23b-native-address-structured.png`. The reviewed crops retain
+  only the Go To dialog, redact address values, and exclude the desktop,
+  notifications, map, coordinate readouts, and device identifiers.
+  `scripts/check-doc-images.py` passed all 29 documentation images, and both
+  replacements retain the expected Git LFS filter.
+
+Installation and lifecycle evidence do not prove the visual fix. Manual
+landscape verification of the top-aligned Address action column,
+structured-mode scrolling, tail-field reachability, and return to
+Taipower/TWD97/TWD67 remain pending, as do all ATAK 5.5 rows.

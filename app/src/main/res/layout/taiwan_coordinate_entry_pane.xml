@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.atakmap.android.twcoord.nativeentry.BoundedPaneScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/native_entry_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -34,7 +34,7 @@
                 android:gravity="center"
                 android:text="@string/native_entry_system_taipower"
                 android:textColor="@color/native_entry_segment_text"
-                android:textSize="@dimen/native_entry_title_font" />
+                android:textSize="@dimen/native_entry_tab_font" />
 
             <RadioButton
                 android:id="@+id/native_entry_system_twd97"
@@ -47,7 +47,7 @@
                 android:gravity="center"
                 android:text="@string/native_entry_system_twd97"
                 android:textColor="@color/native_entry_segment_text"
-                android:textSize="@dimen/native_entry_title_font" />
+                android:textSize="@dimen/native_entry_tab_font" />
 
             <RadioButton
                 android:id="@+id/native_entry_system_twd67"
@@ -60,7 +60,7 @@
                 android:gravity="center"
                 android:text="@string/native_entry_system_twd67"
                 android:textColor="@color/native_entry_segment_text"
-                android:textSize="@dimen/native_entry_title_font" />
+                android:textSize="@dimen/native_entry_tab_font" />
 
             <RadioButton
                 android:id="@+id/native_entry_system_address"
@@ -72,7 +72,7 @@
                 android:gravity="center"
                 android:text="@string/native_entry_system_address"
                 android:textColor="@color/native_entry_segment_text"
-                android:textSize="@dimen/native_entry_title_font" />
+                android:textSize="@dimen/native_entry_tab_font" />
         </RadioGroup>
 
         <LinearLayout
@@ -449,12 +449,27 @@
             android:visibility="gone">
 
             <LinearLayout
-                android:id="@+id/native_entry_address_full_row"
+                android:id="@+id/native_entry_address_body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
+                android:gravity="top"
                 android:orientation="horizontal"
                 android:weightSum="10">
+
+                <LinearLayout
+                    android:id="@+id/native_entry_address_content"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="8"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/native_entry_address_full_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:weightSum="10">
 
                 <TextView
                     android:layout_width="0dp"
@@ -481,14 +496,14 @@
                     android:textColor="#FFFFFFFF"
                     android:textColorHint="#99FFFFFF"
                     android:textSize="@dimen/native_entry_title_font" />
-            </LinearLayout>
+                    </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/native_entry_address_structured"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
+                    <LinearLayout
+                        android:id="@+id/native_entry_address_structured"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
 
                 <LinearLayout
                     android:id="@+id/native_entry_address_county_row"
@@ -632,35 +647,40 @@
                         android:textColorHint="#99FFFFFF"
                         android:textSize="@dimen/native_entry_title_font" />
                 </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/native_entry_address_actions"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:gravity="top|end"
+                    android:orientation="vertical">
+
+                    <Button
+                        android:id="@+id/native_entry_address_mode"
+                        style="?android:attr/borderlessButtonStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/native_entry_control_min_size"
+                        android:contentDescription="@string/native_entry_a11y_address_mode"
+                        android:minHeight="@dimen/native_entry_control_min_size"
+                        android:text="@string/native_entry_address_mode_structured"
+                        android:textAllCaps="false"
+                        android:textColor="@color/native_entry_action_text" />
+
+                    <Button
+                        android:id="@+id/native_entry_address_choose"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/native_entry_control_min_size"
+                        android:contentDescription="@string/native_entry_a11y_address_choose"
+                        android:minHeight="@dimen/native_entry_control_min_size"
+                        android:text="@string/native_entry_address_choose_result"
+                        android:textAllCaps="false"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="end|center_vertical"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/native_entry_address_mode"
-                    style="?android:attr/borderlessButtonStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="@dimen/native_entry_control_min_size"
-                    android:contentDescription="@string/native_entry_a11y_address_mode"
-                    android:minHeight="@dimen/native_entry_control_min_size"
-                    android:text="@string/native_entry_address_mode_structured"
-                    android:textAllCaps="false"
-                    android:textColor="@color/native_entry_action_text" />
-
-                <Button
-                    android:id="@+id/native_entry_address_choose"
-                    android:layout_width="wrap_content"
-                    android:layout_height="@dimen/native_entry_control_min_size"
-                    android:contentDescription="@string/native_entry_a11y_address_choose"
-                    android:minHeight="@dimen/native_entry_control_min_size"
-                    android:text="@string/native_entry_address_choose_result"
-                    android:textAllCaps="false"
-                    android:visibility="gone" />
-            </LinearLayout>
         </LinearLayout>
 
         <TextView
@@ -674,4 +694,4 @@
             android:textSize="@dimen/native_entry_help_font"
             android:visibility="gone" />
     </LinearLayout>
-</ScrollView>
+</com.atakmap.android.twcoord.nativeentry.BoundedPaneScrollView>

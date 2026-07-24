@@ -4,11 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import android.content.Context;
 import android.content.res.Configuration;
+import android.view.Gravity;
 import android.view.View;
+import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.ScrollView;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.plugin.R;
@@ -31,8 +34,22 @@ public final class TaiwanAddressLayoutTest {
     Button mode = root.findViewById(R.id.native_entry_address_mode);
 
     assertThat(countType(root, ScrollView.class)).isEqualTo(1);
-    assertThat(root).isInstanceOf(ScrollView.class);
+    assertThat(root).isInstanceOf(BoundedPaneScrollView.class);
+    assertThat(root.findViewById(R.id.native_entry_system_group).getLayoutParams().height)
+        .isEqualTo(dp(context, 48));
+    assertThat(((RadioButton) root.findViewById(R.id.native_entry_system_taipower)).getTextSize())
+        .isEqualTo(context.getResources().getDimension(R.dimen.native_entry_tab_font));
     assertThat(mode.getLayoutParams().height).isEqualTo(dp(context, 48));
+    LinearLayout addressPane = root.findViewById(R.id.native_entry_pane_address);
+    LinearLayout addressBody = root.findViewById(R.id.native_entry_address_body);
+    LinearLayout addressContent = root.findViewById(R.id.native_entry_address_content);
+    LinearLayout addressActions = root.findViewById(R.id.native_entry_address_actions);
+    assertThat(addressPane.indexOfChild(addressBody)).isEqualTo(0);
+    assertThat(addressBody.indexOfChild(addressContent)).isEqualTo(0);
+    assertThat(addressBody.indexOfChild(addressActions)).isEqualTo(1);
+    assertThat(((LinearLayout.LayoutParams) addressContent.getLayoutParams()).weight).isEqualTo(8f);
+    assertThat(((LinearLayout.LayoutParams) addressActions.getLayoutParams()).weight).isEqualTo(2f);
+    assertThat(addressActions.getGravity()).isEqualTo(Gravity.TOP | Gravity.END);
     assertThat(root.findViewById(R.id.native_entry_address_full_row).getVisibility())
         .isEqualTo(View.VISIBLE);
     assertThat(root.findViewById(R.id.native_entry_address_structured).getVisibility())
@@ -55,6 +72,26 @@ public final class TaiwanAddressLayoutTest {
     assertThat(district.isFocusable()).isFalse();
     assertThat(district.isClickable()).isFalse();
     assertThat(district.isEnabled()).isFalse();
+  }
+
+  @Test
+  public void paneShrinkWrapsShortSystemsAndBoundsStructuredAddressForScrolling() {
+    Context context = RuntimeEnvironment.getApplication();
+    TaiwanCoordinateEntryPane pane = pane(context);
+    View root = pane.getView();
+    int width = dp(context, 900);
+    int maxHeight =
+        context.getResources().getDimensionPixelSize(R.dimen.native_entry_pane_max_height);
+
+    measure(root, width);
+    assertThat(root.getMeasuredHeight()).isLessThan(maxHeight);
+
+    root.findViewById(R.id.native_entry_system_address).performClick();
+    root.findViewById(R.id.native_entry_address_mode).performClick();
+    measure(root, width);
+
+    assertThat(root.getMeasuredHeight()).isEqualTo(maxHeight);
+    assertThat(((ViewGroup) root).getChildAt(0).getMeasuredHeight()).isGreaterThan(maxHeight);
   }
 
   @Test
@@ -114,6 +151,12 @@ public final class TaiwanAddressLayoutTest {
       count += countType(group.getChildAt(index), type);
     }
     return count;
+  }
+
+  private static void measure(View view, int width) {
+    view.measure(
+        MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+        MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
   }
 
   private static int dp(Context context, int value) {

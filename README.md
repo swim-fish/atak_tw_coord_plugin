@@ -39,8 +39,8 @@ native-entry screenshots were captured on ATAK-CIV 5.7.0.9; older guides retain
 their historical runtime evidence.
 
 <p align="center">
-<img src="docs/images/23a-native-address-full.png" alt="ATAK native Taiwan Address tab in single-field mode" width="900"><br>
-<sub>The native Taiwan pane with the Address tab in single-field mode.</sub>
+<img src="docs/images/23a-native-address-full.png" alt="ATAK native Taiwan Address tab with its single-field switch aligned at the upper right" width="900"><br>
+<sub>The native Taiwan Address pane keeps its mode action at the upper right; address content is redacted.</sub>
 </p>
 
 <p align="center">

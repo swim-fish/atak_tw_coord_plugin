@@ -1,6 +1,6 @@
 # TW Coordinates Plugin — User Guide
 
-**Version:** v1.4.3
+**Version:** v1.4.4
 
 This guide covers the current operator workflow. Taiwan coordinate and address
 entry are integrated into ATAK's native coordinate dialog. The plugin exposes
@@ -67,13 +67,13 @@ house numbers rank ahead of lane/alley records.
 See [Native Address workflow](tw-addr-search.md) for detailed examples.
 
 <p align="center">
-<img src="images/23a-native-address-full.png" alt="ATAK Go To Taiwan Address tab using one full-address field" width="900"><br>
-<sub>Single-field mode keeps paste entry compact inside ATAK's native Go To dialog.</sub>
+<img src="images/23a-native-address-full.png" alt="ATAK Go To Taiwan Address tab using one full-address field with the structured-field action at the upper right" width="900"><br>
+<sub>Single-field mode keeps paste entry compact and its mode action reachable at the upper right; address content is redacted.</sub>
 </p>
 
 <p align="center">
-<img src="images/23b-native-address-structured.png" alt="ATAK Go To Taiwan Address tab split into county, district, road, and number fields" width="900"><br>
-<sub>Structured mode uses active-data county/district selectors plus editable road and remaining-address fields.</sub>
+<img src="images/23b-native-address-structured.png" alt="ATAK Go To Taiwan Address tab split into four fields with the single-field action aligned at the upper right" width="900"><br>
+<sub>Structured mode keeps all four rows on the left and the mode action at the upper right; address values are redacted.</sub>
 </p>
 
 <p align="center">
