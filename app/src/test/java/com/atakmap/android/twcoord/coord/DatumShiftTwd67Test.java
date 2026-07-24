@@ -117,6 +117,65 @@ public class DatumShiftTwd67Test {
   }
 
   @Test
+  public void penghu_domain_boundaries_choose_the_same_model_in_both_directions() {
+    double[][] boundaries = {
+      {270_000.0, 2_550_000.0},
+      {270_000.0, 2_650_000.0},
+      {340_000.0, 2_550_000.0},
+      {340_000.0, 2_650_000.0}
+    };
+
+    for (double[] boundary : boundaries) {
+      Twd97Tm2 source = new Twd97Tm2(boundary[0], boundary[1], 119);
+      Twd67Tm2 t67 = DatumShiftTwd67.twd97ToTwd67(source);
+      Twd97Tm2 backTo97 = DatumShiftTwd67.twd67ToTwd97(t67);
+      Twd67Tm2 backTo67 = DatumShiftTwd67.twd97ToTwd67(backTo97);
+
+      assertThat(backTo97.eastingMetres())
+          .as("Penghu boundary E97 at %.3f, %.3f", boundary[0], boundary[1])
+          .isCloseTo(source.eastingMetres(), Offset.offset(0.000_001));
+      assertThat(backTo97.northingMetres())
+          .as("Penghu boundary N97 at %.3f, %.3f", boundary[0], boundary[1])
+          .isCloseTo(source.northingMetres(), Offset.offset(0.000_001));
+      assertThat(backTo67.eastingMetres())
+          .as("Penghu boundary E67 at %.3f, %.3f", boundary[0], boundary[1])
+          .isCloseTo(t67.eastingMetres(), Offset.offset(0.000_001));
+      assertThat(backTo67.northingMetres())
+          .as("Penghu boundary N67 at %.3f, %.3f", boundary[0], boundary[1])
+          .isCloseTo(t67.northingMetres(), Offset.offset(0.000_001));
+    }
+  }
+
+  @Test
+  public void penghu_regional_model_does_not_capture_kinmen_or_matsu() {
+    for (List<OsgeoControlPointVectors.Point> region :
+        List.of(OsgeoControlPointVectors.KINMEN, OsgeoControlPointVectors.MATSU)) {
+      for (OsgeoControlPointVectors.Point point : region) {
+        Twd67Tm2 actual =
+            DatumShiftTwd67.twd97ToTwd67(
+                new Twd97Tm2(point.twd97E, point.twd97N, point.zone));
+        double expectedE =
+            point.twd97E
+                - 807.8
+                - 0.000_015_49 * point.twd97E
+                - 0.000_006_521 * point.twd97N;
+        double expectedN =
+            point.twd97N
+                + 248.6
+                - 0.000_015_49 * point.twd97N
+                - 0.000_006_521 * point.twd97E;
+
+        assertThat(actual.eastingMetres())
+            .as("%s must use compatibility fallback easting", point.id)
+            .isCloseTo(expectedE, Offset.offset(0.000_001));
+        assertThat(actual.northingMetres())
+            .as("%s must use compatibility fallback northing", point.id)
+            .isCloseTo(expectedN, Offset.offset(0.000_001));
+      }
+    }
+  }
+
+  @Test
   public void forward_then_inverse_is_identity_to_micrometre_scale_for_all_regions() {
     for (OsgeoControlPointVectors.Point point : OsgeoControlPointVectors.ALL) {
       Twd97Tm2 source = new Twd97Tm2(point.twd97E, point.twd97N, point.zone);
