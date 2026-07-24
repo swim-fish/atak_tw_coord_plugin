@@ -32,10 +32,10 @@ Taipower | TWD97 | TWD67 | Address
 - Four tab choices share a 48 dp-high selector row.
 - Full-address mode is the initial mode and contains one compact underline
   input plus one plugin-owned mode switch.
-- Structured mode contains compact DD-style rows for county/city,
-  district/township, road/locality, and tail.
-- The mode switch and `Choose result` control have meaningful accessibility
-  labels and at least 48 dp touch targets.
+- Structured mode contains compact DD-style county/city and
+  district/township selector rows plus editable road/locality and tail rows.
+- The locality selectors, mode switch, and `Choose result` control have
+  meaningful accessibility labels and at least 48 dp touch targets.
 - Status/loading/error text is `GONE` when empty and uses a polite live region
   when visible.
 - All content remains above or scroll-reachable without covering ATAK-owned
@@ -46,11 +46,38 @@ Taipower | TWD97 | TWD67 | Address
 - Both modes render one canonical AddressDraft.
 - Human edits update the canonical draft, invalidate the prior resolution, and
   schedule forward lookup after debounce.
+- A selected locality updates the same canonical draft as a text edit.
+  Changing county clears only an incompatible district plus stale
+  candidates/resolution; changing district clears stale candidates/resolution.
+  Both preserve road/locality and tail text.
 - Switching modes re-renders the draft without changing its revision,
   restarting lookup, losing unclassified text, or notifying ATAK of a location
   change.
+- A parsed locality missing from active choices remains visible as an explicit
+  unavailable draft value. It is not silently selected, replaced, or deleted.
 - In read-only state, text and candidate mutation are disabled. Mode switching
-  may remain available only as a pure display projection.
+  may remain available only as a pure display projection; locality dialogs
+  cannot change the draft.
+
+## Locality selector dialogs
+
+- County choices contain active imported counties only. District choices
+  contain distinct imported districts for the selected active county only.
+- One available map-centre locality may be first; every remaining row follows
+  the accepted postal or deterministic fallback order.
+- Each dialog receives one immutable map-anchor/locality/dataset snapshot and
+  never reorders rows while visible.
+- When boundary locality is absent, stale, outside coverage, or unavailable in
+  active data, the dialog uses baseline postal order without promotion.
+- Loading, no-data, and unavailable-current-value states are localized and do
+  not disable full-address entry or coordinate tabs.
+- Dialog windows use the ATAK Activity context. Titles, row labels, messages,
+  and drawables are resolved through the plugin context before building the
+  dialog.
+- Selection is accepted only when pane, session, draft, selected-county, and
+  dataset revisions still match. A dataset change dismisses or invalidates the
+  old snapshot; a later opening reflects completed active state.
+- Dismissal without selection has no draft or lookup effect.
 
 ## Candidate selection dialog
 
@@ -78,7 +105,8 @@ Taipower | TWD97 | TWD67 | Address
   3. render Address loading/unavailable state;
   4. start reverse lookup without blocking coordinate rendering.
 - Null point: preserve the established active-tab-only Clear contract. If
-  Address is active, clear only Address fields/candidates/resolution.
+  Address is active, clear only Address fields/candidates/resolution and its
+  selector/unavailable-value state.
 - Programmatic preparation does not fire the human-change listener.
 - Failure leaves a safe empty/unavailable Address state and valid coordinate
   drafts intact.
@@ -116,7 +144,8 @@ Taipower | TWD97 | TWD67 | Address
 ### `setOnChangedListener(listener)`
 
 - Human coordinate edits retain existing semantics.
-- Address text edits may report human change while unresolved.
+- Address text or accepted locality-selection edits may report human change
+  while unresolved.
 - A human-initiated forward lookup completion may report one additional change
   only after the accepted resolution is committed and the synchronous getter
   can return it.
@@ -129,8 +158,10 @@ Taipower | TWD97 | TWD67 | Address
 
 - Idempotently marks the pane/controller disposed, increments generation,
   cancels current lookup, dismisses or invalidates candidate dialogs, removes
-  watchers/listeners, and disables controls.
-- Late results and dialog callbacks are ignored.
+  watchers/listeners, dismisses or invalidates locality dialogs, and disables
+  controls.
+- Late lookup, locality refresh, dataset listener, and dialog callbacks are
+  ignored.
 - Later activation/Auto Fill are no-op; format returns null; getter returns a
   checked disposed error.
 - The root View remains an inert valid object while an already-open ATAK dialog

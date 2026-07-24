@@ -1,6 +1,6 @@
 # Implementation Plan: Native Taiwan Address Entry
 
-**Branch**: `codex/013-native-address-entry` | **Date**: 2026-07-22 | **Spec**: [spec.md](spec.md)
+**Branch**: `codex/013-native-address-entry` | **Date**: 2026-07-24 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/013-native-address-entry/spec.md`
 
@@ -13,6 +13,14 @@ prefixes plus a unit-tail grammar, then resolve through a shared asynchronous
 service over the existing imported county datasets. Unique exact matches may
 resolve automatically; ambiguous matches require explicit candidate choice.
 Reverse lookup labels but never moves a host-supplied WGS84 point.
+
+Replace the structured county/city and district/township free-text rows with
+compact selector dialogs. Build searchable choices only from active imported
+data, order them with a provenance-recorded offline Chunghwa Post catalog, and
+promote one cached map-centre locality without reordering an open list. Keep
+full-address paste and unavailable draft values lossless. Discover and cache
+district values on the existing bounded worker under dataset-revision fences;
+no imported dataset format or network behavior changes.
 
 Complete the navigation migration in the same feature: keep `TW Coordinates`
 as the only public Tools item and make its internal offline dataset manager the
@@ -33,8 +41,10 @@ Requery SQLite 3.45.0 fallback; no new runtime dependency
 
 **Storage**: Existing plugin SharedPreferences; existing imported county
 SQLite files, boundary SQLite, and provenance manifests under ATAK-managed
-plugin storage. Dataset format/path and manifest schema are unchanged. Legacy
-custom Go To preferences remain inert rather than being deleted.
+plugin storage; plus one read-only bundled Chunghwa Post locality-order asset
+with source/effective/retrieval dates and source hashes. Imported dataset
+format/path and manifest schema are unchanged. Legacy custom Go To preferences
+remain inert rather than being deleted.
 
 **Testing**: JUnit 4, AssertJ, Mockito, Robolectric, xerial SQLite fixtures,
 existing Android instrumented tests, Gradle Spotless/lint/unit/package gates,
@@ -71,18 +81,29 @@ module, flavor, process, service, or permission
 
 - normalization and full/structured mode projection ≤ 100 ms p95 and
   worst-case on the reference device;
+- county/district selector open-to-usable ≤ 100 ms p95 after its immutable
+  locality snapshot is prepared;
+- postal catalog load/index and active-district snapshot refresh ≤ 1,000 ms
+  p95 on the bounded worker for the largest representative county, with no
+  visible host-control stall;
 - forward and reverse address results visible within 1,000 ms median and
   2,000 ms p95 across at least 100 representative real-device lookups;
 - zero stale result across 100 alternating supplied-point activations;
 - ATAK process RSS ≤ 200 MiB during the established five-minute session with
   boundary data and at least two county datasets imported;
 - one operator can complete native full-address Go To within 30 seconds.
+- postal catalog plus all cached selector snapshots add ≤ 1 MiB retained heap
+  in the established two-county session.
 
 **Constraints**:
 
 - fully offline; no INTERNET permission, network fallback, or telemetry;
 - no database, boundary, file, Future wait, or blocking work in synchronous
   ATAK pane callbacks or the main thread;
+- postal data is ordering-only; active imported rows remain the searchable
+  availability authority, and catalog failure falls back deterministically;
+- one selector opening captures one map anchor, resolved locality, and dataset
+  revision and never reorders while visible;
 - WGS84 remains the host interchange and reverse lookup never snaps geometry;
 - one outer pane scroll owner, compact DD-sized fields, 48 dp mode/candidate
   controls, and English/zh-TW/Japanese parity;
@@ -96,7 +117,8 @@ module, flavor, process, service, or permission
 **Scale/Scope**:
 
 - one existing ATAK top-level Taiwan pane with four internal tabs;
-- two Address input projections and one bounded candidate dialog;
+- two Address input projections, two bounded locality selector dialogs, and one
+  bounded candidate dialog;
 - one public Tools item and one retained internal offline manager page;
 - up to the existing multi-county registry scale, with per-county datasets up
   to approximately 731,000 rows / 324 MB and approximately 10 MB boundary data;
@@ -104,6 +126,8 @@ module, flavor, process, service, or permission
   consumers;
 - at most five deterministic SQL candidate pools of 20 rows each per forward
   request, followed by a deduplicated visible shortlist of at most 20 rows;
+- one 22-county/371-locality postal catalog, at most 22 active county choices,
+  and one cached district list per active county/dataset revision;
 - three retired public Tools workflows, two retired receivers/pages, and one
   retained internal receiver/page.
 
@@ -121,13 +145,13 @@ module, flavor, process, service, or permission
 | Principle | Required Plan Evidence | Status |
 |-----------|------------------------|--------|
 | I. Code Quality & Build Discipline | Spotless Apply/Check, lint, full JVM tests, debug APK, `git diff --check`, resource/reference audits | PASS |
-| II. Test-First Development & Verification | Red/Green tasks precede parser, service, lease, pane, migration, and lifecycle implementation; JVM/Robolectric/device split is defined in quickstart | PASS |
-| III. UX, Accessibility & Localisation | One scroll owner, DD geometry, 48 dp controls, explicit loading/empty/error/read-only states, dialog resource rule, EN/zh-TW/JA parity, UI/docs/screenshots | PASS |
-| IV. Performance & Offline Operation | No main-thread I/O, cancellable bounded worker, explicit 100 ms/1 s/2 s/200 MiB budgets, real-device trace/RSS/capture, no network change | PASS |
-| V. Documentation & Decision Traceability | ADR-0026 is mandatory and supersedes the coexistence decision; README/changelog/guides/UI docs/screenshots update with stable requirement links | PASS |
-| VI. Host-Process Isolation | Synchronous cache-only host callbacks, narrow outer boundaries, dialog contexts, revision fencing, read leases, monotonic close, idempotent teardown | PASS |
+| II. Test-First Development & Verification | Red/Green tasks precede parser, service, lease, selector catalog/order, pane, migration, and lifecycle implementation; JVM/Robolectric/device split is defined in quickstart | PASS |
+| III. UX, Accessibility & Localisation | One scroll owner, DD geometry, 48 dp controls, bounded selector/candidate dialogs, unavailable-draft state, explicit loading/empty/error/read-only states, dialog resource rule, EN/zh-TW/JA parity, UI/docs/screenshots | PASS |
+| IV. Performance & Offline Operation | No main-thread I/O, cancellable bounded worker, explicit 100 ms selector/projection, 1 s refresh/lookup, 2 s p95 lookup, 1 MiB catalog-cache, and 200 MiB process budgets, real-device trace/RSS/capture, no network change | PASS |
+| V. Documentation & Decision Traceability | ADR-0026 remains authoritative for native Address/Tools consolidation; a new ADR records the postal catalog authority, refresh, and active-data intersection; README/changelog/guides/UI docs/screenshots update with stable requirement links | PASS |
+| VI. Host-Process Isolation | Synchronous cache-only host callbacks, narrow outer boundaries, Activity-window/plugin-resource dialog contexts, immutable selector snapshots, revision fencing, read leases, monotonic close, idempotent teardown | PASS |
 | VII. ATAK SDK Compatibility | Four version axes are explicit; 5.7.0.9 javap/hash and 5.5.1.1 source anchors recorded; exact current/minimum device matrix remains release-gated | PASS |
-| VIII. Geospatial Correctness & Provenance | WGS84 host interchange, reverse no-snap rule, existing coordinate regressions unchanged, candidate/dataset provenance attached to new metadata | PASS |
+| VIII. Geospatial Correctness & Provenance | WGS84 host interchange, reverse no-snap rule, existing coordinate regressions unchanged, candidate/dataset provenance attached to new metadata, postal catalog source/version/hash embedded and ordering-only | PASS |
 | IX. Release Integrity & Provenance | Version freeze deferred to release candidate; device/compatibility/performance/docs/signer/provenance tasks must be labelled `[RELEASE-GATE]`; TPP is not acceptance | PASS |
 
 No non-negotiable violation or justified constitution exception is present.
@@ -163,11 +187,15 @@ app/src/main/
 │   │   ├── NativeEntryTab.java
 │   │   ├── AddressEntryController.java
 │   │   ├── AddressCandidateDialog.java
+│   │   ├── AddressLocalityDialog.java
 │   │   ├── TaiwanCoordinateEntryPane.java
 │   │   ├── TaiwanEntryController.java
 │   │   └── NativeCoordinateEntryRegistrar.java
 │   ├── address/
-│   │   ├── lookup/                 # shared async lookup/parser/result contracts
+│   │   ├── lookup/                 # shared async lookup/parser/selector contracts
+│   │   │   ├── PostalLocalityCatalog.java
+│   │   │   ├── PostalLocalityCatalogLoader.java
+│   │   │   └── LocalitySelectorSnapshot.java
 │   │   ├── boundary/               # retained locality source
 │   │   ├── ActiveDatasetRegistry.java
 │   │   ├── AddressDatabaseFacade.java
@@ -180,6 +208,8 @@ app/src/main/
 │   │   └── TwCoordTool.java
 │   ├── TwCoordMapComponent.java
 │   └── TwCoordPreferenceFragment.java
+├── assets/address/
+│   └── chunghwa_post_postal_localities.json
 └── res/
     ├── layout/
     │   ├── taiwan_coordinate_entry_pane.xml
@@ -193,11 +223,16 @@ app/src/test/java/com/atakmap/android/twcoord/
 ├── coord/input/                    # moved parser regressions
 ├── nativeentry/                    # pane/controller/dialog contracts
 └── address/
-    ├── lookup/                     # parser/service/concurrency tests
+    ├── lookup/                     # parser/service/selector/concurrency tests
+    ├── ChunghwaPostPostalLocalitiesAssetTest.java
     └── existing importer/registry/database regressions
+
+scripts/
+└── generate_chunghwa_post_postal_localities.ps1
 
 docs/
 ├── adr/0026-native-address-entry-and-tools-consolidation.md
+├── adr/0027-use-chunghwa-post-locality-order.md
 ├── ui/
 ├── images/
 ├── user-guide.md
@@ -230,6 +265,9 @@ cancellation, and worker lifecycle. Keep storage/import/boundary types under
 `address` and keep ATAK View/dialog adaptation under `nativeentry`. This is the
 smallest boundary that prevents synchronous legacy page code from leaking into
 the host pane while preserving existing dataset formats and reverse readouts.
+The same lookup boundary owns postal catalog loading, active-district
+discovery, map-centre locality resolution, and immutable selector snapshots so
+the pane never opens or scans a database directly.
 
 ## Design and Delivery Strategy
 
@@ -277,7 +315,34 @@ the host pane while preserving existing dataset formats and reverse readouts.
    byte; verify stale old actions are safe no-ops.
 7. Audit localization, render scripts, resources, manifest, and dead code.
 
-### Phase D — Documentation and release evidence
+### Phase D — Add active-data locality selectors
+
+1. Add the Chunghwa Post catalog asset, reproducible generator, source hashes,
+   schema validation, exact county order tests, 371-locality uniqueness tests,
+   and representative postal-prefix tests.
+2. Add immutable postal catalog and locality selector models plus a loader that
+   validates schema, provenance, names, prefixes, coordinates, and duplicate
+   rows before publication.
+3. Extend address database facades with a bounded distinct-township query and
+   extend the shared lookup service with cancellable, revision-scoped locality
+   snapshot preparation on its existing worker.
+4. Intersect active registry counties/districts with postal order, retain
+   unmatched active values in deterministic fallback order, and cache by
+   dataset revision.
+5. Resolve the current map anchor through the boundary facade asynchronously,
+   promote at most one available county/district, and freeze each open-list
+   snapshot.
+6. Replace structured county/district text controls with DD-sized accessible
+   selector controls and plugin-owned Activity-context dialogs. Preserve
+   unavailable draft values, road/tail text, active-only Clear, read-only, and
+   dispose behavior.
+7. Add pure ordering/intersection tests, facade fixture tests,
+   service-concurrency/revision tests, pane/dialog resource tests, and
+   current/minimum ATAK device journeys before claiming completion.
+8. Record the authority/update/fallback decision in ADR-0027 and update the
+   native pane UI documentation and localized guide/screenshots.
+
+### Phase E — Documentation and release evidence
 
 1. Rewrite active navigation and native Address documentation in English and
    Traditional Chinese; align Japanese application strings.
@@ -301,6 +366,9 @@ the host pane while preserving existing dataset formats and reverse readouts.
 | FR-029–031 localization/layout/accessibility | R10; pane contract | Resource parity, accessibility source tests, paired 5.5/current screenshots |
 | FR-032–035 geospatial/offline/compat/safety | R1–R3, R6–R9, R13–R14 | Existing golden regressions, captures, javap/source, device matrix, concurrency/lifecycle tests |
 | FR-036 documentation | R11, R12, R15; tools contract | Link/image/LFS/metadata audit and canonical guide parity |
+| FR-037–040 active locality choices and postal ordering | R16, R17; lookup + pane contracts; Postal Locality Catalog data model | Asset schema/provenance tests; 22-county/371-locality order tests; active-dataset intersection and unmatched fallback fixtures |
+| FR-041–044 map-centre promotion and lossless selector edits | R18, R19; pane contract; Locality Selector Snapshot data model | Polygon containment/no-nearest tests; stable-open-list tests; unavailable-draft round trips; county/district edit invalidation tests |
+| FR-045–046 provenance and lifecycle safety | R16–R20; lookup + pane contracts | Source hash/reproduction test; dataset revision/cancel/dispose/read-only tests; ADR-0027; offline capture |
 
 ## Post-Design Constitution Check
 
@@ -309,22 +377,29 @@ the host pane while preserving existing dataset formats and reverse readouts.
 - `research.md` resolves every technical unknown without a remaining
   `NEEDS CLARIFICATION` marker.
 - `data-model.md` makes reverse no-snap geometry, candidate exactness,
-  provenance, revisions, and leased dataset ownership explicit.
+  provenance, revisions, leased dataset ownership, postal authority, active
+  choice intersection, and immutable locality selector snapshots explicit.
 - Contracts keep synchronous ATAK callbacks free of I/O, specify dialog
-  context/resource ownership, preserve active-only Clear, and define monotonic
-  cancellation/teardown.
+  context/resource ownership, preserve active-only Clear and unavailable
+  drafts, and define monotonic cancellation/teardown.
 - `quickstart.md` separates JVM/source/build evidence from current/minimum ATAK
   device gates and provides real-device latency, RSS, offline, reload, upgrade,
-  and cross-context dialog checks.
-- The design adds no dependency, permission, dataset format, compatibility-axis
-  change, or constitution exception.
-- ADR-0026, documentation, screenshots, version freeze, signer, artifact
-  provenance, and both device lines remain explicit future implementation or
-  `[RELEASE-GATE]` work rather than being claimed complete by planning.
+  selector ordering, map-centre promotion, and cross-context dialog checks.
+- The design adds one provenance-recorded read-only asset but no runtime
+  dependency, permission, imported dataset format, compatibility-axis change,
+  or constitution exception.
+- ADR-0027, selector documentation/screenshots, version freeze, signer,
+  artifact provenance, and both device lines remain explicit future
+  implementation or `[RELEASE-GATE]` work rather than being claimed complete
+  by planning.
 
 ## Complexity Tracking
 
 No constitution exception is required. The shared service and registry lease
 are additional structure, but they remove two UI-bound query owners and close
 documented use-after-close/stale-result races; a simpler direct-controller
-reuse would violate main-thread and host-lifecycle constraints.
+reuse would violate main-thread and host-lifecycle constraints. The bundled
+postal catalog and revision-scoped locality cache add a second locality
+authority only for ordering, but this separation is necessary because
+`district_code` is not postal data and boundary/catalog-only rows are not proof
+of searchable imported content.

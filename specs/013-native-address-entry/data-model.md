@@ -109,6 +109,91 @@ An ownership lease over an immutable county-to-dataset/facade snapshot.
 
 The existing on-disk dataset and manifest formats remain unchanged.
 
+### PostalLocalityCatalog
+
+Read-only bundled ordering reference:
+
+| Field | Type | Rule |
+|-------|------|------|
+| `schemaVersion` | integer | Positive supported asset schema |
+| `datasetId` | string | Stable catalog identity |
+| `retrievedOn` | local date | Date the official sources were retrieved |
+| `sources` | provenance records | Authority, title, URL, version/effective/update dates, and source SHA-256 when available |
+| `counties` | ordered list | Chunghwa Post county selector order; unique normalized names |
+| `districtCount` | integer | Declared count equal to validated district rows |
+
+Each county entry contains:
+
+| Field | Rule |
+|-------|------|
+| `name` | Canonical Traditional Chinese county/city name |
+| `selectorOrder` | Unique positive position in the official county selector |
+| `districts` | Ordered postal-locality rows for that county |
+
+Each postal-locality row contains:
+
+| Field | Rule |
+|-------|------|
+| `name` | Canonical district/township name |
+| `postalPrefix` | Exactly three decimal digits |
+| `postalOrder` | Stable county-local position after numeric prefix ordering and official tie-break |
+| `center` | Optional published latitude/longitude metadata; never availability proof |
+
+The catalog controls order only. A county or district becomes selectable only
+through active imported data. Catalog load failure produces a deterministic
+fallback rather than disabling full-address entry.
+
+### ActiveLocalityCatalog
+
+Small immutable searchable-locality view derived from one leased registry
+snapshot:
+
+| Field | Rule |
+|-------|------|
+| `datasetRevision` | Must match the registry revision used to derive it |
+| `counties` | Active valid imported county names only |
+| `districtsByCounty` | Distinct non-empty imported `township` names per active county |
+| `unmatchedPostalCount` | Diagnostic count; unmatched active values remain usable |
+| `closed` | Terminal snapshot created after service close; contains no choices |
+
+District discovery runs on the bounded worker and is cached by county and
+dataset identity/revision. It never changes the imported database or manifest.
+
+### LocalitySelectorSnapshot
+
+One immutable view used for one selector opening:
+
+| Field | Rule |
+|-------|------|
+| `kind` | `COUNTY` or `DISTRICT` |
+| `datasetRevision` | Active dataset revision captured for the list |
+| `selectedCounty` | Required for `DISTRICT`; null for county list |
+| `mapAnchor` | Valid WGS84 map-centre snapshot or null |
+| `mapLocality` | Cached boundary county/district matching the anchor or null |
+| `choices` | Active imported values in final display order |
+| `postalCatalogAvailable` | Whether official ordering was applied |
+| `createdGeneration` | Pane/session identity used to reject late callbacks |
+
+Each choice contains its canonical name, postal selector/order key when
+matched, `promoted` flag, and deterministic fallback key. Exactly zero or one
+choice may be promoted. The list never mutates or reorders after publication.
+
+### LocalityValueState
+
+Derived presentation state for the canonical AddressComponents locality
+strings:
+
+```text
+EMPTY | SELECTABLE | UNAVAILABLE
+```
+
+- `SELECTABLE` means the exact normalized value exists in the current active
+  selector snapshot.
+- `UNAVAILABLE` preserves a parsed/pasted value that is not currently
+  searchable; it remains visible but cannot yield a resolution until corrected
+  or active data changes.
+- This state never replaces or deletes the AddressDraft component text.
+
 ## 4. Lookup requests and results
 
 ### LookupIdentity
@@ -259,6 +344,10 @@ twcoord.address.record.longitude
 | `candidates` | Current accepted candidates |
 | `resolution` | Current accepted AddressResolution or null |
 | `lookupHandle` | Current cancellable request or null |
+| `localitySnapshot` | Latest accepted immutable county/district selector snapshot or null |
+| `localityHandle` | Current cancellable locality preparation request or null |
+| `countyValueState` | Derived EMPTY/SELECTABLE/UNAVAILABLE state |
+| `districtValueState` | Derived EMPTY/SELECTABLE/UNAVAILABLE state |
 | `disposed` | Monotonic terminal flag |
 
 ### State transitions
@@ -285,22 +374,54 @@ candidate selection
 
 mode switch
   → re-project same draft
+  → derive locality value states from latest selector snapshot
   → no revision change and no lookup restart
 
+county selector open
+  → capture current map anchor + dataset revision
+  → use accepted cached county snapshot or request refresh
+  → publish one immutable ordered list
+  → no in-place reorder
+
+county selection
+  → verify pane/session/dataset snapshot identities
+  → update county component
+  → clear incompatible district
+  → preserve road and tail
+  → increment draftRevision
+  → clear candidates and resolution
+  → request district snapshot and fresh forward lookup
+
+district selector open
+  → require selected active county
+  → use accepted cached district snapshot or request refresh
+  → publish one immutable ordered list
+  → no in-place reorder
+
+district selection
+  → verify pane/session/dataset snapshot identities
+  → update district component
+  → preserve road and tail
+  → increment draftRevision
+  → clear candidates and resolution
+  → fresh forward lookup
+
 null activation / native Clear while Address active
-  → cancel request
+  → cancel lookup and locality requests
   → increment draftRevision
   → empty Address state only
 
 dataset import/replace/remove
   → increment datasetRevision
-  → cancel/ignore older results
+  → invalidate active-locality cache
+  → cancel/ignore older lookup and selector results
   → invalidate existing resolution
+  → retain canonical draft text and re-derive unavailable/selectable state
   → fresh lookup only after current input/session requests it
 
 dispose
   → increment generation
-  → cancel request
+  → cancel lookup and locality requests
   → clear listeners/resolution
   → DISPOSED terminal state
 ```

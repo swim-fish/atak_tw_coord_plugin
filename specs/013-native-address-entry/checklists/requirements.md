@@ -46,3 +46,10 @@
 - Exact minimum-runtime device, latency, release signer, documentation, and
   provenance evidence remain release gates and are not treated as satisfied by
   specification completion.
+- Revalidated on 2026-07-24 after adding structured county/city and
+  district/township selectors. The specification distinguishes active imported
+  data as the availability authority from Chunghwa Post data as the ordering
+  authority.
+- Map-centre promotion, stable open-list snapshots, unavailable draft
+  preservation, deterministic unmatched-locality fallback, and dataset-change
+  behavior are all covered without a remaining clarification marker.

@@ -9,12 +9,16 @@ import com.atakmap.android.twcoord.address.lookup.AddressResolution;
 import com.atakmap.android.twcoord.address.lookup.AddressValidation;
 import com.atakmap.android.twcoord.address.lookup.ForwardAddressRequest;
 import com.atakmap.android.twcoord.address.lookup.ForwardAddressResult;
+import com.atakmap.android.twcoord.address.lookup.LocalitySelectorRequest;
+import com.atakmap.android.twcoord.address.lookup.LocalitySelectorResult;
+import com.atakmap.android.twcoord.address.lookup.LocalitySelectorSnapshot;
 import com.atakmap.android.twcoord.address.lookup.LookupHandle;
 import com.atakmap.android.twcoord.address.lookup.LookupIdentity;
 import com.atakmap.android.twcoord.address.lookup.LookupPriority;
 import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
 import com.atakmap.android.twcoord.address.lookup.ReverseAddressRequest;
 import com.atakmap.android.twcoord.address.lookup.ReverseAddressResult;
+import com.atakmap.android.twcoord.address.lookup.StreetTextNormaliser;
 import com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser;
 import com.atakmap.android.twcoord.coord.Wgs84;
 import java.util.ArrayList;
@@ -25,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /** Host-independent full-address entry session with revision-fenced asynchronous lookup. */
@@ -56,6 +61,8 @@ public final class AddressEntryController {
   private List<AddressCandidate> candidates = Collections.emptyList();
   private AddressResolution resolution;
   private LookupHandle lookupHandle;
+  private LookupHandle localityHandle;
+  private LookupIdentity localityIdentity;
   private LookupIdentity currentIdentity;
   private Cancellable pendingDebounce;
   private Runnable onStateChanged;
@@ -165,6 +172,152 @@ public final class AddressEntryController {
     return disposed;
   }
 
+  public long datasetRevision() {
+    return lookupService.availability().datasetRevision();
+  }
+
+  /**
+   * Prepares one immutable locality snapshot on the shared lookup worker. The callback is already
+   * delivered on the service completion dispatcher and is dropped when any session, draft, or
+   * dataset identity changes.
+   */
+  public void prepareLocalities(
+      LocalitySelectorSnapshot.Kind kind, Consumer<LocalitySelectorResult> callback) {
+    Objects.requireNonNull(kind, "kind");
+    Objects.requireNonNull(callback, "callback");
+    LocalitySelectorRequest request;
+    synchronized (this) {
+      if (disposed) return;
+      if (kind == LocalitySelectorSnapshot.Kind.DISTRICT
+          && draft.components().countyCity().isEmpty()) {
+        return;
+      }
+      cancelLocalityLocked();
+      LookupIdentity identity =
+          new LookupIdentity(
+              UUID.randomUUID().toString(),
+              generation,
+              draft.draftRevision(),
+              lookupService.availability().datasetRevision());
+      localityIdentity = identity;
+      request =
+          LocalitySelectorRequest.create(
+              identity,
+              kind == LocalitySelectorSnapshot.Kind.COUNTY
+                  ? "native-address-county"
+                  : "native-address-district",
+              LookupPriority.NATIVE_INTERACTIVE,
+              kind,
+              kind == LocalitySelectorSnapshot.Kind.DISTRICT
+                  ? draft.components().countyCity()
+                  : null,
+              currentForwardAnchor());
+    }
+    LookupHandle submitted;
+    try {
+      submitted =
+          lookupService.localities(
+              request,
+              result -> {
+                boolean accepted;
+                synchronized (AddressEntryController.this) {
+                  accepted =
+                      !disposed
+                          && result != null
+                          && localityIdentity != null
+                          && localityIdentity.equals(result.identity())
+                          && result.identity().sessionGeneration() == generation
+                          && result.identity().draftRevision() == draft.draftRevision()
+                          && result.identity().datasetRevision()
+                              == lookupService.availability().datasetRevision();
+                  if (accepted) {
+                    localityHandle = null;
+                    localityIdentity = null;
+                  }
+                }
+                if (accepted) callback.accept(result);
+              });
+    } catch (RuntimeException failure) {
+      synchronized (this) {
+        if (localityIdentity != null && localityIdentity.equals(request.identity())) {
+          localityIdentity = null;
+        }
+      }
+      callback.accept(LocalitySelectorResult.failure(request.identity(), failure));
+      return;
+    }
+    synchronized (this) {
+      if (disposed || localityIdentity == null || !localityIdentity.equals(request.identity())) {
+        submitted.cancel();
+      } else {
+        localityHandle = submitted;
+      }
+    }
+  }
+
+  /** Applies a selector choice while preserving road/locality and tail correction text. */
+  public void selectLocality(LocalitySelectorSnapshot.Kind kind, String value, boolean human) {
+    selectLocality(kind, value, datasetRevision(), human);
+  }
+
+  public void selectLocality(
+      LocalitySelectorSnapshot.Kind kind,
+      String value,
+      long expectedDatasetRevision,
+      boolean human) {
+    applyLocality(kind, value, null, expectedDatasetRevision, human);
+  }
+
+  public void selectLocality(
+      LocalitySelectorSnapshot.Kind kind,
+      String value,
+      LookupIdentity expectedIdentity,
+      boolean human) {
+    Objects.requireNonNull(expectedIdentity, "expectedIdentity");
+    applyLocality(kind, value, expectedIdentity, expectedIdentity.datasetRevision(), human);
+  }
+
+  private void applyLocality(
+      LocalitySelectorSnapshot.Kind kind,
+      String value,
+      LookupIdentity expectedIdentity,
+      long expectedDatasetRevision,
+      boolean human) {
+    Objects.requireNonNull(kind, "kind");
+    String selected = valueOrEmpty(value);
+    AddressDraft current;
+    synchronized (this) {
+      if (disposed
+          || (human && !editable)
+          || expectedDatasetRevision != lookupService.availability().datasetRevision()
+          || (expectedIdentity != null
+              && (expectedIdentity.sessionGeneration() != generation
+                  || expectedIdentity.draftRevision() != draft.draftRevision()))) return;
+      current = draft;
+    }
+    if (kind == LocalitySelectorSnapshot.Kind.COUNTY) {
+      String retainedDistrict =
+          !selected.isEmpty()
+                  && StreetTextNormaliser.fold(selected)
+                      .equals(StreetTextNormaliser.fold(current.components().countyCity()))
+              ? current.components().districtTownship()
+              : "";
+      editStructured(
+          selected,
+          retainedDistrict,
+          current.components().roadLocality(),
+          current.structuredTail(),
+          human);
+    } else {
+      editStructured(
+          current.components().countyCity(),
+          selected,
+          current.components().roadLocality(),
+          current.structuredTail(),
+          human);
+    }
+  }
+
   public synchronized void setOnStateChanged(Runnable listener) {
     onStateChanged = listener;
   }
@@ -187,6 +340,7 @@ public final class AddressEntryController {
       candidates = Collections.emptyList();
       resolution = null;
       currentIdentity = null;
+      cancelLocalityLocked();
       reversePoint = null;
       if (draft.validation() == AddressValidation.READY_TO_LOOKUP) {
         pendingDebounce = debouncer.schedule(this::dispatchForward, DEBOUNCE_MS);
@@ -216,6 +370,7 @@ public final class AddressEntryController {
       candidates = Collections.emptyList();
       resolution = null;
       currentIdentity = null;
+      cancelLocalityLocked();
       reversePoint = null;
       if (draft.validation() == AddressValidation.READY_TO_LOOKUP) {
         pendingDebounce = debouncer.schedule(this::dispatchForward, DEBOUNCE_MS);
@@ -573,6 +728,15 @@ public final class AddressEntryController {
       lookupHandle.cancel();
       lookupHandle = null;
     }
+    cancelLocalityLocked();
+  }
+
+  private void cancelLocalityLocked() {
+    if (localityHandle != null) {
+      localityHandle.cancel();
+      localityHandle = null;
+    }
+    localityIdentity = null;
   }
 
   private static AddressCandidate uniqueExact(List<AddressCandidate> candidates) {

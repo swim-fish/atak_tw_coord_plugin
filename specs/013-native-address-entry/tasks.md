@@ -247,7 +247,7 @@ repository quality gates after story behavior converges.
 - [X] T083 [P] Rewrite canonical and Traditional Chinese operator journeys for native Address, candidate selection, Convert Coordinate, and dataset management in `docs/user-guide.md` and `docs/user-guide_zh.md`
 - [X] T084 [P] Replace the standalone forward-search guide with the native Address workflow and redirect offline instructions through `TW Coordinates` in `docs/tw-addr-search.md`, `docs/tw-addr-search_zh.md`, `docs/tw-offline-addr.md`, and `docs/tw-offline-addr_zh.md`
 - [X] T085 Update feature summary, compatibility wording, one-Tools-entry navigation, and accepted legacy removals in `README.md` and `CHANGELOG.md`
-- [ ] T086 [RELEASE-GATE] Replace and renumber active Tools/native Address screenshots, scrub EXIF/XMP, verify Git LFS, and update references in `docs/images/README.md`
+- [X] T086 [RELEASE-GATE] Replace and renumber active Tools/native Address screenshots, scrub EXIF/XMP, verify Git LFS, and update references in `docs/images/README.md`
 - [X] T087 Add or update resource parity and accessibility assertions for English, zh-TW, and Japanese strings in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanAddressResourcesTest.java`
 - [X] T088 Audit for retired class/action/resource references, Activity-context plugin resource IDs, unexpected `INTERNET` permission, dead code, and unowned TODOs across `app/src/main/` and record the commands/results in `specs/013-native-address-entry/quickstart.md`
 - [X] T089 Run `:app:spotlessApply`, `:app:spotlessCheck`, `:app:lint`, `:app:testCivDebugUnitTest`, and `:app:assembleCivDebug` against `app/build.gradle`, then record exact results in `specs/013-native-address-entry/quickstart.md`
@@ -261,7 +261,7 @@ repository quality gates after story behavior converges.
 **Purpose**: Keep implementation/build completion distinct from physical
 acceptance, TPP output, signing, and public publication.
 
-- [ ] T092 [RELEASE-GATE] Select and commit the release `PLUGIN_VERSION` with matching user-visible version and changelog text in `app/build.gradle` and `CHANGELOG.md` before any TPP source archive is generated
+- [X] T092 [RELEASE-GATE] Select and commit the release `PLUGIN_VERSION` with matching user-visible version and changelog text in `app/build.gradle` and `CHANGELOG.md` before any TPP source archive is generated
 - [ ] T093 [RELEASE-GATE] Record the exact candidate commit, APK SHA-256, dataset provenance, and completed/PENDING scenario matrix without device serials or workstation paths in `specs/013-native-address-entry/quickstart.md`
 - [ ] T094 [RELEASE-GATE] Complete or explicitly disposition every ATAK 5.5 and 5.7.0.9 compatibility row, including small portrait pane, large font, reload, dialog, lifecycle, and upgrade, in `specs/013-native-address-entry/quickstart.md`
 - [ ] T095 [RELEASE-GATE] Measure at least 100 normalization/mode projections and 100 forward/reverse lookups on the named reference device, prove ≤100 ms local work and ≤1,000 ms median/≤2,000 ms p95 lookup budgets, and record sanitized summaries in `specs/013-native-address-entry/quickstart.md`
@@ -292,6 +292,67 @@ acceptance, TPP output, signing, and public publication.
 
 ---
 
+## Phase 12: Active-Data Locality Selector Foundations
+
+**Purpose**: Establish the provenance-recorded postal ordering catalog,
+searchable-locality discovery, and revision-safe immutable selector contract
+before changing the structured Address UI.
+
+### Tests first
+
+- [X] T110 Add ADR-0027 for the ordering-only Chunghwa Post authority, active-data intersection, deterministic fallback, update process, and map-centre promotion in `docs/adr/0027-use-chunghwa-post-locality-order.md` and `docs/adr/README.md`
+- [X] T111 Validate the committed 22-county/371-locality asset, generator reproducibility, provenance, uniqueness, coordinates, and representative postal prefixes with `app/src/test/java/com/atakmap/android/twcoord/address/ChunghwaPostPostalLocalitiesAssetTest.java` and record the result in `specs/013-native-address-entry/quickstart.md`
+- [X] T112 [P] Add failing catalog schema/load/fallback and pure county/district ordering tests in `app/src/test/java/com/atakmap/android/twcoord/address/lookup/PostalLocalityCatalogTest.java` and `app/src/test/java/com/atakmap/android/twcoord/address/lookup/LocalitySelectorOrderingTest.java`
+- [X] T113 [P] Add failing distinct imported-township and deterministic-empty-value tests in `app/src/test/java/com/atakmap/android/twcoord/address/AddressDatabaseFacadeLocalitiesTest.java`
+- [X] T114 [P] Add failing active-only intersection, unmatched-value fallback, map-locality promotion, cancellation, close, and dataset-revision tests in `app/src/test/java/com/atakmap/android/twcoord/address/lookup/DefaultAddressLookupServiceLocalitiesTest.java`
+
+### Implementation
+
+- [X] T115 Implement immutable postal catalog, loader validation, selector request/result/value models, and deterministic ordering in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/PostalLocalityCatalog.java`, `app/src/main/java/com/atakmap/android/twcoord/address/lookup/PostalLocalityCatalogLoader.java`, and `app/src/main/java/com/atakmap/android/twcoord/address/lookup/LocalitySelectorSnapshot.java`
+- [X] T116 Implement distinct non-empty township discovery through all address database facades without changing the imported schema in `app/src/main/java/com/atakmap/android/twcoord/address/AddressDatabaseFacade.java`, `app/src/main/java/com/atakmap/android/twcoord/address/SqliteAddressDatabase.java`, `app/src/main/java/com/atakmap/android/twcoord/address/AtakDatabasesAddressDatabase.java`, and `app/src/main/java/com/atakmap/android/twcoord/address/FallbackSqliteFactory.java`
+- [X] T117 Extend the shared lookup contract and bounded worker with catalog loading, active-data intersection, revision-scoped district caches, boundary containment promotion, cancellation, and monotonic close in `app/src/main/java/com/atakmap/android/twcoord/address/lookup/AddressLookupService.java`, `app/src/main/java/com/atakmap/android/twcoord/address/lookup/DefaultAddressLookupService.java`, and `app/src/main/java/com/atakmap/android/twcoord/address/lookup/NoDataAddressLookupService.java`
+
+**Checkpoint**: The service can publish immutable active-only county and
+district snapshots in deterministic order without touching Android Views or
+performing I/O on the main thread.
+
+---
+
+## Phase 13: User Story 2 — Select County and District from Active Data (Priority: P1)
+
+**Goal**: Replace structured county/district free text with compact,
+accessible selectors that preserve one lossless Address draft and reject stale
+or read-only changes.
+
+**Independent Test**: Import two county fixtures, open structured Address,
+verify active-only county and district order plus one applicable map-centre
+promotion, select a new locality, and prove road/tail preservation, stale
+resolution invalidation, unavailable draft retention, and stable open-list
+behavior.
+
+### Tests first
+
+- [X] T118 [P] [US2] Add failing controller tests for selector loading, county/district selection, incompatible-district clearing, road/tail preservation, unavailable values, revision fencing, read-only, and disposal in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/AddressEntryControllerTest.java`
+- [X] T119 [P] [US2] Add failing dialog tests for Activity window ownership, plugin-resolved resources, immutable rows, dismissal, and stale-selection rejection in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/AddressLocalityDialogTest.java`
+- [X] T120 [P] [US2] Add failing pane/layout/resource tests for DD-sized 48 dp county/district controls, one scroll owner, localized states, font scale, read-only behavior, and host-control clearance in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanCoordinateEntryPaneContractTest.java`, `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanAddressLayoutTest.java`, and `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanAddressResourcesTest.java`
+
+### Implementation
+
+- [X] T121 [US2] Add locality snapshot/session state, cancellable refreshes, selection revision gates, unavailable-value preservation, and lookup invalidation to `app/src/main/java/com/atakmap/android/twcoord/nativeentry/AddressEntryController.java`
+- [X] T122 [US2] Implement the bounded plugin-resource/Activity-window locality chooser in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/AddressLocalityDialog.java`
+- [X] T123 [US2] Replace structured county/district text inputs with compact accessible selector controls and wire stable map-anchor snapshots, read-only, Clear, locale replacement, and disposal behavior in `app/src/main/java/com/atakmap/android/twcoord/nativeentry/TaiwanCoordinateEntryPane.java`, `app/src/main/java/com/atakmap/android/twcoord/nativeentry/NativeCoordinateEntryRegistrar.java`, and `app/src/main/res/layout/taiwan_coordinate_entry_pane.xml`
+- [X] T124 [P] [US2] Add aligned selector, loading, empty, unavailable, and accessibility strings in `app/src/main/res/values/strings.xml`, `app/src/main/res/values-zh-rTW/strings.xml`, and `app/src/main/res/values-ja/strings.xml`
+- [X] T125 [US2] Inject the live boundary/catalog dependencies without adding a new ATAK SDK seam and preserve startup/teardown ordering in `app/src/main/java/com/atakmap/android/twcoord/TwCoordMapComponent.java`
+- [X] T126 [P] Update the selector behavior, provenance/update process, active-data limitation, and operator workflow in `docs/ui/native-taiwan-coordinate-entry.md`, `docs/user-guide.md`, `docs/user-guide_zh.md`, `README.md`, and `CHANGELOG.md`
+- [X] T127 Run focused selector suites, full JVM, Spotless, lint, civ-debug APK assembly, documentation links, sensitive-path scan, and `git diff --check`, then record Red-Green-Refactor results in `specs/013-native-address-entry/quickstart.md`
+- [ ] T128 [RELEASE-GATE] [US2] Validate active-only selector ordering, map-centre promotion, stable open lists, read-only/Convert Coordinate behavior, layout reachability, ≤100 ms prepared-open p95, ≤1,000 ms refresh p95, ≤1 MiB retained selector state, and offline operation on ATAK 5.5 and 5.7.0.9 in `specs/013-native-address-entry/quickstart.md`
+
+**Checkpoint**: Structured Address selection is complete in source and
+automated tests; exact physical compatibility, performance, memory, and
+offline evidence remain explicit release gates.
+
+---
+
 ## Dependencies and Execution Order
 
 ### Phase dependencies
@@ -311,6 +372,10 @@ acceptance, TPP output, signing, and public publication.
 - **Phase 9 (Release Readiness)**: Depends on implementation convergence and
   a clean committed candidate. Its gates are never inferred from compilation
   or TPP success.
+- **Phase 12 (Locality foundations)**: Depends on the shared lookup, leased
+  registry, boundary, and postal asset already established by earlier phases.
+- **Phase 13 (Active-data selectors)**: Depends on Phase 12 and extends US2
+  without changing coordinate conversion or the ATAK registration seam.
 
 ### Within each story
 
@@ -348,6 +413,10 @@ acceptance, TPP output, signing, and public publication.
   disjoint; deletion tasks remain sequential after parity is green.
 - Documentation tasks T081–T084 can run in parallel after UI/navigation names
   stabilize, followed by the shared README/changelog and screenshot audits.
+- T112–T114 cover disjoint catalog, facade, and service test boundaries before
+  sequential implementation in T115–T117.
+- T118–T120 cover disjoint controller, dialog, and layout/resource boundaries;
+  T124 and T126 remain parallel after behavior and wording stabilize.
 
 ## Parallel Examples
 

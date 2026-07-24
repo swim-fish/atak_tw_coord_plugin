@@ -61,6 +61,40 @@ Both modes are projections of one `AddressDraft`. Switching modes repeatedly
 must not discard or duplicate unclassified text. Edits invalidate older lookup
 requests and candidate lists, so a slow result cannot overwrite a newer draft.
 
+County/city and district/township use selection dialogs rather than
+unrestricted text entry. The county/city dialog contains only datasets that are
+currently imported and active. After a county/city is selected, the
+district/township dialog contains only distinct, non-empty district values
+available in that dataset.
+
+The map-centre county/city or district is promoted to the first row only when
+the exact locality is available in the active offline data. The remaining
+county/city choices follow the bundled Chunghwa Post locality order, and
+district choices follow postal-code order. Imported values that are not present
+in the bundled ordering catalog remain selectable at the end of the list. Each
+open dialog is a stable snapshot; importing, activating, or removing data takes
+effect the next time the dialog opens.
+
+Changing the county/city clears an incompatible district and any resolved
+coordinate, while preserving the road and remaining-address text. Changing the
+district also clears the resolved coordinate without discarding the remaining
+draft. If a pasted or parsed locality is not currently selectable, it remains
+visible so the user can correct it instead of losing input.
+
+<img src="images/25a-native-address-county-selector.png"
+     alt="Native Taiwan address county and city selector showing active imported datasets"
+     width="740">
+
+*County/city choices are limited to active imported datasets; an available
+map-centre match is promoted to the first row.*
+
+<img src="images/25b-native-address-district-selector.png"
+     alt="Native Taiwan address district selector showing imported districts"
+     width="740">
+
+*District/township choices come from the selected dataset and follow postal
+ordering after an available map-centre match.*
+
 ## Results and candidate selection
 
 - A unique exact record resolves the point for ATAK confirmation.

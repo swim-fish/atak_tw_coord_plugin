@@ -3,6 +3,7 @@ package com.atakmap.android.twcoord.address.lookup;
 import com.atakmap.android.twcoord.address.ActiveDatasetRegistry;
 import com.atakmap.android.twcoord.address.AddressRecord;
 import com.atakmap.android.twcoord.address.CountyActiveDataset;
+import com.atakmap.android.twcoord.address.boundary.LocalityResult;
 import com.atakmap.android.twcoord.coord.Wgs84;
 import com.atakmap.coremap.log.Log;
 import java.util.ArrayDeque;
@@ -19,6 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 /** Single bounded worker owner for forward and reverse offline address lookup. */
@@ -53,6 +55,15 @@ public final class DefaultAddressLookupService implements AddressLookupService {
               : ReverseAddressResult.noMatch(request.identity(), request.queryPoint());
         }
       };
+    }
+  }
+
+  /** Strict polygon-containment seam used to promote the map-centre locality. */
+  public interface MapLocalityResolver {
+    LocalityResult resolve(Wgs84 anchor);
+
+    static MapLocalityResolver none() {
+      return ignored -> LocalityResult.none();
     }
   }
 
@@ -216,6 +227,9 @@ public final class DefaultAddressLookupService implements AddressLookupService {
   private final Executor completionDispatcher;
   private final QueryEngine queryEngine;
   private final int queueCapacity;
+  private final Supplier<PostalLocalityCatalog> postalCatalogSupplier;
+  private final MapLocalityResolver mapLocalityResolver;
+  private final Map<String, List<String>> localityCache = new ConcurrentHashMap<>();
   private final Object queueLock = new Object();
   private final Deque<Work> nativeQueue = new ArrayDeque<>();
   private final Deque<Work> backgroundQueue = new ArrayDeque<>();
@@ -226,18 +240,38 @@ public final class DefaultAddressLookupService implements AddressLookupService {
       (county, change) -> refreshAvailability();
   private final Thread worker;
   private volatile AddressAvailability availability;
+  private volatile PostalLocalityCatalog postalCatalog;
 
   public DefaultAddressLookupService(
       ActiveDatasetRegistry registry,
       Executor completionDispatcher,
       QueryEngine queryEngine,
       int queueCapacity) {
+    this(
+        registry,
+        completionDispatcher,
+        queryEngine,
+        queueCapacity,
+        PostalLocalityCatalog::unavailable,
+        MapLocalityResolver.none());
+  }
+
+  public DefaultAddressLookupService(
+      ActiveDatasetRegistry registry,
+      Executor completionDispatcher,
+      QueryEngine queryEngine,
+      int queueCapacity,
+      Supplier<PostalLocalityCatalog> postalCatalogSupplier,
+      MapLocalityResolver mapLocalityResolver) {
     if (queueCapacity <= 0) throw new IllegalArgumentException("queueCapacity must be positive");
     this.registry = Objects.requireNonNull(registry, "registry");
     this.completionDispatcher =
         Objects.requireNonNull(completionDispatcher, "completionDispatcher");
     this.queryEngine = Objects.requireNonNull(queryEngine, "queryEngine");
     this.queueCapacity = queueCapacity;
+    this.postalCatalogSupplier =
+        Objects.requireNonNull(postalCatalogSupplier, "postalCatalogSupplier");
+    this.mapLocalityResolver = Objects.requireNonNull(mapLocalityResolver, "mapLocalityResolver");
     this.availability = currentAvailability(false);
     registry.addListener(registryListener);
     worker = new Thread(this::runWorker, "twcoord-address-lookup");
@@ -292,6 +326,30 @@ public final class DefaultAddressLookupService implements AddressLookupService {
               result = ReverseAddressResult.failure(request.identity(), request.queryPoint(), e);
             }
             ReverseAddressResult completed = result;
+            dispatch(this, () -> callback.accept(completed));
+          }
+        };
+    enqueue(work);
+    return work;
+  }
+
+  @Override
+  public LookupHandle localities(
+      LocalitySelectorRequest request, Consumer<LocalitySelectorResult> callback) {
+    Objects.requireNonNull(request, "request");
+    Objects.requireNonNull(callback, "callback");
+    ensureOpen();
+    Work work =
+        new Work(request.consumerKey(), request.priority()) {
+          @Override
+          void runQuery() {
+            LocalitySelectorResult result;
+            try (ActiveDatasetRegistry.ReadSession session = registry.openReadSession()) {
+              result = prepareLocalities(request, session);
+            } catch (Exception e) {
+              result = LocalitySelectorResult.failure(request.identity(), e);
+            }
+            LocalitySelectorResult completed = result;
             dispatch(this, () -> callback.accept(completed));
           }
         };
@@ -410,6 +468,7 @@ public final class DefaultAddressLookupService implements AddressLookupService {
 
   private void refreshAvailability() {
     if (closed.get()) return;
+    localityCache.clear();
     AddressAvailability updated = currentAvailability(false);
     availability = updated;
     for (AvailabilityListener listener : availabilityListeners) {
@@ -427,6 +486,98 @@ public final class DefaultAddressLookupService implements AddressLookupService {
     }
     return new AddressAvailability(
         new LinkedHashSet<>(registry.snapshot().keySet()), false, registry.revision(), false);
+  }
+
+  private LocalitySelectorResult prepareLocalities(
+      LocalitySelectorRequest request, ActiveDatasetRegistry.ReadSession session) {
+    if (session.datasets().isEmpty()) {
+      return LocalitySelectorResult.noDataset(request.identity());
+    }
+    PostalLocalityCatalog catalog = postalCatalog();
+    LocalityResult mapLocality = resolveMapLocality(request.mapAnchor());
+    if (request.kind() == LocalitySelectorSnapshot.Kind.COUNTY) {
+      List<String> counties = new ArrayList<>(session.datasets().keySet());
+      String promoted =
+          mapLocality != null
+                  && mapLocality.hasCounty()
+                  && containsFolded(counties, mapLocality.county())
+              ? mapLocality.county()
+              : null;
+      return LocalitySelectorResult.ready(
+          request.identity(),
+          LocalitySelectorOrdering.counties(
+              catalog,
+              session.revision(),
+              request.identity().sessionGeneration(),
+              counties,
+              promoted,
+              request.mapAnchor()));
+    }
+    CountyActiveDataset active =
+        RegistryQueryEngine.datasetForCounty(session.datasets(), request.selectedCounty());
+    if (active == null) return LocalitySelectorResult.noDataset(request.identity());
+    String cacheKey =
+        session.revision() + ":" + StreetTextNormaliser.fold(request.selectedCounty());
+    List<String> districts =
+        localityCache.computeIfAbsent(
+            cacheKey,
+            ignored ->
+                Collections.unmodifiableList(new ArrayList<>(active.facade().localities(512))));
+    String promoted =
+        mapLocality != null
+                && mapLocality.hasDistrict()
+                && StreetTextNormaliser.fold(request.selectedCounty())
+                    .equals(StreetTextNormaliser.fold(mapLocality.county()))
+                && containsFolded(districts, mapLocality.district())
+            ? mapLocality.district()
+            : null;
+    return LocalitySelectorResult.ready(
+        request.identity(),
+        LocalitySelectorOrdering.districts(
+            catalog,
+            session.revision(),
+            request.identity().sessionGeneration(),
+            request.selectedCounty(),
+            districts,
+            promoted,
+            request.mapAnchor()));
+  }
+
+  private PostalLocalityCatalog postalCatalog() {
+    PostalLocalityCatalog cached = postalCatalog;
+    if (cached != null) return cached;
+    synchronized (this) {
+      cached = postalCatalog;
+      if (cached != null) return cached;
+      try {
+        cached = postalCatalogSupplier.get();
+      } catch (Throwable failure) {
+        Log.w(TAG, "postal locality catalog load failed", failure);
+        cached = PostalLocalityCatalog.unavailable();
+      }
+      if (cached == null) cached = PostalLocalityCatalog.unavailable();
+      postalCatalog = cached;
+      return cached;
+    }
+  }
+
+  private LocalityResult resolveMapLocality(Wgs84 anchor) {
+    if (anchor == null) return LocalityResult.none();
+    try {
+      LocalityResult locality = mapLocalityResolver.resolve(anchor);
+      return locality == null || locality.approx() ? LocalityResult.none() : locality;
+    } catch (Throwable failure) {
+      Log.w(TAG, "map locality resolution failed", failure);
+      return LocalityResult.none();
+    }
+  }
+
+  private static boolean containsFolded(List<String> values, String candidate) {
+    String folded = StreetTextNormaliser.fold(candidate == null ? "" : candidate);
+    for (String value : values) {
+      if (folded.equals(StreetTextNormaliser.fold(value))) return true;
+    }
+    return false;
   }
 
   private void ensureOpen() {

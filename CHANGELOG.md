@@ -7,14 +7,22 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+### Added
+
+- Structured native Address entry now uses county/city and district/township
+  selectors derived from currently active imported data. A strictly contained
+  and searchable map-centre locality is promoted first; remaining rows follow
+  the bundled, traceable Chunghwa Post county and three-digit locality order.
+
 ### Changed
 
-- Native Address candidate retrieval now queries five deterministic SQL pools,
-  each capped at 20 rows, then displays at most 20 exact-only or
-  category-balanced results. Ambiguous lists allocate text-prefix,
-  numeric-nearest, current-map-distance, and fallback candidates, deduplicate
-  them, and backfill unused capacity. Direct-road input ranks direct numbers
-  ahead of unrelated lane/alley records.
+- The postal locality catalog is ordering metadata only: it never exposes a
+  county or district without imported address coverage. Imported locality
+  names absent from the catalog remain selectable through deterministic
+  fallback ordering.
+- Changing county clears an incompatible district and stale result while
+  preserving road and address-tail corrections. Selector dialogs retain one
+  immutable dataset/map-centre snapshot and reject late dataset revisions.
 
 ## [1.4.3] — 2026-07-23 — Native Taiwan address entry
 
@@ -30,6 +38,12 @@ follows Semantic Versioning. Per-feature design records live under
 
 ### Changed
 
+- Native Address candidate retrieval now queries five deterministic SQL pools,
+  each capped at 20 rows, then displays at most 20 exact-only or
+  category-balanced results. Ambiguous lists allocate text-prefix,
+  numeric-nearest, current-map-distance, and fallback candidates, deduplicate
+  them, and backfill unused capacity. Direct-road input ranks direct numbers
+  ahead of unrelated lane/alley records.
 - **TW Coordinates is now the plugin's only public Tools item.** Offline dataset
   management remains available internally from that page, Settings, and native
   Address guidance even when every map-address readout toggle is off.

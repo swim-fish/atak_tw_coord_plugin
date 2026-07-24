@@ -12,6 +12,11 @@ public interface AddressLookupService extends AutoCloseable {
 
   LookupHandle reverse(ReverseAddressRequest request, Consumer<ReverseAddressResult> callback);
 
+  default LookupHandle localities(
+      LocalitySelectorRequest request, Consumer<LocalitySelectorResult> callback) {
+    throw new UnsupportedOperationException("locality selectors are not supported");
+  }
+
   AddressAvailability availability();
 
   void addAvailabilityListener(AvailabilityListener listener);

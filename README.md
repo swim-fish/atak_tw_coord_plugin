@@ -60,7 +60,7 @@ their historical runtime evidence.
 | Outer-island support | Penghu / Kinmen / Matsu (TM2 zone 119, EPSG:3825) — auto-selected by longitude. `z119` suffix appears on the readout when zone is non-default |
 | Offline, no telemetry | Zero outbound network. Manifest deliberately omits `INTERNET` permission. No analytics or crash-reporting SDKs |
 | Settings advisory | Built-in accuracy notice explaining TWD67 main-island ±3-5 m vs outer-island ±10-20 m |
-| **ATAK native Taiwan entry** | ATAK's shared coordinate-entry dialog gains one **Taiwan** pane with Taipower, TWD97, TWD67, and Address; explicit zones 121/119; full/structured lossless address modes; a maximum 20-row category-balanced candidate list; host Auto Fill/Clear/Copy; and read-only support. Exact matches are exclusive; ambiguous results combine text-prefix, numeric-nearest, current-map-distance, and fallback candidates without allowing one dense road family to consume the dialog. It uses DD-style compact fields, prepares all representable tabs when ATAK supplies a point, and preserves the exact host WGS84 during reverse lookup. See [`docs/ui/native-taiwan-coordinate-entry.md`](docs/ui/native-taiwan-coordinate-entry.md) |
+| **ATAK native Taiwan entry** | ATAK's shared coordinate-entry dialog gains one **Taiwan** pane with Taipower, TWD97, TWD67, and Address; explicit zones 121/119; full/structured lossless address modes; active-data county/district selectors in Chunghwa Post order; a maximum 20-row category-balanced candidate list; host Auto Fill/Clear/Copy; and read-only support. A strictly contained, searchable map-centre locality is promoted without reordering an already-open list. Exact matches are exclusive; ambiguous results combine text-prefix, numeric-nearest, current-map-distance, and fallback candidates without allowing one dense road family to consume the dialog. It uses DD-style compact fields, prepares all representable tabs when ATAK supplies a point, and preserves the exact host WGS84 during reverse lookup. See [`docs/ui/native-taiwan-coordinate-entry.md`](docs/ui/native-taiwan-coordinate-entry.md) |
 | **Auto Fill** | One-tap fill of the active tab from the current map centre, with zone toggle (TWD97/TWD67) auto-set from longitude; disabled in real time when the centre is unrepresentable in the active tab |
 | **Offline address lookup and management** | The native Address tab performs full or structured forward search and bounded candidate selection. Convert Coordinate and Auto Fill perform reverse lookup without snapping the host point. County SQLite/ZIP datasets produced by the [sibling generator](https://github.com/swim-fish/atak-tw-address-generator) are imported, replaced, or removed from the internal manager reached through **TW Coordinates**. Address readouts retain nearest-record direction and confidence indicators. |
 | **Confidence indicator** | Per-row tilde marker (`~` / `~~`) prefix on the address text reflecting haversine distance to the nearest record. 4 presets (Off / Tight 20-100 m / Standard 50-200 m / Loose 100-500 m) selectable in Settings |
@@ -309,7 +309,10 @@ integration, lifecycle, and advanced-page coexistence decision; and
 separation of TPP staging, public-release gates, and immutable signed tags; and
 [ADR-0026](docs/adr/0026-native-address-entry-and-tools-consolidation.md) the
 native Address service, one-public-Tools-entry migration, and bounded
-category-balanced candidate retrieval).
+category-balanced candidate retrieval; and
+[ADR-0027](docs/adr/0027-use-chunghwa-post-locality-order.md) the ordering-only
+Chunghwa Post locality catalog, active-data intersection, and strict
+map-centre promotion).
 
 The active feature is resolved from `.specify/feature.json`; agent guidance
 must not infer it from the newest directory. The required lifecycle is:

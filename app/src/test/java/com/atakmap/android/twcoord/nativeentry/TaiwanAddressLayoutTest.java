@@ -48,6 +48,13 @@ public final class TaiwanAddressLayoutTest {
     assertCompactRow(root, R.id.native_entry_address_district_row);
     assertCompactRow(root, R.id.native_entry_address_road_row);
     assertCompactRow(root, R.id.native_entry_address_tail_row);
+    EditText county = root.findViewById(R.id.native_entry_address_county);
+    EditText district = root.findViewById(R.id.native_entry_address_district);
+    assertThat(county.isFocusable()).isFalse();
+    assertThat(county.isClickable()).isTrue();
+    assertThat(district.isFocusable()).isFalse();
+    assertThat(district.isClickable()).isFalse();
+    assertThat(district.isEnabled()).isFalse();
   }
 
   @Test

@@ -30,6 +30,10 @@ sanitized image is committed.
 - `24-offline-address-data.png` shows the current `TW Coordinates` landing
   page, including the top settings action. It replaces the older populated
   manager capture `17-tw-offline-addr-usage.jpg`.
+- `25a-native-address-county-selector.png` and
+  `25b-native-address-district-selector.png` are a coupled active-data chooser
+  sequence. They show the strictly contained map-centre locality promoted
+  ahead of the remaining imported counties or postal-ordered districts.
 
 The committed crops exclude the surrounding map, coordinate readouts, desktop
 window frame, and device status information. Raw captures are retained only

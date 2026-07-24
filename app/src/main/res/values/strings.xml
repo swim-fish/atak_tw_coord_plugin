@@ -207,6 +207,13 @@
     <string name="native_entry_address_county_hint">e.g. Taichung City</string>
     <string name="native_entry_address_district_label">District</string>
     <string name="native_entry_address_district_hint">e.g. Nantun District</string>
+    <string name="native_entry_address_county_selector_title">Choose county / city</string>
+    <string name="native_entry_address_district_selector_title">Choose district</string>
+    <string name="native_entry_address_locality_map_choice">Map centre · %1$s</string>
+    <string name="native_entry_address_locality_clear">Clear</string>
+    <string name="native_entry_address_locality_loading">Loading available locations…</string>
+    <string name="native_entry_address_locality_empty">No searchable locations are present in the imported data.</string>
+    <string name="native_entry_address_locality_unavailable">Location choices are unavailable. Check Offline address data.</string>
     <string name="native_entry_address_road_label">Road / locality</string>
     <string name="native_entry_address_road_hint">e.g. Liming Rd., Sec. 2</string>
     <string name="native_entry_address_tail_label">Number / floor</string>
@@ -228,8 +235,8 @@
     <string name="native_entry_address_candidates_title">Address candidates</string>
     <string name="native_entry_address_candidate_format">%1$s · %2$s</string>
     <string name="native_entry_a11y_address_full">Full Taiwan address</string>
-    <string name="native_entry_a11y_address_county">Address county or city</string>
-    <string name="native_entry_a11y_address_district">Address district or township</string>
+    <string name="native_entry_a11y_address_county">Choose address county or city</string>
+    <string name="native_entry_a11y_address_district">Choose address district or township</string>
     <string name="native_entry_a11y_address_road">Address road or locality</string>
     <string name="native_entry_a11y_address_tail">Address lane, number, floor, and remaining text</string>
     <string name="native_entry_a11y_address_mode">Switch address input mode</string>
