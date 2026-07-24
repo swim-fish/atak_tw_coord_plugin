@@ -5,6 +5,8 @@ loosely based on [Keep a Changelog](https://keepachangelog.com/); the project
 follows Semantic Versioning. Per-feature design records live under
 [`docs/adr/`](docs/adr/); per-feature specs under [`specs/`](specs/).
 
+## [Unreleased]
+
 ## [1.4.4] — 2026-07-24 — Native pane layout fix
 
 ### Fixed
