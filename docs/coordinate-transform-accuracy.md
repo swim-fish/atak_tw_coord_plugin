@@ -14,8 +14,8 @@ The plugin performs two distinct operations:
    `A = 0.00001549`, `B = 0.000006521`, `ΔX = 807.8 m`, and `ΔY = 248.6 m`.
 
 The projection parameters are appropriate. Most practical error came from datum transformation,
-zone selection, test coverage, and datum-realization assumptions rather than from the TM2
-projection formula itself.
+zone selection, test coverage, model-domain routing, and datum-realization assumptions rather than
+from the TM2 projection formula itself.
 
 ## Findings
 
@@ -51,13 +51,23 @@ N67 =  161.813279315 + 0.000124634365 × E97 + 0.999998583003 × N97
 It is a regional least-squares model derived from 42 published common points. It is not a national
 official grid model and must not be represented as cadastral-grade authority.
 
-### 3. Longitude-only TM2 zone selection misclassified part of Matsu
+### 3. A regional model must use one calibration domain in both datum spaces
+
+An axis-aligned TWD97 envelope and a numerically identical TWD67 envelope do not describe the same
+geographic area. The first regional implementation could therefore use the Penghu model in the
+forward direction and switch to the compatibility model on the inverse path near an edge.
+
+The inverse path now computes the regional TWD97 candidate first, then checks that candidate against
+the same TWD97 calibration envelope used by the forward path. A 1 mm comparison tolerance covers
+floating-point noise at an exact boundary. Explicit corner tests now guard model-selection symmetry.
+
+### 4. Longitude-only TM2 zone selection misclassified part of Matsu
 
 The former rule selected zone 119 only for longitude below 120°E. Published Matsu control points
 show that the archipelago, including Dongyin and Liangdao east of 120°E, uses TM2 zone 119.
 Location-aware selection now assigns three Matsu island-group envelopes to zone 119.
 
-### 4. Kinmen and Matsu do not provide a sound TWD67 accuracy target
+### 5. Kinmen and Matsu do not provide a sound TWD67 accuracy target
 
 The OSGeo test-point table labels the displayed TWD67 values for Kinmen and Matsu as
 software-converted values because those areas did not historically adopt TWD67. They are useful for
@@ -65,7 +75,7 @@ projection-zone and algebraic regression tests, but they are not independent obs
 coordinates. The plugin therefore retains the legacy fallback for compatibility and does not claim
 metre-level accuracy there.
 
-### 5. WGS84 and TWD97 realization/epoch is the next precision ceiling
+### 6. WGS84 and TWD97 realization/epoch is the next precision ceiling
 
 For ordinary GPS display and navigation, treating WGS84 and TWD97 as coincident is normally
 adequate. Survey-grade work must identify the realization and epoch, such as TWD97, TWD97[2010],
@@ -81,6 +91,7 @@ binary grid-data licensing/update contract must be resolved before bundling it i
 
 - Exact inverse matrix for the established four-parameter TWD67 model.
 - Regional 42-point two-dimensional similarity transform for Penghu, in both directions.
+- One TWD97 calibration domain for symmetric forward/inverse Penghu model selection.
 - Location-aware TM2 zone selection for all of Matsu.
 - Proj4J upgrade from 1.3.0 to 1.4.3. Version 1.4.2 fixed GRS80/WGS84 recognition and
   projected datum-shift handling; 1.4.3 retains those fixes.
@@ -89,7 +100,8 @@ binary grid-data licensing/update contract must be resolved before bundling it i
   - 42 Penghu observed common points;
   - 5 Kinmen projection/reference points;
   - 8 Matsu projection/reference points.
-- Forward, inverse, zone-selection, regional residual, leave-one-out, and exact round-trip tests.
+- Forward, inverse, zone-selection, regional-residual, leave-one-out, boundary-selection,
+  regional-isolation, and exact round-trip tests.
 
 ## Recommended precision tiers
 
