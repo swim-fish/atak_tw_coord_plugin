@@ -68,9 +68,12 @@ F(E,N) = Fmain(E,N) + w(E,N) × (Fpenghu(E,N) - Fmain(E,N))
 ```
 
 The inverse solves this smooth mapping by fixed-point iteration around the exact main-model inverse.
-A 289-point transition grid and 100,000 random zone-119 coordinates had sub-nanometre numerical
-round-trip residual in independent Java checks. The transition band is an engineering continuity
-measure, not an additional geodetic-accuracy claim outside the calibrated Penghu core.
+Repository tests probe all core and outer edges for continuity and exercise forward→inverse and
+inverse→forward behavior over two 2,925-point transition grids. Independent Java stress checks also
+covered one million random forward→inverse and one million random inverse→forward cases across a
+broad zone-119 extent; the maximum observed algebraic round-trip error was below `1e-9 m`. The
+transition band is an engineering continuity measure, not an additional geodetic-accuracy claim
+outside the calibrated Penghu core.
 
 ### 4. Longitude-only TM2 zone selection misclassified part of Matsu
 
@@ -112,8 +115,9 @@ binary grid-data licensing/update contract must be resolved before bundling it i
   - 42 Penghu observed common points;
   - 5 Kinmen projection/reference points;
   - 8 Matsu projection/reference points.
-- Forward, inverse, zone-selection, regional-residual, leave-one-out, continuity, transition-grid,
+- Forward, inverse, zone-selection, regional-residual, leave-one-out, continuity, dense-transition,
   regional-isolation, and exact round-trip tests.
+- Explicit CC BY-SA attribution and modification notes for the adapted OSGeo test fixture.
 
 ## Recommended precision tiers
 
