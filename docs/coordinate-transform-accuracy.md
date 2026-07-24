@@ -14,7 +14,7 @@ The plugin performs two distinct operations:
    `A = 0.00001549`, `B = 0.000006521`, `ΔX = 807.8 m`, and `ΔY = 248.6 m`.
 
 The projection parameters are appropriate. Most practical error came from datum transformation,
-zone selection, test coverage, model-domain routing, and datum-realization assumptions rather than
+zone selection, test coverage, regional-model routing, and datum-realization assumptions rather than
 from the TM2 projection formula itself.
 
 ## Findings
@@ -51,15 +51,26 @@ N67 =  161.813279315 + 0.000124634365 × E97 + 0.999998583003 × N97
 It is a regional least-squares model derived from 42 published common points. It is not a national
 official grid model and must not be represented as cadastral-grade authority.
 
-### 3. A regional model must use one calibration domain in both datum spaces
+### 3. A hard regional-model boundary is discontinuous and not globally invertible
 
-An axis-aligned TWD97 envelope and a numerically identical TWD67 envelope do not describe the same
-geographic area. The first regional implementation could therefore use the Penghu model in the
-forward direction and switch to the compatibility model on the inverse path near an edge.
+Selecting one affine model inside a rectangle and another outside it creates two problems. First,
+the output can jump by roughly the difference between the models when a coordinate crosses the
+artificial edge. Second, the two output images overlap near that edge, so an inverse selected only
+from the numeric coordinate can choose the wrong model. Corner-only round-trip tests do not detect
+this outside-edge ambiguity; stress sampling found possible 10–17 m mismatches.
 
-The inverse path now computes the regional TWD97 candidate first, then checks that candidate against
-the same TWD97 calibration envelope used by the forward path. A 1 mm comparison tolerance covers
-floating-point noise at an exact boundary. Explicit corner tests now guard model-selection symmetry.
+The revised mapping applies the full Penghu model throughout a calibration core containing all 42
+observed controls, the compatibility model outside a wider envelope, and a cubic smoothstep blend in
+between:
+
+```text
+F(E,N) = Fmain(E,N) + w(E,N) × (Fpenghu(E,N) - Fmain(E,N))
+```
+
+The inverse solves this smooth mapping by fixed-point iteration around the exact main-model inverse.
+A 289-point transition grid and 100,000 random zone-119 coordinates had sub-nanometre numerical
+round-trip residual in independent Java checks. The transition band is an engineering continuity
+measure, not an additional geodetic-accuracy claim outside the calibrated Penghu core.
 
 ### 4. Longitude-only TM2 zone selection misclassified part of Matsu
 
@@ -90,8 +101,9 @@ binary grid-data licensing/update contract must be resolved before bundling it i
 ## Implemented changes
 
 - Exact inverse matrix for the established four-parameter TWD67 model.
-- Regional 42-point two-dimensional similarity transform for Penghu, in both directions.
-- One TWD97 calibration domain for symmetric forward/inverse Penghu model selection.
+- Regional 42-point two-dimensional similarity transform for the Penghu calibration core.
+- Smooth regional-to-compatibility transition with iterative inverse, eliminating hard-boundary
+  jumps and model-selection ambiguity.
 - Location-aware TM2 zone selection for all of Matsu.
 - Proj4J upgrade from 1.3.0 to 1.4.3. Version 1.4.2 fixed GRS80/WGS84 recognition and
   projected datum-shift handling; 1.4.3 retains those fixes.
@@ -100,7 +112,7 @@ binary grid-data licensing/update contract must be resolved before bundling it i
   - 42 Penghu observed common points;
   - 5 Kinmen projection/reference points;
   - 8 Matsu projection/reference points.
-- Forward, inverse, zone-selection, regional-residual, leave-one-out, boundary-selection,
+- Forward, inverse, zone-selection, regional-residual, leave-one-out, continuity, transition-grid,
   regional-isolation, and exact round-trip tests.
 
 ## Recommended precision tiers
