@@ -758,3 +758,28 @@ attempts.
 
 These device, performance, memory, screenshot, and minimum-runtime results
 remain open release gates until executed and recorded.
+
+### Partial current-device selector evidence (2026-07-24)
+
+- ATAK-CIV 5.7.0.9 on an SM-X826B running Android 16 loaded plugin
+  `1.4.3 (f3b527c4)` after a full ATAK restart without a fatal, plugin-load,
+  resource, or version-skew error in the scoped logcat check.
+- The Civ debug APK SHA-256 was
+  `902037EF8F6F91638C3393620BFE34BDB19F8DEDC45860185AFC06A88DE0B689`.
+- Manual smoke testing confirmed that the structured Address county/city
+  selector opened on first tap, contained only the two active imported county
+  datasets, and promoted the strictly contained map-centre county. The
+  district selector also opened on first tap, promoted the strictly contained
+  map-centre district, and showed the visible imported districts in the
+  expected postal baseline order.
+- `docs/images/25a-native-address-county-selector.png` and
+  `docs/images/25b-native-address-district-selector.png` record the coupled
+  selector states after cropping out the map, coordinate readouts, road text,
+  device status, and other location-bearing context. The documentation image
+  checker and Git LFS attribute check passed after the English, Traditional
+  Chinese, UI, and image-index references were updated.
+
+This is partial current-device evidence only. District ordering, stable open
+lists while panning, dataset replacement/removal refresh, Convert Coordinate,
+read-only behavior, supported orientations/font scales, latency, retained
+memory, airplane mode, and every ATAK 5.5 row remain PENDING under T128.

@@ -39,6 +39,16 @@ reachable.
 <sub>The same draft projected into county, district, road, and address-tail fields.</sub>
 </p>
 
+<p align="center">
+<img src="../images/25a-native-address-county-selector.png" alt="Native Taiwan Address county chooser showing only active imported counties with the map-centre county first" width="740"><br>
+<sub>The immutable active-data chooser promotes one strictly contained map-centre county without making unimported postal rows searchable.</sub>
+</p>
+
+<p align="center">
+<img src="../images/25b-native-address-district-selector.png" alt="Native Taiwan Address district chooser showing imported districts in map-centre and postal order" width="740"><br>
+<sub>The district snapshot promotes one strict map-centre match, then preserves the selected county's postal baseline.</sub>
+</p>
+
 ### Map item / Convert Coordinate
 
 Open a map item's details and tap its **Coordinate** value. ATAK opens

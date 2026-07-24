@@ -76,6 +76,16 @@ See [Native Address workflow](tw-addr-search.md) for detailed examples.
 <sub>Structured mode uses active-data county/district selectors plus editable road and remaining-address fields.</sub>
 </p>
 
+<p align="center">
+<img src="images/25a-native-address-county-selector.png" alt="ATAK native Taiwan Address county selector with the active map-centre county first" width="740"><br>
+<sub>The chooser contains only imported counties and promotes one strictly contained map-centre county.</sub>
+</p>
+
+<p align="center">
+<img src="images/25b-native-address-district-selector.png" alt="ATAK native Taiwan Address district selector with the active map-centre district first" width="740"><br>
+<sub>The selected county's imported districts follow the promoted map-centre district in postal order.</sub>
+</p>
+
 ### Convert a map item's coordinate
 
 1. Open a map item's details and tap its **Coordinate** value.

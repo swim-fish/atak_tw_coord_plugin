@@ -67,6 +67,16 @@
 <sub>結構化模式使用可搜尋資料產生縣市／行政區選單，並保留可編輯的道路與其餘地址欄位。</sub>
 </p>
 
+<p align="center">
+<img src="images/25a-native-address-county-selector.png" alt="ATAK 原生 Taiwan Address 縣市選單將可搜尋的地圖中心縣市排在第一筆" width="740"><br>
+<sub>清單只顯示已匯入的縣市，並將邊界嚴格包含地圖中心的一筆縣市優先排列。</sub>
+</p>
+
+<p align="center">
+<img src="images/25b-native-address-district-selector.png" alt="ATAK 原生 Taiwan Address 行政區選單將可搜尋的地圖中心行政區排在第一筆" width="740"><br>
+<sub>所選縣市的已匯入行政區會接在地圖中心優先項目後，並依郵遞區號順序排列。</sub>
+</p>
+
 ### 轉換地圖圖標的座標
 
 1. 開啟圖標詳細資料，點選 **Coordinate** 座標值。

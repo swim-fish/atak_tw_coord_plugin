@@ -247,7 +247,7 @@ repository quality gates after story behavior converges.
 - [X] T083 [P] Rewrite canonical and Traditional Chinese operator journeys for native Address, candidate selection, Convert Coordinate, and dataset management in `docs/user-guide.md` and `docs/user-guide_zh.md`
 - [X] T084 [P] Replace the standalone forward-search guide with the native Address workflow and redirect offline instructions through `TW Coordinates` in `docs/tw-addr-search.md`, `docs/tw-addr-search_zh.md`, `docs/tw-offline-addr.md`, and `docs/tw-offline-addr_zh.md`
 - [X] T085 Update feature summary, compatibility wording, one-Tools-entry navigation, and accepted legacy removals in `README.md` and `CHANGELOG.md`
-- [ ] T086 [RELEASE-GATE] Replace and renumber active Tools/native Address screenshots, scrub EXIF/XMP, verify Git LFS, and update references in `docs/images/README.md`
+- [X] T086 [RELEASE-GATE] Replace and renumber active Tools/native Address screenshots, scrub EXIF/XMP, verify Git LFS, and update references in `docs/images/README.md`
 - [X] T087 Add or update resource parity and accessibility assertions for English, zh-TW, and Japanese strings in `app/src/test/java/com/atakmap/android/twcoord/nativeentry/TaiwanAddressResourcesTest.java`
 - [X] T088 Audit for retired class/action/resource references, Activity-context plugin resource IDs, unexpected `INTERNET` permission, dead code, and unowned TODOs across `app/src/main/` and record the commands/results in `specs/013-native-address-entry/quickstart.md`
 - [X] T089 Run `:app:spotlessApply`, `:app:spotlessCheck`, `:app:lint`, `:app:testCivDebugUnitTest`, and `:app:assembleCivDebug` against `app/build.gradle`, then record exact results in `specs/013-native-address-entry/quickstart.md`
