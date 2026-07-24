@@ -31,11 +31,12 @@ model itself.
 
 ### 2. One nationwide four-parameter transform is not uniformly accurate
 
-Benchmarking against the OSGeo Taiwan datum common-point table produced these radial residuals:
+Benchmarking against a stratified selection from the OSGeo Taiwan datum common-point table produced
+these radial residuals:
 
 | Region / model | Points | Mean | RMS | Maximum |
 |---|---:|---:|---:|---:|
-| Main island, established four-parameter model | 9 | 0.975 m | 1.068 m | 1.528 m |
+| Main island, established four-parameter model | 33 | 0.712 m | 0.819 m | 1.528 m |
 | Penghu, established four-parameter model | 42 | 9.998 m | 10.065 m | 13.578 m |
 | Penghu, regional similarity model | 42 | 0.125 m | 0.150 m | 0.504 m |
 | Penghu, leave-one-out validation of the model family | 42 | 0.134 m | 0.166 m | 0.599 m |
@@ -71,6 +72,11 @@ adequate. Survey-grade work must identify the realization and epoch, such as TWD
 or TWD97[2020], and account for crustal motion. A static zero-parameter WGS84/TWD97 relationship
 cannot guarantee centimetre-level results through time.
 
+NLSC's current realization-conversion program uses a grid-difference model with bilinear
+interpolation for TWD97, TWD97[2010], and TWD97[2020]. It is the appropriate direction for
+higher-precision realization conversion, but it is not a TWD67 conversion grid and its distributed
+binary grid-data licensing/update contract must be resolved before bundling it in the plugin.
+
 ## Implemented changes
 
 - Exact inverse matrix for the established four-parameter TWD67 model.
@@ -78,8 +84,8 @@ cannot guarantee centimetre-level results through time.
 - Location-aware TM2 zone selection for all of Matsu.
 - Proj4J upgrade from 1.3.0 to 1.4.3. Version 1.4.2 fixed GRS80/WGS84 recognition and
   projected datum-shift handling; 1.4.3 retains those fixes.
-- A 64-point CSV regression fixture:
-  - 9 main-island observed TWD97/TWD67 common points;
+- An 88-point CSV regression fixture:
+  - 33 geographically stratified main-island observed TWD97/TWD67 common points;
   - 42 Penghu observed common points;
   - 5 Kinmen projection/reference points;
   - 8 Matsu projection/reference points.
@@ -93,12 +99,15 @@ cannot guarantee centimetre-level results through time.
 | Main-island TWD67 interoperability | Established four-parameter model; expect roughly 1–2 m against the sampled controls |
 | Penghu TWD67 interoperability | Revised regional similarity model; sampled common-point residual below 0.55 m |
 | Kinmen or Matsu | Prefer WGS84/TWD97 zone 119; label TWD67 as compatibility-only unless local observed control points are supplied |
+| TWD97 realization conversion | Integrate the appropriate NLSC grid-difference dataset and epoch/realization metadata |
 | Engineering, cadastral, or centimetre-level work | Use NLSC control points, the required TWD97 realization/epoch, and an official/local grid or surface model |
 
 ## Sources
 
 - National Land Surveying and Mapping Center, plane control and coordinate-system introduction:
   https://www.nlsc.gov.tw/cp.aspx?n=1482
+- National Land Surveying and Mapping Center, coordinate realization conversion program:
+  https://www.nlsc.gov.tw/cp.aspx?n=1674
 - OSGeo Taiwan datums:
   https://wiki.osgeo.org/wiki/Taiwan_datums
 - OSGeo Taiwan datum test points:
