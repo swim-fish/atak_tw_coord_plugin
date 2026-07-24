@@ -42,6 +42,7 @@ public class DatumShiftTwd67Test {
 
   @Test
   public void main_island_transform_matches_observed_controls_within_2m() {
+    assertThat(OsgeoControlPointVectors.MAIN_ISLAND).hasSize(33);
     for (OsgeoControlPointVectors.Point point : OsgeoControlPointVectors.MAIN_ISLAND) {
       assertThat(point.twd67Observed).as("%s fixture provenance", point.id).isTrue();
 
@@ -96,6 +97,30 @@ public class DatumShiftTwd67Test {
   }
 
   @Test
+  public void all_penghu_controls_receive_the_unblended_regional_model() {
+    for (OsgeoControlPointVectors.Point point : OsgeoControlPointVectors.PENGHU) {
+      Twd67Tm2 actual =
+          DatumShiftTwd67.twd97ToTwd67(
+              new Twd97Tm2(point.twd97E, point.twd97N, point.zone));
+      double expectedE =
+          -502.543_492_499
+              + 0.999_998_583_003 * point.twd97E
+              - 0.000_124_634_365 * point.twd97N;
+      double expectedN =
+          161.813_279_315
+              + 0.000_124_634_365 * point.twd97E
+              + 0.999_998_583_003 * point.twd97N;
+
+      assertThat(actual.eastingMetres())
+          .as("%s full Penghu model easting", point.id)
+          .isCloseTo(expectedE, Offset.offset(0.000_001));
+      assertThat(actual.northingMetres())
+          .as("%s full Penghu model northing", point.id)
+          .isCloseTo(expectedN, Offset.offset(0.000_001));
+    }
+  }
+
+  @Test
   public void penghu_similarity_model_family_passes_leave_one_out_validation() {
     double totalError = 0.0;
     double maxError = 0.0;
@@ -117,32 +142,90 @@ public class DatumShiftTwd67Test {
   }
 
   @Test
-  public void penghu_domain_boundaries_choose_the_same_model_in_both_directions() {
-    double[][] boundaries = {
-      {270_000.0, 2_550_000.0},
-      {270_000.0, 2_650_000.0},
-      {340_000.0, 2_550_000.0},
-      {340_000.0, 2_650_000.0}
+  public void penghu_transition_is_continuous_at_outer_and_core_edges() {
+    double delta = 0.001;
+    double[] eastingEdges = {270_000.0, 280_000.0, 325_000.0, 340_000.0};
+    for (double edge : eastingEdges) {
+      Twd67Tm2 before =
+          DatumShiftTwd67.twd97ToTwd67(new Twd97Tm2(edge - delta, 2_600_000.0, 119));
+      Twd67Tm2 after =
+          DatumShiftTwd67.twd97ToTwd67(new Twd97Tm2(edge + delta, 2_600_000.0, 119));
+      assertThat(distance(before, after))
+          .as("continuity across Penghu easting edge %.3f", edge)
+          .isLessThan(0.01);
+    }
+
+    double[] northingEdges = {2_550_000.0, 2_565_000.0, 2_625_000.0, 2_650_000.0};
+    for (double edge : northingEdges) {
+      Twd67Tm2 before =
+          DatumShiftTwd67.twd97ToTwd67(new Twd97Tm2(300_000.0, edge - delta, 119));
+      Twd67Tm2 after =
+          DatumShiftTwd67.twd97ToTwd67(new Twd97Tm2(300_000.0, edge + delta, 119));
+      assertThat(distance(before, after))
+          .as("continuity across Penghu northing edge %.3f", edge)
+          .isLessThan(0.01);
+    }
+  }
+
+  @Test
+  public void penghu_transition_grid_is_invertible_in_both_directions() {
+    double[] eastings = {
+      265_000.0,
+      269_999.999,
+      270_000.0,
+      270_000.001,
+      275_000.0,
+      279_999.999,
+      280_000.0,
+      280_000.001,
+      300_000.0,
+      324_999.999,
+      325_000.0,
+      325_000.001,
+      332_500.0,
+      339_999.999,
+      340_000.0,
+      340_000.001,
+      345_000.0
+    };
+    double[] northings = {
+      2_545_000.0,
+      2_549_999.999,
+      2_550_000.0,
+      2_550_000.001,
+      2_557_500.0,
+      2_564_999.999,
+      2_565_000.0,
+      2_565_000.001,
+      2_600_000.0,
+      2_624_999.999,
+      2_625_000.0,
+      2_625_000.001,
+      2_637_500.0,
+      2_649_999.999,
+      2_650_000.0,
+      2_650_000.001,
+      2_655_000.0
     };
 
-    for (double[] boundary : boundaries) {
-      Twd97Tm2 source = new Twd97Tm2(boundary[0], boundary[1], 119);
-      Twd67Tm2 t67 = DatumShiftTwd67.twd97ToTwd67(source);
-      Twd97Tm2 backTo97 = DatumShiftTwd67.twd67ToTwd97(t67);
-      Twd67Tm2 backTo67 = DatumShiftTwd67.twd97ToTwd67(backTo97);
+    for (double easting : eastings) {
+      for (double northing : northings) {
+        Twd97Tm2 source97 = new Twd97Tm2(easting, northing, 119);
+        Twd67Tm2 converted67 = DatumShiftTwd67.twd97ToTwd67(source97);
+        Twd97Tm2 back97 = DatumShiftTwd67.twd67ToTwd97(converted67);
+        assertThat(Math.hypot(back97.eastingMetres() - easting, back97.northingMetres() - northing))
+            .as("TWD97 round trip at %.3f, %.3f", easting, northing)
+            .isLessThanOrEqualTo(0.000_001);
 
-      assertThat(backTo97.eastingMetres())
-          .as("Penghu boundary E97 at %.3f, %.3f", boundary[0], boundary[1])
-          .isCloseTo(source.eastingMetres(), Offset.offset(0.000_001));
-      assertThat(backTo97.northingMetres())
-          .as("Penghu boundary N97 at %.3f, %.3f", boundary[0], boundary[1])
-          .isCloseTo(source.northingMetres(), Offset.offset(0.000_001));
-      assertThat(backTo67.eastingMetres())
-          .as("Penghu boundary E67 at %.3f, %.3f", boundary[0], boundary[1])
-          .isCloseTo(t67.eastingMetres(), Offset.offset(0.000_001));
-      assertThat(backTo67.northingMetres())
-          .as("Penghu boundary N67 at %.3f, %.3f", boundary[0], boundary[1])
-          .isCloseTo(t67.northingMetres(), Offset.offset(0.000_001));
+        Twd67Tm2 source67 = new Twd67Tm2(easting, northing, 119);
+        Twd97Tm2 converted97 = DatumShiftTwd67.twd67ToTwd97(source67);
+        Twd67Tm2 back67 = DatumShiftTwd67.twd97ToTwd67(converted97);
+        assertThat(
+                Math.hypot(
+                    back67.eastingMetres() - easting, back67.northingMetres() - northing))
+            .as("TWD67 round trip at %.3f, %.3f", easting, northing)
+            .isLessThanOrEqualTo(0.000_001);
+      }
     }
   }
 
@@ -261,5 +344,11 @@ public class DatumShiftTwd67Test {
     return Math.hypot(
         actual.eastingMetres() - expected.twd97E,
         actual.northingMetres() - expected.twd97N);
+  }
+
+  private static double distance(Twd67Tm2 first, Twd67Tm2 second) {
+    return Math.hypot(
+        second.eastingMetres() - first.eastingMetres(),
+        second.northingMetres() - first.northingMetres());
   }
 }
