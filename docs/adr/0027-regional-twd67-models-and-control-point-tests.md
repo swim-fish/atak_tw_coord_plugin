@@ -34,9 +34,10 @@ regional and boundary failures.
 4. Select TM2 zone 119 for three Matsu island-group envelopes, including Dongyin and Liangdao east
    of 120°E.
 5. Upgrade Proj4J from 1.3.0 to 1.4.3.
-6. Pin 64 external regression points in a test-resource CSV and test WGS84↔TWD97 projection,
+6. Pin 88 external regression points in a test-resource CSV and test WGS84↔TWD97 projection,
    TWD97↔TWD67 datum transformation, zone selection, regional isolation, model-boundary selection,
-   and exact round trips.
+   and exact round trips. The fixture contains 33 stratified main-island points, all 42 published
+   Penghu common points, 5 Kinmen points, and 8 Matsu points.
 7. Treat Kinmen and Matsu TWD67 output as compatibility-only. Their fixture values are
    software-derived rather than observed legacy TWD67 control coordinates.
 8. Do not claim survey-, engineering-, or cadastral-grade accuracy. Those uses require official
@@ -61,11 +62,12 @@ regional and boundary failures.
 ## Consequences
 
 - Main-island compatibility remains stable while forward/reverse algebra becomes exact.
+- The 33 sampled main-island controls have about 0.71 m mean radial residual and 1.53 m maximum.
 - Penghu sampled residual falls from about 10 m mean and 13.6 m maximum to about 0.13 m mean and
   0.51 m maximum.
 - Penghu boundary points now retain the same regional model in either direction.
 - Zone-119 projection now covers all tested Matsu points.
-- Test coverage expands from a small zone-121 set to 64 points across the main island, Penghu,
+- Test coverage expands from a small zone-121 set to 88 points across the main island, Penghu,
   Kinmen, and Matsu, plus explicit domain-boundary and regional-isolation cases.
 - The regional model adds an explicit geographic validity domain and requires future control-point
   updates to be reviewed as data/model changes.
