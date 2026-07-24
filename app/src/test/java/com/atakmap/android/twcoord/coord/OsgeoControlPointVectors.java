@@ -100,8 +100,8 @@ final class OsgeoControlPointVectors {
       throw new ExceptionInInitializerError(e);
     }
 
-    if (points.size() != 64) {
-      throw new IllegalStateException("expected 64 coordinate fixtures, found " + points.size());
+    if (points.size() != 88) {
+      throw new IllegalStateException("expected 88 coordinate fixtures, found " + points.size());
     }
     return List.copyOf(points);
   }
