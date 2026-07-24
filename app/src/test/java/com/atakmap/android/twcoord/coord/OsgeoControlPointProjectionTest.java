@@ -11,7 +11,16 @@ public class OsgeoControlPointProjectionTest {
   private static final Offset<Double> WGS84_TOLERANCE_DEG = Offset.offset(0.000_000_5);
 
   @Test
-  public void wgs84_to_twd97_matches_all_64_control_points() {
+  public void fixture_has_stratified_main_and_outer_island_coverage() {
+    assertThat(OsgeoControlPointVectors.ALL).hasSize(88);
+    assertThat(OsgeoControlPointVectors.MAIN_ISLAND).hasSize(33);
+    assertThat(OsgeoControlPointVectors.PENGHU).hasSize(42);
+    assertThat(OsgeoControlPointVectors.KINMEN).hasSize(5);
+    assertThat(OsgeoControlPointVectors.MATSU).hasSize(8);
+  }
+
+  @Test
+  public void wgs84_to_twd97_matches_all_control_points() {
     for (OsgeoControlPointVectors.Point point : OsgeoControlPointVectors.ALL) {
       Wgs84 wgs84 = new Wgs84(point.latDeg, point.lonDeg, 1L, Wgs84.Source.MAP_CENTRE);
       Twd97Tm2 actual = Projections.wgs84ToTwd97(wgs84);
@@ -27,7 +36,7 @@ public class OsgeoControlPointProjectionTest {
   }
 
   @Test
-  public void twd97_to_wgs84_matches_all_64_control_points() {
+  public void twd97_to_wgs84_matches_all_control_points() {
     for (OsgeoControlPointVectors.Point point : OsgeoControlPointVectors.ALL) {
       Twd97Tm2 t97 = new Twd97Tm2(point.twd97E, point.twd97N, point.zone);
       Wgs84 actual = Projections.twd97ToWgs84(t97, 1L);
