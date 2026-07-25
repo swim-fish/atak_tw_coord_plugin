@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Render the two Tools-menu silhouette icons (ic_tw_coord + ic_tw_coord_goto)
-to standalone PNGs for docs/user-guide{,_zh}.md §4.
+"""Render the current Tools-menu silhouette icon (ic_tw_coord)
+to a standalone PNG for the documentation.
 
 Source-of-truth: the actual Android vector drawables in
     app/src/main/res/drawable/ic_tw_coord.xml
-    app/src/main/res/drawable/ic_tw_coord_goto.xml
 This script *parses* those XMLs and renders each <path>, so when the
-drawables change the doc previews stay in sync automatically — no
+drawable changes the doc preview stays in sync automatically — no
 hand-copied coordinates in Python.
 
-Subset of SVG path commands supported (the only ones used by the two
-target drawables):
+Subset of SVG path commands supported (the only ones used by the target
+drawable):
   M x,y                           moveto absolute
   L x,y                           lineto absolute
   Z                               closepath
@@ -28,7 +27,6 @@ command sequence:
 
 Outputs:
     docs/images/08a-tools-icon-tw-coord.png
-    docs/images/08b-tools-icon-tw-coord-goto.png
 
 To match ATAK's Tools-menu cell visually, each PNG is composited onto a
 pure-black panel (the Tools-menu background) with a small margin.
@@ -342,10 +340,7 @@ def render_vector_to_png(xml_path: Path, out_path: Path) -> None:
 def main() -> int:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     targets = [
-        ("ic_tw_coord.xml",      "08a-tools-icon-tw-coord.png"),
-        ("ic_tw_coord_goto.xml", "08b-tools-icon-tw-coord-goto.png"),
-        ("ic_offline_address.xml", "08c-tools-icon-offline-address.png"),
-        ("ic_forward_search.xml",  "08d-tools-icon-tw-addr-search.png"),
+        ("ic_tw_coord.xml", "08a-tools-icon-tw-coord.png"),
     ]
     for src_name, out_name in targets:
         src = RES_DIR / src_name

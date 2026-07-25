@@ -23,6 +23,11 @@ sanitized image is committed.
 
 ## Current feature 013 replacements
 
+- `08-tools-menu.jpg` is a pixel crop of the retained `TW Coordinates` tile
+  from the earlier full Tools capture. The crop removes the retired
+  `TW Coord GoTo`, `TW Offline Addr`, and `TW Addr Search` tiles without
+  redrawing the remaining UI. `08a-tools-icon-tw-coord.png` remains the current
+  standalone icon; `08b` through `08d` are historical exports only.
 - `23a-native-address-full.png` and
   `23b-native-address-structured.png` are a coupled ATAK-CIV 5.7.0.9 capture
   of the native Taiwan Address tab, refreshed for plugin 1.4.4 to show the

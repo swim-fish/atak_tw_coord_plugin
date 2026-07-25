@@ -2,175 +2,245 @@
 
 **Version:** v1.4.4
 
-This guide covers the current operator workflow. Taiwan coordinate and address
-entry are integrated into ATAK's native coordinate dialog. The plugin exposes
-one Tools item: **TW Coordinates**.
+**Language:** English · [Taiwan Traditional Chinese](user-guide_zh.md)
 
-## 1. Install and confirm
+TW Coordinates adds Taiwan coordinate and offline address support to ATAK.
+Coordinate and address entry are integrated into ATAK's native **Go To →
+Taiwan** pane. The plugin exposes one Tools item, **TW Coordinates**, for
+offline data management and settings.
 
-1. Install the plugin APK that matches the target ATAK signing line.
+## Choose a task
+
+| I want to… | Start here |
+|---|---|
+| Install the plugin and confirm it loaded | [First-time setup](#first-time-setup) |
+| Go to a Taipower, TWD97, or TWD67 coordinate | [Go to a Taiwan coordinate](#go-to-a-taiwan-coordinate) |
+| Find a Taiwan address without a network | [Go to an offline address](#go-to-an-offline-address) |
+| Inspect a map item in Taiwan formats | [Convert a map item's coordinate](#convert-a-map-items-coordinate) |
+| Import, replace, or remove address data | [Manage offline address data](#manage-offline-address-data) |
+| Show, copy, or configure map readouts | [Use and configure map readouts](#use-and-configure-map-readouts) |
+| Recover from an error | [Troubleshooting](#troubleshooting) |
+
+## How the plugin fits into ATAK
+
+There are three current entry paths:
+
+| ATAK path | Use it for |
+|---|---|
+| **Go To → Taiwan** | Enter Taipower, TWD97, TWD67, or an imported address |
+| Map item details → **Coordinate** → **Taiwan** | Inspect the item's coordinate and nearby offline address |
+| Tools → **TW Coordinates** | Manage offline data, then open plugin settings |
+
+ATAK owns the Go To dialog, **Auto Fill**, **Clear**, **Copy**, and final
+confirmation. The plugin supplies the Taiwan pane and performs local
+conversion or lookup.
+
+## First-time setup
+
+### Prerequisites
+
+- An APK built for the target ATAK signing line.
+- An offline address bundle only if you need address search or address
+  readouts. Coordinate conversion does not require a dataset.
+
+### Install and verify
+
+1. Install the plugin APK.
 2. Open ATAK and enable **TW Coordinates** when prompted.
-3. Confirm **Settings → Plugins** (or **TAK Package Mgmt**) reports the plugin
-   as **Loaded**.
+3. Open **Settings → Plugins** or **TAK Package Mgmt** and confirm the plugin
+   reports **Loaded**.
+4. Open ATAK **Go To** and confirm **Taiwan** is available.
+5. Open Tools and confirm the single plugin item is **TW Coordinates**.
 
-Upgrades can normally use `adb install -r`. Imported county datasets and active
-preferences are retained. Retired custom GoTo Recent/marker/icon preferences
-are ignored and are not used by the native workflow.
+Setup is complete when both the **Taiwan** pane and **TW Coordinates** Tools
+item are available.
 
-## 2. Native Taiwan entry
+Upgrades normally retain imported county datasets and current preferences.
+After an upgrade, reload or restart ATAK if a retired Tools item remains in
+ATAK's cache.
 
-### Go To a coordinate
+## Go to a Taiwan coordinate
 
-1. Open ATAK **Go To** and select **Taiwan**.
+1. Open ATAK **Go To → Taiwan**.
 2. Select **Taipower**, **TWD97**, or **TWD67**.
-3. Enter the coordinate. TWD97/TWD67 also require zone **121** (main island) or
-   **119** (outer islands).
-4. Tap ATAK's **OK** to perform the host Go To action.
+3. Enter the coordinate:
 
-Taipower accepts 9-character (10 m) and 11-character (1 m) main-island codes.
-TWD97/TWD67 accept integer easting and northing in metres. TWD67 zone 119 shows
-an accuracy advisory; Taipower reports out of range for outer-island points.
+   | System | Required input |
+   |---|---|
+   | Taipower | A 9-character 10 m or 11-character 1 m main-island code |
+   | TWD97 | Integer easting and northing in metres, plus TM2 zone 121 or 119 |
+   | TWD67 | Integer easting and northing in metres, plus TM2 zone 121 or 119 |
 
-### Go To an offline address
+4. Resolve any validation message shown in the Taiwan pane.
+5. Tap ATAK's **OK** to perform the Go To action.
 
-1. Import the applicable county dataset through **TW Coordinates** (section 4).
-2. Open ATAK **Go To → Taiwan → Address**.
-3. Use **Full address** for one field, or switch to **Structured**. Tap the
-   county/city selector, then the district selector; road/locality and the
-   remaining address stay editable.
-4. Enter an address. Common `台`/`臺`, full-width digit, spacing, punctuation,
-   and address-unit numeral variants are normalised locally.
-5. For one exact result, confirm with ATAK. If multiple credible records remain,
-   tap **Choose result**, inspect the county/district/road context, and select
-   the intended record before confirming.
+The task succeeds when ATAK accepts the coordinate and moves to the requested
+point. Zone 121 is used for the main island; zone 119 is used for applicable
+outer-island points. Taipower is main-island only, and TWD67 zone 119 displays
+an accuracy advisory.
 
-Switching Full/Structured modes preserves the same canonical draft, including
-unclassified text. No result selection moves the map by itself; ATAK performs
-the action only after its normal confirmation. A missing county dataset leaves
-the coordinate tabs usable and displays data-management guidance.
+For coverage and accuracy limits, see
+[Coordinate systems, coverage, and accuracy](reference/coordinate-systems.md).
 
-County choices come only from imported datasets. District choices come only
-from address rows in the selected county, so the list cannot promise coverage
-that is not installed. The map-centre locality is placed first when the
-installed township boundary strictly contains the centre and that locality is
-searchable. All other choices follow the bundled Chunghwa Post order; imported
-values not present in that reference remain available at the end. Choosing a
-different county clears an incompatible district but preserves road and
-remaining-address text.
+### Use ATAK's host controls
 
-The candidate dialog shows at most 20 rows. Exact matches are shown by
-themselves. Otherwise the shortlist combines text-prefix, nearby house-number,
-current-map-distance, and fallback records, then removes duplicates and fills
-unused capacity. When the input does not contain a lane or alley, direct-road
-house numbers rank ahead of lane/alley records.
+- **Auto Fill** converts ATAK's current point into the active Taiwan tab.
+- **Clear** clears only the active tab. On Address, it also cancels the active
+  lookup and candidate set.
+- **Copy** copies the active canonical representation without moving the map.
 
-See [Native Address workflow](tw-addr-search.md) for detailed examples.
+## Go to an offline address
+
+### Prerequisite
+
+Import the boundary data and the county dataset that contains the address. See
+[Manage offline address data](#manage-offline-address-data) if the data is not
+installed yet.
+
+### Find and confirm an address
+
+1. Open ATAK **Go To → Taiwan → Address**.
+2. Use **Single field** to paste or type one complete address, or switch to
+   **Structured fields**.
+3. In structured mode, choose the county/city and district, then enter the
+   road/locality and number/floor.
+4. Wait for local search to finish.
+5. If one address resolves, review it. If ATAK shows **Multiple addresses
+   match**, tap **Choose result** and select the intended administrative and
+   road context.
+6. Tap ATAK's **OK** to perform the Go To action.
+
+The task succeeds when ATAK accepts the resolved address and moves to it.
+Selecting a candidate alone does not move the map; ATAK's final confirmation
+does.
+
+Switching between the two input modes preserves the same draft. Common `台` /
+`臺`, full-width digits, spacing, punctuation, and address-unit numeral
+variants are normalized locally.
 
 <p align="center">
-<img src="images/23a-native-address-full.png" alt="ATAK Go To Taiwan Address tab using one full-address field with the structured-field action at the upper right" width="900"><br>
-<sub>Single-field mode keeps paste entry compact and its mode action reachable at the upper right; address content is redacted.</sub>
+<img src="images/23a-native-address-full.png" alt="ATAK Go To Taiwan Address pane in single-field mode" width="900"><br>
+<sub>Use Single field for pasted or complete addresses; address content is redacted.</sub>
 </p>
 
 <p align="center">
-<img src="images/23b-native-address-structured.png" alt="ATAK Go To Taiwan Address tab split into four fields with the single-field action aligned at the upper right" width="900"><br>
-<sub>Structured mode keeps all four rows on the left and the mode action at the upper right; address values are redacted.</sub>
+<img src="images/23b-native-address-structured.png" alt="ATAK Go To Taiwan Address pane with county, district, road, and number fields" width="900"><br>
+<sub>Use Structured fields when administrative context must be selected explicitly; address values are redacted.</sub>
 </p>
 
-<p align="center">
-<img src="images/25a-native-address-county-selector.png" alt="ATAK native Taiwan Address county selector with the active map-centre county first" width="740"><br>
-<sub>The chooser contains only imported counties and promotes one strictly contained map-centre county.</sub>
-</p>
+If no matching dataset is installed, Address displays data-management
+guidance while the coordinate tabs remain usable. For candidate behavior and
+detailed examples, see the
+[Native Taiwan Address feature guide](tw-addr-search.md).
 
-<p align="center">
-<img src="images/25b-native-address-district-selector.png" alt="ATAK native Taiwan Address district selector with the active map-centre district first" width="740"><br>
-<sub>The selected county's imported districts follow the promoted map-centre district in postal order.</sub>
-</p>
+## Convert a map item's coordinate
 
-### Convert a map item's coordinate
-
-1. Open a map item's details and tap its **Coordinate** value.
-2. In **Convert Coordinate**, select **Taiwan**.
-3. Switch among Taipower, TWD97, TWD67, and Address.
+1. Open the map item's details.
+2. Tap its **Coordinate** value.
+3. In **Convert Coordinate**, select **Taiwan**.
+4. Switch among **Taipower**, **TWD97**, **TWD67**, and **Address**.
 
 The coordinate tabs are prepared immediately. Address resolves asynchronously
-from the exact map-item WGS84 point. It may display a nearby address record, but
-it never replaces or snaps the host point to that record.
+from the map item's exact WGS84 point. A nearby address may be displayed, but
+the plugin never replaces or snaps the ATAK point to that address record.
+
+The task succeeds when the requested Taiwan representation appears while the
+original map-item position remains unchanged.
 
 <p align="center">
-<img src="images/20-atak-point-detail-coordinate.jpg" alt="ATAK point details with the Coordinate value highlighted" width="420"><br>
+<img src="images/20-atak-point-detail-coordinate.jpg" alt="ATAK map-item details with the Coordinate value available" width="420"><br>
 <sub>Tap the Coordinate value to open Convert Coordinate.</sub>
 </p>
 
 <p align="center">
-<img src="images/21-atak-convert-coordinate.jpg" alt="ATAK Convert Coordinate dialog with Taiwan beside built-in panes" width="900"><br>
+<img src="images/21-atak-convert-coordinate.jpg" alt="ATAK Convert Coordinate dialog with the Taiwan pane beside built-in panes" width="900"><br>
 <sub>Taiwan is available beside ATAK's built-in coordinate panes.</sub>
 </p>
 
-### Host controls and read-only use
+In a read-only host dialog, resolved values remain visible while inputs,
+selectors, and candidate actions are disabled.
 
-- **Auto Fill** converts ATAK's current point into the active tab only. Address
-  performs reverse lookup without snapping the host point.
-- **Clear** clears only the active tab and cancels an active Address lookup or
-  candidate set when Address is selected.
-- **Copy** requests the active canonical representation without moving the map.
-- In read-only host dialogs, resolved values remain visible while fields,
-  selectors, and candidate actions are disabled.
+## Manage offline address data
 
-## 3. On-map readouts
-
-The plugin can show map-centre (**MAP**), own-position (**ME**), and selected-
-target (**TGT**) coordinate rows. Each uses the selected Taipower/TWD97/TWD67
-display unit. Optional offline address rows show the nearest local address, a
-direction arrow, and `~`/`~~` confidence markers according to Settings.
-
-Tap a coordinate readout to copy the exact displayed string. Taipower shows an
-out-of-range fallback outside its main-island coverage; zone-119 TWD values are
-labelled so they are not confused with zone 121.
-
-## 4. TW Coordinates settings and datasets
-
-Open the plugin's only public Tools item, **TW Coordinates**, then select the
-top **TW Coordinates settings** button, or navigate directly to:
-
-**Settings → Tool Preferences → Specific Tool Preferences → TW Coordinates**
-
-Available controls include:
-
-- display unit and on-map readout visibility;
-- MAP/ME/TGT address-row toggles and confidence preset;
-- native Address candidate result ordering;
-- plugin UI language (system, English, Traditional Chinese, or Japanese);
-- dataset status and the internal offline-data manager.
-
-The dataset-status row remains selectable even if all three address readout
-toggles are off. Selecting it first closes Settings and then opens the manager,
-so the destination is not hidden behind the Settings screen. In the manager,
-import a supported ZIP/SQLite dataset, replace one county atomically, remove an
-unneeded county, and inspect size/date/row provenance. See
-[Offline address data](tw-offline-addr.md).
+Open Tools → **TW Coordinates**. This is the plugin's only public Tools item and
+opens the offline-data manager directly.
 
 <p align="center">
-<img src="images/24-offline-address-data.png" alt="Offline address data manager with the TW Coordinates settings button and two imported counties" width="700"><br>
-<sub>The Tools entry opens this manager directly; use the top button to continue to plugin settings.</sub>
+<img src="images/08-tools-menu.jpg" alt="ATAK Tools showing the TW Coordinates tile, the plugin's only public Tools item" width="190"><br>
+<sub>Coordinate and address entry are in ATAK Go To → Taiwan; Tools retains only TW Coordinates for data management and settings.</sub>
 </p>
 
-## 5. FAQ
+### Import data
 
-**The plugin is missing from Tools.** Confirm the plugin is Loaded. After an
-upgrade, reload or restart ATAK so cached retired Tools entries disappear.
+1. Tap **Import…**.
+2. Select a supported ZIP bundle or SQLite dataset.
+3. Keep ATAK open while the progress card is visible.
+4. Confirm the imported county appears with its data date, row count, and
+   storage size.
 
-**Address reports no matching dataset.** Open **TW Coordinates** and import the
-boundary data plus the applicable county. Coordinate entry remains available.
+Address search and readouts are ready when the boundary data and applicable
+county both appear as active data.
 
-**Address returns several rows.** This is intentional: no ambiguous record is
-silently selected. Use **Choose result** and compare administrative context.
-The list is a bounded, category-balanced shortlist rather than every stored
-record on a dense road.
+### Replace or remove a county
 
-**Does lookup require a network?** No. The plugin deliberately omits the
-`INTERNET` permission; coordinate conversion and address lookup are local.
+- To update a county, tap its **⋮** menu, choose **Replace…**, and select the
+  newer file. Existing data remains active unless replacement succeeds.
+- To reclaim storage, tap **⋮** and choose **Remove**, then confirm. Removal
+  deletes that county's local active data; re-import the dataset to restore it.
 
-**The readout says `out of range`.** Taipower grid covers the main island only.
-Use TWD97/TWD67 zone 119 for applicable outer-island points.
+<p align="center">
+<img src="images/24-offline-address-data.png" alt="TW Coordinates offline-data manager with the settings button, usage summary, and imported county rows" width="700"><br>
+<sub>The Tools item opens this manager; the top button opens TW Coordinates settings.</sub>
+</p>
 
-**Report issues:** <https://github.com/swim-fish/atak_tw_coord_plugin/issues>
+For supported bundles, storage planning, status fields, and import-error
+recovery, see [Offline address data](tw-offline-addr.md).
+
+## Use and configure map readouts
+
+The plugin can display coordinate rows for:
+
+| Label | Point represented |
+|---|---|
+| **MAP** | Map centre |
+| **ME** | Own position |
+| **TGT** | Selected target |
+
+Each row uses the selected Taipower, TWD97, or TWD67 display unit. Tap a
+coordinate readout to copy the exact displayed string. Optional address rows
+show the nearest imported address, a direction arrow, and `~` / `~~`
+confidence markers.
+
+To change readouts and other plugin options, use either path:
+
+- Tools → **TW Coordinates** → **TW Coordinates settings**
+- **Settings → Tool Preferences → Specific Tool Preferences → TW Coordinates**
+
+Settings include the display unit, MAP/ME/TGT visibility, address rows,
+confidence preset, Address candidate ordering, and plugin UI language.
+Changes repaint the current readouts without requiring an ATAK restart.
+
+## Troubleshooting
+
+| Symptom | Check and recovery | Success check |
+|---|---|---|
+| **TW Coordinates** is missing from Tools | Confirm the plugin is **Loaded**. Reload or restart ATAK after an upgrade. | One **TW Coordinates** tile appears. |
+| **Taiwan** is missing from Go To | Confirm the plugin is **Loaded**, then reopen Go To or restart ATAK. | **Taiwan** appears beside ATAK's coordinate panes. |
+| Address says no matching dataset | Open **TW Coordinates** and import the boundary data plus the applicable county. | The county is active and Address can search it. |
+| Address returns several rows | Tap **Choose result** and compare county, district, road, and number. | The selected result resolves before ATAK confirmation. |
+| Address returns no match | Verify the imported county, then try **Structured fields** to make the administrative context explicit. | One result resolves or a relevant candidate list appears. |
+| Readout shows a coordinate but no address | Confirm the county dataset is active and enable the corresponding MAP/ME/TGT address row in settings. | An address appears when the point is inside installed coverage. |
+| Taipower shows `out of range` | Taipower covers the main island only. Use TWD97/TWD67 zone 119 where applicable. | The point is represented in a supported system. |
+| Import fails | Keep existing data in place, review the displayed error, then retry with enough free space and a supported bundle. | The county appears as active data. |
+
+All coordinate conversion and address lookup run locally. The plugin does not
+require network access.
+
+## More information
+
+- [Documentation index](README.md)
+- [Native Taiwan Address feature guide](tw-addr-search.md)
+- [Offline address data feature guide](tw-offline-addr.md)
+- [Coordinate systems, coverage, and accuracy](reference/coordinate-systems.md)
+- [Current UI contracts](ui/README.md)
+- [Report an issue](https://github.com/swim-fish/atak_tw_coord_plugin/issues)
