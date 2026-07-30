@@ -117,10 +117,11 @@ final class TaipowerParser {
             + (n.charAt(3) - '0') * 10
             + (n.charAt(4) - '0');
 
-    // Positions 5, 6 must be hundred-metre letters A..J.
+    // Position 5 spans eight 100 m east-west cells (A..H); position 6 spans five
+    // north-south cells (A..E). Larger letters are noncanonical neighboring-subregion aliases.
     char hmE = n.charAt(5);
     char hmN = n.charAt(6);
-    if (hmE < 'A' || hmE > 'J' || hmN < 'A' || hmN > 'J') {
+    if (hmE < 'A' || hmE > 'H' || hmN < 'A' || hmN > 'E') {
       return new ParseAttempt(n, Outcome.invalid(ParseResult.Reason.BAD_LETTER));
     }
     int letter5Idx = hmE - 'A';

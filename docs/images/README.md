@@ -44,3 +44,14 @@ sanitized image is committed.
 The committed crops exclude the surrounding map, coordinate readouts, desktop
 window frame, and device status information. Raw captures are retained only
 outside Git for local recovery.
+
+## Current feature 014 additions
+
+- `26a-native-taipower-single.png` and
+  `26b-native-taipower-split.png` are a coupled ATAK-CIV 5.7.0.9 capture of
+  the Taipower layout switch. The first shows **Single field** content with
+  the far-right **Guided fields** action; the second shows the 1/4/2/2-or-4
+  guided groups with the far-right **Single field** action.
+- Both committed images are cropped to the ATAK Go To dialog. The surrounding
+  map, address/readout overlays, and exact Taipower coordinate values are
+  excluded or redacted.

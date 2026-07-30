@@ -18,8 +18,8 @@ or changing the plugin.
 ## 2. Current user interfaces
 
 - [Native Taiwan coordinate entry](ui/native-taiwan-coordinate-entry.md) —
-  the current Taipower, TWD97, TWD67, and Address pane under ATAK Go To and
-  Convert Coordinate.
+  the current inline Taipower (single/guided), TWD97, TWD67, and Address pane
+  under ATAK Go To and Convert Coordinate.
 - [Offline address manager](ui/offline-address-page.md) — the page opened by
   the plugin's only public Tools item, **TW Coordinates**.
 - [On-map readout widget](ui/readout-widget.md) — MAP, ME, and TGT coordinate
@@ -31,6 +31,8 @@ or changing the plugin.
 ## 3. Reference
 
 - [Coordinate systems, coverage, and accuracy](reference/coordinate-systems.md).
+- [ADR-0028 Taipower A-H/A-E range decision](adr/0028-correct-taipower-subgrid-letter-ranges.md).
+- [ADR-0029 all-page native Auto Fill decision](adr/0029-fill-all-native-taiwan-pages.md).
 - [ATAK radial-menu integration](reference/map-menu-handler.md).
 - [Change log](../CHANGELOG.md).
 - [Documentation image workflow](images/README.md).
@@ -40,7 +42,7 @@ or changing the plugin.
 - [Build, test, repository layout, and Spec Kit workflow](contributing/development.md).
 - [Release readiness](contributing/release-readiness.md).
 - [Project constitution](../.specify/memory/constitution.md).
-- [Active feature plan](../specs/013-native-address-entry/plan.md).
+- [Active feature plan](../specs/014-native-entry-input-ux/plan.md).
 - [Feature specifications](../specs/) — requirements, plans, tasks, contracts,
   research, and acceptance evidence for each feature.
 

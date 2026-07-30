@@ -7,6 +7,51 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-07-30 — Native Taiwan input UX
+
+### Added
+
+- Native Taipower entry now offers **Single field** and **Guided fields**
+  layouts over one lossless draft. Guided entry uses 1/4/2/2-or-4 groups,
+  preserves 9-character 10 m and 11-character 1 m precision, and persists only
+  the selected layout.
+
+### Changed
+
+- One ATAK **Auto Fill** action now refreshes Taipower, TWD97, TWD67, and
+  Address from the same host WGS84 point without changing the selected page.
+  **Clear** remains active-page-only, Address keeps its asynchronous no-snap
+  lookup, and programmatic fill emits no human-change callback.
+- The Taipower layout control now matches Address: one 48 dp mode action sits
+  in the far-right 2/10 action column and names the alternate layout instead
+  of occupying a full-width segmented row.
+- Every editable Taiwan field requests inline keyboard presentation so ATAK
+  Go To remains visible. Next stays inside plugin-owned fields; Done/Search
+  dismisses the keyboard without invoking ATAK confirmation.
+- Taiwan system and TWD zone selectors render a centered 36 dp track inside
+  the existing non-overlapping 48 dp native targets. Checked-disabled state
+  and English, Taiwan Traditional Chinese, and Japanese accessibility context
+  remain explicit.
+- Existing installations and unknown/corrupt Taipower-layout preferences
+  safely start in **Single field**. The key is independent from ATAK MGRS,
+  native-tab selection, and retired custom Go To preferences.
+
+### Fixed
+
+- Taipower 100 m letters now use the canonical A-H east-west and A-E
+  north-south ranges at the parser and value-object boundaries. Noncanonical
+  I/J and F-J aliases remain visible for correction but cannot expose a point;
+  encoder geometry asserts the corresponding `0..7`/`0..4` invariants.
+- Programmatic render no longer steals editable focus, and disposed/read-only
+  pane callbacks cannot restore an input session.
+
+### Compatibility
+
+- The feature adds no Android permission, network path, telemetry, runtime
+  dependency, Activity, or host-confirmation seam. ATAK-CIV 5.7.0.9 automated
+  build/API evidence is local; exact 5.7.0.9 and minimum-runtime device
+  acceptance remain release gates.
+
 ## [1.4.4] — 2026-07-24 — Native pane layout fix
 
 ### Fixed

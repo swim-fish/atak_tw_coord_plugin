@@ -3,9 +3,14 @@ package com.atakmap.android.twcoord.nativeentry;
 import android.content.Context;
 import android.os.Trace;
 import android.text.Editable;
+import android.text.InputFilter;
+import android.text.Spanned;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
@@ -27,9 +32,12 @@ import com.atakmap.android.twcoord.prefs.PreferenceStore;
 import com.atakmap.coremap.log.Log;
 import com.atakmap.coremap.maps.coords.GeoPoint;
 import com.atakmap.coremap.maps.coords.GeoPointMetaData;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -89,7 +97,14 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
   private final View twd97Pane;
   private final View twd67Pane;
   private final View addressPane;
+  private final Button taipowerMode;
+  private final View taipowerRawContainer;
+  private final View taipowerSplitContainer;
   private final EditText taipowerInput;
+  private final EditText taipowerRegion;
+  private final EditText taipowerSubregion;
+  private final EditText taipowerSubgrid;
+  private final EditText taipowerPrecision;
   private final EditText twd97Easting;
   private final EditText twd97Northing;
   private final EditText twd67Easting;
@@ -110,10 +125,14 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
   private final TextView twd67Advisory;
   private final TextView status;
   private final Map<EditText, TextWatcher> watchers = new LinkedHashMap<>();
+  private final Map<EditText, EditText> nextEditors = new IdentityHashMap<>();
+  private final Set<EditText> enterKeyOwners = Collections.newSetFromMap(new IdentityHashMap<>());
 
   private OnChangedListener changedListener;
   private boolean rendering;
   private boolean disposed;
+  private boolean taipowerProjectionFailed;
+  private int lifecycleGeneration;
   private Runnable addressManagerNavigator = () -> {};
 
   public TaiwanCoordinateEntryPane(Context pluginContext, PreferenceStore preferences) {
@@ -139,7 +158,9 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
         windowContext,
         new TaiwanEntryController(
             Objects.requireNonNull(preferences, "preferences").getNativeEntryLastUnit(),
-            preferences::setNativeEntryLastUnit),
+            preferences::setNativeEntryLastUnit,
+            preferences.getNativeEntryTaipowerMode(),
+            preferences::setNativeEntryTaipowerMode),
         new AddressEntryController(
             Objects.requireNonNull(lookupService, "lookupService"),
             preferences::getResultOrdering,
@@ -259,7 +280,14 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     twd97Pane = requireView(R.id.native_entry_pane_twd97);
     twd67Pane = requireView(R.id.native_entry_pane_twd67);
     addressPane = requireView(R.id.native_entry_pane_address);
+    taipowerMode = requireView(R.id.native_entry_taipower_mode);
+    taipowerRawContainer = requireView(R.id.native_entry_taipower_raw_container);
+    taipowerSplitContainer = requireView(R.id.native_entry_taipower_split_container);
     taipowerInput = requireView(R.id.native_entry_input_taipower);
+    taipowerRegion = requireView(R.id.native_entry_taipower_region);
+    taipowerSubregion = requireView(R.id.native_entry_taipower_subregion);
+    taipowerSubgrid = requireView(R.id.native_entry_taipower_subgrid);
+    taipowerPrecision = requireView(R.id.native_entry_taipower_precision);
     twd97Easting = requireView(R.id.native_entry_twd97_easting);
     twd97Northing = requireView(R.id.native_entry_twd97_northing);
     twd67Easting = requireView(R.id.native_entry_twd67_easting);
@@ -282,7 +310,24 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     candidateDialog = new AddressCandidateDialog(windowContext, context, addressController);
     localityDialog = new AddressLocalityDialog(windowContext, context, addressController);
 
-    addWatcher(taipowerInput, value -> controller.setTaipowerText(value, true));
+    appendFilter(taipowerRegion, new UppercaseAsciiLetterFilter());
+    appendFilter(taipowerSubgrid, new UppercaseAsciiLetterFilter());
+    addWatcher(
+        taipowerInput,
+        value -> {
+          taipowerProjectionFailed = false;
+          controller.setTaipowerText(value, true);
+        });
+    addGuidedWatcher(
+        taipowerRegion, value -> controller.setTaipowerRegion(value, true), 1, taipowerSubregion);
+    addGuidedWatcher(
+        taipowerSubregion,
+        value -> controller.setTaipowerSubregion(value, true),
+        4,
+        taipowerSubgrid);
+    addGuidedWatcher(
+        taipowerSubgrid, value -> controller.setTaipowerSubgrid(value, true), 2, taipowerPrecision);
+    addWatcher(taipowerPrecision, value -> controller.setTaipowerPrecisionDigits(value, true));
     addWatcher(twd97Easting, value -> controller.setTwdEasting(CoordinateUnit.TWD97, value, true));
     addWatcher(
         twd97Northing, value -> controller.setTwdNorthing(CoordinateUnit.TWD97, value, true));
@@ -292,6 +337,18 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     addWatcher(addressInput, value -> addressController.editFull(value, true));
     addWatcher(addressRoad, ignored -> editStructuredFromViews());
     addWatcher(addressTail, ignored -> editStructuredFromViews());
+    bindEditorAction(taipowerInput, null);
+    bindEditorAction(taipowerRegion, taipowerSubregion);
+    bindEditorAction(taipowerSubregion, taipowerSubgrid);
+    bindEditorAction(taipowerSubgrid, taipowerPrecision);
+    bindEditorAction(taipowerPrecision, null);
+    bindEditorAction(twd97Easting, twd97Northing);
+    bindEditorAction(twd97Northing, null);
+    bindEditorAction(twd67Easting, twd67Northing);
+    bindEditorAction(twd67Northing, null);
+    bindEditorAction(addressInput, null);
+    bindEditorAction(addressRoad, addressTail);
+    bindEditorAction(addressTail, null);
 
     systemGroup.setOnCheckedChangeListener(
         (group, checkedId) -> {
@@ -304,6 +361,23 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
           } finally {
             endTrace(tracing);
           }
+        });
+    taipowerMode.setOnClickListener(
+        ignored -> {
+          if (rendering || disposed) return;
+          boolean ownedFocus = hasFocusedTaipowerEditor();
+          TaipowerInputMode requested =
+              controller.taipowerInputMode() == TaipowerInputMode.SINGLE_FIELD
+                  ? TaipowerInputMode.SPLIT_FIELDS
+                  : TaipowerInputMode.SINGLE_FIELD;
+          taipowerProjectionFailed = !controller.selectTaipowerInputMode(requested, true);
+          renderControllerState();
+          if (!taipowerProjectionFailed && ownedFocus && controller.isEditable()) {
+            EditText target =
+                requested == TaipowerInputMode.SPLIT_FIELDS ? taipowerRegion : taipowerInput;
+            if (isUsableEditor(target)) target.requestFocus();
+          }
+          if (taipowerProjectionFailed) renderStatus(true);
         });
     twd97ZoneGroup.setOnCheckedChangeListener(
         (group, checkedId) -> {
@@ -335,7 +409,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
         });
     controller.setOnHumanChange(this::notifyHostChanged);
     addressController.setOnHumanChange(this::notifyHostChanged);
-    addressController.setOnStateChanged(() -> root.post(this::renderControllerState));
+    addressController.setOnStateChanged(this::postRenderControllerState);
     addressChoose.setOnClickListener(ignored -> candidateDialog.show());
     addressCounty.setOnClickListener(
         ignored -> localityDialog.show(LocalitySelectorSnapshot.Kind.COUNTY));
@@ -392,6 +466,149 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
         };
     editText.addTextChangedListener(watcher);
     watchers.put(editText, watcher);
+  }
+
+  private void addGuidedWatcher(
+      EditText editor, Consumer<String> consumer, int completedLength, EditText nextEditor) {
+    TextWatcher watcher =
+        new TextWatcher() {
+          @Override
+          public void beforeTextChanged(CharSequence value, int start, int count, int after) {}
+
+          @Override
+          public void onTextChanged(CharSequence value, int start, int before, int count) {}
+
+          @Override
+          public void afterTextChanged(Editable value) {
+            if (rendering || disposed) return;
+            consumer.accept(value == null ? "" : value.toString());
+            taipowerProjectionFailed = false;
+            renderStatus(false);
+            if (editor.hasFocus()
+                && value != null
+                && value.length() == completedLength
+                && isUsableEditor(nextEditor)) {
+              nextEditor.requestFocus();
+            }
+          }
+        };
+    editor.addTextChangedListener(watcher);
+    watchers.put(editor, watcher);
+  }
+
+  private static void appendFilter(EditText editor, InputFilter filter) {
+    InputFilter[] existing = editor.getFilters();
+    InputFilter[] replacement = new InputFilter[existing.length + 1];
+    System.arraycopy(existing, 0, replacement, 0, existing.length);
+    replacement[existing.length] = filter;
+    editor.setFilters(replacement);
+  }
+
+  private boolean hasFocusedTaipowerEditor() {
+    for (EditText editor : taipowerEditors()) {
+      if (editor.hasFocus()) return true;
+    }
+    return false;
+  }
+
+  private EditText[] taipowerEditors() {
+    return new EditText[] {
+      taipowerInput, taipowerRegion, taipowerSubregion, taipowerSubgrid, taipowerPrecision
+    };
+  }
+
+  private void bindEditorAction(EditText editor, EditText nextEditor) {
+    nextEditors.put(editor, nextEditor);
+    editor.setOnEditorActionListener(
+        (view, actionId, event) -> handleEditorAction(editor, actionId, event));
+  }
+
+  private boolean handleEditorAction(EditText editor, int actionId, KeyEvent event) {
+    if (disposed || rendering || !isUsableEditor(editor)) return false;
+    if (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+      if (event.getAction() == KeyEvent.ACTION_DOWN) {
+        if (event.getRepeatCount() != 0 || !enterKeyOwners.add(editor)) return true;
+        performEditorAction(editor);
+        return true;
+      }
+      if (event.getAction() == KeyEvent.ACTION_UP) {
+        if (!enterKeyOwners.remove(editor)) performEditorAction(editor);
+        return true;
+      }
+      return false;
+    }
+    int action = actionId & EditorInfo.IME_MASK_ACTION;
+    if (action == EditorInfo.IME_ACTION_NEXT
+        || action == EditorInfo.IME_ACTION_DONE
+        || action == EditorInfo.IME_ACTION_SEARCH) {
+      performEditorAction(editor);
+      return true;
+    }
+    return false;
+  }
+
+  private void performEditorAction(EditText editor) {
+    EditText nextEditor = nextEditors.get(editor);
+    if (nextEditor != null && isUsableEditor(nextEditor)) {
+      nextEditor.requestFocus();
+      return;
+    }
+    dismissKeyboard(editor);
+  }
+
+  private static boolean isUsableEditor(EditText editor) {
+    return editor.isEnabled()
+        && editor.getVisibility() == View.VISIBLE
+        && editor.isFocusable()
+        && editor.isFocusableInTouchMode();
+  }
+
+  private void dismissKeyboard(View editor) {
+    try {
+      Object service = root.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+      if (service instanceof InputMethodManager) {
+        ((InputMethodManager) service).hideSoftInputFromWindow(editor.getWindowToken(), 0);
+      }
+    } catch (RuntimeException failure) {
+      Log.w(TAG, "Unable to dismiss native-entry keyboard", failure);
+    }
+    editor.clearFocus();
+  }
+
+  private void postRenderControllerState() {
+    int generation = lifecycleGeneration;
+    root.post(
+        () -> {
+          if (!disposed && generation == lifecycleGeneration) renderControllerState();
+        });
+  }
+
+  private static final class UppercaseAsciiLetterFilter implements InputFilter {
+    @Override
+    public CharSequence filter(
+        CharSequence source,
+        int start,
+        int end,
+        Spanned destination,
+        int destinationStart,
+        int destinationEnd) {
+      StringBuilder accepted = null;
+      for (int index = start; index < end; index++) {
+        char character = source.charAt(index);
+        char uppercase =
+            character >= 'a' && character <= 'z' ? (char) (character - ('a' - 'A')) : character;
+        if (uppercase < 'A' || uppercase > 'Z' || uppercase != character) {
+          if (accepted == null) {
+            accepted = new StringBuilder(end - start);
+            accepted.append(source, start, index);
+          }
+          if (uppercase >= 'A' && uppercase <= 'Z') accepted.append(uppercase);
+        } else if (accepted != null) {
+          accepted.append(uppercase);
+        }
+      }
+      return accepted == null ? null : accepted.toString();
+    }
   }
 
   @Override
@@ -486,10 +703,16 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
     if (disposed) return;
     boolean tracing = beginTrace("TWCoord.native.autofill");
     try {
-      if (controller.activeTab() == NativeEntryTab.ADDRESS) {
-        addressController.autofill(toWgs84(point));
+      Wgs84 hostPoint = toWgs84(point);
+      if (hostPoint == null) {
+        if (controller.activeTab() == NativeEntryTab.ADDRESS) {
+          addressController.autofill(null);
+        } else {
+          controller.autofill(null);
+        }
       } else {
-        controller.autofill(toWgs84(point));
+        controller.autofill(hostPoint);
+        addressController.autofill(hostPoint);
       }
       renderControllerState();
     } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
@@ -528,12 +751,20 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
   public void dispose() {
     if (disposed) return;
     disposed = true;
+    lifecycleGeneration++;
     changedListener = null;
+    for (EditText editor : nextEditors.keySet()) {
+      safeDisposeStep("editor action", () -> editor.setOnEditorActionListener(null));
+      safeDisposeStep("editor focus", () -> dismissKeyboard(editor));
+    }
+    nextEditors.clear();
+    enterKeyOwners.clear();
     safeDisposeStep("address dialog", candidateDialog::dispose);
     safeDisposeStep("locality dialog", localityDialog::dispose);
     safeDisposeStep("address controller", addressController::dispose);
     safeDisposeStep("controller", controller::dispose);
     safeDisposeStep("system listener", () -> systemGroup.setOnCheckedChangeListener(null));
+    safeDisposeStep("Taipower mode listener", () -> taipowerMode.setOnClickListener(null));
     safeDisposeStep("TWD97 listener", () -> twd97ZoneGroup.setOnCheckedChangeListener(null));
     safeDisposeStep("TWD67 listener", () -> twd67ZoneGroup.setOnCheckedChangeListener(null));
     for (Map.Entry<EditText, TextWatcher> entry : watchers.entrySet()) {
@@ -542,6 +773,7 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       safeDisposeStep("input", () -> entry.getKey().setEnabled(false));
     }
     safeDisposeStep("Taipower selector", () -> taipowerButton.setEnabled(false));
+    safeDisposeStep("Taipower mode", () -> taipowerMode.setEnabled(false));
     safeDisposeStep("TWD97 selector", () -> twd97Button.setEnabled(false));
     safeDisposeStep("TWD67 selector", () -> twd67Button.setEnabled(false));
     safeDisposeStep("Address selector", () -> addressButton.setEnabled(false));
@@ -568,6 +800,23 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       addressPane.setVisibility(active == NativeEntryTab.ADDRESS ? View.VISIBLE : View.GONE);
 
       setText(taipowerInput, controller.taipowerText());
+      TaipowerEntryDraft taipowerDraft = controller.taipowerDraft();
+      TaipowerEntryDraft.SplitParts taipowerParts = taipowerDraft.splitParts();
+      setText(taipowerRegion, taipowerParts.region());
+      setText(taipowerSubregion, taipowerParts.subregion());
+      setText(taipowerSubgrid, taipowerParts.subgrid());
+      setText(taipowerPrecision, taipowerParts.precisionDigits());
+      TaipowerInputMode taipowerMode = controller.taipowerInputMode();
+      this.taipowerMode.setText(
+          safeString(
+              taipowerMode == TaipowerInputMode.SINGLE_FIELD
+                  ? R.string.native_entry_taipower_mode_split
+                  : R.string.native_entry_taipower_mode_single,
+              taipowerMode == TaipowerInputMode.SINGLE_FIELD ? "Guided fields" : "Single field"));
+      taipowerRawContainer.setVisibility(
+          taipowerMode == TaipowerInputMode.SINGLE_FIELD ? View.VISIBLE : View.GONE);
+      taipowerSplitContainer.setVisibility(
+          taipowerMode == TaipowerInputMode.SPLIT_FIELDS ? View.VISIBLE : View.GONE);
       setText(twd97Easting, controller.eastingText(CoordinateUnit.TWD97));
       setText(twd97Northing, controller.northingText(CoordinateUnit.TWD97));
       setText(twd67Easting, controller.eastingText(CoordinateUnit.TWD67));
@@ -614,11 +863,36 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
   }
 
   private void setEditable(boolean editable) {
+    if (!editable) {
+      for (EditText editor :
+          new EditText[] {
+            taipowerInput,
+            taipowerRegion,
+            taipowerSubregion,
+            taipowerSubgrid,
+            taipowerPrecision,
+            twd97Easting,
+            twd97Northing,
+            twd67Easting,
+            twd67Northing,
+            addressInput,
+            addressRoad,
+            addressTail
+          }) {
+        if (editor.hasFocus()) dismissKeyboard(editor);
+      }
+      enterKeyOwners.clear();
+    }
     taipowerButton.setEnabled(editable);
     twd97Button.setEnabled(editable);
     twd67Button.setEnabled(editable);
     addressButton.setEnabled(editable);
     taipowerInput.setEnabled(editable);
+    taipowerRegion.setEnabled(editable);
+    taipowerSubregion.setEnabled(editable);
+    taipowerSubgrid.setEnabled(editable);
+    taipowerPrecision.setEnabled(editable);
+    taipowerMode.setEnabled(!disposed);
     twd97Easting.setEnabled(editable);
     twd97Northing.setEnabled(editable);
     twd67Easting.setEnabled(editable);
@@ -683,6 +957,11 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
       return;
     }
     TaiwanEntryController.Validation validation = controller.validation();
+    if (controller.activeUnit() == CoordinateUnit.TAIPOWER && taipowerProjectionFailed) {
+      status.setText(strings.get(R.string.native_entry_taipower_projection_error));
+      status.setVisibility(View.VISIBLE);
+      return;
+    }
     if (!checked && validation != TaiwanEntryController.Validation.UNREPRESENTABLE) {
       status.setText("");
       status.setVisibility(View.GONE);
@@ -730,6 +1009,18 @@ public final class TaiwanCoordinateEntryPane implements CoordinateEntryPane {
   }
 
   private String messageFor(TaiwanEntryController.Validation validation) {
+    if (controller.activeUnit() == CoordinateUnit.TAIPOWER) {
+      TaipowerEntryDraft.ValidationDetail detail = controller.taipowerDraft().validationDetail();
+      if (detail == TaipowerEntryDraft.ValidationDetail.EW_SUBGRID_OUT_OF_RANGE) {
+        return strings.get(R.string.native_entry_taipower_error_ew_letter);
+      }
+      if (detail == TaipowerEntryDraft.ValidationDetail.NS_SUBGRID_OUT_OF_RANGE) {
+        return strings.get(R.string.native_entry_taipower_error_ns_letter);
+      }
+      if (validation == TaiwanEntryController.Validation.INCOMPLETE) {
+        return strings.get(R.string.native_entry_taipower_error_incomplete);
+      }
+    }
     switch (validation) {
       case EMPTY:
         return strings.get(R.string.native_entry_error_empty);

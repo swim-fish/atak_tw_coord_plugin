@@ -109,8 +109,9 @@ Settings 的 **Address search result order（地址搜尋結果排序）**可選
 Address 會非同步解析；台電、TWD97、TWD67 可立即使用。附近門牌只作為
 描述，外掛會保留 ATAK 提供的精確 WGS84，不會吸附到門牌資料點。
 
-Address **Auto Fill** 也遵守相同規則。**Clear** 只清除目前 Address 草稿並
-取消待處理候選。唯讀流程可顯示地址，但不能編輯或選擇候選。
+按一次 **Auto Fill** 補入全部四個 Taiwan 頁面時，Address 也遵守相同規則。
+**Clear** 只清除目前 Address 草稿並取消待處理候選。唯讀流程可顯示地址，
+但不能編輯或選擇候選。
 
 ## 疑難排解
 

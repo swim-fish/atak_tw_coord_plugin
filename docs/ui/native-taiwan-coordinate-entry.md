@@ -1,7 +1,7 @@
 # UI — Native Taiwan coordinate entry
 
 **Features**: 011-native-coordinate-entry, 012-prefill-native-tabs,
-013-native-address-entry
+013-native-address-entry, 014-native-entry-input-ux
 
 **Source**: `app/src/main/res/layout/taiwan_coordinate_entry_pane.xml` and
 `app/src/main/java/com/atakmap/android/twcoord/nativeentry/`
@@ -28,6 +28,21 @@ Open ATAK's standard coordinate-entry dialog, choose **Taiwan**, then choose
 Taipower, TWD97, TWD67, or Address. The pane remains compact enough to leave the
 ATAK-owned elevation, Auto Fill, Clear, Copy, and confirmation controls
 reachable.
+
+Every editable Taiwan field requests the inline keyboard presentation with
+fullscreen/extract mode disabled. **Next** moves only to the next visible,
+enabled plugin editor. **Done** and **Search** dismiss the keyboard without
+invoking ATAK confirmation. ATAK still owns the final action.
+
+<p align="center">
+<img src="../images/26a-native-taipower-single.png" alt="ATAK Enter Coordinate dialog showing the Taiwan Taipower single-field layout and its Guided fields action at the far right" width="900"><br>
+<sub>Single-field presentation keeps paste-friendly input on the left and names the alternate Guided fields layout at the far right; the coordinate is redacted.</sub>
+</p>
+
+<p align="center">
+<img src="../images/26b-native-taipower-split.png" alt="ATAK Enter Coordinate dialog showing four guided Taipower fields and its Single field action at the far right" width="900"><br>
+<sub>Guided presentation shows the 1/4/2/2-or-4 groups and names Single field as the return action; coordinate values are redacted.</sub>
+</p>
 
 <p align="center">
 <img src="../images/23a-native-address-full.png" alt="ATAK Enter Coordinate dialog showing Taiwan Address single-field mode with its mode action at the upper right" width="900"><br>
@@ -73,9 +88,9 @@ Fill.
 ┌────────────────────────────────────────┐
 │ [ Taipower ] [ TWD97 ] [ TWD67 ] [Address]│
 │                                        │
-│ Taipower         H7509 DB4016           │
-│                  ────────────           │
-│                  11 chars · main island │
+│ Single: H7509 DB4016    [Guided fields] │
+│ Guided: [H][7509][DB][4016] [Single field]│
+│          1    4     2    2 or 4 chars   │
 │                                        │
 │ — when TWD97 or TWD67 is selected —    │
 │ Easting          306963             m   │
@@ -102,12 +117,15 @@ before reaching ATAK-owned elevation and action controls. Its geometry mirrors
 ATAK's DD pane: compact horizontal label/input/unit rows, native underline
 inputs at `wrap_content` height, 13 sp normal / 17 sp large title text, a 2 dp
 top inset, and system/zone selectors whose outer and clickable heights both
-remain 48 dp. System-tab labels use a dedicated 12 sp normal / 15 sp large font
-to reduce visual weight without reducing the touch target. Their visual
-vertical inset is drawable-owned, so it does not enlarge the pane. Empty status
-text consumes no height. Like ATAK's built-in ADDR pane, Address entry keeps
-input content on the left and its mode/candidate actions in a top-aligned right
-column, so the mode control is not placed below the four structured rows.
+remain 48 dp. The selector track and checked fill are centered at 36 dp by 6 dp
+transparent top/bottom drawable insets; those bands remain part of each native
+`RadioButton` target. System-tab labels use a dedicated 12 sp normal / 15 sp
+large font to reduce visual weight without reducing the touch target. Empty
+status text consumes no height. Like ATAK's built-in ADDR pane, Address entry
+keeps input content on the left and its mode/candidate actions in a top-aligned
+right column, so the mode control is not placed below the four structured rows.
+Taipower uses the same 8:2 content/action structure: a single far-right action
+names the alternate layout instead of consuming a full-width segmented row.
 
 When ATAK opens the pane with a map-item or shared-dialog point, the plugin
 prepares Taipower, TWD97, and TWD67 synchronously and starts an Address reverse
@@ -120,11 +138,24 @@ point with the nearest address-record point (the **reverse no-snap rule**).
 
 ### Taipower
 
-- Enter a 9-character (10 m) or 11-character (1 m) code. Auto Fill and Copy use
-  the canonical 11-character form, for example `H7509 DB4016`.
+- **Single field** preserves exact paste/type content and accepts a
+  9-character (10 m) or 11-character (1 m) code.
+- **Guided fields** show the same draft as region letter (1), subregion digits
+  (4), east-west/north-south 100 m letters (2), and precision digits (2 or 4).
+  The first three completed groups advance focus; the two-digit final group
+  remains focused so two more digits can extend 10 m input to 1 m.
+- The far-right mode action shows **Guided fields** while single entry is
+  active and **Single field** while guided entry is active.
+- Switching layouts changes presentation only. A lossless round trip restores
+  exact raw spacing/case; an unprojectable partial remains in its current
+  layout with corrective feedback.
+- The first 100 m letter is A-H and the second is A-E. Invalid A-Z attempts
+  remain visible but expose no point.
+- Auto Fill and Copy use the canonical 11-character form, for example
+  `H7509 DB4016`.
 - Coverage is the Taiwan main island. An outer-island Auto Fill clears the old
-  draft and reports that the selected system cannot represent the supplied
-  point.
+  Taipower draft and reports that the system cannot represent the supplied
+  point while refreshing TWD97, TWD67, and Address from the same point.
 
 ### TWD97 and TWD67
 
@@ -195,22 +226,24 @@ prefix tests before review. See ADR-0027 for the authority boundary.
 
 The surrounding dialog owns its buttons and resulting action:
 
-- **Auto Fill** calls the pane with ATAK's current point and replaces the active
-  draft. It intentionally remains active-only; it is distinct from the
-  all-system preparation performed when ATAK activates the pane with a point.
+- **Auto Fill** calls the pane with ATAK's current point, atomically refreshes
+  Taipower/TWD97/TWD67, and starts Address reverse lookup from that same exact
+  WGS84 point. It retains the selected page and emits no human-change callback.
 - **Clear** supplies no point and clears only the active Taiwan draft. With
   Address active it also cancels its pending lookup/candidates.
 - **Copy** requests a canonical string without mutating the draft.
 - The dialog's action consumes horizontal WGS84 metadata. The plugin does not
   invent altitude and does not move the map during parsing or formatting.
+- Keyboard editor actions never call that dialog action.
 
 ## Read-only and additional dialogs
 
 ATAK may reuse the global pane in details or other location dialogs. When the
-host supplies `editable=false`, fields, mode/system/zone selectors, and
-candidate actions remain visible but disabled. Resolved content can still be
-read and formatted; attempted edits do not change the controller result or
-notify ATAK.
+host supplies `editable=false`, coordinate/address editors, system/zone
+selectors, and candidate actions remain visible but disabled. The Taipower and
+Address layout selectors may still switch between lossless read-only
+projections. Resolved content can be read and formatted; attempted coordinate
+edits do not change the controller result or notify ATAK.
 
 ## Localisation and lifecycle
 
@@ -220,7 +253,10 @@ replaces the pane immediately. If ATAK currently has the pane attached, refresh
 waits for detach so an active host dialog is never mutated in place.
 
 Registration failure, supported version skew, plugin unload, and stale queued
-callbacks are contained by the registrar. ATAK's built-in panes remain usable.
+callbacks are contained by the registrar. Programmatic render does not steal
+editor focus; read-only transition dismisses pane-owned input; disposal removes
+editor/mode listeners and invalidates posted focus/render work. ATAK's built-in
+panes remain usable.
 
 ## Compatibility
 

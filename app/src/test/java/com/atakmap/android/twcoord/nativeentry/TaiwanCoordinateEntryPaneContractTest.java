@@ -2,10 +2,18 @@ package com.atakmap.android.twcoord.nativeentry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.robolectric.Shadows.shadowOf;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.res.Configuration;
+import android.os.Looper;
+import android.os.SystemClock;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
@@ -28,12 +36,18 @@ import com.atakmap.android.twcoord.coord.Wgs84;
 import com.atakmap.android.twcoord.plugin.R;
 import com.atakmap.coremap.maps.coords.GeoPoint;
 import com.atakmap.coremap.maps.coords.GeoPointMetaData;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
@@ -229,7 +243,7 @@ public final class TaiwanCoordinateEntryPaneContractTest {
     pane.onActivate(GeoPointMetaData.wrap(new GeoPoint(23.9932, 121.6012)), true);
 
     EditText input = pane.getView().findViewById(R.id.native_entry_input_taipower);
-    assertThat(input.getText().toString()).matches("[A-X]\\d{4} [A-J]{2}\\d{4}");
+    assertThat(input.getText().toString()).matches("[A-X]\\d{4} [A-H][A-E]\\d{4}");
     GeoPoint resolved = pane.getGeoPointMetaData().get();
     assertThat(resolved.getLatitude()).isCloseTo(23.9932, within(0.001));
     assertThat(resolved.getLongitude()).isCloseTo(121.6012, within(0.001));
@@ -242,7 +256,7 @@ public final class TaiwanCoordinateEntryPaneContractTest {
     pane.onActivate(point, true);
 
     EditText taipower = pane.getView().findViewById(R.id.native_entry_input_taipower);
-    assertThat(taipower.getText().toString()).matches("[A-X]\\d{4} [A-J]{2}\\d{4}");
+    assertThat(taipower.getText().toString()).matches("[A-X]\\d{4} [A-H][A-E]\\d{4}");
 
     pane.getView().findViewById(R.id.native_entry_system_twd97).performClick();
     EditText twd97Easting = pane.getView().findViewById(R.id.native_entry_twd97_easting);
@@ -308,6 +322,7 @@ public final class TaiwanCoordinateEntryPaneContractTest {
 
   @Test
   public void disposedLateCallbacksAreSafeAndIdempotent() {
+    Button taipowerMode = pane.getView().findViewById(R.id.native_entry_taipower_mode);
     RadioButton twd97Zone121 = pane.getView().findViewById(R.id.native_entry_twd97_zone_121);
     RadioButton twd97Zone119 = pane.getView().findViewById(R.id.native_entry_twd97_zone_119);
     RadioButton twd67Zone121 = pane.getView().findViewById(R.id.native_entry_twd67_zone_121);
@@ -318,6 +333,7 @@ public final class TaiwanCoordinateEntryPaneContractTest {
     pane.onActivate(null, true);
     pane.autofill(null);
 
+    assertThat(taipowerMode.isEnabled()).isFalse();
     assertThat(twd97Zone121.isEnabled()).isFalse();
     assertThat(twd97Zone119.isEnabled()).isFalse();
     assertThat(twd67Zone121.isEnabled()).isFalse();
@@ -395,6 +411,82 @@ public final class TaiwanCoordinateEntryPaneContractTest {
   }
 
   @Test
+  public void oneHostAutofillRefreshesEveryTaiwanPageWithoutHumanEvents() throws Exception {
+    Context context = RuntimeEnvironment.getApplication();
+    TaiwanEntryController coordinateController =
+        new TaiwanEntryController(CoordinateUnit.TAIPOWER, ignored -> {});
+    AddressEntryController addressController =
+        new AddressEntryController(
+            new ResolvedAddressLookupService(),
+            new com.atakmap.android.twcoord.address.lookup.TaiwanAddressParser(),
+            new ImmediateDebouncer(),
+            20);
+    TaiwanCoordinateEntryPane suppliedPane =
+        new TaiwanCoordinateEntryPane(
+            context, context, coordinateController, addressController, new TaiwanEntryFormatter());
+    AtomicInteger changes = new AtomicInteger();
+    suppliedPane.setOnChangedListener(ignored -> changes.incrementAndGet());
+    suppliedPane.onActivate(GeoPointMetaData.wrap(new GeoPoint(25.033611, 121.564472)), true);
+    suppliedPane.getView().findViewById(R.id.native_entry_system_twd97).performClick();
+    changes.set(0);
+    GeoPointMetaData replacement = GeoPointMetaData.wrap(new GeoPoint(23.9932, 121.6012, 123.0));
+
+    suppliedPane.autofill(replacement);
+
+    assertThat(changes).hasValue(0);
+    assertThat(coordinateController.activeTab()).isSameAs(NativeEntryTab.TWD97);
+    for (CoordinateUnit unit : CoordinateUnit.values()) {
+      coordinateController.selectSystem(unit, false);
+      assertThat(coordinateController.validation())
+          .as(unit.toString())
+          .isSameAs(TaiwanEntryController.Validation.VALID);
+      assertThat(coordinateController.resolvedOrNull().latitudeDeg())
+          .as("%s latitude", unit)
+          .isCloseTo(23.9932, within(unit == CoordinateUnit.TAIPOWER ? 0.001 : 0.0001));
+      assertThat(coordinateController.resolvedOrNull().longitudeDeg())
+          .as("%s longitude", unit)
+          .isCloseTo(121.6012, within(unit == CoordinateUnit.TAIPOWER ? 0.001 : 0.0001));
+    }
+
+    suppliedPane.getView().findViewById(R.id.native_entry_system_address).performClick();
+    GeoPointMetaData address = suppliedPane.getGeoPointMetaData();
+    assertThat(address.get().getLatitude()).isEqualTo(23.9932);
+    assertThat(address.get().getLongitude()).isEqualTo(121.6012);
+    assertThat(address.get().isAltitudeValid()).isFalse();
+
+    changes.set(0);
+    GeoPointMetaData outerIsland = GeoPointMetaData.wrap(new GeoPoint(23.566, 119.566));
+    suppliedPane.autofill(outerIsland);
+
+    assertThat(changes).hasValue(0);
+    assertThat(coordinateController.activeTab()).isSameAs(NativeEntryTab.ADDRESS);
+    GeoPointMetaData outerAddress = suppliedPane.getGeoPointMetaData();
+    assertThat(outerAddress.get().getLatitude()).isEqualTo(23.566);
+    assertThat(outerAddress.get().getLongitude()).isEqualTo(119.566);
+    coordinateController.selectSystem(CoordinateUnit.TAIPOWER, false);
+    assertThat(coordinateController.validation())
+        .isSameAs(TaiwanEntryController.Validation.UNREPRESENTABLE);
+    for (CoordinateUnit unit : new CoordinateUnit[] {CoordinateUnit.TWD97, CoordinateUnit.TWD67}) {
+      coordinateController.selectSystem(unit, false);
+      assertThat(coordinateController.validation())
+          .as(unit.toString())
+          .isSameAs(TaiwanEntryController.Validation.VALID);
+      assertThat(coordinateController.zone(unit)).isEqualTo(119);
+    }
+    coordinateController.selectTab(NativeEntryTab.ADDRESS, false);
+    String twd97BeforeAddressClear = coordinateController.eastingText(CoordinateUnit.TWD97);
+    changes.set(0);
+
+    suppliedPane.autofill(null);
+
+    assertThat(changes).hasValue(0);
+    assertThatThrownBy(suppliedPane::getGeoPointMetaData)
+        .isInstanceOf(CoordinateEntryPane.CoordinateException.class);
+    assertThat(coordinateController.eastingText(CoordinateUnit.TWD97))
+        .isEqualTo(twd97BeforeAddressClear);
+  }
+
+  @Test
   public void returnedMetadataIsHorizontalOnlyAndDisposedControlsAreInert() throws Exception {
     AtomicInteger changes = new AtomicInteger();
     pane.setOnChangedListener(ignored -> changes.incrementAndGet());
@@ -419,19 +511,332 @@ public final class TaiwanCoordinateEntryPaneContractTest {
     pane.onActivate(point, false);
 
     EditText taipower = pane.getView().findViewById(R.id.native_entry_input_taipower);
+    Button taipowerMode = pane.getView().findViewById(R.id.native_entry_taipower_mode);
     RadioButton twd97 = pane.getView().findViewById(R.id.native_entry_system_twd97);
     String before = taipower.getText().toString();
     GeoPoint resolvedBefore = pane.getGeoPointMetaData().get();
     assertThat(taipower.isEnabled()).isFalse();
+    assertThat(taipowerMode.isEnabled()).isTrue();
     assertThat(twd97.isEnabled()).isFalse();
 
     taipower.append("1");
+    taipowerMode.performClick();
     twd97.performClick();
 
     assertThat(taipower.getText().toString()).isEqualTo(before);
+    assertThat(
+            pane.getView().findViewById(R.id.native_entry_taipower_split_container).getVisibility())
+        .isEqualTo(View.VISIBLE);
     assertThat(pane.getGeoPointMetaData().get()).isEqualTo(resolvedBefore);
-    assertThat(pane.format(point)).matches("[A-X]\\d{4} [A-J]{2}\\d{4}");
+    assertThat(pane.format(point)).matches("[A-X]\\d{4} [A-H][A-E]\\d{4}");
     assertThat(changes).hasValue(0);
+  }
+
+  @Test
+  public void taipowerUsesRightSideModeActionForExactlyTwoExclusiveLayouts() {
+    View root = pane.getView();
+    LinearLayout body = root.findViewById(R.id.native_entry_taipower_body);
+    LinearLayout content = root.findViewById(R.id.native_entry_taipower_content);
+    LinearLayout actions = root.findViewById(R.id.native_entry_taipower_actions);
+    Button mode = root.findViewById(R.id.native_entry_taipower_mode);
+    Button addressMode = root.findViewById(R.id.native_entry_address_mode);
+    View rawContainer = root.findViewById(R.id.native_entry_taipower_raw_container);
+    View splitContainer = root.findViewById(R.id.native_entry_taipower_split_container);
+
+    assertThat(body.getOrientation()).isEqualTo(LinearLayout.HORIZONTAL);
+    assertThat(mode.getParent()).isSameAs(actions);
+    assertThat(actions.getGravity()).isEqualTo(android.view.Gravity.TOP | android.view.Gravity.END);
+    assertThat(((LinearLayout.LayoutParams) content.getLayoutParams()).weight).isEqualTo(8f);
+    assertThat(((LinearLayout.LayoutParams) actions.getLayoutParams()).weight).isEqualTo(2f);
+    assertThat(mode.getLayoutParams().height).isEqualTo(addressMode.getLayoutParams().height);
+    assertThat(mode.getContentDescription()).isNotBlank();
+    assertThat(mode.getText())
+        .isEqualTo(root.getContext().getString(R.string.native_entry_taipower_mode_split));
+    assertThat(rawContainer.getVisibility()).isEqualTo(View.VISIBLE);
+    assertThat(splitContainer.getVisibility()).isEqualTo(View.GONE);
+
+    mode.performClick();
+
+    assertThat(mode.getText())
+        .isEqualTo(root.getContext().getString(R.string.native_entry_taipower_mode_single));
+    assertThat(rawContainer.getVisibility()).isEqualTo(View.GONE);
+    assertThat(splitContainer.getVisibility()).isEqualTo(View.VISIBLE);
+
+    EditText region = root.findViewById(R.id.native_entry_taipower_region);
+    EditText subregion = root.findViewById(R.id.native_entry_taipower_subregion);
+    EditText subgrid = root.findViewById(R.id.native_entry_taipower_subgrid);
+    EditText precision = root.findViewById(R.id.native_entry_taipower_precision);
+    assertEditorContract(region, 1, EditorInfo.IME_ACTION_NEXT);
+    assertEditorContract(subregion, 4, EditorInfo.IME_ACTION_NEXT);
+    assertEditorContract(subgrid, 2, EditorInfo.IME_ACTION_NEXT);
+    assertEditorContract(precision, 4, EditorInfo.IME_ACTION_DONE);
+    assertThat(region.getNextFocusForwardId()).isEqualTo(subregion.getId());
+    assertThat(subregion.getNextFocusForwardId()).isEqualTo(subgrid.getId());
+    assertThat(subgrid.getNextFocusForwardId()).isEqualTo(precision.getId());
+  }
+
+  @Test
+  public void guidedFiltersUppercaseAsciiAndRetainRangeInvalidLettersForCorrection() {
+    pane.getView().findViewById(R.id.native_entry_taipower_mode).performClick();
+    EditText region = pane.getView().findViewById(R.id.native_entry_taipower_region);
+    EditText subregion = pane.getView().findViewById(R.id.native_entry_taipower_subregion);
+    EditText subgrid = pane.getView().findViewById(R.id.native_entry_taipower_subgrid);
+    EditText precision = pane.getView().findViewById(R.id.native_entry_taipower_precision);
+
+    region.setText("hz");
+    subregion.setText("7509x");
+    subgrid.setText("ifz");
+    precision.setText("40167");
+
+    assertThat(region.getText().toString()).isEqualTo("H");
+    assertThat(subregion.getText().toString()).isEqualTo("7509");
+    assertThat(subgrid.getText().toString()).isEqualTo("IF");
+    assertThat(precision.getText().toString()).isEqualTo("4016");
+    assertThatThrownBy(pane::getGeoPointMetaData)
+        .isInstanceOf(CoordinateEntryPane.CoordinateException.class);
+    assertThat(
+            ((TextView) pane.getView().findViewById(R.id.native_entry_status)).getText().toString())
+        .isNotBlank();
+  }
+
+  @Test
+  public void invalidSubgridAttemptsStayVisibleWithPositionSpecificFeedback() {
+    View root = pane.getView();
+    EditText raw = root.findViewById(R.id.native_entry_input_taipower);
+    TextView status = root.findViewById(R.id.native_entry_status);
+    raw.setText("H7509 IB4016");
+
+    assertThatThrownBy(pane::getGeoPointMetaData)
+        .isInstanceOf(CoordinateEntryPane.CoordinateException.class);
+    assertThat(raw.getText().toString()).isEqualTo("H7509 IB4016");
+    assertThat(status.getText())
+        .isEqualTo(root.getContext().getString(R.string.native_entry_taipower_error_ew_letter));
+
+    root.findViewById(R.id.native_entry_taipower_mode).performClick();
+    EditText subgrid = root.findViewById(R.id.native_entry_taipower_subgrid);
+    subgrid.setText("AF");
+
+    assertThatThrownBy(pane::getGeoPointMetaData)
+        .isInstanceOf(CoordinateEntryPane.CoordinateException.class);
+    assertThat(subgrid.getText().toString()).isEqualTo("AF");
+    assertThat(status.getText())
+        .isEqualTo(root.getContext().getString(R.string.native_entry_taipower_error_ns_letter));
+  }
+
+  @Test
+  public void guidedFixedGroupsAutoAdvanceAndFinalTwoDigitsAcceptContinuation() {
+    pane.getView().findViewById(R.id.native_entry_taipower_mode).performClick();
+    EditText region = pane.getView().findViewById(R.id.native_entry_taipower_region);
+    EditText subregion = pane.getView().findViewById(R.id.native_entry_taipower_subregion);
+    EditText subgrid = pane.getView().findViewById(R.id.native_entry_taipower_subgrid);
+    EditText precision = pane.getView().findViewById(R.id.native_entry_taipower_precision);
+
+    region.requestFocus();
+    region.setText("H");
+    assertThat(subregion.hasFocus()).isTrue();
+    subregion.setText("7509");
+    assertThat(subgrid.hasFocus()).isTrue();
+    subgrid.setText("DB");
+    assertThat(precision.hasFocus()).isTrue();
+    precision.setText("40");
+    assertThat(precision.hasFocus()).isTrue();
+    precision.append("16");
+    assertThat(precision.getText().toString()).isEqualTo("4016");
+  }
+
+  @Test
+  public void focusedModeSwitchHandsOffLocallyAndProjectionErrorsKeepCurrentMode() {
+    View root = pane.getView();
+    EditText raw = root.findViewById(R.id.native_entry_input_taipower);
+    raw.setText("  h7509 db4016  ");
+    raw.requestFocus();
+
+    Button mode = root.findViewById(R.id.native_entry_taipower_mode);
+    mode.performClick();
+    EditText region = root.findViewById(R.id.native_entry_taipower_region);
+    assertThat(region.hasFocus()).isTrue();
+
+    mode.performClick();
+    assertThat(raw.hasFocus()).isTrue();
+    assertThat(raw.getText().toString()).isEqualTo("  h7509 db4016  ");
+
+    raw.setText("H75-09");
+    mode.performClick();
+    assertThat(mode.getText())
+        .isEqualTo(root.getContext().getString(R.string.native_entry_taipower_mode_split));
+    assertThat(root.findViewById(R.id.native_entry_taipower_raw_container).getVisibility())
+        .isEqualTo(View.VISIBLE);
+    assertThat(raw.getText().toString()).isEqualTo("H75-09");
+  }
+
+  @Test
+  public void taipowerModeAndGuidedResourceKeysExistInEverySupportedLocale() throws Exception {
+    String[] keys = {
+      "native_entry_taipower_mode_single",
+      "native_entry_taipower_mode_split",
+      "native_entry_taipower_region_hint",
+      "native_entry_taipower_subregion_hint",
+      "native_entry_taipower_subgrid_hint",
+      "native_entry_taipower_precision_hint",
+      "native_entry_taipower_projection_error",
+      "native_entry_taipower_error_ew_letter",
+      "native_entry_taipower_error_ns_letter",
+      "native_entry_a11y_taipower_mode",
+      "native_entry_a11y_taipower_region",
+      "native_entry_a11y_taipower_subregion",
+      "native_entry_a11y_taipower_subgrid",
+      "native_entry_a11y_taipower_precision"
+    };
+    for (String directory : new String[] {"values", "values-zh-rTW", "values-ja"}) {
+      Path file = projectPath("app", "src", "main", "res", directory, "strings.xml");
+      String xml = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+      for (String key : keys) {
+        assertThat(xml).as("%s/%s", directory, key).contains("<string name=\"" + key + "\">");
+      }
+    }
+  }
+
+  @Test
+  public void transparentSelectorBandsAreClickableAndNotifyExactlyOnce() {
+    View root = pane.getView();
+    Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+    activity.setContentView(root);
+    shadowOf(Looper.getMainLooper()).idle();
+    AtomicInteger changes = new AtomicInteger();
+    pane.setOnChangedListener(ignored -> changes.incrementAndGet());
+    RadioGroup systems = root.findViewById(R.id.native_entry_system_group);
+    layoutGroup(systems, dp(root.getContext(), 480));
+
+    RadioButton twd97 = root.findViewById(R.id.native_entry_system_twd97);
+    tapBand(twd97, dp(root.getContext(), 2));
+    assertThat(twd97.isChecked()).isTrue();
+    assertThat(changes).hasValue(1);
+
+    RadioGroup zones = root.findViewById(R.id.native_entry_twd97_zone_group);
+    layoutGroup(zones, dp(root.getContext(), 240));
+    RadioButton zone119 = root.findViewById(R.id.native_entry_twd97_zone_119);
+    tapBand(zone119, dp(root.getContext(), 46));
+    assertThat(zone119.isChecked()).isTrue();
+    assertThat(changes).hasValue(2);
+  }
+
+  @Test
+  public void programmaticChecksStaySilentAndReadOnlyKeepsCheckedDisabledSemantics() {
+    Context context = RuntimeEnvironment.getApplication();
+    TaiwanEntryController controller =
+        new TaiwanEntryController(CoordinateUnit.TWD67, ignored -> {});
+    TaiwanCoordinateEntryPane readOnlyPane =
+        new TaiwanCoordinateEntryPane(context, controller, new TaiwanEntryFormatter());
+    AtomicInteger changes = new AtomicInteger();
+    readOnlyPane.setOnChangedListener(ignored -> changes.incrementAndGet());
+
+    readOnlyPane.onActivate(GeoPointMetaData.wrap(new GeoPoint(23.566, 119.566)), false);
+
+    RadioButton system = readOnlyPane.getView().findViewById(R.id.native_entry_system_twd67);
+    RadioButton zone = readOnlyPane.getView().findViewById(R.id.native_entry_twd67_zone_119);
+    assertThat(system.isChecked()).isTrue();
+    assertThat(system.isEnabled()).isFalse();
+    assertThat(zone.isChecked()).isTrue();
+    assertThat(zone.isEnabled()).isFalse();
+    assertThat(changes).hasValue(0);
+  }
+
+  @Test
+  public void selectorLabelsAndAccessibilityNamesStaySingleLineAcrossLocalesAndFontScales() {
+    for (Locale locale : new Locale[] {Locale.ENGLISH, Locale.TAIWAN, Locale.JAPANESE}) {
+      for (float fontScale : new float[] {1.0f, 2.0f}) {
+        TaiwanCoordinateEntryPane localizedPane = localizedPane(locale, fontScale);
+        RadioGroup systems = localizedPane.getView().findViewById(R.id.native_entry_system_group);
+        layoutGroup(systems, dp(localizedPane.getView().getContext(), 480));
+        for (int index = 0; index < systems.getChildCount(); index++) {
+          RadioButton option = (RadioButton) systems.getChildAt(index);
+          assertThat(option.getText()).as("%s/%s", locale, fontScale).isNotBlank();
+          assertThat(option.getContentDescription()).as("%s/%s", locale, fontScale).isNotBlank();
+          assertThat(option.getMaxLines()).isEqualTo(1);
+          assertThat(option.getEllipsize()).isNull();
+          float available =
+              option.getMeasuredWidth() - option.getPaddingLeft() - option.getPaddingRight();
+          assertThat(option.getPaint().measureText(option.getText().toString()))
+              .as("%s/%s/%s", locale, fontScale, option.getText())
+              .isLessThanOrEqualTo(available);
+        }
+      }
+    }
+  }
+
+  @Test
+  public void compactSelectorsRetainOneScrollOwnerAndDoNotRetargetAddressControls() {
+    View root = pane.getView();
+    assertThat(countViews(root, ScrollView.class)).isEqualTo(1);
+    assertThat(root.findViewById(R.id.native_entry_address_county).isFocusable()).isFalse();
+    assertThat(root.findViewById(R.id.native_entry_address_district).isFocusable()).isFalse();
+    assertThat(root.findViewById(R.id.native_entry_address_county).isClickable()).isTrue();
+  }
+
+  private static TaiwanCoordinateEntryPane localizedPane(Locale locale, float fontScale) {
+    Context base = RuntimeEnvironment.getApplication();
+    Configuration configuration = new Configuration(base.getResources().getConfiguration());
+    configuration.setLocale(locale);
+    configuration.fontScale = fontScale;
+    Context localized = base.createConfigurationContext(configuration);
+    return new TaiwanCoordinateEntryPane(
+        localized,
+        new TaiwanEntryController(CoordinateUnit.TAIPOWER, ignored -> {}),
+        new TaiwanEntryFormatter());
+  }
+
+  private static void layoutGroup(RadioGroup group, int width) {
+    int height = dp(group.getContext(), 48);
+    group.measure(
+        View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+        View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+    group.layout(0, 0, group.getMeasuredWidth(), group.getMeasuredHeight());
+  }
+
+  private static void tapBand(View target, float y) {
+    int inset = dp(target.getContext(), 6);
+    assertThat(y < inset || y >= target.getHeight() - inset).isTrue();
+    assertThat(y).isBetween(0f, (float) target.getHeight());
+    float x = target.getWidth() / 2f;
+    long downTime = SystemClock.uptimeMillis();
+    MotionEvent down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0);
+    MotionEvent up = MotionEvent.obtain(downTime, downTime + 1, MotionEvent.ACTION_UP, x, y, 0);
+    try {
+      assertThat(target.dispatchTouchEvent(down)).isTrue();
+      assertThat(target.dispatchTouchEvent(up)).isTrue();
+      shadowOf(Looper.getMainLooper()).idle();
+    } finally {
+      down.recycle();
+      up.recycle();
+    }
+  }
+
+  private static int countViews(View view, Class<?> type) {
+    int count = type.isInstance(view) ? 1 : 0;
+    if (!(view instanceof ViewGroup)) return count;
+    ViewGroup group = (ViewGroup) view;
+    for (int index = 0; index < group.getChildCount(); index++) {
+      count += countViews(group.getChildAt(index), type);
+    }
+    return count;
+  }
+
+  private static void assertEditorContract(EditText editor, int maxLength, int action) {
+    editor.setText("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+    assertThat(editor.getText()).hasSize(maxLength);
+    assertThat(editor.getImeOptions() & EditorInfo.IME_MASK_ACTION).isEqualTo(action);
+    assertThat(editor.getImeOptions() & EditorInfo.IME_FLAG_NO_FULLSCREEN).isNotZero();
+    assertThat(editor.getImeOptions() & EditorInfo.IME_FLAG_NO_EXTRACT_UI).isNotZero();
+  }
+
+  private static Path projectPath(String... segments) {
+    Path current = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
+    for (int depth = 0; depth < 4 && current != null; depth++, current = current.getParent()) {
+      Path candidate = current;
+      for (String segment : segments) candidate = candidate.resolve(segment);
+      if (Files.exists(candidate)) return candidate;
+    }
+    throw new IllegalStateException("Unable to resolve project path");
   }
 
   private static org.assertj.core.data.Offset<Double> within(double value) {

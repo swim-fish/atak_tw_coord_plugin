@@ -94,15 +94,15 @@ public final class TaipowerGrid {
     double dxIn800 = dxInRegion - xHundreds * SUB_STEP_E;
     double dyIn500 = dyInRegion - yHundreds * SUB_STEP_N;
 
-    int letter5Idx = (int) Math.floor(dxIn800 / 100.0); // 0..9 (in [0, 800) → /100 → 0..7)
-    int letter6Idx = (int) Math.floor(dyIn500 / 100.0); // 0..9 (in [0, 500) → /100 → 0..4)
-    // Clamp to A..J range; pwa_map reference ranges 0..9 — values above the actual range come
-    // from points near the upper boundary that round into the next sub-region, which our floor()
-    // captures above. The clamp is belt-and-braces.
-    if (letter5Idx < 0) letter5Idx = 0;
-    if (letter5Idx > 9) letter5Idx = 9;
-    if (letter6Idx < 0) letter6Idx = 0;
-    if (letter6Idx > 9) letter6Idx = 9;
+    int letter5Idx = (int) Math.floor(dxIn800 / 100.0);
+    int letter6Idx = (int) Math.floor(dyIn500 / 100.0);
+    if (letter5Idx < 0 || letter5Idx > 7) {
+      throw new IllegalStateException("east-west hundred-metre index outside 0..7: " + letter5Idx);
+    }
+    if (letter6Idx < 0 || letter6Idx > 4) {
+      throw new IllegalStateException(
+          "north-south hundred-metre index outside 0..4: " + letter6Idx);
+    }
     char hmE = (char) ('A' + letter5Idx);
     char hmN = (char) ('A' + letter6Idx);
 
