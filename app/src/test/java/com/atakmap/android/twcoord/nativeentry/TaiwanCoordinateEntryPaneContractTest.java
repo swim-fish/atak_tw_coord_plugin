@@ -2,9 +2,14 @@ package com.atakmap.android.twcoord.nativeentry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.robolectric.Shadows.shadowOf;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.os.Looper;
+import android.os.SystemClock;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -42,6 +47,7 @@ import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
@@ -693,6 +699,9 @@ public final class TaiwanCoordinateEntryPaneContractTest {
   @Test
   public void transparentSelectorBandsAreClickableAndNotifyExactlyOnce() {
     View root = pane.getView();
+    Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+    activity.setContentView(root);
+    shadowOf(Looper.getMainLooper()).idle();
     AtomicInteger changes = new AtomicInteger();
     pane.setOnChangedListener(ignored -> changes.incrementAndGet());
     RadioGroup systems = root.findViewById(R.id.native_entry_system_group);
@@ -788,7 +797,18 @@ public final class TaiwanCoordinateEntryPaneContractTest {
     int inset = dp(target.getContext(), 6);
     assertThat(y < inset || y >= target.getHeight() - inset).isTrue();
     assertThat(y).isBetween(0f, (float) target.getHeight());
-    target.performClick();
+    float x = target.getWidth() / 2f;
+    long downTime = SystemClock.uptimeMillis();
+    MotionEvent down = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0);
+    MotionEvent up = MotionEvent.obtain(downTime, downTime + 1, MotionEvent.ACTION_UP, x, y, 0);
+    try {
+      assertThat(target.dispatchTouchEvent(down)).isTrue();
+      assertThat(target.dispatchTouchEvent(up)).isTrue();
+      shadowOf(Looper.getMainLooper()).idle();
+    } finally {
+      down.recycle();
+      up.recycle();
+    }
   }
 
   private static int countViews(View view, Class<?> type) {

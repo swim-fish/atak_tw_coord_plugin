@@ -345,13 +345,14 @@ localized accessibility context to the system and both zone selectors. The
 focused geometry and pane-contract suites passed (`BUILD SUCCESSFUL`, 14 s).
 
 Robolectric does not reliably dispatch coordinate touch events to an
-unattached weighted `RadioButton`. The automated contract therefore proves
-that each sampled top/bottom coordinate is inside the same non-overlapping
-48 dp native button but outside its 36 dp visual fill, then exercises that
-button's normal click path and exactly-once callback. Physical coordinate taps
-remain T048. The complete JVM suite, including US1-US3 and foundation
-regressions, passed after this refactor (`BUILD SUCCESSFUL`, 41 s; 30 tasks,
-3 executed and 27 up to date).
+unattached weighted `RadioButton`. The automated contract therefore attaches
+the pane to a Robolectric `Activity`, verifies that each sampled top/bottom
+coordinate is inside the same non-overlapping 48 dp native button but outside
+its 36 dp visual fill, and dispatches `MotionEvent` DOWN/UP at that exact
+coordinate before checking the selection and exactly-once callback. Physical
+repeated coordinate taps remain T048. The complete JVM suite, including
+US1-US3 and foundation regressions, passed after this refactor (`BUILD
+SUCCESSFUL`, 41 s; 30 tasks, 3 executed and 27 up to date).
 
 ## 7. Full local quality gate
 
