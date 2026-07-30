@@ -73,6 +73,29 @@ public class TaipowerGridTest {
     assertThat(formatted).isEqualTo(p.taipower11Char);
   }
 
+  @Test
+  public void provenanceAndEncoderWrapVectorsNeverEmitNoncanonicalSubgridLetters() {
+    for (Feature014TaipowerFixtures.DecodedVector vector :
+        Feature014TaipowerFixtures.PROVENANCE_VECTORS) {
+      TaipowerCode code =
+          TaipowerGrid.fromTwd67(
+              new Twd67Tm2(vector.expectedEasting(), vector.expectedNorthing()),
+              TaipowerGrid.Precision.ELEVEN_CHAR);
+      assertThat(formatElevenChar(code)).isEqualTo(vector.code());
+    }
+
+    for (Feature014TaipowerFixtures.EncodedVector vector :
+        Feature014TaipowerFixtures.ENCODER_WRAP_VECTORS) {
+      TaipowerCode code =
+          TaipowerGrid.fromTwd67(
+              new Twd67Tm2(vector.easting(), vector.northing()),
+              TaipowerGrid.Precision.ELEVEN_CHAR);
+      assertThat(formatElevenChar(code)).isEqualTo(vector.expectedCode());
+      assertThat(code.hundredMeterE()).isBetween('A', 'H');
+      assertThat(code.hundredMeterN()).isBetween('A', 'E');
+    }
+  }
+
   /** "H7509 DB4016" — 9-char prefix + 2-digit 1 m sub-cell. */
   static String formatElevenChar(TaipowerCode c) {
     return String.format(

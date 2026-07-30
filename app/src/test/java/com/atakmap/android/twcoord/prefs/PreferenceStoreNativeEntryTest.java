@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import android.content.SharedPreferences;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
+import com.atakmap.android.twcoord.nativeentry.TaipowerInputMode;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.Before;
@@ -53,6 +54,41 @@ public final class PreferenceStoreNativeEntryTest {
     verify(editor).putString(PreferenceStore.KEY_NATIVE_ENTRY_LAST_UNIT, "TWD67");
     verify(editor, never()).putString(eq(PreferenceStore.KEY_GOTO_LAST_UNIT), anyString());
     verify(editor).apply();
+  }
+
+  @Test
+  public void taipowerInputModeDefaultsAndCorruptValuesFallBackToSingleField() {
+    when(sharedPreferences.getString(
+            eq(PreferenceStore.KEY_NATIVE_ENTRY_TAIPOWER_MODE), anyString()))
+        .thenAnswer(invocation -> invocation.getArgument(1));
+    assertThat(store.getNativeEntryTaipowerMode()).isSameAs(TaipowerInputMode.SINGLE_FIELD);
+
+    when(sharedPreferences.getString(
+            eq(PreferenceStore.KEY_NATIVE_ENTRY_TAIPOWER_MODE), anyString()))
+        .thenReturn("");
+    assertThat(store.getNativeEntryTaipowerMode()).isSameAs(TaipowerInputMode.SINGLE_FIELD);
+
+    when(sharedPreferences.getString(
+            eq(PreferenceStore.KEY_NATIVE_ENTRY_TAIPOWER_MODE), anyString()))
+        .thenReturn("FUTURE_MODE");
+    assertThat(store.getNativeEntryTaipowerMode()).isSameAs(TaipowerInputMode.SINGLE_FIELD);
+  }
+
+  @Test
+  public void taipowerInputModeSavesAndReloadsOnlyItsPluginOwnedKey() {
+    store.setNativeEntryTaipowerMode(TaipowerInputMode.SPLIT_FIELDS);
+
+    verify(editor).putString(PreferenceStore.KEY_NATIVE_ENTRY_TAIPOWER_MODE, "SPLIT_FIELDS");
+    verify(editor, never()).putString(eq("coordview.formattedMGRS"), anyString());
+    verify(editor, never()).putString(eq(PreferenceStore.KEY_NATIVE_ENTRY_LAST_UNIT), anyString());
+    verify(editor, never()).putString(eq(PreferenceStore.KEY_GOTO_LAST_TAIPOWER), anyString());
+    verify(editor).apply();
+
+    when(sharedPreferences.getString(
+            eq(PreferenceStore.KEY_NATIVE_ENTRY_TAIPOWER_MODE), anyString()))
+        .thenReturn("SPLIT_FIELDS");
+    assertThat(new PreferenceStore(sharedPreferences).getNativeEntryTaipowerMode())
+        .isSameAs(TaipowerInputMode.SPLIT_FIELDS);
   }
 
   @Test

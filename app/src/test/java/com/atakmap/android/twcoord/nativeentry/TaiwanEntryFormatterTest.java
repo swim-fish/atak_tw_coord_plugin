@@ -14,7 +14,7 @@ public final class TaiwanEntryFormatterTest {
   public void taipower_isCanonicalElevenCharacterOneMetreOutput() {
     String value = formatter.format(point(23.9932, 121.6012), CoordinateUnit.TAIPOWER);
 
-    assertThat(value).matches("[A-X]\\d{4} [A-J]{2}\\d{4}");
+    assertThat(value).matches("[A-X]\\d{4} [A-H][A-E]\\d{4}");
   }
 
   @Test

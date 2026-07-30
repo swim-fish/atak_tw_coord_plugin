@@ -29,11 +29,14 @@ public final class TaiwanEntryController {
   }
 
   private final Consumer<CoordinateUnit> selectionWriter;
+  private final Consumer<TaipowerInputMode> taipowerModeWriter;
   private final CoordinateParser parser = new CoordinateParser();
   private final BiFunction<Wgs84, CoordinateUnit, ConversionResult> converter;
 
   private CoordinateUnit activeUnit;
   private NativeEntryTab activeTab;
+  private TaipowerInputMode taipowerInputMode;
+  private TaipowerEntryDraft taipowerDraft;
   private EnumMap<CoordinateUnit, Draft> drafts;
   private Runnable onHumanChange;
   private boolean editable = true;
@@ -41,17 +44,48 @@ public final class TaiwanEntryController {
 
   public TaiwanEntryController(
       CoordinateUnit initialUnit, Consumer<CoordinateUnit> selectionWriter) {
-    this(initialUnit, selectionWriter, new CoordinateConverter()::convert);
+    this(
+        initialUnit,
+        selectionWriter,
+        new CoordinateConverter()::convert,
+        TaipowerInputMode.SINGLE_FIELD,
+        ignored -> {});
+  }
+
+  public TaiwanEntryController(
+      CoordinateUnit initialUnit,
+      Consumer<CoordinateUnit> selectionWriter,
+      TaipowerInputMode initialTaipowerMode,
+      Consumer<TaipowerInputMode> taipowerModeWriter) {
+    this(
+        initialUnit,
+        selectionWriter,
+        new CoordinateConverter()::convert,
+        initialTaipowerMode,
+        taipowerModeWriter);
   }
 
   TaiwanEntryController(
       CoordinateUnit initialUnit,
       Consumer<CoordinateUnit> selectionWriter,
       BiFunction<Wgs84, CoordinateUnit, ConversionResult> converter) {
+    this(initialUnit, selectionWriter, converter, TaipowerInputMode.SINGLE_FIELD, ignored -> {});
+  }
+
+  private TaiwanEntryController(
+      CoordinateUnit initialUnit,
+      Consumer<CoordinateUnit> selectionWriter,
+      BiFunction<Wgs84, CoordinateUnit, ConversionResult> converter,
+      TaipowerInputMode initialTaipowerMode,
+      Consumer<TaipowerInputMode> taipowerModeWriter) {
     activeUnit = initialUnit == null ? CoordinateUnit.TAIPOWER : initialUnit;
     activeTab = NativeEntryTab.fromCoordinateUnit(activeUnit);
     this.selectionWriter = Objects.requireNonNull(selectionWriter, "selectionWriter");
     this.converter = Objects.requireNonNull(converter, "converter");
+    taipowerInputMode =
+        initialTaipowerMode == null ? TaipowerInputMode.SINGLE_FIELD : initialTaipowerMode;
+    this.taipowerModeWriter = Objects.requireNonNull(taipowerModeWriter, "taipowerModeWriter");
+    taipowerDraft = TaipowerEntryDraft.empty();
     drafts = emptyDrafts(Validation.EMPTY);
   }
 
@@ -64,11 +98,22 @@ public final class TaiwanEntryController {
   }
 
   public Validation validation() {
-    return disposed ? Validation.DISPOSED : activeDraft().validation;
+    if (disposed) return Validation.DISPOSED;
+    return activeUnit == CoordinateUnit.TAIPOWER
+        ? taipowerDraft.validation()
+        : activeDraft().validation;
   }
 
   public String taipowerText() {
-    return draft(CoordinateUnit.TAIPOWER).taipowerText;
+    return taipowerDraft.rawText();
+  }
+
+  public TaipowerEntryDraft taipowerDraft() {
+    return taipowerDraft;
+  }
+
+  public TaipowerInputMode taipowerInputMode() {
+    return taipowerInputMode;
   }
 
   public String eastingText(CoordinateUnit unit) {
@@ -87,7 +132,10 @@ public final class TaiwanEntryController {
   }
 
   public Wgs84 resolvedOrNull() {
-    return disposed ? null : activeDraft().resolved;
+    if (disposed) return null;
+    return activeUnit == CoordinateUnit.TAIPOWER
+        ? taipowerDraft.resolvedOrNull()
+        : activeDraft().resolved;
   }
 
   public boolean isEditable() {
@@ -123,10 +171,35 @@ public final class TaiwanEntryController {
 
   public void setTaipowerText(String text, boolean human) {
     if (!acceptEdit(human)) return;
-    Draft draft = draft(CoordinateUnit.TAIPOWER);
-    draft.taipowerText = safeText(text);
-    validateDraft(CoordinateUnit.TAIPOWER, draft);
-    if (human) notifyHumanChange();
+    replaceTaipowerDraft(taipowerDraft.editRaw(safeText(text)), human);
+  }
+
+  public void setTaipowerRegion(String text, boolean human) {
+    if (!acceptEdit(human)) return;
+    replaceTaipowerDraft(taipowerDraft.editRegion(text), human);
+  }
+
+  public void setTaipowerSubregion(String text, boolean human) {
+    if (!acceptEdit(human)) return;
+    replaceTaipowerDraft(taipowerDraft.editSubregion(text), human);
+  }
+
+  public void setTaipowerSubgrid(String text, boolean human) {
+    if (!acceptEdit(human)) return;
+    replaceTaipowerDraft(taipowerDraft.editSubgrid(text), human);
+  }
+
+  public void setTaipowerPrecisionDigits(String text, boolean human) {
+    if (!acceptEdit(human)) return;
+    replaceTaipowerDraft(taipowerDraft.editPrecisionDigits(text), human);
+  }
+
+  public boolean selectTaipowerInputMode(TaipowerInputMode mode, boolean human) {
+    if (disposed || mode == null || !taipowerDraft.canProject(mode)) return false;
+    if (mode == taipowerInputMode) return true;
+    taipowerInputMode = mode;
+    if (human) taipowerModeWriter.accept(mode);
+    return true;
   }
 
   public void setTwdEasting(CoordinateUnit unit, String text, boolean human) {
@@ -169,6 +242,7 @@ public final class TaiwanEntryController {
   void invalidateActivation(boolean editable) {
     if (disposed) return;
     this.editable = editable;
+    taipowerDraft = TaipowerEntryDraft.unavailable();
     drafts = emptyDrafts(Validation.UNREPRESENTABLE);
   }
 
@@ -178,22 +252,15 @@ public final class TaiwanEntryController {
       clear();
       return;
     }
-    try {
-      Draft previous = activeDraft();
-      Draft replacement = draftFromHost(point, activeUnit);
-      preserveZoneWhenUnavailable(activeUnit, previous, replacement);
-      drafts.put(activeUnit, replacement);
-    } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
-      Draft previous = activeDraft();
-      Draft replacement = Draft.empty(activeUnit, Validation.UNREPRESENTABLE);
-      preserveZoneWhenUnavailable(activeUnit, previous, replacement);
-      drafts.put(activeUnit, replacement);
-      throw e;
-    }
+    populateAllFromHost(point, true);
   }
 
   public void clear() {
     if (disposed) return;
+    if (activeUnit == CoordinateUnit.TAIPOWER) {
+      taipowerDraft = TaipowerEntryDraft.empty();
+      return;
+    }
     Draft previous = activeDraft();
     Draft replacement = Draft.empty(activeUnit, Validation.EMPTY);
     preserveTwdZone(activeUnit, previous, replacement);
@@ -208,6 +275,7 @@ public final class TaiwanEntryController {
   public void dispose() {
     if (disposed) return;
     disposed = true;
+    taipowerDraft = TaipowerEntryDraft.disposed();
     drafts = emptyDrafts(Validation.DISPOSED);
     onHumanChange = null;
   }
@@ -217,28 +285,47 @@ public final class TaiwanEntryController {
   }
 
   private void populateAllFromHost(Wgs84 point) {
+    populateAllFromHost(point, false);
+  }
+
+  private void populateAllFromHost(Wgs84 point, boolean preserveUnavailableZones) {
     EnumMap<CoordinateUnit, Draft> staged = new EnumMap<>(CoordinateUnit.class);
     try {
-      for (CoordinateUnit unit : CoordinateUnit.values()) {
-        staged.put(unit, draftFromHost(point, unit));
+      TaipowerEntryDraft stagedTaipower = taipowerDraftFromHost(point);
+      for (CoordinateUnit unit :
+          new CoordinateUnit[] {CoordinateUnit.TWD97, CoordinateUnit.TWD67}) {
+        Draft replacement = draftFromHost(point, unit);
+        if (preserveUnavailableZones) {
+          preserveZoneWhenUnavailable(unit, draft(unit), replacement);
+        }
+        staged.put(unit, replacement);
       }
+      drafts = staged;
+      taipowerDraft = stagedTaipower;
     } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
+      taipowerDraft = TaipowerEntryDraft.unavailable();
       drafts = emptyDrafts(Validation.UNREPRESENTABLE);
       throw e;
     }
-    drafts = staged;
+  }
+
+  private TaipowerEntryDraft taipowerDraftFromHost(Wgs84 point) {
+    ConversionResult result = converter.apply(point, CoordinateUnit.TAIPOWER);
+    if (!result.isOk()) return TaipowerEntryDraft.unavailable();
+    String formatted =
+        TaiwanEntryFormatter.formatTaipower(
+            (TaipowerCode) ((ConversionResult.Ok<?>) result).value());
+    return TaipowerEntryDraft.empty().editRaw(formatted);
   }
 
   private Draft draftFromHost(Wgs84 point, CoordinateUnit unit) {
+    requireTwd(unit);
     ConversionResult result = converter.apply(point, unit);
     if (!result.isOk()) return Draft.empty(unit, Validation.UNREPRESENTABLE);
 
     Draft draft = Draft.empty(unit, Validation.EMPTY);
     Object value = ((ConversionResult.Ok<?>) result).value();
     switch (unit) {
-      case TAIPOWER:
-        draft.taipowerText = TaiwanEntryFormatter.formatTaipower((TaipowerCode) value);
-        break;
       case TWD97:
         Twd97Tm2 t97 = (Twd97Tm2) value;
         draft.eastingText = Long.toString(Math.round(t97.eastingMetres()));
@@ -273,19 +360,7 @@ public final class TaiwanEntryController {
 
   private void validateDraft(CoordinateUnit unit, Draft draft) {
     draft.resolved = null;
-    if (unit == CoordinateUnit.TAIPOWER) {
-      validateTaipower(draft);
-    } else {
-      validateTwd(unit, draft);
-    }
-  }
-
-  private void validateTaipower(Draft draft) {
-    if (draft.taipowerText.trim().isEmpty()) {
-      draft.validation = Validation.EMPTY;
-      return;
-    }
-    mapParseResult(draft, parser.parseTaipower(draft.taipowerText));
+    validateTwd(unit, draft);
   }
 
   private void validateTwd(CoordinateUnit unit, Draft draft) {
@@ -339,6 +414,9 @@ public final class TaiwanEntryController {
   }
 
   private Draft activeDraft() {
+    if (activeUnit == CoordinateUnit.TAIPOWER) {
+      throw new IllegalStateException("Taipower uses TaipowerEntryDraft");
+    }
     return draft(activeUnit);
   }
 
@@ -378,8 +456,13 @@ public final class TaiwanEntryController {
     if (listener != null) listener.run();
   }
 
+  private void replaceTaipowerDraft(TaipowerEntryDraft replacement, boolean human) {
+    if (replacement == taipowerDraft) return;
+    taipowerDraft = replacement;
+    if (human) notifyHumanChange();
+  }
+
   private static final class Draft {
-    String taipowerText = "";
     String eastingText = "";
     String northingText = "";
     int zone = 121;

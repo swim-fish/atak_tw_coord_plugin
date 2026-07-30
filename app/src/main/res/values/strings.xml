@@ -241,6 +241,20 @@
     <string name="native_entry_a11y_address_tail">Address lane, number, floor, and remaining text</string>
     <string name="native_entry_a11y_address_mode">Switch address input mode</string>
     <string name="native_entry_a11y_address_choose">Choose an address candidate</string>
+    <string name="native_entry_taipower_mode_single">Single field</string>
+    <string name="native_entry_taipower_mode_split">Guided fields</string>
+    <string name="native_entry_taipower_region_label">Region letter</string>
+    <string name="native_entry_taipower_region_hint">A</string>
+    <string name="native_entry_taipower_subregion_label">Grid digits</string>
+    <string name="native_entry_taipower_subregion_hint">0000</string>
+    <string name="native_entry_taipower_subgrid_label">100 m letters</string>
+    <string name="native_entry_taipower_subgrid_hint">AA</string>
+    <string name="native_entry_taipower_precision_label">Precision digits</string>
+    <string name="native_entry_taipower_precision_hint">00 / 0000</string>
+    <string name="native_entry_taipower_projection_error">The current value cannot be shown in the other layout.</string>
+    <string name="native_entry_taipower_error_incomplete">Complete the Taipower grid groups.</string>
+    <string name="native_entry_taipower_error_ew_letter">The first 100 m letter must be A-H.</string>
+    <string name="native_entry_taipower_error_ns_letter">The second 100 m letter must be A-E.</string>
     <string name="native_entry_taipower_hint">e.g. B8146CC1454</string>
     <string name="native_entry_taipower_help">Enter a 9- or 11-character Taipower grid code.</string>
     <string name="native_entry_easting">Easting</string>
@@ -260,13 +274,26 @@
     <string name="native_entry_error_disposed">Taiwan coordinate entry is no longer available.</string>
     <string name="native_entry_read_only">Read only</string>
     <string name="native_entry_a11y_system_selector">Taiwan coordinate system</string>
+    <string name="native_entry_a11y_system_taipower">Taipower coordinate system</string>
+    <string name="native_entry_a11y_system_twd97">TWD97 coordinate system</string>
+    <string name="native_entry_a11y_system_twd67">TWD67 coordinate system</string>
+    <string name="native_entry_a11y_system_address">Taiwan address search</string>
+    <string name="native_entry_a11y_taipower_mode">Taipower input layout</string>
     <string name="native_entry_a11y_taipower_input">Taipower grid code</string>
+    <string name="native_entry_a11y_taipower_region">Taipower region letter</string>
+    <string name="native_entry_a11y_taipower_subregion">Taipower four grid digits</string>
+    <string name="native_entry_a11y_taipower_subgrid">Taipower east-west and north-south 100 metre letters</string>
+    <string name="native_entry_a11y_taipower_precision">Taipower two or four precision digits</string>
     <string name="native_entry_a11y_twd97_easting">TWD97 easting in metres</string>
     <string name="native_entry_a11y_twd97_northing">TWD97 northing in metres</string>
     <string name="native_entry_a11y_twd97_zone">TWD97 TM2 zone</string>
+    <string name="native_entry_a11y_twd97_zone_121">TWD97 TM2 zone 121</string>
+    <string name="native_entry_a11y_twd97_zone_119">TWD97 TM2 zone 119</string>
     <string name="native_entry_a11y_twd67_easting">TWD67 easting in metres</string>
     <string name="native_entry_a11y_twd67_northing">TWD67 northing in metres</string>
     <string name="native_entry_a11y_twd67_zone">TWD67 TM2 zone</string>
+    <string name="native_entry_a11y_twd67_zone_121">TWD67 TM2 zone 121</string>
+    <string name="native_entry_a11y_twd67_zone_119">TWD67 TM2 zone 119</string>
     <string name="native_entry_a11y_status">Taiwan coordinate validation status</string>
 
 </resources>

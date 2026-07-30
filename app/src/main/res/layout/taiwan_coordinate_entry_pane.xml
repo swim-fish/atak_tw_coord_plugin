@@ -16,12 +16,14 @@
         <RadioGroup
             android:id="@+id/native_entry_system_group"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="@dimen/native_entry_selector_touch_height"
             android:background="@drawable/native_entry_segment_track"
             android:contentDescription="@string/native_entry_a11y_system_selector"
             android:orientation="horizontal"
             android:paddingStart="2dp"
-            android:paddingEnd="2dp">
+            android:paddingTop="0dp"
+            android:paddingEnd="2dp"
+            android:paddingBottom="0dp">
 
             <RadioButton
                 android:id="@+id/native_entry_system_taipower"
@@ -31,7 +33,9 @@
                 android:background="@drawable/native_entry_segment_option"
                 android:button="@null"
                 android:checked="true"
+                android:contentDescription="@string/native_entry_a11y_system_taipower"
                 android:gravity="center"
+                android:maxLines="1"
                 android:text="@string/native_entry_system_taipower"
                 android:textColor="@color/native_entry_segment_text"
                 android:textSize="@dimen/native_entry_tab_font" />
@@ -43,8 +47,10 @@
                 android:layout_weight="1"
                 android:background="@drawable/native_entry_segment_option"
                 android:button="@null"
+                android:contentDescription="@string/native_entry_a11y_system_twd97"
                 android:enabled="true"
                 android:gravity="center"
+                android:maxLines="1"
                 android:text="@string/native_entry_system_twd97"
                 android:textColor="@color/native_entry_segment_text"
                 android:textSize="@dimen/native_entry_tab_font" />
@@ -56,8 +62,10 @@
                 android:layout_weight="1"
                 android:background="@drawable/native_entry_segment_option"
                 android:button="@null"
+                android:contentDescription="@string/native_entry_a11y_system_twd67"
                 android:enabled="true"
                 android:gravity="center"
+                android:maxLines="1"
                 android:text="@string/native_entry_system_twd67"
                 android:textColor="@color/native_entry_segment_text"
                 android:textSize="@dimen/native_entry_tab_font" />
@@ -69,7 +77,9 @@
                 android:layout_weight="1"
                 android:background="@drawable/native_entry_segment_option"
                 android:button="@null"
+                android:contentDescription="@string/native_entry_a11y_system_address"
                 android:gravity="center"
+                android:maxLines="1"
                 android:text="@string/native_entry_system_address"
                 android:textColor="@color/native_entry_segment_text"
                 android:textSize="@dimen/native_entry_tab_font" />
@@ -82,58 +92,187 @@
             android:orientation="vertical">
 
             <LinearLayout
-                android:id="@+id/native_entry_taipower_row"
+                android:id="@+id/native_entry_taipower_body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
+                android:gravity="top"
                 android:orientation="horizontal"
                 android:weightSum="10">
 
-                <TextView
+                <LinearLayout
+                    android:id="@+id/native_entry_taipower_content"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="3"
-                    android:gravity="center"
-                    android:labelFor="@id/native_entry_input_taipower"
-                    android:text="@string/native_entry_system_taipower"
-                    android:textColor="#FFFFFFFF"
-                    android:textSize="@dimen/native_entry_title_font" />
+                    android:layout_weight="8"
+                    android:orientation="vertical">
 
-                <EditText
-                    android:id="@+id/native_entry_input_taipower"
+                    <LinearLayout
+                        android:id="@+id/native_entry_taipower_raw_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:id="@+id/native_entry_taipower_row"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:weightSum="10">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="3"
+                                android:gravity="center"
+                                android:labelFor="@id/native_entry_input_taipower"
+                                android:text="@string/native_entry_system_taipower"
+                                android:textColor="#FFFFFFFF"
+                                android:textSize="@dimen/native_entry_title_font" />
+
+                            <EditText
+                                android:id="@+id/native_entry_input_taipower"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="7"
+                                android:autofillHints=""
+                                android:contentDescription="@string/native_entry_a11y_taipower_input"
+                                android:hint="@string/native_entry_taipower_hint"
+                                android:imeOptions="actionDone|flagNoExtractUi|flagNoFullscreen|flagForceAscii"
+                                android:inputType="textCapCharacters|textNoSuggestions"
+                                android:maxLines="1"
+                                android:singleLine="true"
+                                android:textColor="#FFFFFFFF"
+                                android:textColorHint="#99FFFFFF"
+                                android:textSize="@dimen/native_entry_title_font" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:weightSum="10">
+
+                            <Space
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_weight="3" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="7"
+                                android:text="@string/native_entry_taipower_help"
+                                android:textColor="#B3FFFFFF"
+                                android:textSize="@dimen/native_entry_help_font" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/native_entry_taipower_split_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:visibility="gone"
+                        android:weightSum="11">
+
+                        <EditText
+                            android:id="@+id/native_entry_taipower_region"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.5"
+                            android:autofillHints=""
+                            android:contentDescription="@string/native_entry_a11y_taipower_region"
+                            android:digits="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                            android:hint="@string/native_entry_taipower_region_hint"
+                            android:imeOptions="actionNext|flagNoExtractUi|flagNoFullscreen|flagForceAscii"
+                            android:inputType="textCapCharacters|textNoSuggestions"
+                            android:maxLength="1"
+                            android:maxLines="1"
+                            android:nextFocusDown="@id/native_entry_taipower_subregion"
+                            android:nextFocusForward="@id/native_entry_taipower_subregion"
+                            android:singleLine="true"
+                            android:textColor="#FFFFFFFF"
+                            android:textColorHint="#99FFFFFF"
+                            android:textSize="@dimen/native_entry_title_font" />
+
+                        <EditText
+                            android:id="@+id/native_entry_taipower_subregion"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="3"
+                            android:autofillHints=""
+                            android:contentDescription="@string/native_entry_a11y_taipower_subregion"
+                            android:hint="@string/native_entry_taipower_subregion_hint"
+                            android:imeOptions="actionNext|flagNoExtractUi|flagNoFullscreen"
+                            android:inputType="number"
+                            android:maxLength="4"
+                            android:maxLines="1"
+                            android:nextFocusDown="@id/native_entry_taipower_subgrid"
+                            android:nextFocusForward="@id/native_entry_taipower_subgrid"
+                            android:singleLine="true"
+                            android:textColor="#FFFFFFFF"
+                            android:textColorHint="#99FFFFFF"
+                            android:textSize="@dimen/native_entry_title_font" />
+
+                        <EditText
+                            android:id="@+id/native_entry_taipower_subgrid"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="2"
+                            android:autofillHints=""
+                            android:contentDescription="@string/native_entry_a11y_taipower_subgrid"
+                            android:digits="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                            android:hint="@string/native_entry_taipower_subgrid_hint"
+                            android:imeOptions="actionNext|flagNoExtractUi|flagNoFullscreen|flagForceAscii"
+                            android:inputType="textCapCharacters|textNoSuggestions"
+                            android:maxLength="2"
+                            android:maxLines="1"
+                            android:nextFocusDown="@id/native_entry_taipower_precision"
+                            android:nextFocusForward="@id/native_entry_taipower_precision"
+                            android:singleLine="true"
+                            android:textColor="#FFFFFFFF"
+                            android:textColorHint="#99FFFFFF"
+                            android:textSize="@dimen/native_entry_title_font" />
+
+                        <EditText
+                            android:id="@+id/native_entry_taipower_precision"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="4.5"
+                            android:autofillHints=""
+                            android:contentDescription="@string/native_entry_a11y_taipower_precision"
+                            android:hint="@string/native_entry_taipower_precision_hint"
+                            android:imeOptions="actionDone|flagNoExtractUi|flagNoFullscreen"
+                            android:inputType="number"
+                            android:maxLength="4"
+                            android:maxLines="1"
+                            android:singleLine="true"
+                            android:textColor="#FFFFFFFF"
+                            android:textColorHint="#99FFFFFF"
+                            android:textSize="@dimen/native_entry_title_font" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/native_entry_taipower_actions"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="7"
-                    android:autofillHints=""
-                    android:contentDescription="@string/native_entry_a11y_taipower_input"
-                    android:hint="@string/native_entry_taipower_hint"
-                    android:imeOptions="actionDone"
-                    android:inputType="textCapCharacters|textNoSuggestions"
-                    android:maxLines="1"
-                    android:singleLine="true"
-                    android:textColor="#FFFFFFFF"
-                    android:textColorHint="#99FFFFFF"
-                    android:textSize="@dimen/native_entry_title_font" />
-            </LinearLayout>
+                    android:layout_weight="2"
+                    android:gravity="top|end"
+                    android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:weightSum="10">
-
-                <Space
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="3" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="7"
-                    android:text="@string/native_entry_taipower_help"
-                    android:textColor="#B3FFFFFF"
-                    android:textSize="@dimen/native_entry_help_font" />
+                    <Button
+                        android:id="@+id/native_entry_taipower_mode"
+                        style="?android:attr/borderlessButtonStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/native_entry_control_min_size"
+                        android:contentDescription="@string/native_entry_a11y_taipower_mode"
+                        android:minHeight="@dimen/native_entry_control_min_size"
+                        android:text="@string/native_entry_taipower_mode_split"
+                        android:textAllCaps="false"
+                        android:textColor="@color/native_entry_action_text" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
@@ -168,8 +307,11 @@
                     android:layout_weight="6.5"
                     android:autofillHints=""
                     android:contentDescription="@string/native_entry_a11y_twd97_easting"
+                    android:imeOptions="actionNext|flagNoExtractUi|flagNoFullscreen"
                     android:inputType="number"
                     android:maxLines="1"
+                    android:nextFocusDown="@id/native_entry_twd97_northing"
+                    android:nextFocusForward="@id/native_entry_twd97_northing"
                     android:singleLine="true"
                     android:textColor="#FFFFFFFF"
                     android:textSize="@dimen/native_entry_title_font" />
@@ -207,6 +349,7 @@
                     android:layout_weight="6.5"
                     android:autofillHints=""
                     android:contentDescription="@string/native_entry_a11y_twd97_northing"
+                    android:imeOptions="actionDone|flagNoExtractUi|flagNoFullscreen"
                     android:inputType="number"
                     android:maxLines="1"
                     android:singleLine="true"
@@ -241,13 +384,15 @@
                 <RadioGroup
                     android:id="@+id/native_entry_twd97_zone_group"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
+                    android:layout_height="@dimen/native_entry_selector_touch_height"
                     android:layout_weight="7"
                     android:background="@drawable/native_entry_segment_track"
                     android:contentDescription="@string/native_entry_a11y_twd97_zone"
                     android:orientation="horizontal"
                     android:paddingStart="2dp"
-                    android:paddingEnd="2dp">
+                    android:paddingTop="0dp"
+                    android:paddingEnd="2dp"
+                    android:paddingBottom="0dp">
 
                     <RadioButton
                         android:id="@+id/native_entry_twd97_zone_121"
@@ -257,7 +402,9 @@
                         android:background="@drawable/native_entry_segment_option"
                         android:button="@null"
                         android:checked="true"
+                        android:contentDescription="@string/native_entry_a11y_twd97_zone_121"
                         android:gravity="center"
+                        android:maxLines="1"
                         android:text="@string/native_entry_zone_121"
                         android:textColor="@color/native_entry_segment_text"
                         android:textSize="@dimen/native_entry_title_font" />
@@ -269,7 +416,9 @@
                         android:layout_weight="1"
                         android:background="@drawable/native_entry_segment_option"
                         android:button="@null"
+                        android:contentDescription="@string/native_entry_a11y_twd97_zone_119"
                         android:gravity="center"
+                        android:maxLines="1"
                         android:text="@string/native_entry_zone_119"
                         android:textColor="@color/native_entry_segment_text"
                         android:textSize="@dimen/native_entry_title_font" />
@@ -308,8 +457,11 @@
                     android:layout_weight="6.5"
                     android:autofillHints=""
                     android:contentDescription="@string/native_entry_a11y_twd67_easting"
+                    android:imeOptions="actionNext|flagNoExtractUi|flagNoFullscreen"
                     android:inputType="number"
                     android:maxLines="1"
+                    android:nextFocusDown="@id/native_entry_twd67_northing"
+                    android:nextFocusForward="@id/native_entry_twd67_northing"
                     android:singleLine="true"
                     android:textColor="#FFFFFFFF"
                     android:textSize="@dimen/native_entry_title_font" />
@@ -347,6 +499,7 @@
                     android:layout_weight="6.5"
                     android:autofillHints=""
                     android:contentDescription="@string/native_entry_a11y_twd67_northing"
+                    android:imeOptions="actionDone|flagNoExtractUi|flagNoFullscreen"
                     android:inputType="number"
                     android:maxLines="1"
                     android:singleLine="true"
@@ -381,13 +534,15 @@
                 <RadioGroup
                     android:id="@+id/native_entry_twd67_zone_group"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
+                    android:layout_height="@dimen/native_entry_selector_touch_height"
                     android:layout_weight="7"
                     android:background="@drawable/native_entry_segment_track"
                     android:contentDescription="@string/native_entry_a11y_twd67_zone"
                     android:orientation="horizontal"
                     android:paddingStart="2dp"
-                    android:paddingEnd="2dp">
+                    android:paddingTop="0dp"
+                    android:paddingEnd="2dp"
+                    android:paddingBottom="0dp">
 
                     <RadioButton
                         android:id="@+id/native_entry_twd67_zone_121"
@@ -397,7 +552,9 @@
                         android:background="@drawable/native_entry_segment_option"
                         android:button="@null"
                         android:checked="true"
+                        android:contentDescription="@string/native_entry_a11y_twd67_zone_121"
                         android:gravity="center"
+                        android:maxLines="1"
                         android:text="@string/native_entry_zone_121"
                         android:textColor="@color/native_entry_segment_text"
                         android:textSize="@dimen/native_entry_title_font" />
@@ -409,7 +566,9 @@
                         android:layout_weight="1"
                         android:background="@drawable/native_entry_segment_option"
                         android:button="@null"
+                        android:contentDescription="@string/native_entry_a11y_twd67_zone_119"
                         android:gravity="center"
+                        android:maxLines="1"
                         android:text="@string/native_entry_zone_119"
                         android:textColor="@color/native_entry_segment_text"
                         android:textSize="@dimen/native_entry_title_font" />
@@ -489,7 +648,7 @@
                     android:autofillHints="postalAddress"
                     android:contentDescription="@string/native_entry_a11y_address_full"
                     android:hint="@string/native_entry_address_full_hint"
-                    android:imeOptions="actionSearch"
+                    android:imeOptions="actionSearch|flagNoExtractUi|flagNoFullscreen"
                     android:inputType="textPostalAddress|textNoSuggestions"
                     android:maxLines="1"
                     android:singleLine="true"
@@ -605,8 +764,11 @@
                         android:autofillHints="postalAddress"
                         android:contentDescription="@string/native_entry_a11y_address_road"
                         android:hint="@string/native_entry_address_road_hint"
+                        android:imeOptions="actionNext|flagNoExtractUi|flagNoFullscreen"
                         android:inputType="textPostalAddress|textNoSuggestions"
                         android:maxLines="1"
+                        android:nextFocusDown="@id/native_entry_address_tail"
+                        android:nextFocusForward="@id/native_entry_address_tail"
                         android:singleLine="true"
                         android:textColor="#FFFFFFFF"
                         android:textColorHint="#99FFFFFF"
@@ -639,7 +801,7 @@
                         android:autofillHints="postalAddress"
                         android:contentDescription="@string/native_entry_a11y_address_tail"
                         android:hint="@string/native_entry_address_tail_hint"
-                        android:imeOptions="actionSearch"
+                        android:imeOptions="actionSearch|flagNoExtractUi|flagNoFullscreen"
                         android:inputType="textPostalAddress|textNoSuggestions"
                         android:maxLines="1"
                         android:singleLine="true"

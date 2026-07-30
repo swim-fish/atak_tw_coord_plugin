@@ -9,6 +9,12 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import android.content.Context;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import com.atakmap.android.gui.coordinateentry.CoordinateEntryPane;
 import com.atakmap.android.twcoord.coord.CoordinateConverter;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
@@ -20,15 +26,98 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowInputMethodManager;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, packageName = "com.atakmap.android.twcoord.plugin")
 public final class TaiwanCoordinateEntryPaneSafetyTest {
+
+  @Test
+  public void nextMovesToTheVisibleEnabledPluginEditor() {
+    TaiwanCoordinateEntryPane pane = realPane();
+    View root = pane.getView();
+    root.findViewById(R.id.native_entry_system_twd97).performClick();
+    EditText easting = root.findViewById(R.id.native_entry_twd97_easting);
+    EditText northing = root.findViewById(R.id.native_entry_twd97_northing);
+    easting.requestFocus();
+
+    easting.onEditorAction(EditorInfo.IME_ACTION_NEXT);
+
+    assertThat(northing.hasFocus()).isTrue();
+    assertThat(easting.hasFocus()).isFalse();
+  }
+
+  @Test
+  public void doneAndSearchDismissKeyboardWithoutSubmittingToHost() {
+    TaiwanCoordinateEntryPane pane = realPane();
+    AtomicInteger changes = new AtomicInteger();
+    pane.setOnChangedListener(ignored -> changes.incrementAndGet());
+    EditText taipower = pane.getView().findViewById(R.id.native_entry_input_taipower);
+    taipower.requestFocus();
+    InputMethodManager inputMethodManager =
+        (InputMethodManager)
+            RuntimeEnvironment.getApplication().getSystemService(Context.INPUT_METHOD_SERVICE);
+    ShadowInputMethodManager shadow = Shadows.shadowOf(inputMethodManager);
+    inputMethodManager.showSoftInput(taipower, 0);
+    assertThat(shadow.isSoftInputVisible()).isTrue();
+
+    taipower.onEditorAction(EditorInfo.IME_ACTION_DONE);
+
+    assertThat(taipower.hasFocus()).isFalse();
+    assertThat(shadow.isSoftInputVisible()).isFalse();
+    assertThat(changes).hasValue(0);
+  }
+
+  @Test
+  public void physicalEnterPerformsOneLogicalNextAction() {
+    TaiwanCoordinateEntryPane pane = realPane();
+    View root = pane.getView();
+    root.findViewById(R.id.native_entry_system_twd67).performClick();
+    EditText easting = root.findViewById(R.id.native_entry_twd67_easting);
+    EditText northing = root.findViewById(R.id.native_entry_twd67_northing);
+    AtomicInteger northingFocusCount = new AtomicInteger();
+    northing.setOnFocusChangeListener(
+        (ignored, focused) -> {
+          if (focused) northingFocusCount.incrementAndGet();
+        });
+    easting.requestFocus();
+
+    easting.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+    easting.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
+
+    assertThat(northing.hasFocus()).isTrue();
+    assertThat(northingFocusCount).hasValue(1);
+  }
+
+  @Test
+  public void renderReadOnlyAndDisposeCannotStealOrRestoreEditableFocus() {
+    TaiwanCoordinateEntryPane pane = realPane();
+    EditText taipower = pane.getView().findViewById(R.id.native_entry_input_taipower);
+    taipower.requestFocus();
+
+    pane.onActivate(point(), true);
+
+    assertThat(taipower.hasFocus()).isTrue();
+
+    pane.onActivate(point(), false);
+
+    assertThat(taipower.isEnabled()).isFalse();
+    assertThat(taipower.requestFocus()).isFalse();
+
+    pane.dispose();
+    taipower.onEditorAction(EditorInfo.IME_ACTION_DONE);
+    taipower.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+
+    assertThat(taipower.hasFocus()).isFalse();
+    assertThat(taipower.isEnabled()).isFalse();
+  }
 
   @Test
   public void ordinaryHostCallbackFailuresAreContainedWithSafeResults() {
@@ -183,10 +272,20 @@ public final class TaiwanCoordinateEntryPaneSafetyTest {
         RuntimeEnvironment.getApplication(), controller, mock(TaiwanEntryFormatter.class), trace);
   }
 
+  private static TaiwanCoordinateEntryPane realPane() {
+    return new TaiwanCoordinateEntryPane(
+        RuntimeEnvironment.getApplication(),
+        new TaiwanEntryController(CoordinateUnit.TAIPOWER, ignored -> {}),
+        new TaiwanEntryFormatter(),
+        new RecordingTrace());
+  }
+
   private static TaiwanEntryController configuredController() {
     TaiwanEntryController controller = mock(TaiwanEntryController.class);
     when(controller.activeUnit()).thenReturn(CoordinateUnit.TAIPOWER);
     when(controller.taipowerText()).thenReturn("");
+    when(controller.taipowerDraft()).thenReturn(TaipowerEntryDraft.empty());
+    when(controller.taipowerInputMode()).thenReturn(TaipowerInputMode.SINGLE_FIELD);
     when(controller.eastingText(any())).thenReturn("");
     when(controller.northingText(any())).thenReturn("");
     when(controller.zone(any())).thenReturn(121);

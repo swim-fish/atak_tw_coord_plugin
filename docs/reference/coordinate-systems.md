@@ -7,13 +7,38 @@ the limits operators and maintainers must preserve.
 
 | System | Input and display model | Coverage |
 |---|---|---|
-| Taipower grid | 9-character 10 m or 11-character 1 m main-island code over TWD67 TM2 | Taiwan main island |
+| Taipower grid | 9-character 10 m or 11-character 1 m main-island code over TWD67 TM2 zone 121 | Taiwan main island |
 | TWD97 / TM2 | Integer easting and northing; zone 121 or 119 | Main island and outer islands |
 | TWD67 / TM2 | Integer easting and northing; zone 121 or 119; accepted 4-parameter datum shift | Main island and outer islands |
 
 WGS84 latitude/longitude remains the canonical interchange representation at
 ATAK boundaries. Projected or grid coordinates are converted at the plugin
 boundary.
+
+## Taipower grammar
+
+Taipower entry accepts these canonical forms:
+
+```text
+10 m: REGION DIGIT{4} [A-H][A-E] DIGIT{2}
+ 1 m: REGION DIGIT{4} [A-H][A-E] DIGIT{4}
+```
+
+For example, `H7509 DB40` identifies a 10 m cell and `H7509 DB4016`
+identifies a 1 m sub-cell. The single-field editor accepts supported
+case/whitespace/paste variants without replacing the operator's exact text.
+The guided editor presents the same content as four groups:
+
+```text
+H / 7509 / DB / 40 or 4016
+```
+
+Each four-digit subregion is 800 m east-west by 500 m north-south. Its 100 m
+subgrid therefore contains 8 × 5 = 40 canonical cells: A-H east-west and A-E
+north-south. I/J in the east-west position and F-J in the north-south position
+are noncanonical aliases into a neighboring subregion and are rejected. The UI
+retains the invalid attempt so it can show the position-specific correction;
+the parser and `TaipowerCode` value object remain authoritative.
 
 ## Zone behavior
 
@@ -35,7 +60,7 @@ project:
 | TWD97 | Less than 1 m |
 | TWD67, main island | Approximately ±3–5 m |
 | TWD67, outer islands | Approximately ±10–20 m with the 4-parameter shift compared with the official 7-parameter transform |
-| Taipower grid | 11-character code represents a 1 m sub-cell; coverage is main-island only |
+| Taipower grid | 9-character code represents a 10 m cell; 11-character code represents a 1 m sub-cell; coverage is main-island only |
 
 These are transformation and representation limits, not a promise about the
 Android device's GNSS accuracy or the accuracy of imported address records.
@@ -58,6 +83,10 @@ The maintained JVM evidence includes:
   and five Taipower cell-centroid regression vectors;
 - the canonical Hualien Station 11-character vector
   `H7509 DB4016`;
+- exhaustive A-H east-west and A-E north-south parser/constructor boundaries,
+  plus I/J and F-J rejection;
+- the provenance vectors `G8150 HD7812` and `W9999 HE9999`, and encoder-wrap
+  vectors across the H/E maxima;
 - real-world out-of-range points including Naha Airport, Hong Kong IFC, and
   Tokyo Tower;
 - forward/inverse and zone 119/121 regression coverage.
@@ -69,6 +98,7 @@ as features are added. Use the complete Gradle JVM suite for current evidence.
 
 - [ADR-0001 — coordinate math source](../adr/0001-coordinate-math-source.md).
 - [ADR-0008 — accepted post-MVP precision and outer-island behavior](../adr/0008-post-mvp-iterations.md).
+- [ADR-0028 — canonical A-H/A-E Taipower subgrid ranges](../adr/0028-correct-taipower-subgrid-letter-ranges.md).
 - [ADR-0022 — minimum ATAK runtime](../adr/0022-set-minimum-atak-runtime-to-5-5.md).
 - [ADR-0024 — ATAK-CIV 5.7.0.9 compile SDK](../adr/0024-use-atak-5-7-0-9-compile-sdk.md).
 - [Proj4J](https://github.com/locationtech/proj4j).

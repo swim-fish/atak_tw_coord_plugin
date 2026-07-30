@@ -9,7 +9,7 @@ address data.
 
 - Displays MAP, ME, and TGT coordinates as on-map readouts.
 - Adds one native **Taiwan** pane to ATAK Go To and Convert Coordinate with
-  Taipower, TWD97, TWD67, and offline Address tabs.
+  inline single/guided Taipower entry, TWD97, TWD67, and offline Address tabs.
 - Imports, replaces, and removes offline county address datasets.
 - Exposes one public Tools item, **TW Coordinates**, which opens the offline
   data manager and links to plugin settings.

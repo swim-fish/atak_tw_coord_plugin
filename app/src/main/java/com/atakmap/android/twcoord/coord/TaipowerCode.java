@@ -30,8 +30,11 @@ public final class TaipowerCode {
     if (subRegion < 0 || subRegion > 9999) {
       throw new IllegalArgumentException("subRegion out of 0..9999: " + subRegion);
     }
-    if (hundredMeterE < 'A' || hundredMeterE > 'J' || hundredMeterN < 'A' || hundredMeterN > 'J') {
-      throw new IllegalArgumentException("hundred-metre letters must be A..J");
+    if (hundredMeterE < 'A' || hundredMeterE > 'H') {
+      throw new IllegalArgumentException("east-west hundred-metre letter must be A..H");
+    }
+    if (hundredMeterN < 'A' || hundredMeterN > 'E') {
+      throw new IllegalArgumentException("north-south hundred-metre letter must be A..E");
     }
     if (tenMeterE < 0 || tenMeterE > 9 || tenMeterN < 0 || tenMeterN > 9) {
       throw new IllegalArgumentException("ten-metre digits must be 0..9");

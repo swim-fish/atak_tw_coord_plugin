@@ -1,6 +1,6 @@
 # TW Coordinates Plugin — User Guide
 
-**Version:** v1.4.4
+**Version:** v1.5.0
 
 **Language:** English · [Taiwan Traditional Chinese](user-guide_zh.md)
 
@@ -67,24 +67,53 @@ ATAK's cache.
 
    | System | Required input |
    |---|---|
-   | Taipower | A 9-character 10 m or 11-character 1 m main-island code |
+   | Taipower | A main-island code such as `H7509 DB40` (9 characters, 10 m) or `H7509 DB4016` (11 characters, 1 m) |
    | TWD97 | Integer easting and northing in metres, plus TM2 zone 121 or 119 |
    | TWD67 | Integer easting and northing in metres, plus TM2 zone 121 or 119 |
 
-4. Resolve any validation message shown in the Taiwan pane.
-5. Tap ATAK's **OK** to perform the Go To action.
+4. For Taipower, choose the layout that suits the source:
+
+   Use the mode action at the far right of the Taipower row. Its label names
+   the layout that will open.
+
+   - **Single field** is best for typing or pasting the complete code.
+   - **Guided fields** separates the same code into `H` / `7509` / `DB` /
+     `40` or `4016`. The first three complete groups advance automatically.
+     Two final digits remain focused so you can add two more digits for 1 m
+     precision.
+
+5. Resolve any validation message. The first 100 m letter must be A-H and the
+   second must be A-E. An invalid letter remains visible for correction and
+   cannot produce a point.
+6. Tap ATAK's **OK** to perform the Go To action.
+
+<p align="center">
+<img src="images/26a-native-taipower-single.png" alt="ATAK Go To Taiwan Taipower page in single-field mode with the Guided fields action at the far right" width="900"><br>
+<sub>Single field is active. Tap the far-right <strong>Guided fields</strong> action to show the same draft as four guided groups; the coordinate value is redacted.</sub>
+</p>
+
+<p align="center">
+<img src="images/26b-native-taipower-split.png" alt="ATAK Go To Taiwan Taipower page in guided-fields mode with four inputs and the Single field action at the far right" width="900"><br>
+<sub>Guided fields separates region, four digits, two 100 m letters, and two-or-four precision digits. Tap <strong>Single field</strong> to return without changing the coordinate; values are redacted.</sub>
+</p>
 
 The task succeeds when ATAK accepts the coordinate and moves to the requested
 point. Zone 121 is used for the main island; zone 119 is used for applicable
 outer-island points. Taipower is main-island only, and TWD67 zone 119 displays
 an accuracy advisory.
 
+Selecting a field shows the normal inline keyboard without replacing the Go To
+screen. **Next** stays within the Taiwan pane. **Done** closes the keyboard; it
+does not confirm or move the map.
+
 For coverage and accuracy limits, see
 [Coordinate systems, coverage, and accuracy](reference/coordinate-systems.md).
 
 ### Use ATAK's host controls
 
-- **Auto Fill** converts ATAK's current point into the active Taiwan tab.
+- **Auto Fill** converts ATAK's current point into all four Taiwan tabs in one
+  action. It keeps the current tab selected; Address may briefly show its
+  offline lookup progress.
 - **Clear** clears only the active tab. On Address, it also cancels the active
   lookup and candidate set.
 - **Copy** copies the active canonical representation without moving the map.
@@ -230,6 +259,7 @@ Changes repaint the current readouts without requiring an ATAK restart.
 | Address returns several rows | Tap **Choose result** and compare county, district, road, and number. | The selected result resolves before ATAK confirmation. |
 | Address returns no match | Verify the imported county, then try **Structured fields** to make the administrative context explicit. | One result resolves or a relevant candidate list appears. |
 | Readout shows a coordinate but no address | Confirm the county dataset is active and enable the corresponding MAP/ME/TGT address row in settings. | An address appears when the point is inside installed coverage. |
+| Taipower reports an invalid 100 m letter | Keep the first letter within A-H and the second within A-E. In guided mode, correct the visible two-letter group. | The validation message clears and the coordinate can resolve. |
 | Taipower shows `out of range` | Taipower covers the main island only. Use TWD97/TWD67 zone 119 where applicable. | The point is represented in a supported system. |
 | Import fails | Keep existing data in place, review the displayed error, then retry with enough free space and a supported bundle. | The county appears as active data. |
 

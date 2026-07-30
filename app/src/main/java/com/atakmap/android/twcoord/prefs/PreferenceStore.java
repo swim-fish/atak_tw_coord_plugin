@@ -7,6 +7,7 @@ import com.atakmap.android.twcoord.address.ConfidenceThresholds;
 import com.atakmap.android.twcoord.address.lookup.ResultOrdering;
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
 import com.atakmap.android.twcoord.i18n.LanguageOverride;
+import com.atakmap.android.twcoord.nativeentry.TaipowerInputMode;
 import com.atakmap.coremap.log.Log;
 import java.util.List;
 import java.util.Objects;
@@ -41,6 +42,8 @@ public final class PreferenceStore {
 
   // ATAK native coordinate-entry selection remains separate from retired Go To state.
   public static final String KEY_NATIVE_ENTRY_LAST_UNIT = "pref_native_entry_last_unit";
+  public static final String KEY_NATIVE_ENTRY_TAIPOWER_MODE =
+      "pref_native_entry_taipower_input_mode";
 
   public static final String KEY_GOTO_MARKER_MODE = "pref_goto_marker_mode";
 
@@ -195,6 +198,16 @@ public final class PreferenceStore {
   public void setNativeEntryLastUnit(CoordinateUnit unit) {
     Objects.requireNonNull(unit, "unit");
     sp.edit().putString(KEY_NATIVE_ENTRY_LAST_UNIT, unit.name()).apply();
+  }
+
+  public TaipowerInputMode getNativeEntryTaipowerMode() {
+    return TaipowerInputMode.fromStoredValue(
+        sp.getString(KEY_NATIVE_ENTRY_TAIPOWER_MODE, TaipowerInputMode.SINGLE_FIELD.name()));
+  }
+
+  public void setNativeEntryTaipowerMode(TaipowerInputMode mode) {
+    Objects.requireNonNull(mode, "mode");
+    sp.edit().putString(KEY_NATIVE_ENTRY_TAIPOWER_MODE, mode.name()).apply();
   }
 
   // ============================================================

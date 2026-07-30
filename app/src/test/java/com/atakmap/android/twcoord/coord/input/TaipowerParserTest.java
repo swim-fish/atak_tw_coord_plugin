@@ -3,6 +3,7 @@ package com.atakmap.android.twcoord.coord.input;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.atakmap.android.twcoord.coord.CoordinateUnit;
+import com.atakmap.android.twcoord.coord.Feature014TaipowerFixtures;
 import org.junit.Test;
 
 /**
@@ -121,8 +122,8 @@ public class TaipowerParserTest {
   }
 
   @Test
-  public void parseTaipower_rejectsHundredMetreLetterOutsideAJ() {
-    // 'K' is beyond 'J' for the hundred-metre letter slot.
+  public void parseTaipower_rejectsHundredMetreLetterOutsideCanonicalRange() {
+    // 'K' is beyond 'H' for the east-west hundred-metre letter slot.
     ParseResult r = parser.parseTaipower("H7509 KB4016");
     assertThat(r.isInvalid()).isTrue();
     assertThat(((ParseResult.Invalid) r).reason()).isEqualTo(ParseResult.Reason.BAD_LETTER);
@@ -155,5 +156,48 @@ public class TaipowerParserTest {
     ParseResult r = parser.parseTaipower("");
     assertThat(r.isInvalid()).isTrue();
     assertThat(((ParseResult.Invalid) r).unit()).isEqualTo(CoordinateUnit.TAIPOWER);
+  }
+
+  @Test
+  public void acceptsEveryCanonicalEastWestAndNorthSouthSubgridBoundary() {
+    for (char eastWest : Feature014TaipowerFixtures.VALID_EAST_WEST_LETTERS.toCharArray()) {
+      assertThat(parser.parseTaipower("H7509 " + eastWest + "A4016").isOk())
+          .as("east-west %s", eastWest)
+          .isTrue();
+    }
+    for (char northSouth : Feature014TaipowerFixtures.VALID_NORTH_SOUTH_LETTERS.toCharArray()) {
+      assertThat(parser.parseTaipower("H7509 A" + northSouth + "4016").isOk())
+          .as("north-south %s", northSouth)
+          .isTrue();
+    }
+  }
+
+  @Test
+  public void rejectsNoncanonicalEastWestAndNorthSouthAliasesAsBadLetter() {
+    for (char eastWest : Feature014TaipowerFixtures.INVALID_EAST_WEST_LETTERS.toCharArray()) {
+      assertBadLetter("H7509 " + eastWest + "A4016");
+    }
+    for (char northSouth : Feature014TaipowerFixtures.INVALID_NORTH_SOUTH_LETTERS.toCharArray()) {
+      assertBadLetter("H7509 A" + northSouth + "4016");
+    }
+  }
+
+  @Test
+  public void acceptsAaAndHeAtBothSupportedPrecisionsAndAllRawPasteVariants() {
+    for (String subgrid : new String[] {"AA", "HE"}) {
+      assertThat(parser.parseTaipower("H7509 " + subgrid + "40").isOk()).isTrue();
+      assertThat(parser.parseTaipower("H7509 " + subgrid + "4016").isOk()).isTrue();
+    }
+    for (String raw : Feature014TaipowerFixtures.ONE_METRE_RAW_VARIANTS) {
+      assertThat(parser.parseTaipower(raw).isOk()).as(raw).isTrue();
+    }
+  }
+
+  private void assertBadLetter(String value) {
+    ParseResult result = parser.parseTaipower(value);
+    assertThat(result.isInvalid()).as(value).isTrue();
+    assertThat(((ParseResult.Invalid) result).reason())
+        .as(value)
+        .isSameAs(ParseResult.Reason.BAD_LETTER);
   }
 }

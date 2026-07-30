@@ -66,7 +66,7 @@ public final class TaiwanEntryControllerTest {
 
     controller.activate(point(25.033611, 121.564472), true);
 
-    assertThat(controller.taipowerText()).matches("[A-X]\\d{4} [A-J]{2}\\d{4}");
+    assertThat(controller.taipowerText()).matches("[A-X]\\d{4} [A-H][A-E]\\d{4}");
     assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.VALID);
     assertThat(changes).hasValue(0);
   }
@@ -81,7 +81,7 @@ public final class TaiwanEntryControllerTest {
 
     controller.activate(point(25.033611, 121.564472), true);
 
-    assertThat(controller.taipowerText()).matches("[A-X]\\d{4} [A-J]{2}\\d{4}");
+    assertThat(controller.taipowerText()).matches("[A-X]\\d{4} [A-H][A-E]\\d{4}");
     assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.VALID);
     controller.selectSystem(CoordinateUnit.TWD97, false);
     assertThat(controller.eastingText(CoordinateUnit.TWD97)).isEqualTo("306963");
@@ -237,8 +237,10 @@ public final class TaiwanEntryControllerTest {
   }
 
   @Test
-  public void clearAndAutofillRemainActiveOnlyAfterAllSystemActivation() {
+  public void clearRemainsActiveOnlyAndAutofillRefreshesEveryCoordinateDraft() {
+    AtomicInteger changes = new AtomicInteger();
     TaiwanEntryController controller = controller(CoordinateUnit.TWD97);
+    controller.setOnHumanChange(changes::incrementAndGet);
     controller.activate(point(25.033611, 121.564472), true);
     String taipower = controller.taipowerText();
     String twd67Easting = controller.eastingText(CoordinateUnit.TWD67);
@@ -251,9 +253,22 @@ public final class TaiwanEntryControllerTest {
 
     controller.autofill(point(23.9932, 121.6012));
 
-    assertThat(controller.eastingText(CoordinateUnit.TWD97)).isNotEmpty();
-    assertThat(controller.taipowerText()).isEqualTo(taipower);
-    assertThat(controller.eastingText(CoordinateUnit.TWD67)).isEqualTo(twd67Easting);
+    assertThat(controller.activeUnit()).isSameAs(CoordinateUnit.TWD97);
+    assertThat(controller.taipowerText()).isNotEqualTo(taipower);
+    assertThat(controller.eastingText(CoordinateUnit.TWD67)).isNotEqualTo(twd67Easting);
+    for (CoordinateUnit unit : CoordinateUnit.values()) {
+      controller.selectSystem(unit, false);
+      assertThat(controller.validation())
+          .as(unit.toString())
+          .isSameAs(TaiwanEntryController.Validation.VALID);
+      assertThat(controller.resolvedOrNull().latitudeDeg())
+          .as("%s latitude", unit)
+          .isCloseTo(23.9932, within(unit == CoordinateUnit.TAIPOWER ? 0.001 : 0.0001));
+      assertThat(controller.resolvedOrNull().longitudeDeg())
+          .as("%s longitude", unit)
+          .isCloseTo(121.6012, within(unit == CoordinateUnit.TAIPOWER ? 0.001 : 0.0001));
+    }
+    assertThat(changes).hasValue(0);
   }
 
   @Test
@@ -361,6 +376,134 @@ public final class TaiwanEntryControllerTest {
       assertThat(controller.resolvedOrNull()).isNotNull();
     }
     assertThat(controller.isEditable()).isFalse();
+  }
+
+  @Test
+  public void taipowerModeSwitchIsSilentAndPersistsOnlySuccessfulProjection() {
+    AtomicInteger coordinateChanges = new AtomicInteger();
+    AtomicInteger modeWrites = new AtomicInteger();
+    TaiwanEntryController controller =
+        new TaiwanEntryController(
+            CoordinateUnit.TAIPOWER,
+            ignored -> {},
+            TaipowerInputMode.SINGLE_FIELD,
+            ignored -> modeWrites.incrementAndGet());
+    controller.setOnHumanChange(coordinateChanges::incrementAndGet);
+    controller.setTaipowerText("  h7509 db4016  ", true);
+    coordinateChanges.set(0);
+
+    assertThat(controller.selectTaipowerInputMode(TaipowerInputMode.SPLIT_FIELDS, true)).isTrue();
+    assertThat(controller.taipowerInputMode()).isSameAs(TaipowerInputMode.SPLIT_FIELDS);
+    assertThat(controller.taipowerDraft().splitParts().joined()).isEqualTo("H7509DB4016");
+    assertThat(coordinateChanges).hasValue(0);
+    assertThat(modeWrites).hasValue(1);
+
+    assertThat(controller.selectTaipowerInputMode(TaipowerInputMode.SINGLE_FIELD, true)).isTrue();
+    assertThat(controller.taipowerText()).isEqualTo("  h7509 db4016  ");
+    assertThat(coordinateChanges).hasValue(0);
+    assertThat(modeWrites).hasValue(2);
+
+    controller.setTaipowerText("H75-09", true);
+    assertThat(controller.selectTaipowerInputMode(TaipowerInputMode.SPLIT_FIELDS, true)).isFalse();
+    assertThat(controller.taipowerInputMode()).isSameAs(TaipowerInputMode.SINGLE_FIELD);
+    assertThat(modeWrites).hasValue(2);
+  }
+
+  @Test
+  public void eachAcceptedSplitEditNotifiesOnceAndBothModesResolveIdentically() {
+    AtomicInteger changes = new AtomicInteger();
+    TaiwanEntryController controller =
+        new TaiwanEntryController(
+            CoordinateUnit.TAIPOWER, ignored -> {}, TaipowerInputMode.SPLIT_FIELDS, ignored -> {});
+    controller.setOnHumanChange(changes::incrementAndGet);
+
+    controller.setTaipowerRegion("h", true);
+    controller.setTaipowerSubregion("7509", true);
+    controller.setTaipowerSubgrid("db", true);
+    controller.setTaipowerPrecisionDigits("4016", true);
+
+    assertThat(changes).hasValue(4);
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.VALID);
+    Wgs84 splitPoint = controller.resolvedOrNull();
+    assertThat(controller.selectTaipowerInputMode(TaipowerInputMode.SINGLE_FIELD, true)).isTrue();
+    assertThat(controller.taipowerText()).isEqualTo("H7509DB4016");
+    assertThat(controller.resolvedOrNull()).isSameAs(splitPoint);
+    assertThat(changes).hasValue(4);
+  }
+
+  @Test
+  public void activationAutofillAndClearStageBothProjectionsWithoutChangingModeOrNotifying() {
+    AtomicInteger changes = new AtomicInteger();
+    TaiwanEntryController controller =
+        new TaiwanEntryController(
+            CoordinateUnit.TAIPOWER, ignored -> {}, TaipowerInputMode.SPLIT_FIELDS, ignored -> {});
+    controller.setOnHumanChange(changes::incrementAndGet);
+
+    controller.activate(point(23.9932, 121.6012), true);
+
+    assertThat(controller.taipowerInputMode()).isSameAs(TaipowerInputMode.SPLIT_FIELDS);
+    assertThat(controller.taipowerText().replace(" ", "")).hasSize(11);
+    assertThat(controller.taipowerDraft().splitParts().joined()).hasSize(11);
+    assertThat(controller.taipowerDraft().rawRevision())
+        .isEqualTo(controller.taipowerDraft().splitRevision());
+    assertThat(changes).hasValue(0);
+
+    controller.autofill(point(25.033611, 121.564472));
+    assertThat(controller.taipowerDraft().precision())
+        .isSameAs(TaipowerEntryDraft.Precision.ONE_METRE);
+    assertThat(changes).hasValue(0);
+
+    controller.clear();
+    assertThat(controller.taipowerText()).isEmpty();
+    assertThat(controller.taipowerDraft().splitParts().joined()).isEmpty();
+    assertThat(controller.taipowerInputMode()).isSameAs(TaipowerInputMode.SPLIT_FIELDS);
+    assertThat(changes).hasValue(0);
+  }
+
+  @Test
+  public void readOnlyAllowsLosslessPresentationSwitchAndDisposeRejectsEveryCallback() {
+    AtomicInteger modeWrites = new AtomicInteger();
+    TaiwanEntryController controller =
+        new TaiwanEntryController(
+            CoordinateUnit.TAIPOWER,
+            ignored -> {},
+            TaipowerInputMode.SINGLE_FIELD,
+            ignored -> modeWrites.incrementAndGet());
+    controller.activate(point(23.9932, 121.6012), false);
+    String raw = controller.taipowerText();
+
+    assertThat(controller.selectTaipowerInputMode(TaipowerInputMode.SPLIT_FIELDS, true)).isTrue();
+    assertThat(modeWrites).hasValue(1);
+    controller.setTaipowerRegion("A", true);
+    assertThat(controller.taipowerText()).isEqualTo(raw);
+
+    controller.dispose();
+    controller.setTaipowerText("H7509DB4016", false);
+    controller.setTaipowerRegion("H", false);
+    assertThat(controller.selectTaipowerInputMode(TaipowerInputMode.SINGLE_FIELD, true)).isFalse();
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.DISPOSED);
+    assertThat(controller.resolvedOrNull()).isNull();
+  }
+
+  @Test
+  public void invalidCompleteSubgridLettersRemainVisibleAndUnresolvedInBothModes() {
+    TaiwanEntryController controller = controller(CoordinateUnit.TAIPOWER);
+    controller.setTaipowerText("H7509 IB4016", true);
+
+    assertThat(controller.taipowerText()).isEqualTo("H7509 IB4016");
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.MALFORMED);
+    assertThat(controller.taipowerDraft().validationDetail())
+        .isSameAs(TaipowerEntryDraft.ValidationDetail.EW_SUBGRID_OUT_OF_RANGE);
+    assertThat(controller.resolvedOrNull()).isNull();
+
+    assertThat(controller.selectTaipowerInputMode(TaipowerInputMode.SPLIT_FIELDS, true)).isTrue();
+    controller.setTaipowerSubgrid("AF", true);
+
+    assertThat(controller.taipowerDraft().splitParts().subgrid()).isEqualTo("AF");
+    assertThat(controller.validation()).isSameAs(TaiwanEntryController.Validation.MALFORMED);
+    assertThat(controller.taipowerDraft().validationDetail())
+        .isSameAs(TaipowerEntryDraft.ValidationDetail.NS_SUBGRID_OUT_OF_RANGE);
+    assertThat(controller.resolvedOrNull()).isNull();
   }
 
   private static TaiwanEntryController controller(CoordinateUnit initial) {

@@ -93,9 +93,12 @@ their resulting work meets the significance test above.
 
 | ADR | Status | Relationship |
 |-----|--------|--------------|
+| ADR-0029 | Accepted | One non-null native Auto Fill refreshes Taipower, TWD97, TWD67, and Address; partially supersedes ADR-0023 Auto Fill scope |
+| ADR-0028 | Accepted | A-H east-west and A-E north-south Taipower 100 m subgrid ranges; partially supersedes ADR-0001 range assumption |
 | ADR-0027 | Accepted | Chunghwa Post ordering-only catalog intersected with active imported address data |
 | ADR-0026 | Accepted | Native Address entry, one public Tools item, and bounded category-balanced candidate retrieval |
-| ADR-0023 | Partially superseded by ADR-0026 | Taiwan pane retained; custom Go To fallback retired |
+| ADR-0023 | Partially superseded by ADR-0026 and ADR-0029 | Taiwan pane retained; custom Go To fallback retired; Auto Fill now refreshes all Taiwan pages |
 | ADR-0021 | Partially superseded by ADR-0026 | Standalone Go To UI retired |
 | ADR-0020 | Partially superseded by ADR-0026 | Standalone search settings/navigation retired |
 | ADR-0009 | Partially superseded by ADR-0026 | Custom Go To page retired |
+| ADR-0001 | Partially superseded by ADR-0028 | Projection and region layout retained; inherited A-J subgrid range corrected to A-H/A-E |

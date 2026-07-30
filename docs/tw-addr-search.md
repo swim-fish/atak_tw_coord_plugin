@@ -127,9 +127,10 @@ remain immediately usable. The displayed nearest record is descriptive only:
 the plugin preserves the exact ATAK-supplied WGS84 point and never snaps it to
 the record.
 
-The same no-snap rule applies to Address **Auto Fill**. **Clear** clears only the
-active Address draft and cancels pending candidates. In a read-only host flow,
-the address can be displayed but cannot be edited or selected.
+The same no-snap rule applies when one **Auto Fill** refreshes all four Taiwan
+pages. **Clear** clears only the active Address draft and cancels pending
+candidates. In a read-only host flow, the address can be displayed but cannot
+be edited or selected.
 
 ## Troubleshooting
 
