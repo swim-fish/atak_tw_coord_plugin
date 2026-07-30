@@ -15,18 +15,29 @@ ADR-0013 is historical background.
    ```powershell
    python scripts/check-release-readiness.py --phase tpp
    ./gradlew :app:clean :app:assembleCivRelease
-   python scripts/build-tpp-source-zip.py --verify-build
+   python scripts/build-tpp-source-zip.py
    ```
 
 The preflight must identify the exact full commit SHA. A Gradle or TPP build is
-not evidence for a pending physical-device `[RELEASE-GATE]`.
+not evidence for a pending physical-device `[RELEASE-GATE]`. Source ZIP
+preparation does not require `local.properties`, TAK repository credentials, a
+signing keystore, or a locally signed APK.
 
 ## 2. Submit to TPP
 
-Upload the generated `build/atak_tw_coord_plugin-source-tpp-v<VERSION>.zip` to
-the authorized TPP portal. Uploading and downloading are external actions and
-require the operator's explicit instruction. Do not record the email-derived
-response filename in committed documentation or logs.
+At `https://tak.gov/user_builds`, upload only the generated
+`build/atak_tw_coord_plugin-source-tpp-v<VERSION>.zip`. Do not upload
+`local.properties`, credentials, keystores, or the locally built APK. TAK.gov
+builds and signs the returned plugin.
+
+Uploading and downloading are external actions and require the operator's
+explicit instruction. Do not record the email-derived response filename in
+committed documentation or logs.
+
+`python scripts/build-tpp-source-zip.py --verify-build` is an optional
+authenticated diagnostic for operators who already have `artifacts.tak.gov`
+credentials. Missing credentials do not block source ZIP preparation or
+submission through the user-build portal.
 
 ## 3. Stage returned artifacts
 

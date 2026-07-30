@@ -10,9 +10,27 @@ Read `docs/release/tpp-runbook.md`, ADR-0025, and the `release-readiness` skill.
 ## Prepare
 
 Verify the version is already committed, run the TPP readiness gate, run
-`:app:clean :app:assembleCivRelease`, then run
-`python scripts/build-tpp-source-zip.py --verify-build`. Never use
-`--allow-dirty` for an upload candidate.
+`:app:clean :app:assembleCivRelease`, then create the upload artifact with:
+
+```powershell
+python scripts/build-tpp-source-zip.py
+```
+
+Never use `--allow-dirty` for an upload candidate. The upload preparation does
+not require `local.properties`, TAK repository credentials, a signing
+keystore, or a locally signed APK.
+
+## Submit
+
+At `https://tak.gov/user_builds`, upload only
+`build/atak_tw_coord_plugin-source-tpp-v<VERSION>.zip`. Never upload
+`local.properties`, credentials, keystores, or the locally built APK. TAK.gov
+builds and signs the returned plugin.
+
+Uploading remains an explicit user-authorized external action. The
+`--verify-build` option is only an optional authenticated diagnostic for an
+operator who already has `artifacts.tak.gov` credentials; unavailable
+credentials must not block source ZIP preparation or submission.
 
 ## Stage
 

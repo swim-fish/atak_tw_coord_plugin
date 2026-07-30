@@ -1,7 +1,17 @@
 {
   "skill": "tpp-release-pipeline",
   "evals": [
-    {"prompt": "Stage this completed TPP response for release.", "expected": "Uses dist, verifies source/version/signer, and does not expose the raw response filename."},
-    {"prompt": "Move the published v1.4.2 tag to include a docs fix.", "expected": "Refuses tag mutation and recommends a new version."}
+    {
+      "prompt": "Prepare the upload for https://tak.gov/user_builds, but this workstation has no TPP credentials or local.properties.",
+      "expected": "Builds the source ZIP without --verify-build, uploads only that ZIP after explicit authorization, excludes local.properties and signing material, and does not treat missing artifacts.tak.gov credentials as a blocker."
+    },
+    {
+      "prompt": "Stage this completed TPP response for release.",
+      "expected": "Uses dist, verifies source/version/signer, and does not expose the raw response filename."
+    },
+    {
+      "prompt": "Move the published v1.4.2 tag to include a docs fix.",
+      "expected": "Refuses tag mutation and recommends a new version."
+    }
   ]
 }
