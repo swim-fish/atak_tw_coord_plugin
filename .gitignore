@@ -52,5 +52,8 @@ app/proguard-gradle-repackage.txt
 # ad-hoc on-device screenshots used during debugging
 /*.png
 
+# Codex desktop user attachments are local inputs, never project assets
+.codex-remote-attachments/
+
 # Manual acceptance log (per-run device data, sometimes contains location)
 specs/**/acceptance-log.md

@@ -89,6 +89,7 @@ public final class TwCoordWidget {
     mapRow = newStyledTextWidget("MAP —", EDGE, EDGE, 0f, EDGE);
     meRow = newStyledTextWidget("ME —", 0f, EDGE, EDGE, EDGE);
     targetRow = newStyledTextWidget("", 0f, EDGE, EDGE, EDGE);
+    targetRow.setVisible(false);
 
     mapAnchor.addWidget(mapRow);
     meAnchor.addWidget(meRow);
@@ -183,13 +184,14 @@ public final class TwCoordWidget {
   public void setVisible(boolean visible) {
     if (mapRow != null) mapRow.setVisible(visible);
     if (meRow != null) meRow.setVisible(visible);
-    if (targetRow != null) targetRow.setVisible(visible);
+    if (targetRow != null) targetRow.setVisible(visible && lastTarget != null);
     if (visible) {
       // Restore each address row's visibility from its last known state (Hidden stays
       // hidden; Text / Loading / EmptyState become visible again).
       if (mapAddrRow != null) mapAddrRow.setVisible(addressVisibleFor(lastMapAddr));
       if (meAddrRow != null) meAddrRow.setVisible(addressVisibleFor(lastMeAddr));
-      if (targetAddrRow != null) targetAddrRow.setVisible(addressVisibleFor(lastTargetAddr));
+      if (targetAddrRow != null)
+        targetAddrRow.setVisible(lastTarget != null && addressVisibleFor(lastTargetAddr));
     } else {
       if (mapAddrRow != null) mapAddrRow.setVisible(false);
       if (meAddrRow != null) meAddrRow.setVisible(false);
@@ -209,7 +211,21 @@ public final class TwCoordWidget {
     if (targetRow != null && !equalsNullable(targetLine, lastTarget)) {
       paint(targetRow, targetLine);
       lastTarget = targetLine;
+      targetRow.setVisible(targetLine != null && isVisible());
     }
+  }
+
+  /** Hide the selected-target coordinate and address rows without touching MAP or ME. */
+  public void clearTarget() {
+    if (targetRow != null) {
+      paint(targetRow, null);
+      targetRow.setVisible(false);
+    }
+    lastTarget = null;
+    if (targetAddrRow != null) {
+      paintAddressRow(targetAddrRow, AddressRowState.hidden());
+    }
+    lastTargetAddr = AddressRowState.hidden();
   }
 
   private static void paint(TextWidget row, DisplayLine line) {

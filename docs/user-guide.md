@@ -1,6 +1,6 @@
 # TW Coordinates Plugin — User Guide
 
-**Version:** v1.5.0
+**Version:** v1.5.1
 
 **Language:** English · [Taiwan Traditional Chinese](user-guide_zh.md)
 
@@ -131,8 +131,9 @@ installed yet.
 1. Open ATAK **Go To → Taiwan → Address**.
 2. Use **Single field** to paste or type one complete address, or switch to
    **Structured fields**.
-3. In structured mode, choose the county/city and district, then enter the
-   road/locality and number/floor.
+3. In structured mode, use the first equal-width row for county/city and
+   district/township, then use the second equal-width row for road/locality and
+   house-number/floor.
 4. Wait for local search to finish.
 5. If one address resolves, review it. If ATAK shows **Multiple addresses
    match**, tap **Choose result** and select the intended administrative and
@@ -153,8 +154,8 @@ variants are normalized locally.
 </p>
 
 <p align="center">
-<img src="images/23b-native-address-structured.png" alt="ATAK Go To Taiwan Address pane with county, district, road, and number fields" width="900"><br>
-<sub>Use Structured fields when administrative context must be selected explicitly; address values are redacted.</sub>
+<img src="images/27-native-address-structured.png" alt="ATAK Go To Taiwan Address pane in compact structured mode with two equal-width field rows" width="900"><br>
+<sub>Structured fields places county/city with district/township in the first 1:1 row, then road/locality with house-number/floor in the second. The far-right action returns to <strong>Single field</strong>; address values are redacted.</sub>
 </p>
 
 If no matching dataset is installed, Address displays data-management

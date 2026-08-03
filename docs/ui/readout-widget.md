@@ -103,9 +103,29 @@ the widget itself contains no English literals.
   values — this prevents redundant invalidate calls when the map
   redispatches `MAP_MOVED` events that did not actually change the
   centre coordinate at our display precision.
-- Either argument may be `null`, meaning "leave the previous row
-  visible" (NOT "clear the row"). Clearing is achieved by passing a
-  `DisplayLine` with empty value.
+- In `TwCoordWidget.render(mapCentreLine, selfLine, targetLine)`, a `null` MAP
+  or ME argument leaves that coordinate row unchanged; a `null` TGT argument
+  clears only the selected-target coordinate row.
+- In `TwCoordWidget.renderAddresses(mapAddr, meAddr, targetAddr)`, a `null`
+  address argument is rendered as `AddressRowState.hidden()`, so that row is
+  cleared/hidden rather than preserved.
+- `TwCoordWidget.clearTarget()` atomically hides both TGT coordinate and
+  address rows while preserving MAP and ME.
+- ATAK replaces the active `MAP_CLICK` listener stack while a marker radial menu
+  is open. The component therefore handles both direct background `MAP_CLICK`
+  events and ATAK's stable `com.atakmap.android.maps.HIDE_DETAILS` selected-item
+  dismissal broadcast. Pending TGT address work is cancelled before the widget
+  is hidden. Each row has an atomic generation checked inside every UI-posted
+  legacy/shared address emission, so even a runnable queued before dismissal
+  cannot restore the marker. Ordinary cleanup `RuntimeException` is contained
+  and logged; fatal JVM conditions are not swallowed by this boundary.
+
+Compatibility evidence: `javap -public` against the pinned ATAK-CIV 5.7.0.9
+SDK confirms the public `AtakBroadcast` register/unregister contract. ATAK-CIV
+5.5.1.1 source shows
+[`MenuLayoutWidget` sending `HIDE_DETAILS` on background map interaction](https://github.com/TAK-Product-Center/atak-civ/blob/6cefd4c83371789937a6a30aa4d7e81d84b82374/atak/ATAK/app/src/main/java/com/atakmap/android/menu/MenuLayoutWidget.java#L110-L120)
+and
+[`CoordOverlayMapComponent` registering/discarding the same action for the native overlay](https://github.com/TAK-Product-Center/atak-civ/blob/6cefd4c83371789937a6a30aa4d7e81d84b82374/atak/ATAK/app/src/main/java/com/atakmap/android/coordoverlay/CoordOverlayMapComponent.java#L24-L44).
 
 ## Background
 

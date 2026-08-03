@@ -1,6 +1,6 @@
 # TW Coordinates Plugin — 使用手冊
 
-**對應版本：** v1.5.0
+**對應版本：** v1.5.1
 
 **語言：** [English](user-guide.md) · 正體中文
 
@@ -121,7 +121,8 @@ ATAK 接受座標並移至指定位置，即表示完成。121 分帶用於本�
 1. 開啟 ATAK **Go To → Taiwan → Address**。
 2. 要貼上或輸入完整地址時使用**單欄輸入**；需要明確指定欄位時切換為
    **分欄輸入**。
-3. 使用分欄輸入時，先選擇縣市與鄉鎮市區，再輸入道路地名及門牌樓層。
+3. 使用分欄輸入時，第一列以相同寬度並排縣市與鄉鎮市區；第二列以相同
+   寬度並排道路地名與門牌樓層。
 4. 等待裝置完成離線搜尋。
 5. 若解析出一筆地址，先檢查內容；若顯示**有多筆相符地址**，請按
    **選擇結果**，依行政區與道路資訊選取正確資料。
@@ -139,8 +140,8 @@ ATAK 接受解析後的地址並移至該位置，即表示完成。只選取候
 </p>
 
 <p align="center">
-<img src="images/23b-native-address-structured.png" alt="ATAK Go To Taiwan 的 Address 分欄輸入頁面，包含縣市、行政區、道路與門牌欄位" width="900"><br>
-<sub>需要明確指定行政區時使用分欄輸入；地址值已遮除。</sub>
+<img src="images/27-native-address-structured.png" alt="ATAK Go To Taiwan 的 Address 緊湊分欄輸入頁面，包含兩列等寬欄位" width="900"><br>
+<sub>分欄輸入的第一列以 1:1 並排縣市與鄉鎮市區，第二列以 1:1 並排道路地名與門牌樓層；最右側的 <strong>Single field</strong> 可切回單欄，地址值已遮除。</sub>
 </p>
 
 若尚未安裝相符資料集，Address 會顯示資料管理提示，但其他座標頁籤仍可

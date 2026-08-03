@@ -64,6 +64,9 @@ public class TwCoordMapComponent extends AbstractMapComponent {
   /** Action fired by the Tools-menu icon (see TwCoordTool constructor). */
   static final String ACTION_SHOW_PLUGIN = "com.atakmap.android.twcoord.SHOW_PLUGIN";
 
+  /** ATAK clears its native selected-marker coordinate overlay with this host broadcast. */
+  static final String ACTION_HIDE_DETAILS = "com.atakmap.android.maps.HIDE_DETAILS";
+
   private static final long SELF_TICK_MS = 1_000L;
 
   private Context pluginContext;
@@ -211,12 +214,25 @@ public class TwCoordMapComponent extends AbstractMapComponent {
         }
       };
 
-  /** Tapping the map (not an item) clears the target row. */
+  /**
+   * Tapping the map (not an item) clears the target row when no host menu owns the listener stack.
+   */
   private final MapEventDispatcher.MapEventDispatchListener mapClickListener =
-      event -> {
-        lastClickedTarget = null;
-        lastTargetLine = null;
-        if (widget != null) widget.render(null, null, null);
+      event -> clearSelectedTarget();
+
+  /**
+   * Marker radial menus replace ATAK's active MAP_CLICK listener stack. Mirror the native selected
+   * coordinate overlay's HIDE_DETAILS path so a background click still clears this plugin's TGT
+   * rows.
+   */
+  private final BroadcastReceiver targetDismissReceiver =
+      new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+          if (intent != null && ACTION_HIDE_DETAILS.equals(intent.getAction())) {
+            clearSelectedTarget();
+          }
+        }
       };
 
   /**
@@ -413,6 +429,10 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     view.getMapEventDispatcher()
         .addMapEventListener(MapEvent.ITEM_CONFIRMED_CLICK, targetClickListener);
     view.getMapEventDispatcher().addMapEventListener(MapEvent.MAP_CLICK, mapClickListener);
+    AtakBroadcast.DocumentedIntentFilter targetDismissFilter =
+        new AtakBroadcast.DocumentedIntentFilter();
+    targetDismissFilter.addAction(ACTION_HIDE_DETAILS);
+    AtakBroadcast.getInstance().registerReceiver(targetDismissReceiver, targetDismissFilter);
 
     Marker selfNow = view.getSelfMarker();
     if (selfNow != null) {
@@ -722,6 +742,11 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     } catch (IllegalArgumentException ignored) {
       // Receiver was never registered (onCreate aborted) — nothing to do.
     }
+    try {
+      AtakBroadcast.getInstance().unregisterReceiver(targetDismissReceiver);
+    } catch (IllegalArgumentException ignored) {
+      // Receiver was never registered (onCreate aborted) — nothing to do.
+    }
     if (addressReceiver != null) {
       try {
         AtakBroadcast.getInstance().unregisterReceiver(addressReceiver);
@@ -945,6 +970,26 @@ public class TwCoordMapComponent extends AbstractMapComponent {
         addressSubsystem.onCoord(AddressSubsystem.Row.TGT, p.getLatitude(), p.getLongitude());
       } catch (Throwable t) {
         android.util.Log.w("TwCoordMapComponent", "onCoord(TGT) threw", t);
+      }
+    }
+  }
+
+  private void clearSelectedTarget() {
+    lastClickedTarget = null;
+    lastTargetLine = null;
+    addressRowStates.put(AddressSubsystem.Row.TGT, AddressRowState.hidden());
+    if (addressSubsystem != null) {
+      try {
+        addressSubsystem.clearRow(AddressSubsystem.Row.TGT);
+      } catch (RuntimeException t) {
+        android.util.Log.w("TwCoordMapComponent", "clear target address row threw", t);
+      }
+    }
+    if (widget != null) {
+      try {
+        widget.clearTarget();
+      } catch (RuntimeException t) {
+        android.util.Log.w("TwCoordMapComponent", "clear target widget threw", t);
       }
     }
   }

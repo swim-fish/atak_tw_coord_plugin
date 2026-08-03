@@ -19,6 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 /**
@@ -61,6 +62,7 @@ public final class AddressSubsystem implements AutoCloseable {
   private final EnumMap<Row, ScheduledFuture<?>> inflight = new EnumMap<>(Row.class);
   private final EnumMap<Row, LookupHandle> sharedInflight = new EnumMap<>(Row.class);
   private final EnumMap<Row, LookupIdentity> sharedIdentity = new EnumMap<>(Row.class);
+  private final EnumMap<Row, AtomicLong> rowGeneration = new EnumMap<>(Row.class);
   private final EnumMap<Row, AddressRowState> lastState = new EnumMap<>(Row.class);
   private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
 
@@ -138,6 +140,7 @@ public final class AddressSubsystem implements AutoCloseable {
 
     for (Row r : Row.values()) {
       enabled.put(r, false);
+      rowGeneration.put(r, new AtomicLong());
       lastState.put(r, AddressRowState.hidden());
     }
     openFacadeFromActive();
@@ -192,18 +195,29 @@ public final class AddressSubsystem implements AutoCloseable {
     }
   }
 
+  /**
+   * Cancel one row's pending lookup and hide its current value without changing the operator's
+   * persisted row-enabled preference. The next {@link #onCoord} call may immediately use the row
+   * again.
+   */
+  public void clearRow(Row row) {
+    Objects.requireNonNull(row, "row");
+    cancelInflight(row);
+    emit(row, AddressRowState.hidden());
+  }
+
   public void onCoord(Row row, double lat, double lon) {
     Objects.requireNonNull(row, "row");
     if (!Boolean.TRUE.equals(enabled.get(row))) {
       // Disabled rows stay Hidden; no work to do.
       return;
     }
+    long generation = cancelInflight(row);
     if (!hasAnyActiveDataset()) {
       // No dataset → Hidden (contract §State derivation).
       emit(row, AddressRowState.hidden());
       return;
     }
-    cancelInflight(row);
 
     // First lookup for this row after activation / re-enable → show Loading until the
     // background task fires. If a Text(...) or EmptyState is already shown, skip the
@@ -214,7 +228,8 @@ public final class AddressSubsystem implements AutoCloseable {
     }
 
     ScheduledFuture<?> f =
-        executor.schedule(() -> runLookup(row, lat, lon), debounceMs, TimeUnit.MILLISECONDS);
+        executor.schedule(
+            () -> runLookup(row, lat, lon, generation), debounceMs, TimeUnit.MILLISECONDS);
     inflight.put(row, f);
   }
 
@@ -283,11 +298,12 @@ public final class AddressSubsystem implements AutoCloseable {
   // Internal — worker thread
   // ----------------------------------------------------------------------
 
-  private void runLookup(Row row, double lat, double lon) {
+  private void runLookup(Row row, double lat, double lon, long generation) {
+    if (!isCurrent(row, generation)) return;
     installStrictModeIfFirstRun();
     AddressLookupService shared = lookupService;
     if (shared != null) {
-      runSharedLookup(shared, row, lat, lon);
+      runSharedLookup(shared, row, lat, lon, generation);
       return;
     }
     AddressRowState state;
@@ -304,10 +320,12 @@ public final class AddressSubsystem implements AutoCloseable {
       state = AddressRowState.emptyState();
     }
     final AddressRowState toEmit = state;
-    uiPoster.accept(() -> emit(row, toEmit));
+    uiPoster.accept(() -> emitIfCurrent(row, generation, toEmit));
   }
 
-  private void runSharedLookup(AddressLookupService service, Row row, double lat, double lon) {
+  private void runSharedLookup(
+      AddressLookupService service, Row row, double lat, double lon, long generation) {
+    if (!isCurrent(row, generation)) return;
     long revision = ++sharedRequestRevision;
     LookupIdentity identity =
         new LookupIdentity(
@@ -331,15 +349,16 @@ public final class AddressSubsystem implements AutoCloseable {
           service.reverse(
               request,
               result -> {
-                if (!identity.equals(sharedIdentity.get(row))) return;
+                if (!identity.equals(sharedIdentity.get(row)) || !isCurrent(row, generation))
+                  return;
                 sharedIdentity.remove(row);
                 sharedInflight.remove(row);
                 AddressRowState state = mapReverseResultToState(result, lat, lon);
-                uiPoster.accept(() -> emit(row, state));
+                uiPoster.accept(() -> emitIfCurrent(row, generation, state));
               });
     } catch (RuntimeException failure) {
       sharedIdentity.remove(row);
-      uiPoster.accept(() -> emit(row, AddressRowState.emptyState()));
+      uiPoster.accept(() -> emitIfCurrent(row, generation, AddressRowState.emptyState()));
       return;
     }
     if (identity.equals(sharedIdentity.get(row))) sharedInflight.put(row, submitted);
@@ -505,6 +524,14 @@ public final class AddressSubsystem implements AutoCloseable {
     }
   }
 
+  private void emitIfCurrent(Row row, long generation, AddressRowState state) {
+    if (isCurrent(row, generation)) emit(row, state);
+  }
+
+  private boolean isCurrent(Row row, long generation) {
+    return rowGeneration.get(row).get() == generation;
+  }
+
   private AddressRowState mapResultToState(
       AddressLookupResult r, double queryLat, double queryLon) {
     if (r instanceof AddressLookupResult.Found) {
@@ -535,12 +562,14 @@ public final class AddressSubsystem implements AutoCloseable {
     return AddressRowState.emptyState();
   }
 
-  private void cancelInflight(Row row) {
+  private long cancelInflight(Row row) {
+    long generation = rowGeneration.get(row).incrementAndGet();
     ScheduledFuture<?> f = inflight.remove(row);
     if (f != null) f.cancel(false);
     sharedIdentity.remove(row);
     LookupHandle handle = sharedInflight.remove(row);
     if (handle != null) handle.cancel();
+    return generation;
   }
 
   private void openFacadeFromActive() {
