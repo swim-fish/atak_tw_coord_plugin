@@ -103,10 +103,14 @@ the widget itself contains no English literals.
   values — this prevents redundant invalidate calls when the map
   redispatches `MAP_MOVED` events that did not actually change the
   centre coordinate at our display precision.
-- A `null` MAP or ME argument leaves that row unchanged. A `null` TGT argument
-  clears the selected-target coordinate row. `TwCoordWidget.clearTarget()`
-  atomically hides both TGT coordinate and address rows while preserving MAP
-  and ME.
+- In `TwCoordWidget.render(mapCentreLine, selfLine, targetLine)`, a `null` MAP
+  or ME argument leaves that coordinate row unchanged; a `null` TGT argument
+  clears only the selected-target coordinate row.
+- In `TwCoordWidget.renderAddresses(mapAddr, meAddr, targetAddr)`, a `null`
+  address argument is rendered as `AddressRowState.hidden()`, so that row is
+  cleared/hidden rather than preserved.
+- `TwCoordWidget.clearTarget()` atomically hides both TGT coordinate and
+  address rows while preserving MAP and ME.
 - ATAK replaces the active `MAP_CLICK` listener stack while a marker radial menu
   is open. The component therefore handles both direct background `MAP_CLICK`
   events and ATAK's stable `com.atakmap.android.maps.HIDE_DETAILS` selected-item

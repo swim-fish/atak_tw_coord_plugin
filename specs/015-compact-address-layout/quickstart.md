@@ -184,7 +184,7 @@ git diff --check
   37 s; 33 tasks, 21 executed and 12 up to date).
 - `:app:lint :app:assembleCivDebug` passed (`BUILD SUCCESSFUL`, 14 s; 50 tasks,
   14 executed and 36 up to date).
-- `python scripts/check-doc-images.py` passed all 31 documentation images for
+- `python scripts/check-doc-images.py` passed all 32 documentation images for
   names, local links, Git LFS state, and sensitive metadata.
 - Version synchronization passed for `app/build.gradle`, `CHANGELOG.md`, and
   both user guides at `1.5.1`.
