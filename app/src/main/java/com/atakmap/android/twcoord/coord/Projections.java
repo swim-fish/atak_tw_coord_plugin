@@ -6,10 +6,7 @@ import org.locationtech.proj4j.CoordinateTransform;
 import org.locationtech.proj4j.CoordinateTransformFactory;
 import org.locationtech.proj4j.ProjCoordinate;
 
-/**
- * WGS84 → TWD97 (EPSG:3826) via proj4j. The proj-string is the EPSG:3826 definition as cited in
- * ADR-0001 and copied verbatim from pwa_map src/coord/twd97.ts:6-8.
- */
+/** WGS84 ↔ TWD97 TM2 projection via proj4j using explicit CRS parameter strings. */
 public final class Projections {
 
   private static final String WGS84_PROJ = "+proj=longlat +datum=WGS84 +no_defs";
@@ -18,13 +15,24 @@ public final class Projections {
       "+proj=tmerc +lat_0=0 +lon_0=121 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80"
           + " +towgs84=0,0,0,0,0,0,0 +units=m +no_defs";
 
-  /** EPSG:3825 — TWD97 / TM2 zone 119 (covers Penghu / 澎湖). */
+  /** EPSG:3825 — TWD97 / TM2 zone 119 (Penghu, Kinmen, and the Matsu archipelago). */
   private static final String TWD97_Z119_PROJ =
       "+proj=tmerc +lat_0=0 +lon_0=119 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80"
           + " +towgs84=0,0,0,0,0,0,0 +units=m +no_defs";
 
-  // Both CRS are built from explicit parameter strings rather than EPSG-name lookup so the
-  // proj4j EPSG database file is not required at runtime. This matters on Android, where
+  // Matsu includes islands east of 120°E, including Liangdao and Dongyin. Longitude-only zone
+  // selection therefore assigns the wrong central meridian for some valid Matsu coordinates. Use
+  // three disjoint island-group envelopes rather than one broad rectangle that would include much
+  // of the nearby Fujian coast.
+  private static final Envelope WESTERN_MATSU =
+      new Envelope(25.90, 26.35, 119.85, 120.08);
+  private static final Envelope LIANGDAO =
+      new Envelope(26.29, 26.39, 120.16, 120.29);
+  private static final Envelope DONGYIN =
+      new Envelope(26.31, 26.42, 120.42, 120.56);
+
+  // Both CRS are built from explicit parameter strings rather than EPSG-name lookup so the proj4j
+  // EPSG database file is not required at runtime. This matters on Android, where
   // resources packaged inside dependency jars are not always merged into the test classpath.
   private static final CRSFactory CRS = new CRSFactory();
   private static final CoordinateReferenceSystem WGS84 =
@@ -38,10 +46,6 @@ public final class Projections {
       TX.createTransform(WGS84, TWD97_Z121);
   private static final CoordinateTransform WGS84_TO_TWD97_Z119 =
       TX.createTransform(WGS84, TWD97_Z119);
-
-  // Feature 002 (input-page GoTo) needs the inverse direction. proj4j transformations are
-  // mathematical inverses by construction; we construct dedicated reverse-direction transforms
-  // rather than relying on per-call .inverse() so the hot path stays stateless.
   private static final CoordinateTransform TWD97_Z121_TO_WGS84 =
       TX.createTransform(TWD97_Z121, WGS84);
   private static final CoordinateTransform TWD97_Z119_TO_WGS84 =
@@ -50,11 +54,11 @@ public final class Projections {
   private Projections() {}
 
   /**
-   * WGS84 → TWD97. Zone auto-picked from longitude: anything west of 120°E uses zone 119 (Penghu /
-   * 澎湖), 120°E and east uses zone 121 (main island).
+   * WGS84 → TWD97. Zone 119 is selected for longitudes west of 120°E and for the complete Matsu
+   * archipelago; all other supported Taiwan locations use zone 121.
    */
   public static Twd97Tm2 wgs84ToTwd97(Wgs84 fix) {
-    int zone = pickZoneForLongitude(fix.longitudeDeg());
+    int zone = pickZoneForLocation(fix.latitudeDeg(), fix.longitudeDeg());
     ProjCoordinate in = new ProjCoordinate(fix.longitudeDeg(), fix.latitudeDeg());
     ProjCoordinate out = new ProjCoordinate();
     CoordinateTransform tx = (zone == 119) ? WGS84_TO_TWD97_Z119 : WGS84_TO_TWD97_Z121;
@@ -63,26 +67,54 @@ public final class Projections {
   }
 
   /**
-   * TWD97 → WGS84 (feature 002 inverse path). Used by the GoTo input page after the operator types
-   * a TWD97 / TWD67 / Taipower coordinate and the parser has assembled a {@link Twd97Tm2}. The zone
-   * carried on the input picks the right TM2 transform; the caller is responsible for applying the
-   * TWD67→TWD97 datum shift first if their source unit was TWD67.
+   * TWD97 → WGS84.
    *
-   * @param t97 source coordinate; its zone (121 or 119) selects the matching transform.
-   * @param epochMs timestamp to stamp on the produced {@link Wgs84} (caller-provided so unit tests
-   *     can pin time without {@link System#currentTimeMillis()}).
-   * @return WGS84 fix; source defaults to {@link Wgs84.Source#MAP_CENTRE} since the GoTo page is
-   *     not a device-location source.
+   * @param t97 source coordinate; its zone selects the matching TM2 transform.
+   * @param epochMs timestamp to stamp on the produced fix.
    */
   public static Wgs84 twd97ToWgs84(Twd97Tm2 t97, long epochMs) {
     CoordinateTransform tx = (t97.zone() == 119) ? TWD97_Z119_TO_WGS84 : TWD97_Z121_TO_WGS84;
     ProjCoordinate in = new ProjCoordinate(t97.eastingMetres(), t97.northingMetres());
     ProjCoordinate out = new ProjCoordinate();
     tx.transform(in, out);
-    return new Wgs84(/*lat*/ out.y, /*lon*/ out.x, epochMs, Wgs84.Source.MAP_CENTRE);
+    return new Wgs84(out.y, out.x, epochMs, Wgs84.Source.MAP_CENTRE);
   }
 
+  /** Location-aware TM2 zone selection, including Matsu islands east of 120°E. */
+  public static int pickZoneForLocation(double latDeg, double lonDeg) {
+    if (WESTERN_MATSU.contains(latDeg, lonDeg)
+        || LIANGDAO.contains(latDeg, lonDeg)
+        || DONGYIN.contains(latDeg, lonDeg)) {
+      return 119;
+    }
+    return pickZoneForLongitude(lonDeg);
+  }
+
+  /**
+   * Longitude-only compatibility helper.
+   *
+   * <p>Call {@link #pickZoneForLocation(double, double)} when latitude is available; longitude
+   * alone cannot correctly classify Dongyin, Liangdao, and other Matsu points east of 120°E.
+   */
   public static int pickZoneForLongitude(double lonDeg) {
     return lonDeg < 120.0 ? 119 : 121;
+  }
+
+  private static final class Envelope {
+    private final double latMin;
+    private final double latMax;
+    private final double lonMin;
+    private final double lonMax;
+
+    private Envelope(double latMin, double latMax, double lonMin, double lonMax) {
+      this.latMin = latMin;
+      this.latMax = latMax;
+      this.lonMin = lonMin;
+      this.lonMax = lonMax;
+    }
+
+    private boolean contains(double latDeg, double lonDeg) {
+      return latDeg >= latMin && latDeg <= latMax && lonDeg >= lonMin && lonDeg <= lonMax;
+    }
   }
 }

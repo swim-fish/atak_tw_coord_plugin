@@ -248,8 +248,9 @@ afterEvaluate {
 dependencies {
     implementation fileTree(dir: 'libs', include: '*.jar')
 
-    // Coordinate math (TWD97 / EPSG:3826). proj4j is pure-Java, zero Android transitives.
-    implementation 'org.locationtech.proj4j:proj4j:1.3.0'
+    // Coordinate math (TWD97 / EPSG:3826). Proj4J 1.4.2 fixed GRS80/WGS84 recognition and
+    // projected-to-projected datum-shift handling; 1.4.3 retains those fixes.
+    implementation 'org.locationtech.proj4j:proj4j:1.4.3'
 
     // Feature 005 FR-017 fallback SQLite runtime (research R5). The host SQLite (Samsung
     // One UI build) ships without the R*Tree module on the reference device; the primary
