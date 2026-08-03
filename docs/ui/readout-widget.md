@@ -103,9 +103,21 @@ the widget itself contains no English literals.
   values — this prevents redundant invalidate calls when the map
   redispatches `MAP_MOVED` events that did not actually change the
   centre coordinate at our display precision.
-- Either argument may be `null`, meaning "leave the previous row
-  visible" (NOT "clear the row"). Clearing is achieved by passing a
-  `DisplayLine` with empty value.
+- A `null` MAP or ME argument leaves that row unchanged. A `null` TGT argument
+  clears the selected-target coordinate row. `TwCoordWidget.clearTarget()`
+  atomically hides both TGT coordinate and address rows while preserving MAP
+  and ME.
+- ATAK replaces the active `MAP_CLICK` listener stack while a marker radial menu
+  is open. The component therefore handles both direct background `MAP_CLICK`
+  events and ATAK's stable `com.atakmap.android.maps.HIDE_DETAILS` selected-item
+  dismissal broadcast. Pending TGT address work is cancelled before the widget
+  is hidden, so a stale result cannot restore the dismissed marker.
+
+Compatibility evidence: `javap -public` against the pinned ATAK-CIV 5.7.0.9
+SDK confirms the public `AtakBroadcast` register/unregister contract. ATAK-CIV
+tag `5.5.1.1` source shows `MenuLayoutWidget` sending `HIDE_DETAILS` on background
+`MAP_CLICK` and `CoordOverlayMapComponent` registering the same action for the
+native selected-coordinate overlay.
 
 ## Background
 

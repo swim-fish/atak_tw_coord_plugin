@@ -7,6 +7,35 @@ follows Semantic Versioning. Per-feature design records live under
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-08-01 — Compact structured Address layout
+
+### Changed
+
+- Native Taiwan Address structured entry now uses two compact rows. The first
+  row pairs county/city with district/township; the second pairs road/locality
+  with house-number/floor. Both pairs divide the content column equally while
+  preserving the existing field semantics and row-major interaction order.
+- The Address pane retains its 8:2 content/action split, top-aligned 48 dp mode
+  action, and single outer scroll owner so ATAK-owned elevation and confirmation
+  controls remain reachable.
+
+### Fixed
+
+- Tapping empty map background after selecting a marker now hides the plugin's
+  upper-right TGT coordinate and address rows together, matching ATAK's native
+  Selected Marker overlay. MAP and ME remain visible, and a cancelled TGT
+  address lookup cannot restore stale content.
+
+### Compatibility
+
+- These refinements add no Android permission, dependency, network path,
+  telemetry, coordinate conversion, parsing, lookup, ranking, or
+  host-confirmation behavior change. Marker dismissal mirrors the stable ATAK
+  `HIDE_DETAILS` action used by the native coordinate overlay in both the 5.5
+  and 5.7 source lines. Android compile/minimum 36/26 and ATAK
+  compile/minimum-runtime 5.7.0.9/5.5.0 remain unchanged; exact device and
+  replacement-screenshot evidence remain release gates.
+
 ## [1.5.0] — 2026-07-30 — Native Taiwan input UX
 
 ### Added

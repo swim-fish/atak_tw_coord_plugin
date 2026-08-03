@@ -192,6 +192,17 @@ public final class AddressSubsystem implements AutoCloseable {
     }
   }
 
+  /**
+   * Cancel one row's pending lookup and hide its current value without changing the operator's
+   * persisted row-enabled preference. The next {@link #onCoord} call may immediately use the row
+   * again.
+   */
+  public void clearRow(Row row) {
+    Objects.requireNonNull(row, "row");
+    cancelInflight(row);
+    emit(row, AddressRowState.hidden());
+  }
+
   public void onCoord(Row row, double lat, double lon) {
     Objects.requireNonNull(row, "row");
     if (!Boolean.TRUE.equals(enabled.get(row))) {

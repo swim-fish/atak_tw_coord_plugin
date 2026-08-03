@@ -665,9 +665,17 @@
                         android:visibility="gone">
 
                 <LinearLayout
-                    android:id="@+id/native_entry_address_county_row"
+                    android:id="@+id/native_entry_address_locality_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
+
+                <LinearLayout
+                    android:id="@+id/native_entry_address_county_row"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:weightSum="10">
@@ -703,8 +711,9 @@
 
                 <LinearLayout
                     android:id="@+id/native_entry_address_district_row"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:weightSum="10">
@@ -737,11 +746,20 @@
                         android:textColorHint="#99FFFFFF"
                         android:textSize="@dimen/native_entry_title_font" />
                 </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/native_entry_address_street_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
 
                 <LinearLayout
                     android:id="@+id/native_entry_address_road_row"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:weightSum="10">
@@ -777,8 +795,9 @@
 
                 <LinearLayout
                     android:id="@+id/native_entry_address_tail_row"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:weightSum="10">
@@ -808,6 +827,7 @@
                         android:textColor="#FFFFFFFF"
                         android:textColorHint="#99FFFFFF"
                         android:textSize="@dimen/native_entry_title_font" />
+                </LinearLayout>
                 </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>

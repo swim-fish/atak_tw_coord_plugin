@@ -1,7 +1,8 @@
 # UI — Native Taiwan coordinate entry
 
 **Features**: 011-native-coordinate-entry, 012-prefill-native-tabs,
-013-native-address-entry, 014-native-entry-input-ux
+013-native-address-entry, 014-native-entry-input-ux,
+015-compact-address-layout
 
 **Source**: `app/src/main/res/layout/taiwan_coordinate_entry_pane.xml` and
 `app/src/main/java/com/atakmap/android/twcoord/nativeentry/`
@@ -50,8 +51,8 @@ invoking ATAK confirmation. ATAK still owns the final action.
 </p>
 
 <p align="center">
-<img src="../images/23b-native-address-structured.png" alt="ATAK Enter Coordinate dialog showing four Taiwan Address fields with its mode action at the upper right" width="900"><br>
-<sub>The four structured rows remain visible beside the top-aligned mode action; address values are redacted.</sub>
+<img src="../images/27-native-address-structured.png" alt="ATAK Enter Coordinate dialog showing the compact Taiwan Address structured layout in two equal-width rows" width="900"><br>
+<sub>The first 1:1 row pairs county/city with district/township; the second pairs road/locality with house-number/floor. ATAK-owned controls remain reachable, and address values are redacted.</sub>
 </p>
 
 <p align="center">
@@ -103,7 +104,8 @@ Fill.
 │                                        │
 │ — when Address is selected —           │
 │ Full: [臺中市南屯區黎明路2段130號] [Structured]│
-│ or: county · district · road · tail [Single]│
+│ Structured: [county/city] [district/township] [Single]│
+│             [road/locality] [house/floor]             │
 │                                  [Choose result]│
 │ [normalised/status]                    │
 └────────────────────────────────────────┘
@@ -123,7 +125,12 @@ transparent top/bottom drawable insets; those bands remain part of each native
 large font to reduce visual weight without reducing the touch target. Empty
 status text consumes no height. Like ATAK's built-in ADDR pane, Address entry
 keeps input content on the left and its mode/candidate actions in a top-aligned
-right column, so the mode control is not placed below the four structured rows.
+right column, so the mode control is not placed below the structured fields.
+Structured mode places county/city and district/township in the first row, then
+road/locality and house-number/floor in the second. Each field group receives
+half of the content-column width while preserving the existing 3:7 label/input
+proportion and row-major focus order. Both rows remain inside the pane's single
+outer scroll owner.
 Taipower uses the same 8:2 content/action structure: a single far-right action
 names the alternate layout instead of consuming a full-width segmented row.
 
@@ -171,7 +178,9 @@ point with the nearest address-record point (the **reverse no-snap rule**).
 - **Full address** provides one field. Normalisation accepts common Taiwan
   variants such as `台`/`臺`, full-width digits, spacing, and Chinese numerals
   adjacent to address units.
-- **Structured** provides four compact fields. County/city and district are
+- **Structured** provides four compact fields in two equal-column rows:
+  county/city with district/township first, then road/locality with the
+  remaining house-number/floor text. County/city and district/township are
   selectors; road/locality and remaining address stay editable. A county list
   contains only active imported county datasets. After a county is selected,
   its district list contains only distinct non-empty `places.township` values

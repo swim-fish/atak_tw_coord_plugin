@@ -176,6 +176,32 @@ public final class AddressSubsystemTest {
     s.close();
   }
 
+  @Test
+  public void clearRow_cancelsSelectedTargetLookupWithoutDisablingFutureTargets() {
+    AddressSubsystem s = makeSubsystem();
+    FakeLookupService shared = new FakeLookupService();
+    s.setLookupService(shared);
+    s.setRowEnabled(AddressSubsystem.Row.TGT, true);
+
+    s.onCoord(AddressSubsystem.Row.TGT, 24.1, 120.6);
+    exec.advanceBy(DEBOUNCE);
+    LookupHandle dismissed = shared.lastHandle;
+
+    s.clearRow(AddressSubsystem.Row.TGT);
+
+    assertThat(dismissed.isCancelled()).isTrue();
+    assertThat(lastEmissionFor(AddressSubsystem.Row.TGT).isHidden()).isTrue();
+    shared.complete("stale target");
+    assertThat(lastEmissionFor(AddressSubsystem.Row.TGT).isHidden()).isTrue();
+
+    s.onCoord(AddressSubsystem.Row.TGT, 24.2, 120.7);
+    exec.advanceBy(DEBOUNCE);
+    assertThat(shared.lastHandle).isNotSameAs(dismissed);
+    shared.complete("new target");
+    assertThat(lastEmissionFor(AddressSubsystem.Row.TGT).isText()).isTrue();
+    s.close();
+  }
+
   // ----------------------------------------------------------------------
   // Test 5 — no dataset → emits Hidden, not Loading; no scheduling
   // ----------------------------------------------------------------------

@@ -28,11 +28,13 @@ sanitized image is committed.
   `TW Coord GoTo`, `TW Offline Addr`, and `TW Addr Search` tiles without
   redrawing the remaining UI. `08a-tools-icon-tw-coord.png` remains the current
   standalone icon; `08b` through `08d` are historical exports only.
-- `23a-native-address-full.png` and
-  `23b-native-address-structured.png` are a coupled ATAK-CIV 5.7.0.9 capture
-  of the native Taiwan Address tab, refreshed for plugin 1.4.4 to show the
-  top-aligned right action column. They replace the obsolete three-tab
-  `22-atak-enter-coordinate.jpg`; address values are redacted.
+- `23a-native-address-full.png` is the current single-field ATAK-CIV 5.7.0.9
+  capture of the native Taiwan Address tab, refreshed for plugin 1.4.4 to show
+  the top-aligned right action column. Address values are redacted.
+- `23b-native-address-structured.png` retains the historical four-row structured
+  layout and is intentionally not referenced by current operator or UI
+  documentation. `27-native-address-structured.png` supersedes it for the
+  compact two-row layout.
 - `24-offline-address-data.png` shows the current `TW Coordinates` landing
   page, including the top settings action. It replaces the older populated
   manager capture `17-tw-offline-addr-usage.jpg`.
@@ -55,3 +57,11 @@ outside Git for local recovery.
 - Both committed images are cropped to the ATAK Go To dialog. The surrounding
   map, address/readout overlays, and exact Taipower coordinate values are
   excluded or redacted.
+
+## Current feature 015 addition
+
+- `27-native-address-structured.png` is the ATAK-CIV 5.7.0.9 landscape capture
+  of the compact structured Address layout. County/city and district/township
+  share the first equal-width row; road/locality and house-number/floor share
+  the second. The crop excludes the map and coordinate readouts, and all four
+  address values are redacted.
