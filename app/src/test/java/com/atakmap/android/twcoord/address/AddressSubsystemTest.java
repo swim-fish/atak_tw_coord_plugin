@@ -82,8 +82,11 @@ public final class AddressSubsystemTest {
   }
 
   private AddressSubsystem makeSubsystem() {
-    AddressSubsystem s =
-        new AddressSubsystem(importer, factory, exec, DEBOUNCE, Runnable::run /* synchronous UI */);
+    return makeSubsystem(Runnable::run);
+  }
+
+  private AddressSubsystem makeSubsystem(Consumer<Runnable> uiPoster) {
+    AddressSubsystem s = new AddressSubsystem(importer, factory, exec, DEBOUNCE, uiPoster);
     s.addListener((row, state) -> emissions.add(new EmittedState(row, state)));
     return s;
   }
@@ -198,6 +201,51 @@ public final class AddressSubsystemTest {
     exec.advanceBy(DEBOUNCE);
     assertThat(shared.lastHandle).isNotSameAs(dismissed);
     shared.complete("new target");
+    assertThat(lastEmissionFor(AddressSubsystem.Row.TGT).isText()).isTrue();
+    s.close();
+  }
+
+  @Test
+  public void clearRow_suppressesLegacyResultAlreadyQueuedForUi() {
+    when(facade.nearestWithin(24.1, 120.6, 500.0))
+        .thenReturn(new AddressRecord(24.1, 120.6, "stale target", "stale target"));
+    List<Runnable> queuedUi = new ArrayList<>();
+    AddressSubsystem s = makeSubsystem(queuedUi::add);
+    s.setRowEnabled(AddressSubsystem.Row.TGT, true);
+
+    s.onCoord(AddressSubsystem.Row.TGT, 24.1, 120.6);
+    exec.advanceBy(DEBOUNCE);
+    assertThat(queuedUi).hasSize(1);
+
+    s.clearRow(AddressSubsystem.Row.TGT);
+    queuedUi.remove(0).run();
+
+    assertThat(lastEmissionFor(AddressSubsystem.Row.TGT).isHidden()).isTrue();
+    s.close();
+  }
+
+  @Test
+  public void clearRow_suppressesSharedResultAlreadyQueuedForUiAndAllowsNextTarget() {
+    List<Runnable> queuedUi = new ArrayList<>();
+    AddressSubsystem s = makeSubsystem(queuedUi::add);
+    FakeLookupService shared = new FakeLookupService();
+    s.setLookupService(shared);
+    s.setRowEnabled(AddressSubsystem.Row.TGT, true);
+
+    s.onCoord(AddressSubsystem.Row.TGT, 24.1, 120.6);
+    exec.advanceBy(DEBOUNCE);
+    shared.complete("stale target");
+    assertThat(queuedUi).hasSize(1);
+
+    s.clearRow(AddressSubsystem.Row.TGT);
+    queuedUi.remove(0).run();
+    assertThat(lastEmissionFor(AddressSubsystem.Row.TGT).isHidden()).isTrue();
+
+    s.onCoord(AddressSubsystem.Row.TGT, 24.2, 120.7);
+    exec.advanceBy(DEBOUNCE);
+    shared.complete("new target");
+    assertThat(queuedUi).hasSize(1);
+    queuedUi.remove(0).run();
     assertThat(lastEmissionFor(AddressSubsystem.Row.TGT).isText()).isTrue();
     s.close();
   }

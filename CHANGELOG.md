@@ -24,15 +24,18 @@ follows Semantic Versioning. Per-feature design records live under
 - Tapping empty map background after selecting a marker now hides the plugin's
   upper-right TGT coordinate and address rows together, matching ATAK's native
   Selected Marker overlay. MAP and ME remain visible, and a cancelled TGT
-  address lookup cannot restore stale content.
+  address lookup cannot restore stale content even when its UI runnable was
+  already queued. Ordinary cleanup failures remain contained without
+  swallowing fatal JVM conditions.
 
 ### Compatibility
 
 - These refinements add no Android permission, dependency, network path,
   telemetry, coordinate conversion, parsing, lookup, ranking, or
   host-confirmation behavior change. Marker dismissal mirrors the stable ATAK
-  `HIDE_DETAILS` action used by the native coordinate overlay in both the 5.5
-  and 5.7 source lines. Android compile/minimum 36/26 and ATAK
+  `HIDE_DETAILS` action evidenced by the native coordinate overlay's official
+  5.5.1.1 source and the pinned 5.7.0.9 public SDK. Android compile/minimum
+  36/26 and ATAK
   compile/minimum-runtime 5.7.0.9/5.5.0 remain unchanged; exact device and
   replacement-screenshot evidence remain release gates.
 

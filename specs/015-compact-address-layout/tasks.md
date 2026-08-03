@@ -26,7 +26,7 @@ or validation target.
 **Purpose**: Capture the exact starting state and compatibility boundary.
 
 - [X] T001 Record branch, commit, dirty-worktree scope, plugin version, Java version, Gradle version, and the pre-change focused/full quality baseline in `specs/015-compact-address-layout/quickstart.md`
-- [X] T002 Confirm Feature 015 adds no ATAK API seam and record the inherited ADR-0022 through ADR-0024 compile/minimum-runtime evidence in `specs/015-compact-address-layout/quickstart.md`
+- [X] T002 Confirm the initial compact-layout scope adds no ATAK API seam and record the inherited ADR-0022 through ADR-0024 compile/minimum-runtime evidence in `specs/015-compact-address-layout/quickstart.md`
 
 ---
 
@@ -87,9 +87,22 @@ run the full repository gates, and preserve release boundaries.
 - [X] T010 [P] Set `PLUGIN_VERSION` to `1.5.1` in `app/build.gradle`
 - [X] T011 [P] Add the `1.5.1` compact Address entry and compatibility note to `CHANGELOG.md`, update version and two-row structured workflow text in `docs/user-guide.md` and `docs/user-guide_zh.md`, and keep the generated mockup out of release evidence
 - [X] T012 Run `:app:spotlessApply`, `:app:spotlessCheck`, `:app:testCivDebugUnitTest`, `:app:lint`, `:app:assembleCivDebug`, `python scripts/check-doc-images.py`, version synchronization checks, and `git diff --check`, then record exact results in `specs/015-compact-address-layout/quickstart.md`
-- [X] T013 Audit the reviewed diff for unrelated user attachments, workstation identifiers, image metadata, new permissions/dependencies/network/telemetry, Java production changes, ATAK SDK seams, nested scroll owners, and coordinate/address behavior changes; record the disposition in `specs/015-compact-address-layout/quickstart.md`
+- [X] T013 Audit the initial layout diff for unrelated user attachments, workstation identifiers, image metadata, new permissions/dependencies/network/telemetry, Java production changes, ATAK SDK seams, nested scroll owners, and coordinate/address behavior changes; record the disposition in `specs/015-compact-address-layout/quickstart.md`
 - [X] T014 Run `/speckit-converge` against Feature 015 and append only evidence-backed unfinished buildable work to `specs/015-compact-address-layout/tasks.md`
 - [ ] T015 [RELEASE-GATE] Repeat the T009 compact Address matrix on exact ATAK-CIV 5.5.x, then complete or explicitly disposition all Feature 015 device, screenshot, signer, and provenance evidence before any TPP upload, tag, or public `v1.5.1` release in `specs/015-compact-address-layout/quickstart.md`
+
+---
+
+## Phase 6: Review Remediation — Selected-Target Lifecycle
+
+**Purpose**: Address review findings without weakening ATAK host-process or
+minimum-runtime guarantees.
+
+- [X] T016 Add focused Red tests in `TwCoordMapComponentTargetDismissTest` proving ordinary cleanup failures are contained while `VirtualMachineError` and `ThreadDeath` propagate, and in `AddressSubsystemTest` proving legacy/shared results already queued for UI delivery cannot restore a cleared row
+- [X] T017 Narrow selected-target cleanup containment in `TwCoordMapComponent` to ordinary `RuntimeException` so fatal JVM conditions keep their process-level semantics
+- [X] T018 Add per-row atomic delivery generations in `AddressSubsystem` and verify the captured generation inside every UI-posted legacy/shared emission
+- [X] T019 Capture the pinned ATAK-CIV 5.7.0.9 `AtakBroadcast` `javap -public` evidence, immutable official 5.5.1.1 sender/receiver/lifecycle source anchors, compatibility matrix, and device-smoke boundary in `plan.md`, `research.md`, and `quickstart.md`
+- [X] T020 Run Spotless, the full Civ Debug JVM suite, lint, Civ Debug assembly, documentation/image checks, sensitive-path scan, and `git diff --check`; record the final results in `quickstart.md`
 
 ---
 
@@ -106,12 +119,17 @@ run the full repository gates, and preserve release boundaries.
 - **Version and documentation** follow the green implementation. T010 and T011
   may run in parallel; T012-T014 are sequential validation. T009 and T015 stay
   open until their exact physical-device evidence exists.
+- **Review remediation** follows the PR review. T016 establishes Red; T017 and
+  T018 implement independent host-boundary and queued-delivery fixes; T019
+  documents the seam; T020 is the final automated gate. T009 and T015 remain
+  release gates after T020.
 
 ### User Story Dependency Graph
 
 ```text
 Setup -> Shared Red Contract -> US1 compact rows -> US2 states/accessibility
                                                 -> Version/docs/full gates
+                                                -> Review remediation
 ```
 
 ### Within Each User Story
@@ -148,14 +166,19 @@ recorded.
 1. **US1**: Compact hierarchy and preserved actions.
 2. **US2**: Legibility, states, accessibility, and UI documentation.
 3. **Polish**: `1.5.1` synchronization and complete automated gates.
-4. **Release**: Current/minimum ATAK device evidence, screenshot, signer, and
+4. **Review remediation**: Selected-target lifecycle tests, implementation,
+   compatibility evidence, and repeated full gates.
+5. **Release**: Current/minimum ATAK device evidence, screenshot, signer, and
    provenance under separate authorization.
 
 ## Notes
 
 - Preserve `.codex-remote-attachments/` as unrelated untracked user input.
 - Do not commit the generated mockup as a physical-device screenshot.
-- No production Java, data model, permission, dependency, SDK seam, or address
-  behavior change is expected.
+- The initial layout phase changes no production Java. Review remediation
+  intentionally changes two Java production classes, adds one public
+  `AtakBroadcast` seam, and adds transient per-row generations; it does not add
+  a persisted model, permission, dependency, network path, coordinate change,
+  or address lookup-result change.
 - A clean convergence result is implementation evidence, not public-release
   readiness.

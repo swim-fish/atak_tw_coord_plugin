@@ -82,12 +82,93 @@ current screenshots until a sanitized physical-device replacement is captured
 as a release gate.
 
 **Rationale**: The user explicitly requested a patch-version increment. The
-change refines presentation within ADR-0023's existing native pane architecture
-and does not establish or reverse an architectural decision.
+layout change refines presentation within ADR-0023's existing native pane
+architecture. The later selected-target remediation adopts the same public
+local broadcast already used by ATAK's native coordinate overlay; it does not
+replace the accepted integration architecture or compatibility strategy.
 
 **Alternatives considered**:
 
-- Add an ADR: rejected because no contract boundary, data model, compatibility
-  strategy, or operational posture changes.
+- Add an ADR: rejected because the public host contract and compatibility
+  strategy already exist; R6 records the bounded registration, delivery,
+  disposal, source, and binary evidence needed for this use of that contract.
 - Treat the generated mockup as release evidence: rejected because it is a
   design preview, not a physical-device screenshot.
+
+## R6. Mirror ATAK selected-marker dismissal through its public local broadcast
+
+**Decision**: Retain the direct `MapEvent.MAP_CLICK` listener and also register
+an `AtakBroadcast` receiver for
+`com.atakmap.android.maps.HIDE_DETAILS`. Both paths clear only the plugin's TGT
+coordinate/address readout. Register during component creation and unregister
+during component destruction.
+
+**Rationale**: While a marker radial menu is active, ATAK replaces the active
+map-listener stack. A background tap therefore reaches ATAK's menu listener but
+can bypass the plugin's direct `MAP_CLICK` listener. ATAK's own menu emits
+`HIDE_DETAILS` for background map press/click/long-press, and its native
+coordinate overlay consumes the same action. Mirroring that public contract
+keeps native and plugin selected-target state synchronized without reflection,
+private fields, or assumptions about listener-stack ownership.
+
+**Pinned 5.7.0.9 binary evidence**:
+
+- `main.jar` SHA-256:
+  `8AE6CA6028F72A99537FC2CE9436A4E4964356CB90C7934C35ABE7A7CB065B70`.
+- `javap -public` confirms
+  `AtakBroadcast.getInstance()`,
+  `registerReceiver(BroadcastReceiver, DocumentedIntentFilter)`,
+  `unregisterReceiver(BroadcastReceiver)`, and
+  `DocumentedIntentFilter()` are public. The implementation adds the action
+  through the inherited Android `IntentFilter.addAction(String)` method.
+
+**Minimum-runtime source anchors**: immutable official ATAK-CIV commit
+`6cefd4c83371789937a6a30aa4d7e81d84b82374` from the 5.5.1.1 line shows:
+
+- [`MenuLayoutWidget` sends `HIDE_DETAILS` for background map interaction](https://github.com/TAK-Product-Center/atak-civ/blob/6cefd4c83371789937a6a30aa4d7e81d84b82374/atak/ATAK/app/src/main/java/com/atakmap/android/menu/MenuLayoutWidget.java#L110-L120).
+- [`CoordOverlayMapComponent` registers `HIDE_DETAILS` and unregisters its receiver](https://github.com/TAK-Product-Center/atak-civ/blob/6cefd4c83371789937a6a30aa4d7e81d84b82374/atak/ATAK/app/src/main/java/com/atakmap/android/coordoverlay/CoordOverlayMapComponent.java#L24-L44).
+- [`AtakBroadcast` exposes the local register/unregister lifecycle](https://github.com/TAK-Product-Center/atak-civ/blob/6cefd4c83371789937a6a30aa4d7e81d84b82374/atak/ATAK/app/src/main/java/com/atakmap/android/ipc/AtakBroadcast.java#L174-L234).
+
+**Lifecycle matrix**:
+
+| Stage | Plugin behavior | Compatibility evidence |
+|-------|-----------------|------------------------|
+| Registration | Construct one documented filter and register one receiver during `onCreate` | Public 5.7.0.9 `javap`; public 5.5.1.1 source; reviewed component path |
+| Delivery | Treat `HIDE_DETAILS` and direct background `MAP_CLICK` as idempotent requests to clear only TGT | 5.5.1.1 sender/native-receiver source; focused JVM tests; 5.7.0.9 device smoke test |
+| Disposal | Unregister the same receiver during `onDestroy`; contain ordinary missing-registration failures | Public 5.7.0.9 `javap`; 5.5.1.1 unregister source; reviewed component path |
+
+Exact ATAK-CIV 5.5.0 physical-device acceptance remains a release gate; the
+5.5.1.1 source anchor proves API lineage but is not a substitute for that
+runtime journey.
+
+**Alternatives considered**:
+
+- Rely only on the plugin's `MAP_CLICK` listener: rejected because ATAK's
+  marker-menu listener stack can bypass it.
+- Observe private menu state or use reflection: rejected because those are
+  unstable, unevidenced seams and increase host-process risk.
+- Clear MAP and ME with TGT: rejected because `HIDE_DETAILS` dismisses the
+  selected item, not the operator's map-centre or self-location context.
+
+## R7. Invalidate queued address emissions and preserve fatal JVM semantics
+
+**Decision**: Maintain an atomic generation per MAP/ME/TGT address row. Every
+new coordinate or explicit clear increments that row's generation. Debounced,
+legacy, and shared-resolver paths capture the generation and re-check it inside
+every UI-posted emission. Cleanup boundaries catch ordinary
+`RuntimeException`, but do not catch `VirtualMachineError` or `ThreadDeath`.
+
+**Rationale**: Cancelling a future or lookup handle does not retract a runnable
+already queued on the UI thread. A generation check at the point of emission
+prevents an old TGT result from restoring a dismissed marker. Limiting
+containment to ordinary runtime failures protects ATAK from plugin faults while
+allowing fatal JVM conditions to keep their process-level semantics.
+
+**Alternatives considered**:
+
+- Check cancellation only before posting: rejected because dismissal can race
+  after that check and before the UI runnable executes.
+- Use one global generation: rejected because clearing TGT must not invalidate
+  independent MAP or ME work.
+- Catch `Throwable` around cleanup: rejected because it can swallow fatal JVM
+  conditions inside the ATAK host process.

@@ -4,9 +4,9 @@
 
 **Created**: 2026-08-01
 
-**Status**: Draft
+**Status**: In Review
 
-**Input**: User description: "Prepare v1.5.1 and compact the native Taiwan structured Address form so county/city and district/township share one row, road and address tail share a second row, and both rows use equal columns like the compact Taipower presentation."
+**Input**: User description: "Prepare v1.5.1 and compact the native Taiwan structured Address form so county/city and district/township share one row, road and address tail share a second row, and both rows use equal columns like the compact Taipower presentation. Also keep the plugin's selected-target readout synchronized when ATAK dismisses a selected marker from the map background."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -75,6 +75,36 @@ portrait and landscape, in both editable and read-only host contexts.
    re-rendered, **Then** no represented address content, candidate state, or
    exact host point is changed solely by the compact layout.
 
+---
+
+### User Story 3 - Dismiss Selected-Target Readouts Consistently (Priority: P1)
+
+An operator who previously selected a marker can tap empty map background and
+see ATAK's native Selected Marker overlay and the plugin's upper-right TGT
+coordinate/address readout close together. The persistent MAP and ME readouts
+remain unchanged.
+
+**Why this priority**: Leaving the plugin's TGT row visible after ATAK has
+dismissed the selected marker presents stale context and can mislead the
+operator about the active target.
+
+**Independent Test**: Select a marker, enable a delayed TGT address lookup,
+tap empty map background while ATAK owns the marker-menu listener stack, and
+verify both native and plugin selected-target UI clear without a later TGT
+address restoration.
+
+**Acceptance Scenarios**:
+
+1. **Given** a marker was selected, **When** empty map background dismisses
+   ATAK's selected-item details, **Then** the plugin clears only TGT coordinate
+   and address rows while retaining MAP and ME.
+2. **Given** a TGT address result is already queued for the UI thread, **When**
+   the marker is dismissed before that runnable executes, **Then** the queued
+   result cannot make the TGT address row visible again.
+3. **Given** the selected-target cleanup encounters an ordinary plugin runtime
+   failure, **When** dismissal continues, **Then** ATAK remains active and the
+   failure is logged; fatal JVM conditions are not swallowed.
+
 ### Edge Cases
 
 - A county/city or district/township name is longer than its hint or typical
@@ -102,6 +132,13 @@ portrait and landscape, in both editable and read-only host contexts.
 - **FS-003**: Given a supported keyboard ignores an inline presentation hint,
   when the operator returns to the pane, then all represented draft content
   remains intact and the host confirmation flow remains authoritative.
+- **FS-004**: Given a TGT address callback has already been posted to the UI
+  queue, when selected-target dismissal invalidates that row, then the callback
+  is discarded at UI-delivery time and cannot restore stale content.
+- **FS-005**: Given selected-target cleanup throws `VirtualMachineError` or
+  `ThreadDeath`, when the component processes dismissal, then the fatal
+  condition propagates instead of being converted into an ordinary plugin
+  warning.
 
 ## Requirements *(mandatory)*
 
@@ -140,6 +177,18 @@ portrait and landscape, in both editable and read-only host contexts.
   two-column presentation.
 - **FR-012**: The shipped plugin version for this change MUST be `1.5.1`, with
   the changelog and both user guides identifying the same version.
+- **FR-013**: The component MUST respond to both its direct background
+  `MAP_CLICK` path and ATAK's public
+  `com.atakmap.android.maps.HIDE_DETAILS` selected-item dismissal action.
+- **FR-014**: Selected-item dismissal MUST clear the plugin's TGT coordinate
+  and address rows without clearing or changing MAP and ME rows.
+- **FR-015**: Every debounced, legacy, and shared-resolver address emission
+  MUST verify the current generation of its MAP/ME/TGT row inside the
+  UI-posted runnable so that clear/replacement invalidates already queued
+  results.
+- **FR-016**: Host-boundary cleanup MAY contain and log ordinary
+  `RuntimeException`, but MUST NOT swallow `VirtualMachineError` or
+  `ThreadDeath`.
 
 ### Project-Wide Quality Requirements
 
@@ -196,6 +245,12 @@ portrait and landscape, in both editable and read-only host contexts.
   is completed or explicitly dispositioned without claiming unexecuted proof.
 - **SC-008**: The published application version, changelog version, English
   guide version, and Traditional Chinese guide version all report `1.5.1`.
+- **SC-009**: In automated selected-target dismissal tests,
+  100% of TGT coordinate/address rows clear while MAP and ME remain, and 100%
+  of legacy/shared address results queued before the clear are rejected.
+- **SC-010**: Focused host-boundary tests demonstrate that ordinary cleanup
+  failures are contained while both `VirtualMachineError` and `ThreadDeath`
+  propagate.
 
 ## Assumptions
 
@@ -208,5 +263,7 @@ portrait and landscape, in both editable and read-only host contexts.
   lookup, candidate, and reverse no-snap contracts remain authoritative.
 - ATAK continues to own elevation, marker, Auto Fill, Clear, Copy, map movement,
   and final confirmation outside the plugin-owned pane.
-- The feature changes layout and release version only; it introduces no new
-  persisted entity, permission, dependency, network path, or coordinate rule.
+- The initial feature changes layout and release version. Review remediation
+  also consumes ATAK's existing public selected-item dismissal broadcast and
+  adds transient per-row address generations; it introduces no new persisted
+  entity, permission, dependency, network path, or coordinate rule.

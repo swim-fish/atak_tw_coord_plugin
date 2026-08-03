@@ -42,8 +42,10 @@ warnings; no baseline task failed.
 
 ### Compatibility inheritance
 
-Feature 015 adds no ATAK class, method, registration, callback, or lifecycle
-seam. It retains:
+The compact-layout portion adds no ATAK class, method, registration, callback,
+or lifecycle seam. Review remediation for selected-marker dismissal adds one
+public host seam: a documented local receiver for
+`com.atakmap.android.maps.HIDE_DETAILS`. Feature 015 retains:
 
 - Android compile/minimum SDK 36/26;
 - ATAK compile/minimum runtime 5.7.0.9/5.5.0;
@@ -54,8 +56,63 @@ seam. It retains:
 - the ATAK 5.5.1.1 public source anchor and exact ATAK 5.5.x physical-device
   release gate from ADR-0022 through ADR-0024.
 
-No new `javap` capture is required for an XML-only hierarchy change. Build
-success remains distinct from minimum-runtime device evidence.
+Capture the new public seam against the pinned compile SDK:
+
+```powershell
+Get-FileHash "$env:ATAK_SDK_5_7_0_9\main.jar" -Algorithm SHA256
+javap -classpath "$env:ATAK_SDK_5_7_0_9\main.jar" -public `
+  com.atakmap.android.ipc.AtakBroadcast `
+  'com.atakmap.android.ipc.AtakBroadcast$DocumentedIntentFilter'
+```
+
+Accepted 2026-08-03 evidence:
+
+- SHA-256:
+  `8AE6CA6028F72A99537FC2CE9436A4E4964356CB90C7934C35ABE7A7CB065B70`.
+- Public signatures include `AtakBroadcast.getInstance()`,
+  `registerReceiver(BroadcastReceiver, DocumentedIntentFilter)`,
+  `unregisterReceiver(BroadcastReceiver)`, and
+  `DocumentedIntentFilter()`. The implementation adds the action through the
+  inherited Android `IntentFilter.addAction(String)` method.
+
+Relevant signatures from the captured `javap -public` output (wrapped for
+readability):
+
+```text
+public final class com.atakmap.android.ipc.AtakBroadcast
+    implements gov.tak.api.util.Disposable {
+  public static synchronized com.atakmap.android.ipc.AtakBroadcast getInstance();
+  public void registerReceiver(
+      android.content.BroadcastReceiver,
+      com.atakmap.android.ipc.AtakBroadcast$DocumentedIntentFilter);
+  public void unregisterReceiver(android.content.BroadcastReceiver);
+  public boolean sendBroadcast(android.content.Intent);
+}
+public class com.atakmap.android.ipc.AtakBroadcast$DocumentedIntentFilter
+    extends android.content.IntentFilter {
+  public com.atakmap.android.ipc.AtakBroadcast$DocumentedIntentFilter();
+  public com.atakmap.android.ipc.AtakBroadcast$DocumentedIntentFilter(
+      java.lang.String);
+  public com.atakmap.android.ipc.AtakBroadcast$DocumentedIntentFilter addAction(
+      java.lang.String, java.lang.String,
+      com.atakmap.android.ipc.DocumentedExtra[]);
+  public com.atakmap.android.ipc.AtakBroadcast$DocumentedIntentFilter addAction(
+      java.lang.String, java.lang.String);
+}
+```
+
+- Official immutable ATAK-CIV 5.5.1.1 source shows
+  [`MenuLayoutWidget` emitting `HIDE_DETAILS`](https://github.com/TAK-Product-Center/atak-civ/blob/6cefd4c83371789937a6a30aa4d7e81d84b82374/atak/ATAK/app/src/main/java/com/atakmap/android/menu/MenuLayoutWidget.java#L110-L120),
+  [`CoordOverlayMapComponent` registering it and disposing the receiver](https://github.com/TAK-Product-Center/atak-civ/blob/6cefd4c83371789937a6a30aa4d7e81d84b82374/atak/ATAK/app/src/main/java/com/atakmap/android/coordoverlay/CoordOverlayMapComponent.java#L24-L44),
+  and [`AtakBroadcast` exposing local registration and disposal](https://github.com/TAK-Product-Center/atak-civ/blob/6cefd4c83371789937a6a30aa4d7e81d84b82374/atak/ATAK/app/src/main/java/com/atakmap/android/ipc/AtakBroadcast.java#L174-L234).
+
+| ATAK line | Registration | Delivery | Disposal | Status |
+|-----------|--------------|----------|----------|--------|
+| 5.5 minimum runtime | Public 5.5.1.1 source anchor | Host sender and native receiver source anchors | Native unregister and public wrapper source anchors | Source/API lineage complete; exact 5.5.0 device journey remains T015 |
+| 5.7.0.9 current runtime | Pinned `javap -public`, reviewed `onCreate` registration path, and successful device load | Focused JVM tests and physical-device marker/background-tap smoke test | Pinned `javap -public` and reviewed `onDestroy` unregister path | API/code-path and partial current-device evidence complete; remaining T009 lifecycle matrix open |
+
+Build success and 5.5.1.1 source lineage remain distinct from exact 5.5.0
+physical-device evidence.
 
 ## 2. Red: compact Address contract
 
@@ -139,7 +196,8 @@ The focused four-test contract passed after the XML change (`BUILD SUCCESSFUL`,
 `TaiwanAddressLayoutTest`, `TaiwanCoordinateEntryPaneContractTest`,
 `TaiwanInlineImeContractTest`, and `NativeEntryFeature014RegressionTest` group
 then passed together (`BUILD SUCCESSFUL`, 14 s; 30 tasks, 2 executed and 28 up
-to date). XML parsing also passed. No Java production file changed.
+to date). XML parsing also passed. No Java production file changed during the
+compact-layout implementation phase.
 
 ### 2026-08-01 expanded state and regression record
 
@@ -192,30 +250,36 @@ git diff --check
 
 ### 2026-08-01 reviewed-diff audit
 
-The Feature 015 18-file layout scope contains no production Java, manifest,
-image/binary, permission, dependency, network, telemetry, storage, ATAK SDK
-seam, parser,
-conversion, lookup, ranking, dataset, WGS84, or host-confirmation change. The
-only `app/build.gradle` edit is `PLUGIN_VERSION`. Automated layout contracts
-confirm one outer scroll owner and the unchanged Address action geometry. The
-local attachment directory is ignored, no file is staged, and the reviewed text
-contains no workstation path, username, email-derived name, or file URI. The
-generated preview is not part of the repository or release evidence. A
-sanitized physical-device replacement is now recorded as partial T009 evidence
-in `docs/images/27-native-address-structured.png`.
+The initial Feature 015 layout scope contained no production Java or ATAK SDK
+seam. Review remediation intentionally changes
+`TwCoordMapComponent` and `AddressSubsystem`: it consumes ATAK's public
+`HIDE_DETAILS` broadcast, contains ordinary cleanup failures without swallowing
+fatal JVM conditions, and adds transient per-row generations so queued address
+callbacks cannot restore dismissed TGT content. It adds no manifest,
+image/binary, permission, dependency, network, telemetry, storage, parser,
+conversion, ranking, dataset, WGS84, or host-confirmation change. The only
+`app/build.gradle` edit is `PLUGIN_VERSION`. Automated layout contracts confirm
+one outer scroll owner and unchanged Address action geometry. The local
+attachment directory is ignored, no file is staged, and reviewed text contains
+no workstation path, username, email-derived name, or file URI. The generated
+preview is not repository or release evidence. A sanitized physical-device
+replacement is recorded as partial T009 evidence in
+`docs/images/27-native-address-structured.png`.
 
 ### 2026-08-01 convergence record
 
-`speckit-converge` found no unfinished buildable gap. All 12 functional
-requirements and 8 success criteria have implementation, automated test,
-documentation, or explicit release-gate coverage. No task was appended. T009
-and T015 remain open because they require the remaining physical-device,
-accessibility, performance, signer, and provenance evidence.
+The pre-review `speckit-converge` run found no unfinished buildable layout gap.
+Review remediation subsequently expanded the specification to 16 functional
+requirements and 10 success criteria, with T016-T020 tracking its code,
+evidence, and validation work. T009 and T015 remain open because they require
+the remaining physical-device, accessibility, performance, signer, and
+provenance evidence.
 
-Review the diff for:
+Review the final diff for:
 
-- no Java production, manifest, permission, dependency, network, telemetry,
-  storage, parser, conversion, lookup, ranking, dataset, or WGS84 change;
+- only the documented selected-target and per-row-generation Java behavior;
+- no manifest, permission, dependency, network, telemetry, storage, parser,
+  conversion, ranking, dataset, or WGS84 change;
 - no new scroll owner or fixed-height content row;
 - no missing locale key;
 - no real workstation path, username, device identifier, raw attachment, or
@@ -247,16 +311,53 @@ contexts, TalkBack and Switch Access:
 - `docs/images/27-native-address-structured.png` is the reviewed device
   capture. It is cropped to the Go To dialog, has all four address values
   redacted, and contains no retained EXIF/XMP/PNG text metadata.
+- After selecting a marker, tapping empty map background cleared ATAK's native
+  Selected Marker overlay and the plugin's upper-right TGT coordinate/address
+  rows together. MAP and ME remained visible. Plugin load and this delivery
+  journey completed without a fatal or receiver-registration error.
 - T009 remains open for portrait, zh-TW/JA, font scale 2.0, read-only,
   missing-data, TalkBack/Switch Access, 20-switch p95, and lifecycle evidence.
 
-## 7. Minimum-runtime acceptance `[RELEASE-GATE]`
+## 7. Review remediation
+
+### Red/Green record
+
+Focused tests first added fatal-boundary and queued-UI-result expectations to
+`TwCoordMapComponentTargetDismissTest` and `AddressSubsystemTest`. The accepted
+Red run executed 15 tests and failed exactly four new cases: fatal address
+cleanup propagation, fatal widget cleanup propagation, queued legacy-result
+suppression, and queued shared-result suppression.
+
+Production then narrowed selected-target cleanup containment to
+`RuntimeException` and added an atomic generation per address row, checked
+inside every UI-posted legacy/shared emission. After `:app:spotlessApply`, the
+same 15 focused tests passed (`BUILD SUCCESSFUL`, 24 s; 33 tasks). Ordinary
+cleanup failures remain contained, `VirtualMachineError` and `ThreadDeath`
+propagate, a cleared TGT generation rejects already queued results, and the
+next TGT lookup can still publish normally.
+
+### Full quality gate
+
+- `:app:spotlessCheck :app:testCivDebugUnitTest` passed (`BUILD SUCCESSFUL`,
+  55 s; 33 tasks). The generated JUnit XML records 515 tests, zero failures,
+  zero errors, and two existing skips across 76 suites.
+- `:app:lint :app:assembleCivDebug` passed (`BUILD SUCCESSFUL`, 41 s; 50
+  tasks), including ATAK TakDev lint and Civ Debug APK packaging.
+- `python scripts/check-doc-images.py` passed all 32 documentation images for
+  names, local links, Git LFS state, and sensitive metadata.
+- `git diff --check` and the reviewed-diff scan for workstation paths,
+  usernames, email-derived names, and file URIs passed.
+- Gradle emitted only the existing flat-directory, configuration-time
+  resolution, deprecation, and missing connected-test-file warnings; no gate
+  failed.
+
+## 8. Minimum-runtime acceptance `[RELEASE-GATE]`
 
 Repeat the same matrix on an exact ATAK-CIV 5.5.x runtime. Until completed,
 retain this gate as pending and do not infer minimum-runtime device behavior
 from build or ATAK 5.7.0.9 evidence.
 
-## 8. Release boundary
+## 9. Release boundary
 
 Implementation completion does not authorize a tag, TPP upload, or GitHub
 Release. Before publication, run `release-readiness`, verify the exact frozen

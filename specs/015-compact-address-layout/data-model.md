@@ -3,8 +3,9 @@
 ## Scope
 
 This feature introduces no new persisted entity and changes no Address draft,
-candidate, dataset, or coordinate model. It changes only how the existing
-structured Address projection is grouped on screen.
+candidate, dataset, or coordinate model. The initial implementation changes
+how the existing structured Address projection is grouped on screen; review
+remediation adds only transient per-row delivery generations.
 
 ## Existing projection fields
 
@@ -34,7 +35,18 @@ visible label and one existing input/selector view.
 
 ## State transitions
 
-No state transition changes. The view continues to render the existing
-single-field/structured mode switch, locality selection, text edit, lookup,
-candidate selection, Auto Fill, Clear, read-only, locale replacement, and
-dispose transitions.
+The Address entry view continues to render the existing single-field/structured
+mode switch, locality selection, text edit, lookup, candidate selection, Auto
+Fill, Clear, read-only, locale replacement, and dispose transitions.
+
+### Transient readout delivery generation
+
+| Runtime state | Cardinality | Persistence | Transition |
+|---------------|-------------|-------------|------------|
+| Address row generation | One atomic counter each for MAP, ME, and TGT | Process memory only; never serialized | Increment before each new coordinate request and before explicit row clear |
+
+Every debounced lookup and legacy/shared resolver callback captures the row's
+current generation. A UI-posted emission publishes only when the captured value
+still equals the row's current value. Clearing TGT therefore invalidates work
+already queued for UI delivery without changing MAP or ME. The next TGT lookup
+captures the new generation and can publish normally.

@@ -38,7 +38,8 @@ presentation inside ATAK's native Taiwan coordinate-entry pane.
 
 ## Behavior invariants
 
-- No production Java binding or controller behavior needs to change.
+- The compact-layout portion changes no production Java binding or Address
+  entry controller behavior.
 - Mode switching does not alter represented draft content or exact host WGS84.
 - Address normalization, lookup, candidates, locality ordering, Auto Fill,
   Clear, Copy, reverse no-snap, read-only, locale replacement, and lifecycle
@@ -46,11 +47,32 @@ presentation inside ATAK's native Taiwan coordinate-entry pane.
 - Taipower, TWD97, TWD67, ATAK host controls, permissions, dependencies,
   network behavior, and coordinate results remain unchanged.
 
+## Selected-target dismissal invariant
+
+1. A direct empty-map `MAP_CLICK` or ATAK's public
+   `com.atakmap.android.maps.HIDE_DETAILS` action clears the plugin's TGT
+   coordinate and address rows.
+2. MAP and ME rows remain visible and unchanged.
+3. Component creation registers one documented local receiver; component
+   destruction unregisters the same receiver.
+4. Clearing TGT increments its address generation before widget cleanup.
+   Every queued legacy/shared resolver UI emission re-checks the captured
+   generation and discards itself if it is stale.
+5. Ordinary cleanup `RuntimeException` is logged and contained at the host
+   boundary. `VirtualMachineError` and `ThreadDeath` propagate.
+
 ## Verification boundary
 
 - Robolectric verifies hierarchy, equal weights, ordering, one scroll owner,
   compact measurement, action geometry, and existing selector/editor states.
 - Existing JVM suites verify behavior invariants.
+- `TwCoordMapComponentTargetDismissTest` verifies broadcast delivery, MAP/ME
+  preservation, ordinary-failure containment, and fatal-condition propagation.
+- `AddressSubsystemTest` verifies that both legacy and shared address results
+  already queued for UI delivery are rejected after a row clear and that the
+  next generation can publish normally.
 - Physical-device release gates verify real ATAK pane reachability, clipping,
   touch targets, TalkBack/Switch Access, font scales, orientations, and the
-  100 ms p95 feedback budget on ATAK 5.7.0.9 and exact ATAK 5.5.x.
+  100 ms p95 feedback budget on ATAK 5.7.0.9 and exact ATAK 5.5.x. The device
+  journey also verifies that native Selected Marker and plugin TGT dismiss
+  together on empty map background.

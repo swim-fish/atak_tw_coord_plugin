@@ -981,14 +981,14 @@ public class TwCoordMapComponent extends AbstractMapComponent {
     if (addressSubsystem != null) {
       try {
         addressSubsystem.clearRow(AddressSubsystem.Row.TGT);
-      } catch (Throwable t) {
+      } catch (RuntimeException t) {
         android.util.Log.w("TwCoordMapComponent", "clear target address row threw", t);
       }
     }
     if (widget != null) {
       try {
         widget.clearTarget();
-      } catch (Throwable t) {
+      } catch (RuntimeException t) {
         android.util.Log.w("TwCoordMapComponent", "clear target widget threw", t);
       }
     }

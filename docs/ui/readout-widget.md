@@ -115,13 +115,17 @@ the widget itself contains no English literals.
   is open. The component therefore handles both direct background `MAP_CLICK`
   events and ATAK's stable `com.atakmap.android.maps.HIDE_DETAILS` selected-item
   dismissal broadcast. Pending TGT address work is cancelled before the widget
-  is hidden, so a stale result cannot restore the dismissed marker.
+  is hidden. Each row has an atomic generation checked inside every UI-posted
+  legacy/shared address emission, so even a runnable queued before dismissal
+  cannot restore the marker. Ordinary cleanup `RuntimeException` is contained
+  and logged; fatal JVM conditions are not swallowed by this boundary.
 
 Compatibility evidence: `javap -public` against the pinned ATAK-CIV 5.7.0.9
 SDK confirms the public `AtakBroadcast` register/unregister contract. ATAK-CIV
-tag `5.5.1.1` source shows `MenuLayoutWidget` sending `HIDE_DETAILS` on background
-`MAP_CLICK` and `CoordOverlayMapComponent` registering the same action for the
-native selected-coordinate overlay.
+5.5.1.1 source shows
+[`MenuLayoutWidget` sending `HIDE_DETAILS` on background map interaction](https://github.com/TAK-Product-Center/atak-civ/blob/6cefd4c83371789937a6a30aa4d7e81d84b82374/atak/ATAK/app/src/main/java/com/atakmap/android/menu/MenuLayoutWidget.java#L110-L120)
+and
+[`CoordOverlayMapComponent` registering/discarding the same action for the native overlay](https://github.com/TAK-Product-Center/atak-civ/blob/6cefd4c83371789937a6a30aa4d7e81d84b82374/atak/ATAK/app/src/main/java/com/atakmap/android/coordoverlay/CoordOverlayMapComponent.java#L24-L44).
 
 ## Background
 
